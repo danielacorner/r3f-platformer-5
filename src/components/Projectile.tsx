@@ -3,7 +3,6 @@ import { useFrame } from '@react-three/fiber';
 import { Vector3, Quaternion } from 'three';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { ImpactRipple } from './ImpactRipple';
-import { useGameStore } from '../store/gameStore';
 
 interface ProjectileProps {
   position: Vector3;
@@ -66,11 +65,6 @@ export function Projectile({ position, type, target, onComplete }: ProjectilePro
         const arrowRotation = new Quaternion();
         arrowRotation.setFromUnitVectors(new Vector3(0, 0, 1), velocity);
         rigidBodyRef.current.setRotation(arrowRotation);
-      } else {
-        // Landed arrow rotation
-        const landedRotation = new Quaternion();
-        landedRotation.setFromAxisAngle(new Vector3(1, 0, 0), -Math.PI / 3);
-        rigidBodyRef.current.setRotation(landedRotation);
       }
 
       if (progress >= 1) {
@@ -112,60 +106,6 @@ export function Projectile({ position, type, target, onComplete }: ProjectilePro
     }
   });
 
-  const handleCollision = (event: any) => {
-    const collidedWith = event.other;
-    if (!collidedWith) return;
-
-    // Check if it's an enemy and hasn't been hit yet
-    if (collidedWith.parent?.name === 'enemy') {
-      const enemyId = collidedWith.parent.userData?.id;
-      if (enemyId && !hitEnemies.current.has(enemyId)) {
-        hitEnemies.current.add(enemyId);
-        
-        // Find all nearby enemies for AOE damage
-        const enemyPos = new Vector3(
-          collidedWith.parent.translation().x,
-          collidedWith.parent.translation().y,
-          collidedWith.parent.translation().z
-        );
-        
-        // Apply direct hit damage to the collided enemy
-        const directHitDamage = type === 'bow' ? 35 : 25;
-        collidedWith.parent.userData = {
-          ...collidedWith.parent.userData,
-          damage: directHitDamage
-        };
-        
-        // Get all enemies in the scene for AOE
-        const scene = rigidBodyRef.current.scene;
-        scene.children.forEach((child: any) => {
-          if (child.name === 'enemy' && child.rigidBody && child !== collidedWith.parent) {
-            const pos = child.rigidBody.translation();
-            const distance = enemyPos.distanceTo(new Vector3(pos.x, pos.y, pos.z));
-            
-            if (distance <= AOE_RADIUS) {
-              // Calculate damage based on distance (more damage closer to impact)
-              const damageMultiplier = 1 - (distance / AOE_RADIUS);
-              const baseDamage = type === 'bow' ? 20 : 15; // Reduced AOE damage
-              const damage = Math.round(baseDamage * damageMultiplier);
-              
-              // Apply AOE damage
-              child.rigidBody.userData = {
-                ...child.rigidBody.userData,
-                damage: damage
-              };
-            }
-          }
-        });
-
-        setHasHitEnemy(true);
-        setShowRipple(true);
-        setRipplePosition(currentPos.current.clone());
-        onComplete(currentPos.current);
-      }
-    }
-  };
-
   return (
     <>
       <RigidBody
@@ -173,8 +113,7 @@ export function Projectile({ position, type, target, onComplete }: ProjectilePro
         type="kinematicPosition"
         position={[position.x, position.y, position.z]}
         name="projectile"
-        userData={{ type }}
-        onCollisionEnter={handleCollision}
+        userData={{ type: 'projectile', projectileType: type, damage: type === 'bow' ? 35 : 25 }}
       >
         <CuboidCollider args={[0.1, 0.1, 0.25]} sensor />
         {type === 'bow' ? (

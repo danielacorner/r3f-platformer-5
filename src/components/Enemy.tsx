@@ -21,26 +21,22 @@ export function Enemy({ position, onDeath }: EnemyProps) {
     return () => setEnemiesAlive(prev => prev - 1);
   }, []);
 
-  const handleDamage = (damage: number) => {
-    setHealth(prev => {
-      const newHealth = Math.max(0, prev - damage);
-      if (newHealth <= 0) {
-        onDeath();
-      }
-      return newHealth;
-    });
+  const handleCollision = (event: any) => {
+    const collidedWith = event.other;
+    if (collidedWith?.rigidBody?.userData?.type === 'projectile') {
+      const damage = collidedWith.rigidBody.userData.damage || (collidedWith.rigidBody.userData.projectileType === 'bow' ? 35 : 25);
+      setHealth(prev => {
+        const newHealth = Math.max(0, prev - damage);
+        if (newHealth <= 0) {
+          onDeath();
+        }
+        return newHealth;
+      });
+    }
   };
 
   useFrame(() => {
     if (!enemyRef.current || health <= 0) return;
-
-    // Check for damage from projectiles
-    const rigidBody = enemyRef.current;
-    if (rigidBody.userData?.damage > 0) {
-      handleDamage(rigidBody.userData.damage);
-      // Reset damage after applying
-      rigidBody.userData.damage = 0;
-    }
 
     // Simple AI: Move towards portal
     const currentPos = enemyRef.current.translation();
@@ -62,6 +58,7 @@ export function Enemy({ position, onDeath }: EnemyProps) {
       mass={1}
       name="enemy"
       userData={{ id: uniqueId.current }}
+      onCollisionEnter={handleCollision}
     >
       <mesh name="enemy">
         <boxGeometry args={[0.8, 0.8, 0.8]} />
