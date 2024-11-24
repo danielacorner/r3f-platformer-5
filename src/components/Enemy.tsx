@@ -10,7 +10,7 @@ interface EnemyProps {
 }
 
 export function Enemy({ position, onDeath }: EnemyProps) {
-  const enemyRef = useRef(null);
+  const enemyRef = useRef<any>(null);
   const health = useRef(100);
   const { setEnemiesAlive } = useGameStore();
 
@@ -24,22 +24,34 @@ export function Enemy({ position, onDeath }: EnemyProps) {
     // Simple AI: Move towards portal
     const currentPos = enemyRef.current.translation();
     const targetPos = new Vector3(8, 2, 8); // Portal position
-    const direction = targetPos.sub(new Vector3(currentPos.x, currentPos.y, currentPos.z)).normalize();
+    const direction = new Vector3(targetPos.x - currentPos.x, 0, targetPos.z - currentPos.z).normalize();
     
-    const velocity = vec3({ x: direction.x * 2, y: 0, z: direction.z * 2 });
+    const velocity = vec3({ x: direction.x * 2, y: currentPos.y < 1 ? 5 : 0, z: direction.z * 2 });
     enemyRef.current.setLinvel(velocity);
   });
 
-  const handleHit = (damage: number) => {
-    health.current -= damage;
-    if (health.current <= 0) {
-      onDeath();
+  const handleCollision = (event: any) => {
+    const collidedWith = event.colliderObject;
+    if (collidedWith && collidedWith.name === 'projectile') {
+      const damage = collidedWith.userData?.type === 'boomerang' ? 50 : 25;
+      health.current -= damage;
+      
+      if (health.current <= 0) {
+        onDeath();
+      }
     }
   };
 
   return (
-    <RigidBody ref={enemyRef} position={[position.x, position.y, position.z]}>
-      <mesh>
+    <RigidBody 
+      ref={enemyRef} 
+      position={[position.x, position.y, position.z]}
+      onCollisionEnter={handleCollision}
+      enabledRotations={[false, false, false]}
+      lockRotations
+      mass={1}
+    >
+      <mesh name="enemy">
         <boxGeometry args={[0.8, 0.8, 0.8]} />
         <meshStandardMaterial color="red" />
       </mesh>

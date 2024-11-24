@@ -41,9 +41,9 @@ export function Player() {
 
       raycaster.current.setFromCamera(mouse, camera);
       const intersects = raycaster.current.intersectObjects(scene.children, true);
-      
-      const hit = intersects.find(intersect => 
-        intersect.object.name === 'platform' || 
+
+      const hit = intersects.find(intersect =>
+        intersect.object.name === 'platform' ||
         intersect.object.parent?.name === 'platform'
       );
 
@@ -62,8 +62,9 @@ export function Player() {
       if (currentTime - lastShotTime.current < SHOT_COOLDOWN) return;
       lastShotTime.current = currentTime;
 
-      if (!playerRef.current) return;
-      const position = playerRef.current.translation();
+      const position = playerRef.current?.translation();
+      if (!position) return;
+      
       const playerPos = new Vector3(position.x, position.y + 0.5, position.z);
 
       if (event.button === 2 && boomerangsLeft > 0) {
@@ -122,20 +123,12 @@ export function Player() {
 
     if (moveDirection.lengthSq() > 0) {
       moveDirection.normalize();
-      // Get camera's rotation around Y axis (ignoring other rotations)
-      const cameraRotation = Math.atan2(camera.matrix.elements[8], camera.matrix.elements[10]);
       
-      // Apply camera rotation to movement
-      const movementVector = new Vector3(
-        moveDirection.x * Math.cos(cameraRotation) + moveDirection.z * Math.sin(cameraRotation),
-        0,
-        -moveDirection.x * Math.sin(cameraRotation) + moveDirection.z * Math.cos(cameraRotation)
-      );
-
+      // Simple diagonal movement
       playerRef.current.setLinvel({
-        x: movementVector.x * MOVE_SPEED,
+        x: moveDirection.x * MOVE_SPEED,
         y: currentVel.y,
-        z: movementVector.z * MOVE_SPEED
+        z: moveDirection.z * MOVE_SPEED
       });
     } else {
       playerRef.current.setLinvel({
@@ -157,12 +150,12 @@ export function Player() {
 
   return (
     <>
-      <RigidBody
+      <RigidBody 
         ref={playerRef}
         position={[0, 5, 0]}
         enabledRotations={[false, false, false]}
-        mass={1}
         lockRotations
+        mass={1}
         colliders="ball"
         onCollisionEnter={() => setIsGrounded(true)}
         onCollisionExit={() => setIsGrounded(false)}
@@ -171,12 +164,14 @@ export function Player() {
           <sphereGeometry args={[0.5]} />
           <meshStandardMaterial color="blue" />
         </mesh>
-        <Html position={[0, 1, 0]} center>
-          <div style={{ 
-            color: 'white', 
+        <Html position={[0, 1, 0]} center style={{ pointerEvents: 'none', userSelect: 'none' }}>
+          <div style={{
+            color: 'white',
             fontSize: '24px',
             fontWeight: 'bold',
-            textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
+            textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
+            pointerEvents: 'none', 
+            userSelect: 'none'
           }}>
             {boomerangsLeft}
           </div>
