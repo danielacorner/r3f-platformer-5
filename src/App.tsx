@@ -64,7 +64,7 @@ export default function App() {
       <Canvas shadows>
         <Suspense fallback={null}>
           <CameraController />
-          
+
           <SoftShadows size={2.5} samples={16} focus={0.5} />
           <Sky sunPosition={[100, 20, 100]} />
           <ambientLight intensity={0.3} />
@@ -81,7 +81,7 @@ export default function App() {
             shadow-camera-far={200}
             shadow-bias={-0.0001}
           />
-          
+
           <Physics gravity={[0, -30, 0]}>
             <Player />
             <Level />

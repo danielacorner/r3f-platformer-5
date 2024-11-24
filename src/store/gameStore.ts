@@ -30,19 +30,42 @@ interface GameState {
 
 export const useGameStore = create<GameState>((set) => ({
   currentLevel: 1,
-  timer: 60,
+  timer: 4,
   enemiesAlive: 0,
   isSpawning: false,
   levelComplete: false,
   phase: 'prep',
   placedBoxes: [],
   playerRef: { current: null },
-  setCurrentLevel: (level) => set({ currentLevel: level }),
-  setTimer: (time) => set({ timer: time }),
-  setEnemiesAlive: (count) => set({ enemiesAlive: count }),
+  setCurrentLevel: (level) => set({ 
+    currentLevel: level,
+    timer: 4,
+    enemiesAlive: 0,
+    isSpawning: false,
+    levelComplete: false,
+    phase: 'prep',
+    placedBoxes: []
+  }),
+  setTimer: (time) => set((state) => {
+    if (time <= 0 && state.enemiesAlive === 0) {
+      return { timer: time, levelComplete: true };
+    }
+    return { timer: time };
+  }),
+  setEnemiesAlive: (count) => set((state) => {
+    if (count === 0 && state.timer <= 0) {
+      return { enemiesAlive: count, levelComplete: true };
+    }
+    return { enemiesAlive: count };
+  }),
   setIsSpawning: (spawning) => set({ isSpawning: spawning }),
   setLevelComplete: (complete) => set({ levelComplete: complete }),
-  setPhase: (phase) => set({ phase: phase }),
+  setPhase: (phase) => set((state) => {
+    if (phase === 'combat') {
+      return { phase, timer: 4, isSpawning: true };
+    }
+    return { phase };
+  }),
   addBox: (position) => set((state) => {
     if (state.placedBoxes.length >= 20) return state;
     return {

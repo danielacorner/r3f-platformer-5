@@ -10,14 +10,19 @@ interface EnemySpawnerProps {
 
 export function EnemySpawner({ position, spawnRadius = 2 }: EnemySpawnerProps) {
   const [enemies, setEnemies] = useState<{ id: string; position: Vector3 }[]>([]);
-  const { phase, currentLevel } = useGameStore();
+  const { phase, currentLevel, timer, setEnemiesAlive, isSpawning } = useGameStore();
 
   // Slower spawn rate and lower max enemies
   const spawnInterval = Math.max(3000 - (currentLevel - 1) * 200, 2000); // ms
   const maxEnemies = Math.min(3 + currentLevel, 8); // Cap at 8 enemies
 
   useEffect(() => {
-    if (phase !== 'combat') {
+    // Update enemies alive count whenever enemies array changes
+    setEnemiesAlive(enemies.length);
+  }, [enemies.length]);
+
+  useEffect(() => {
+    if (phase !== 'combat' || timer <= 0 || !isSpawning) {
       setEnemies([]);
       return;
     }
@@ -51,7 +56,7 @@ export function EnemySpawner({ position, spawnRadius = 2 }: EnemySpawnerProps) {
     return () => {
       clearInterval(interval);
     };
-  }, [phase, position, spawnRadius, spawnInterval, maxEnemies, currentLevel]);
+  }, [phase, position, spawnRadius, spawnInterval, maxEnemies, currentLevel, timer, isSpawning]);
 
   const handleEnemyDeath = (enemyId: string) => {
     setEnemies(prev => prev.filter(enemy => enemy.id !== enemyId));
