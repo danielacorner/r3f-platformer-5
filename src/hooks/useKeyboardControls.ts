@@ -12,6 +12,12 @@ export function useKeyboardControls() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Prevent default behavior for game control keys
+      const gameKeys = ['KeyW', 'KeyS', 'KeyA', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'];
+      if (gameKeys.includes(event.code)) {
+        event.preventDefault();
+      }
+
       switch (event.code) {
         case 'KeyW':
         case 'ArrowUp':

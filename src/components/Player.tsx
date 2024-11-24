@@ -113,18 +113,37 @@ export function Player() {
   useFrame(() => {
     if (!playerRef.current) return;
 
+    // Calculate movement direction in camera space
     const moveDirection = new Vector3(0, 0, 0);
-    if (forward) moveDirection.z -= 1;
-    if (backward) moveDirection.z += 1;
-    if (left) moveDirection.x -= 1;
-    if (right) moveDirection.x += 1;
+    
+    // In isometric view:
+    // Forward (W) should move up-right
+    // Left (A) should move up-left
+    // Back (S) should move down-left
+    // Right (D) should move down-right
+    
+    if (forward) {
+      moveDirection.x -= 1; // Move left
+      moveDirection.z -= 1; // Move forward
+    }
+    if (backward) {
+      moveDirection.x += 1; // Move right
+      moveDirection.z += 1; // Move back
+    }
+    if (left) {
+      moveDirection.x -= 1; // Move left
+      moveDirection.z += 1; // Move back
+    }
+    if (right) {
+      moveDirection.x += 1; // Move right
+      moveDirection.z -= 1; // Move forward
+    }
 
     const currentVel = playerRef.current.linvel();
 
     if (moveDirection.lengthSq() > 0) {
       moveDirection.normalize();
       
-      // Simple diagonal movement
       playerRef.current.setLinvel({
         x: moveDirection.x * MOVE_SPEED,
         y: currentVel.y,
