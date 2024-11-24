@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Vector3, Quaternion } from 'three';
-import { RigidBody } from '@react-three/rapier';
+import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { ImpactRipple } from './ImpactRipple';
+import { useGameStore } from '../store/gameStore';
 
 interface ProjectileProps {
   position: Vector3;
@@ -22,10 +23,12 @@ export function Projectile({ position, type, target, onComplete }: ProjectilePro
   const [phase, setPhase] = useState<'initial' | 'overshoot' | 'return'>('initial');
   const currentPos = useRef(position.clone());
   const phaseTime = useRef(0);
+  const hitEnemies = useRef(new Set<string>());
   
   const arrowLifetime = 2;
   const boomerangPhaseTime = 0.8;
   const ARROW_FLIGHT_TIME = 1;
+  const AOE_RADIUS = 1.5; // Area of effect radius
 
   useFrame((_, delta) => {
     if (!rigidBodyRef.current || hasHitEnemy) return;
@@ -76,6 +79,7 @@ export function Projectile({ position, type, target, onComplete }: ProjectilePro
         setRipplePosition(currentPos.current.clone());
       }
     } else {
+      // Boomerang logic...
       phaseTime.current += delta;
       const phaseProgress = Math.min(phaseTime.current / boomerangPhaseTime, 1);
 
@@ -110,9 +114,55 @@ export function Projectile({ position, type, target, onComplete }: ProjectilePro
 
   const handleCollision = (event: any) => {
     const collidedWith = event.other;
-    if (collidedWith && collidedWith.parent?.name === 'enemy') {
-      setHasHitEnemy(true);
-      onComplete(currentPos.current);
+    if (!collidedWith) return;
+
+    // Check if it's an enemy and hasn't been hit yet
+    if (collidedWith.parent?.name === 'enemy') {
+      const enemyId = collidedWith.parent.userData?.id;
+      if (enemyId && !hitEnemies.current.has(enemyId)) {
+        hitEnemies.current.add(enemyId);
+        
+        // Find all nearby enemies for AOE damage
+        const enemyPos = new Vector3(
+          collidedWith.parent.translation().x,
+          collidedWith.parent.translation().y,
+          collidedWith.parent.translation().z
+        );
+        
+        // Apply direct hit damage to the collided enemy
+        const directHitDamage = type === 'bow' ? 35 : 25;
+        collidedWith.parent.userData = {
+          ...collidedWith.parent.userData,
+          damage: directHitDamage
+        };
+        
+        // Get all enemies in the scene for AOE
+        const scene = rigidBodyRef.current.scene;
+        scene.children.forEach((child: any) => {
+          if (child.name === 'enemy' && child.rigidBody && child !== collidedWith.parent) {
+            const pos = child.rigidBody.translation();
+            const distance = enemyPos.distanceTo(new Vector3(pos.x, pos.y, pos.z));
+            
+            if (distance <= AOE_RADIUS) {
+              // Calculate damage based on distance (more damage closer to impact)
+              const damageMultiplier = 1 - (distance / AOE_RADIUS);
+              const baseDamage = type === 'bow' ? 20 : 15; // Reduced AOE damage
+              const damage = Math.round(baseDamage * damageMultiplier);
+              
+              // Apply AOE damage
+              child.rigidBody.userData = {
+                ...child.rigidBody.userData,
+                damage: damage
+              };
+            }
+          }
+        });
+
+        setHasHitEnemy(true);
+        setShowRipple(true);
+        setRipplePosition(currentPos.current.clone());
+        onComplete(currentPos.current);
+      }
     }
   };
 
@@ -121,13 +171,12 @@ export function Projectile({ position, type, target, onComplete }: ProjectilePro
       <RigidBody
         ref={rigidBodyRef}
         type="kinematicPosition"
-        colliders="cuboid"
-        sensor
         position={[position.x, position.y, position.z]}
         name="projectile"
         userData={{ type }}
         onCollisionEnter={handleCollision}
       >
+        <CuboidCollider args={[0.1, 0.1, 0.25]} sensor />
         {type === 'bow' ? (
           <group rotation={[Math.PI / 2, 0, 0]}>
             <mesh>

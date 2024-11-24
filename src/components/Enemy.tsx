@@ -14,14 +14,34 @@ export function Enemy({ position, onDeath }: EnemyProps) {
   const enemyRef = useRef<any>(null);
   const [health, setHealth] = useState(100);
   const { setEnemiesAlive } = useGameStore();
+  const uniqueId = useRef(Math.random().toString(36).substr(2, 9));
 
   useEffect(() => {
     setEnemiesAlive(prev => prev + 1);
     return () => setEnemiesAlive(prev => prev - 1);
   }, []);
 
+  const handleDamage = (damage: number) => {
+    setHealth(prev => {
+      const newHealth = Math.max(0, prev - damage);
+      if (newHealth <= 0) {
+        onDeath();
+      }
+      return newHealth;
+    });
+  };
+
   useFrame(() => {
-    if (!enemyRef.current) return;
+    if (!enemyRef.current || health <= 0) return;
+
+    // Check for damage from projectiles
+    const rigidBody = enemyRef.current;
+    if (rigidBody.userData?.damage > 0) {
+      handleDamage(rigidBody.userData.damage);
+      // Reset damage after applying
+      rigidBody.userData.damage = 0;
+    }
+
     // Simple AI: Move towards portal
     const currentPos = enemyRef.current.translation();
     const targetPos = new Vector3(8, 2, 8); // Portal position
@@ -31,43 +51,38 @@ export function Enemy({ position, onDeath }: EnemyProps) {
     enemyRef.current.setLinvel(velocity);
   });
 
-  const handleCollision = (event: any) => {
-    const collidedWith = event.colliderObject;
-    if (collidedWith && collidedWith.name === 'projectile') {
-      const damage = collidedWith.userData?.type === 'boomerang' ? 50 : 25;
-      setHealth(prev => {
-        const newHealth = Math.max(0, prev - damage);
-        if (newHealth <= 0) {
-          onDeath();
-        }
-        return newHealth;
-      });
-    }
-  };
+  if (health <= 0) return null;
 
   return (
     <RigidBody 
       ref={enemyRef} 
       position={[position.x, position.y, position.z]}
-      onCollisionEnter={handleCollision}
       enabledRotations={[false, false, false]}
       lockRotations
       mass={1}
+      name="enemy"
+      userData={{ id: uniqueId.current }}
     >
       <mesh name="enemy">
         <boxGeometry args={[0.8, 0.8, 0.8]} />
         <meshStandardMaterial color="red" />
       </mesh>
       <Html
-        position={[0, 1.2, 0]}
+        position={[0, 1, 0]}
         center
+        occlude
         style={{
-          width: '50px',
-          height: '6px',
+          position: 'absolute',
+          left: '50%',
+          transform: 'translate(-50%, -50%) scale(0.75)',
+          width: '40px',
+          height: '4px',
           background: 'rgba(0, 0, 0, 0.5)',
-          borderRadius: '3px',
+          borderRadius: '2px',
           overflow: 'hidden',
-          transform: 'scale(1)',
+          pointerEvents: 'none',
+          padding: 0,
+          margin: 0,
         }}
       >
         <div
@@ -75,7 +90,7 @@ export function Enemy({ position, onDeath }: EnemyProps) {
             width: `${health}%`,
             height: '100%',
             background: `rgb(${255 - (health * 2.55)}, ${health * 2.55}, 0)`,
-            transition: 'all 0.3s',
+            transition: 'width 0.2s ease-out',
           }}
         />
       </Html>
