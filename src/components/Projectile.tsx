@@ -24,9 +24,9 @@ export function Projectile({ position, type, target, onComplete }: ProjectilePro
   const phaseTime = useRef(0);
   const hitEnemies = useRef(new Set<string>());
   
-  const arrowLifetime = 2;
+  const arrowLifetime = 1.5; // Reduced lifetime since arrow moves faster
   const boomerangPhaseTime = 0.8;
-  const ARROW_FLIGHT_TIME = 1;
+  const ARROW_FLIGHT_TIME = 0.5; // Reduced flight time for faster arrows
   const AOE_RADIUS = 1.5; // Area of effect radius
 
   useFrame((_, delta) => {
@@ -43,10 +43,10 @@ export function Projectile({ position, type, target, onComplete }: ProjectilePro
 
       const progress = Math.min(timeRef.current / ARROW_FLIGHT_TIME, 1);
       const direction = target.clone().sub(startPos.current);
-      const height = Math.max(direction.length() * 0.3, 2);
+      const height = Math.max(direction.length() * 0.2, 1); // Reduced arc height
       
       // Calculate next position for velocity direction
-      const nextProgress = Math.min(progress + 0.1, 1);
+      const nextProgress = Math.min(progress + 0.05, 1); // Smaller step for smoother rotation
       const currentPoint = startPos.current.clone().lerp(target, progress);
       currentPoint.y += Math.sin(progress * Math.PI) * height;
       
