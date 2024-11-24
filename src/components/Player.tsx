@@ -7,9 +7,12 @@ import { useKeyboardControls } from '../hooks/useKeyboardControls';
 import { Projectile } from './Projectile';
 import { TargetIndicator } from './TargetIndicator';
 import { useGameStore } from '../store/gameStore';
+import { LEVEL_CONFIGS } from './Level';
 
 const MOVE_SPEED = 8;
 const JUMP_FORCE = 10;
+const FALL_THRESHOLD = -10; // Height at which player will respawn
+const SPAWN_POSITION = [0, 2, 0]; // Default spawn position
 
 export function Player() {
   const playerRef = useRef<any>(null);
@@ -24,6 +27,7 @@ export function Player() {
   const lastShotTime = useRef(0);
   const SHOT_COOLDOWN = 0.3; // seconds
   const phase = useGameStore(state => state.phase);
+  const currentLevel = useGameStore(state => state.currentLevel);
 
   // Store player ref in game store for camera following
   useEffect(() => {
@@ -110,8 +114,28 @@ export function Player() {
     setProjectiles(prev => prev.filter(p => p.id !== id));
   };
 
-  useFrame(() => {
+  // Handle respawn when falling
+  const checkAndRespawn = () => {
     if (!playerRef.current) return;
+    
+    const position = playerRef.current.translation();
+    if (position.y < FALL_THRESHOLD) {
+      // Get the current level's spawn position or use default
+      const levelConfig = LEVEL_CONFIGS[currentLevel as keyof typeof LEVEL_CONFIGS];
+      const spawnPos = levelConfig ? levelConfig.spawnPosition : SPAWN_POSITION;
+      
+      // Reset position and velocity
+      playerRef.current.setTranslation({ x: spawnPos[0], y: spawnPos[1], z: spawnPos[2] });
+      playerRef.current.setLinvel({ x: 0, y: 0, z: 0 });
+      playerRef.current.setAngvel({ x: 0, y: 0, z: 0 });
+    }
+  };
+
+  useFrame((_, delta) => {
+    if (!playerRef.current) return;
+
+    // Check for falling below threshold
+    checkAndRespawn();
 
     // Calculate movement direction in camera space
     const moveDirection = new Vector3(0, 0, 0);

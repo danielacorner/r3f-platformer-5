@@ -67,9 +67,21 @@ export const useGameStore = create<GameState>((set) => ({
   setLevelComplete: (complete) => set({ levelComplete: complete }),
   setPhase: (phase) => set((state) => {
     if (phase === 'combat') {
-      return { phase, timer: 4, isSpawning: true, levelComplete: false };
+      return { 
+        phase,
+        isSpawning: true,
+        timer: state.timer,
+        levelComplete: false,
+        enemiesAlive: 0
+      };
     }
-    return { phase };
+    return { 
+      phase,
+      isSpawning: false,
+      timer: 4,
+      enemiesAlive: 0,
+      levelComplete: false
+    };
   }),
   addBox: (position) => set((state) => {
     if (state.placedBoxes.length >= 20) return state;

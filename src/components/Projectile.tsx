@@ -23,7 +23,7 @@ export function Projectile({ position, type, target, onComplete }: ProjectilePro
   const currentPos = useRef(position.clone());
   const phaseTime = useRef(0);
   const hitEnemies = useRef(new Set<string>());
-  
+
   const arrowLifetime = 1.5; // Reduced lifetime since arrow moves faster
   const boomerangPhaseTime = 0.8;
   const ARROW_FLIGHT_TIME = 0.5; // Reduced flight time for faster arrows
@@ -44,18 +44,18 @@ export function Projectile({ position, type, target, onComplete }: ProjectilePro
       const progress = Math.min(timeRef.current / ARROW_FLIGHT_TIME, 1);
       const direction = target.clone().sub(startPos.current);
       const height = Math.max(direction.length() * 0.2, 1); // Reduced arc height
-      
+
       // Calculate next position for velocity direction
       const nextProgress = Math.min(progress + 0.05, 1); // Smaller step for smoother rotation
       const currentPoint = startPos.current.clone().lerp(target, progress);
       currentPoint.y += Math.sin(progress * Math.PI) * height;
-      
+
       const nextPoint = startPos.current.clone().lerp(target, nextProgress);
       nextPoint.y += Math.sin(nextProgress * Math.PI) * height;
-      
+
       // Calculate velocity direction for rotation
       const velocity = nextPoint.clone().sub(currentPoint).normalize();
-      
+
       // Update position
       currentPos.current.copy(currentPoint);
       rigidBodyRef.current.setTranslation(currentPos.current);
@@ -99,7 +99,7 @@ export function Projectile({ position, type, target, onComplete }: ProjectilePro
       }
 
       rigidBodyRef.current.setTranslation(currentPos.current);
-      
+
       // Boomerang spin
       const rotation = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), timeRef.current * 10);
       rigidBodyRef.current.setRotation(rotation);

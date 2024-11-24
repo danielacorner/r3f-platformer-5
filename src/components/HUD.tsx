@@ -3,19 +3,20 @@ import { useGameStore } from '../store/gameStore';
 import { useEffect, useState } from 'react';
 
 export function HUD() {
-  const { 
-    timer, 
+  const {
+    timer,
     setTimer,
-    enemiesAlive, 
-    levelComplete, 
-    phase, 
-    currentLevel, 
-    setCurrentLevel, 
+    enemiesAlive,
+    levelComplete,
+    phase,
+    currentLevel,
+    setCurrentLevel,
     setPhase,
     setIsSpawning,
     setLevelComplete
   } = useGameStore();
   const [enemyQueue, setEnemyQueue] = useState<number[]>([]);
+  const [showSettings, setShowSettings] = useState(false);
 
   // Countdown timer
   useEffect(() => {
@@ -55,8 +56,81 @@ export function HUD() {
     setIsSpawning(false);
   };
 
+  const handleLevelSelect = (level: number) => {
+    setEnemyQueue([]);
+    setCurrentLevel(level);
+    setPhase('prep');
+    setTimer(4);
+    setLevelComplete(false);
+    setIsSpawning(false);
+    setShowSettings(false);
+  };
+
   return (
     <Html fullscreen style={{ pointerEvents: 'none' }}>
+      {/* Settings Button */}
+      <div style={{
+        position: 'absolute',
+        top: '20px',
+        left: '20px',
+        pointerEvents: 'auto',
+      }}>
+        <button
+          onClick={() => setShowSettings(!showSettings)}
+          style={{
+            padding: '10px',
+            background: '#4CAF50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+          }}
+        >
+          ⚙️ Settings
+        </button>
+      </div>
+
+      {/* Settings Menu */}
+      {showSettings && (
+        <div style={{
+          position: 'absolute',
+          top: '70px',
+          left: '20px',
+          background: 'rgba(0,0,0,0.8)',
+          padding: '20px',
+          borderRadius: '8px',
+          color: 'white',
+          pointerEvents: 'auto',
+        }}>
+          <h3 style={{ marginTop: 0, marginBottom: '10px' }}>Select Level</h3>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '8px',
+          }}>
+            {[1, 2, 3, 4, 5].map(level => (
+              <button
+                key={level}
+                onClick={() => handleLevelSelect(level)}
+                style={{
+                  padding: '8px',
+                  background: level === currentLevel ? '#4CAF50' : '#666',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  opacity: level === currentLevel ? 1 : 0.8,
+                }}
+              >
+                {level}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Timer/Status */}
       <div style={{
         position: 'absolute',
@@ -86,42 +160,14 @@ export function HUD() {
             )}
           </>
         )}
-        {phase === 'prep' && 'Preparation Phase'}
+        {phase === 'prep' && (
+          <>
+            Level {currentLevel}
+            <br />
+            Preparation Phase
+          </>
+        )}
       </div>
-
-      {/* Enemy Queue */}
-      {Array.isArray(enemyQueue) && enemyQueue.length > 0 && timer > 0 && (
-        <div style={{
-          position: 'absolute',
-          top: '20px',
-          right: '20px',
-          background: 'rgba(0,0,0,0.5)',
-          padding: '10px',
-          borderRadius: '8px',
-        }}>
-          <div style={{ color: 'white', marginBottom: '5px' }}>
-            Next Enemies:
-          </div>
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '5px',
-          }}>
-            {enemyQueue.slice(0, 3).map((_, index) => (
-              <div
-                key={index}
-                style={{
-                  width: '30px',
-                  height: '30px',
-                  background: 'red',
-                  borderRadius: '4px',
-                  opacity: 0.8 - (index * 0.2),
-                }}
-              />
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Level Complete Interface */}
       {levelComplete && (

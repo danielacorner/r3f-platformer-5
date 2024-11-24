@@ -67,36 +67,71 @@ const generateRandomPattern = (count: number, bounds: number = 8): Vector3[] => 
   return positions;
 };
 
-const LEVEL_CONFIGS = {
+export const LEVEL_CONFIGS = {
   1: {
     platforms: [
-      { position: [0, 0, 0], scale: [20, 1, 20] },
-      { position: [-8, 1, -8], scale: [4, 0.5, 4] },
-      { position: [8, 1, 8], scale: [4, 0.5, 4] },
+      { position: [0, 0, 0], scale: [30, 1, 30] },  // Large base platform
     ],
-    spawnerPosition: [-8, 2, -8],
-    portalPosition: [8, 2, 8],
+    spawnerPosition: [-12, 1, -12],
+    portalPosition: [12, 1, 12],
+    spawnPosition: [0, 1, 0],
     gridSize: 1,
-    initialBoxes: generateRandomPattern(15).map(pos => ({
+    initialBoxes: generateRandomPattern(8).map(pos => ({
       position: pos,
     })),
   },
   2: {
     platforms: [
-      { position: [0, 0, 0], scale: [30, 1, 30] },
-      { position: [-12, 1, -12], scale: [6, 0.5, 6] },
-      { position: [12, 1, 12], scale: [6, 0.5, 6] },
-      { position: [0, 2, 0], scale: [4, 0.5, 4] },
+      { position: [0, 0, 0], scale: [35, 1, 35] },  // Larger base platform
     ],
-    spawnerPosition: [-12, 2, -12],
-    portalPosition: [12, 2, 12],
+    spawnerPosition: [-14, 1, -14],
+    portalPosition: [14, 1, 14],
+    spawnPosition: [0, 1, 0],
     gridSize: 1,
-    initialBoxes: generateSpiralPositions(21, 1.5).map(pos => ({ position: pos })),
+    initialBoxes: generateSpiralPositions(10, 2).map(pos => ({
+      position: pos,
+    })),
+  },
+  3: {
+    platforms: [
+      { position: [0, 0, 0], scale: [40, 1, 40] },  // Even larger base platform
+    ],
+    spawnerPosition: [-16, 1, -16],
+    portalPosition: [16, 1, 16],
+    spawnPosition: [0, 1, 0],
+    gridSize: 1,
+    initialBoxes: generateRandomPattern(12, 6).map(pos => ({
+      position: pos,
+    })),
+  },
+  4: {
+    platforms: [
+      { position: [0, 0, 0], scale: [45, 1, 45] },  // Large arena platform
+    ],
+    spawnerPosition: [-18, 1, -18],
+    portalPosition: [18, 1, 18],
+    spawnPosition: [0, 1, 0],
+    gridSize: 1,
+    initialBoxes: generateRandomPattern(15, 8).map(pos => ({
+      position: pos,
+    })),
+  },
+  5: {
+    platforms: [
+      { position: [0, 0, 0], scale: [50, 1, 50] },  // Largest arena platform
+    ],
+    spawnerPosition: [-20, 1, -20],
+    portalPosition: [20, 1, 20],
+    spawnPosition: [0, 1, 0],
+    gridSize: 1,
+    initialBoxes: generateSpiralPositions(18, 3).map(pos => ({
+      position: pos,
+    })),
   },
 };
 
 export function Level() {
-  const { currentLevel, phase, placedBoxes, addBox, removeBox } = useGameStore();
+  const { currentLevel, phase, placedBoxes, addBox, removeBox, timer, setIsSpawning, setLevelComplete, enemiesAlive, isSpawning } = useGameStore();
   const { camera, scene } = useThree();
   const raycaster = useRef(new Raycaster());
   const [ghostBoxPosition, setGhostBoxPosition] = useState<Vector3 | null>(null);
@@ -105,6 +140,7 @@ export function Level() {
   const lastPlacedPosition = useRef<Vector3 | null>(null);
 
   const config = LEVEL_CONFIGS[currentLevel as keyof typeof LEVEL_CONFIGS];
+  const spawnerPosition = new Vector3(...config.spawnerPosition);
 
   const handleMouseMove = (event: MouseEvent) => {
     if (phase !== 'prep' || placedBoxes.length >= 20) return;
@@ -200,6 +236,24 @@ export function Level() {
   };
 
   useEffect(() => {
+    if (phase === 'combat') {
+      setIsSpawning(true);
+    }
+  }, [phase, setIsSpawning]);
+
+  useEffect(() => {
+    if (phase === 'combat' && timer <= 0) {
+      setIsSpawning(false);
+    }
+  }, [phase, timer, setIsSpawning]);
+
+  useEffect(() => {
+    if (phase === 'combat' && enemiesAlive === 0 && !isSpawning && timer <= 0) {
+      setLevelComplete(true);
+    }
+  }, [phase, enemiesAlive, isSpawning, timer, setLevelComplete]);
+
+  useEffect(() => {
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mouseup', handleMouseUp);
@@ -251,10 +305,8 @@ export function Level() {
           />
         )}
 
-        {/* Spawner */}
-        {phase === 'combat' && (
-          <EnemySpawner position={new Vector3(...config.spawnerPosition)} />
-        )}
+        {/* Always render spawner */}
+        <EnemySpawner position={spawnerPosition} />
 
         {/* Portal */}
         <mesh position={new Vector3(...config.portalPosition)}>
