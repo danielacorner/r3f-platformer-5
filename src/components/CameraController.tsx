@@ -28,7 +28,7 @@ export function CameraController() {
     if (!playerRef.current) return;
 
     const playerPos = playerRef.current.translation();
-    
+
     // Update target position while maintaining the same relative offset
     targetPosition.current.set(
       playerPos.x + cameraOffset.current.x,

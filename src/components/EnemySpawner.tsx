@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Vector3 } from 'three';
 import { Enemy } from './Enemy';
 import { useGameStore } from '../store/gameStore';
@@ -10,28 +10,36 @@ interface EnemySpawnerProps {
 
 export function EnemySpawner({ position, spawnRadius = 2 }: EnemySpawnerProps) {
   const [enemies, setEnemies] = useState<{ id: string; position: Vector3 }[]>([]);
-  const { phase, isSpawning, currentLevel } = useGameStore();
+  const { phase, currentLevel } = useGameStore();
 
-  // Calculate spawn interval based on level (faster spawns in higher levels)
-  const spawnInterval = Math.max(2000 - (currentLevel - 1) * 200, 800); // ms
+  // Slower spawn rate and lower max enemies
+  const spawnInterval = Math.max(3000 - (currentLevel - 1) * 200, 2000); // ms
+  const maxEnemies = Math.min(3 + currentLevel, 8); // Cap at 8 enemies
 
   useEffect(() => {
-    if (phase !== 'combat' || !isSpawning) return;
+    if (phase !== 'combat') {
+      setEnemies([]);
+      return;
+    }
 
     const spawnEnemy = () => {
-      // Random position within spawn radius
-      const angle = Math.random() * Math.PI * 2;
-      const radius = Math.random() * spawnRadius;
-      const spawnPos = new Vector3(
-        position.x + Math.cos(angle) * radius,
-        position.y,
-        position.z + Math.sin(angle) * radius
-      );
+      setEnemies(prev => {
+        if (prev.length >= maxEnemies) return prev;
 
-      setEnemies(prev => [...prev, {
-        id: Math.random().toString(36).substr(2, 9),
-        position: spawnPos
-      }]);
+        // Random position within spawn radius
+        const angle = Math.random() * Math.PI * 2;
+        const radius = Math.random() * spawnRadius;
+        const spawnPos = new Vector3(
+          position.x + Math.cos(angle) * radius,
+          position.y,
+          position.z + Math.sin(angle) * radius
+        );
+
+        return [...prev, {
+          id: Math.random().toString(36).substr(2, 9),
+          position: spawnPos
+        }];
+      });
     };
 
     // Initial spawn
@@ -43,7 +51,7 @@ export function EnemySpawner({ position, spawnRadius = 2 }: EnemySpawnerProps) {
     return () => {
       clearInterval(interval);
     };
-  }, [phase, isSpawning, position, spawnRadius, spawnInterval]);
+  }, [phase, position, spawnRadius, spawnInterval, maxEnemies, currentLevel]);
 
   const handleEnemyDeath = (enemyId: string) => {
     setEnemies(prev => prev.filter(enemy => enemy.id !== enemyId));

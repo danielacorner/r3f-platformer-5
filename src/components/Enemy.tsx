@@ -1,8 +1,9 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody, vec3 } from '@react-three/rapier';
 import { Vector3 } from 'three';
 import { useGameStore } from '../store/gameStore';
+import { Html } from '@react-three/drei';
 
 interface EnemyProps {
   position: Vector3;
@@ -11,7 +12,7 @@ interface EnemyProps {
 
 export function Enemy({ position, onDeath }: EnemyProps) {
   const enemyRef = useRef<any>(null);
-  const health = useRef(100);
+  const [health, setHealth] = useState(100);
   const { setEnemiesAlive } = useGameStore();
 
   useEffect(() => {
@@ -34,11 +35,13 @@ export function Enemy({ position, onDeath }: EnemyProps) {
     const collidedWith = event.colliderObject;
     if (collidedWith && collidedWith.name === 'projectile') {
       const damage = collidedWith.userData?.type === 'boomerang' ? 50 : 25;
-      health.current -= damage;
-      
-      if (health.current <= 0) {
-        onDeath();
-      }
+      setHealth(prev => {
+        const newHealth = Math.max(0, prev - damage);
+        if (newHealth <= 0) {
+          onDeath();
+        }
+        return newHealth;
+      });
     }
   };
 
@@ -55,6 +58,27 @@ export function Enemy({ position, onDeath }: EnemyProps) {
         <boxGeometry args={[0.8, 0.8, 0.8]} />
         <meshStandardMaterial color="red" />
       </mesh>
+      <Html
+        position={[0, 1.2, 0]}
+        center
+        style={{
+          width: '50px',
+          height: '6px',
+          background: 'rgba(0, 0, 0, 0.5)',
+          borderRadius: '3px',
+          overflow: 'hidden',
+          transform: 'scale(1)',
+        }}
+      >
+        <div
+          style={{
+            width: `${health}%`,
+            height: '100%',
+            background: `rgb(${255 - (health * 2.55)}, ${health * 2.55}, 0)`,
+            transition: 'all 0.3s',
+          }}
+        />
+      </Html>
     </RigidBody>
   );
 }

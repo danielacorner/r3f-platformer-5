@@ -6,6 +6,7 @@ import { useGameStore } from '../store/gameStore';
 import { GhostBox } from './GhostBox';
 import { PlaceableBox } from './PlaceableBox';
 import { StaticBox } from './StaticBox';
+import { EnemySpawner } from './EnemySpawner';
 
 // Generate spiral positions using golden ratio
 const generateSpiralPositions = (count: number, scale: number = 1): Vector3[] => {
@@ -15,12 +16,51 @@ const generateSpiralPositions = (count: number, scale: number = 1): Vector3[] =>
   for (let i = 0; i < count; i++) {
     const radius = scale * Math.sqrt(i);
     const theta = i * goldenAngle;
-    
+
     positions.push(new Vector3(
       radius * Math.cos(theta),
       1 + (i % 3) * 0.5,
       radius * Math.sin(theta)
     ));
+  }
+
+  return positions;
+};
+
+// Generate random pattern positions
+const generateRandomPattern = (count: number, bounds: number = 8): Vector3[] => {
+  const positions: Vector3[] = [];
+  const minDistance = 2; // Minimum distance between boxes
+  const maxAttempts = 100; // Max attempts to place each box
+
+  const isValidPosition = (pos: Vector3): boolean => {
+    // Check if too close to spawner or portal
+    if (pos.distanceTo(new Vector3(-8, pos.y, -8)) < 3) return false; // Too close to spawner
+    if (pos.distanceTo(new Vector3(8, pos.y, 8)) < 3) return false;   // Too close to portal
+
+    // Check if too close to other boxes
+    return !positions.some(existingPos => pos.distanceTo(existingPos) < minDistance);
+  };
+
+  for (let i = 0; i < count; i++) {
+    let attempts = 0;
+    let validPosition = false;
+    let position = new Vector3();
+
+    while (!validPosition && attempts < maxAttempts) {
+      // Generate random position within bounds
+      position = new Vector3(
+        (Math.random() * 2 - 1) * bounds,
+        1 + Math.floor(Math.random() * 2) * 0.5, // Height varies between 1 and 1.5
+        (Math.random() * 2 - 1) * bounds
+      );
+
+      if (isValidPosition(position)) {
+        validPosition = true;
+        positions.push(position);
+      }
+      attempts++;
+    }
   }
 
   return positions;
@@ -36,7 +76,9 @@ const LEVEL_CONFIGS = {
     spawnerPosition: [-8, 2, -8],
     portalPosition: [8, 2, 8],
     gridSize: 1,
-    initialBoxes: generateSpiralPositions(13).map(pos => ({ position: pos })),
+    initialBoxes: generateRandomPattern(15).map(pos => ({
+      position: pos,
+    })),
   },
   2: {
     platforms: [
@@ -60,7 +102,7 @@ export function Level() {
   const [isOverPlacedBox, setIsOverPlacedBox] = useState(false);
   const [isPlacing, setIsPlacing] = useState(false);
   const lastPlacedPosition = useRef<Vector3 | null>(null);
-  
+
   const config = LEVEL_CONFIGS[currentLevel as keyof typeof LEVEL_CONFIGS];
 
   const handleMouseMove = (event: MouseEvent) => {
@@ -75,7 +117,7 @@ export function Level() {
     const intersects = raycaster.current.intersectObjects(scene.children, true);
 
     // First check for placed box intersections
-    const placedBoxHit = intersects.find(hit => 
+    const placedBoxHit = intersects.find(hit =>
       hit.object.userData?.isPlaceableBox ||
       hit.object.parent?.userData?.isPlaceableBox
     );
@@ -83,7 +125,7 @@ export function Level() {
     setIsOverPlacedBox(!!placedBoxHit);
 
     // Then check for platform intersections
-    const platformHit = intersects.find(hit => 
+    const platformHit = intersects.find(hit =>
       hit.object.name === 'platform' ||
       hit.object.parent?.name === 'platform'
     );
@@ -98,14 +140,14 @@ export function Level() {
       );
 
       // Check if position is already occupied
-      const isOccupied = placedBoxes.some(box => 
+      const isOccupied = placedBoxes.some(box =>
         box.position.distanceTo(snappedPosition) < 0.1
       );
 
       if (!isOccupied) {
         setGhostBoxPosition(snappedPosition);
-        if (isPlacing && (!lastPlacedPosition.current || 
-            lastPlacedPosition.current.distanceTo(snappedPosition) > 0.1)) {
+        if (isPlacing && (!lastPlacedPosition.current ||
+          lastPlacedPosition.current.distanceTo(snappedPosition) > 0.1)) {
           addBox(snappedPosition);
           lastPlacedPosition.current = snappedPosition.clone();
         }
@@ -121,7 +163,7 @@ export function Level() {
 
   const handleMouseDown = (event: MouseEvent) => {
     if (phase !== 'prep' || placedBoxes.length >= 20) return;
-    
+
     const mouse = {
       x: (event.clientX / window.innerWidth) * 2 - 1,
       y: -(event.clientY / window.innerHeight) * 2 + 1
@@ -130,14 +172,14 @@ export function Level() {
     raycaster.current.setFromCamera(mouse, camera);
     const intersects = raycaster.current.intersectObjects(scene.children, true);
 
-    const placedBoxHit = intersects.find(hit => 
+    const placedBoxHit = intersects.find(hit =>
       hit.object.userData?.isPlaceableBox ||
       hit.object.parent?.userData?.isPlaceableBox
     );
 
     if (placedBoxHit) {
       const boxPosition = placedBoxHit.object.parent?.position || placedBoxHit.object.position;
-      const boxToRemove = placedBoxes.find(box => 
+      const boxToRemove = placedBoxes.find(box =>
         box.position.distanceTo(boxPosition) < 0.1
       );
       if (boxToRemove) {
@@ -160,7 +202,7 @@ export function Level() {
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mouseup', handleMouseUp);
-    
+
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mousedown', handleMouseDown);
@@ -173,7 +215,7 @@ export function Level() {
       {/* Platforms */}
       {config.platforms.map((platform, index) => (
         <RigidBody key={index} type="fixed" colliders="cuboid">
-          <mesh 
+          <mesh
             position={new Vector3(...platform.position)}
             name="platform"
             receiveShadow
@@ -183,7 +225,7 @@ export function Level() {
           </mesh>
         </RigidBody>
       ))}
-      
+
       {/* Initial Static Boxes */}
       {config.initialBoxes.map((box, index) => (
         <StaticBox key={`static-${index}`} position={box.position} />
@@ -200,25 +242,24 @@ export function Level() {
 
       {/* Ghost Box */}
       {phase === 'prep' && ghostBoxPosition && placedBoxes.length < 20 && (
-        <GhostBox 
-          position={ghostBoxPosition} 
+        <GhostBox
+          position={ghostBoxPosition}
           isRemoveMode={isOverPlacedBox}
         />
       )}
 
       {/* Spawner */}
-      <mesh position={new Vector3(...config.spawnerPosition)}>
-        <sphereGeometry args={[0.5]} />
-        <meshStandardMaterial color="red" />
-      </mesh>
+      {phase === 'combat' && (
+        <EnemySpawner position={new Vector3(...config.spawnerPosition)} />
+      )}
 
       {/* Portal */}
       <mesh position={new Vector3(...config.portalPosition)}>
         <torusGeometry args={[1, 0.2, 16, 32]} />
-        <meshStandardMaterial 
-          color="purple" 
-          emissive="purple" 
-          emissiveIntensity={0.5} 
+        <meshStandardMaterial
+          color="purple"
+          emissive="purple"
+          emissiveIntensity={0.5}
         />
       </mesh>
     </group>
