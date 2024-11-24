@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { PerspectiveCamera, Sky, SoftShadows } from '@react-three/drei';
+import { Sky, SoftShadows } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
 import { Player } from './components/Player';
 import { Level } from './components/Level';
@@ -8,7 +8,7 @@ import { useGameStore } from './store/gameStore';
 import { CameraController } from './components/CameraController';
 
 export default function App() {
-  const { currentLevel, timer, enemiesAlive, levelComplete, phase, placedBoxes, setPhase, setIsSpawning } = useGameStore();
+  const { currentLevel, timer, enemiesAlive, phase, placedBoxes, setPhase, setIsSpawning } = useGameStore();
 
   const handleStartCombat = () => {
     setPhase('combat');
@@ -39,27 +39,6 @@ export default function App() {
           </button>
         )}
       </div>
-
-      {levelComplete && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-20">
-          <div className="bg-white p-8 rounded-lg">
-            <h2 className="text-2xl font-bold mb-4">Level Complete!</h2>
-            <button
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-              onClick={() => {
-                useGameStore.getState().setCurrentLevel(currentLevel + 1);
-                useGameStore.getState().setLevelComplete(false);
-                useGameStore.getState().setTimer(60);
-                useGameStore.getState().setIsSpawning(false);
-                useGameStore.getState().setPhase('prep');
-                useGameStore.getState().clearBoxes();
-              }}
-            >
-              Next Level
-            </button>
-          </div>
-        </div>
-      )}
 
       <Canvas shadows>
         <Suspense fallback={null}>
