@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useGameStore } from '../store/gameStore';
 
 export function useKeyboardControls() {
   const [keys, setKeys] = useState({
@@ -9,7 +10,11 @@ export function useKeyboardControls() {
     jump: false,
   });
 
+  const phase = useGameStore(state => state.phase);
+
   const handleKeyChange = useCallback((event: KeyboardEvent, pressed: boolean) => {
+    if (phase === 'prep') return;  // Only allow movement during combat phase
+    
     const { key } = event;
     const keyMap: { [key: string]: keyof typeof keys } = {
       'w': 'forward',
@@ -35,7 +40,7 @@ export function useKeyboardControls() {
         [mappedKey]: pressed,
       }));
     }
-  }, []);
+  }, [phase]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => handleKeyChange(event, true);
@@ -49,6 +54,19 @@ export function useKeyboardControls() {
       window.removeEventListener('keyup', handleKeyUp);
     };
   }, [handleKeyChange]);
+
+  // Reset all keys when phase changes to prep
+  useEffect(() => {
+    if (phase === 'prep') {
+      setKeys({
+        forward: false,
+        backward: false,
+        left: false,
+        right: false,
+        jump: false,
+      });
+    }
+  }, [phase]);
 
   return keys;
 }

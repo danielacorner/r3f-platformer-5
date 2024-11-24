@@ -122,11 +122,14 @@ export function Player() {
 
     if (moveDirection.lengthSq() > 0) {
       moveDirection.normalize();
-      const cameraAngle = -Math.PI / 4;
+      // Get camera's rotation around Y axis (ignoring other rotations)
+      const cameraRotation = Math.atan2(camera.matrix.elements[8], camera.matrix.elements[10]);
+      
+      // Apply camera rotation to movement
       const movementVector = new Vector3(
-        moveDirection.x * Math.cos(cameraAngle) - moveDirection.z * Math.sin(cameraAngle),
+        moveDirection.x * Math.cos(cameraRotation) + moveDirection.z * Math.sin(cameraRotation),
         0,
-        moveDirection.x * Math.sin(cameraAngle) + moveDirection.z * Math.cos(cameraAngle)
+        -moveDirection.x * Math.sin(cameraRotation) + moveDirection.z * Math.cos(cameraRotation)
       );
 
       playerRef.current.setLinvel({
