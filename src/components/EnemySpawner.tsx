@@ -16,14 +16,27 @@ export function EnemySpawner({ position, spawnRadius = 2 }: EnemySpawnerProps) {
   const spawnInterval = Math.max(3000 - (currentLevel - 1) * 200, 2000); // ms
   const maxEnemies = Math.min(3 + currentLevel, 8); // Cap at 8 enemies
 
+  // Update enemies alive count whenever enemies array changes
   useEffect(() => {
-    // Update enemies alive count whenever enemies array changes
+    console.log('Enemy count updated:', enemies.length);
     setEnemiesAlive(enemies.length);
-  }, [enemies.length]);
+  }, [enemies.length, setEnemiesAlive]);
 
+  // Reset enemies when phase changes or component unmounts
+  useEffect(() => {
+    if (phase !== 'combat') {
+      setEnemies([]);
+      setEnemiesAlive(0);
+    }
+    return () => {
+      setEnemies([]);
+      setEnemiesAlive(0);
+    };
+  }, [phase, setEnemiesAlive]);
+
+  // Handle enemy spawning
   useEffect(() => {
     if (phase !== 'combat' || timer <= 0 || !isSpawning) {
-      setEnemies([]);
       return;
     }
 
@@ -40,10 +53,11 @@ export function EnemySpawner({ position, spawnRadius = 2 }: EnemySpawnerProps) {
           position.z + Math.sin(angle) * radius
         );
 
-        return [...prev, {
+        const newEnemies = [...prev, {
           id: Math.random().toString(36).substr(2, 9),
           position: spawnPos
         }];
+        return newEnemies;
       });
     };
 
@@ -59,7 +73,11 @@ export function EnemySpawner({ position, spawnRadius = 2 }: EnemySpawnerProps) {
   }, [phase, position, spawnRadius, spawnInterval, maxEnemies, currentLevel, timer, isSpawning]);
 
   const handleEnemyDeath = (enemyId: string) => {
-    setEnemies(prev => prev.filter(enemy => enemy.id !== enemyId));
+    setEnemies(prev => {
+      const newEnemies = prev.filter(enemy => enemy.id !== enemyId);
+      console.log('Enemy died, remaining:', newEnemies.length);
+      return newEnemies;
+    });
   };
 
   return (

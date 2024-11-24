@@ -32,16 +32,12 @@ export function HUD() {
   useEffect(() => {
     if (timer <= 0) {
       setIsSpawning(false);
-      if (enemiesAlive === 0) {
-        setLevelComplete(true);
-      }
     }
-  }, [timer, enemiesAlive]);
+  }, [timer]);
 
   // Generate enemy queue when phase changes to combat
   useEffect(() => {
     if (phase === 'combat') {
-      // Generate queue based on level (more enemies in higher levels)
       const queueSize = Math.min(3 + currentLevel, 8);
       const newQueue = Array.from({ length: queueSize }, (_, i) => i);
       setEnemyQueue(newQueue);
@@ -51,17 +47,17 @@ export function HUD() {
   }, [phase, currentLevel]);
 
   const handleNextLevel = () => {
-    setEnemyQueue([]); // Clear queue before changing level
+    setEnemyQueue([]);
     setCurrentLevel(currentLevel + 1);
     setPhase('prep');
-    setTimer(10);
+    setTimer(4);
     setLevelComplete(false);
     setIsSpawning(false);
   };
 
   return (
     <Html fullscreen style={{ pointerEvents: 'none' }}>
-      {/* Timer */}
+      {/* Timer/Status */}
       <div style={{
         position: 'absolute',
         top: '20px',
@@ -71,13 +67,30 @@ export function HUD() {
         fontSize: '24px',
         fontFamily: 'Arial',
         textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
+        textAlign: 'center',
       }}>
-        {phase === 'combat' && `Time: ${Math.max(0, timer)}s`}
+        {phase === 'combat' && (
+          <>
+            {timer > 0 ? (
+              <>
+                Time until reinforcements stop: {timer}s
+                <br />
+                Enemies remaining: {enemiesAlive}
+              </>
+            ) : (
+              <>
+                No more reinforcements!
+                <br />
+                Defeat remaining {enemiesAlive} {enemiesAlive === 1 ? 'enemy' : 'enemies'}!
+              </>
+            )}
+          </>
+        )}
         {phase === 'prep' && 'Preparation Phase'}
       </div>
 
       {/* Enemy Queue */}
-      {Array.isArray(enemyQueue) && enemyQueue.length > 0 && (
+      {Array.isArray(enemyQueue) && enemyQueue.length > 0 && timer > 0 && (
         <div style={{
           position: 'absolute',
           top: '20px',
@@ -87,13 +100,7 @@ export function HUD() {
           borderRadius: '8px',
         }}>
           <div style={{ color: 'white', marginBottom: '5px' }}>
-            {phase === 'combat' ? (
-              <>
-                Enemies Left: {enemiesAlive}
-                <br />
-                Next Enemies:
-              </>
-            ) : 'Enemies:'}
+            Next Enemies:
           </div>
           <div style={{
             display: 'flex',
