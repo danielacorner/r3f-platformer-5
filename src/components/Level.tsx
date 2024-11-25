@@ -12,120 +12,117 @@ import { EnemySpawner } from './EnemySpawner';
 const generateSpiralPositions = (count: number, scale: number = 1): Vector3[] => {
   const positions: Vector3[] = [];
   const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+  const radius = 10;
 
   for (let i = 0; i < count; i++) {
-    const radius = scale * Math.sqrt(i);
-    const theta = i * goldenAngle;
-
-    positions.push(new Vector3(
-      radius * Math.cos(theta),
-      1 + (i % 3) * 0.5,
-      radius * Math.sin(theta)
-    ));
+    const t = i / count;
+    const angle = i * goldenAngle;
+    const r = radius * Math.sqrt(t);
+    const x = Math.round(r * Math.cos(angle) * scale);
+    const z = Math.round(r * Math.sin(angle) * scale);
+    positions.push(new Vector3(x, 1, z));
   }
-
   return positions;
 };
 
-// Generate random pattern positions
-const generateRandomPattern = (count: number, bounds: number = 8): Vector3[] => {
+// Generate maze-like pattern
+const generateMazePattern = (config: LevelConfig): Vector3[] => {
   const positions: Vector3[] = [];
-  const minDistance = 2; // Minimum distance between boxes
-  const maxAttempts = 100; // Max attempts to place each box
-
-  const isValidPosition = (pos: Vector3): boolean => {
-    // Check if too close to spawner or portal
-    if (pos.distanceTo(new Vector3(-8, pos.y, -8)) < 3) return false; // Too close to spawner
-    if (pos.distanceTo(new Vector3(8, pos.y, 8)) < 3) return false;   // Too close to portal
-
-    // Check if too close to other boxes
-    return !positions.some(existingPos => pos.distanceTo(existingPos) < minDistance);
-  };
-
-  for (let i = 0; i < count; i++) {
-    let attempts = 0;
-    let validPosition = false;
-    let position = new Vector3();
-
-    while (!validPosition && attempts < maxAttempts) {
-      // Generate random position within bounds
-      position = new Vector3(
-        (Math.random() * 2 - 1) * bounds,
-        1 + Math.floor(Math.random() * 2) * 0.5, // Height varies between 1 and 1.5
-        (Math.random() * 2 - 1) * bounds
-      );
-
-      if (isValidPosition(position)) {
-        validPosition = true;
-        positions.push(position);
+  const gridSize = 2; // Size of each cell
+  const mazeSize = 10; // Size of the maze
+  const density = 0.4; // Probability of placing a block
+  
+  // Create ground-level maze pattern
+  for (let x = -mazeSize; x <= mazeSize; x += gridSize) {
+    for (let z = -mazeSize; z <= mazeSize; z += gridSize) {
+      // Skip the center area to ensure player has space
+      if (Math.abs(x) < 3 && Math.abs(z) < 3) continue;
+      
+      // Create some continuous walls
+      if (Math.abs(x) % 4 === 0 || Math.abs(z) % 4 === 0) {
+        if (Math.random() < 0.7) { // 70% chance for wall blocks
+          positions.push(new Vector3(x, 0, z));
+        }
       }
-      attempts++;
+      // Add some random blocks for organic feel
+      else if (Math.random() < density) {
+        positions.push(new Vector3(x, 0, z));
+      }
+      
+      // Add extra density near the edges for more interesting boundaries
+      if ((Math.abs(x) >= mazeSize - 2 || Math.abs(z) >= mazeSize - 2) && Math.random() < 0.3) {
+        positions.push(new Vector3(x, 0, z));
+      }
     }
   }
 
   return positions;
 };
 
-export const LEVEL_CONFIGS = {
+interface LevelConfig {
+  platforms: { position: [number, number, number]; scale: [number, number, number] }[];
+  initialBoxes: { position: [number, number, number] }[];
+  portalPosition: [number, number, number];
+  spawnerPosition: [number, number, number];
+  spawnPosition: [number, number, number];
+  gridSize: number;
+}
+
+export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
   1: {
     platforms: [
-      { position: [0, 0, 0], scale: [30, 1, 30] },  // Large base platform
+      { position: [0, -1, 0], scale: [40, 1, 40] }, // Ground
     ],
-    spawnerPosition: [-12, 1, -12],
-    portalPosition: [12, 1, 12],
-    spawnPosition: [0, 1, 0],
+    initialBoxes: generateMazePattern({ platforms: [], initialBoxes: [], portalPosition: [0, 0, 0], gridSize: 1 })
+      .map(v => ({ position: [v.x, v.y, v.z] })),
+    portalPosition: [15, 0, 15],
+    spawnerPosition: [-15, 0, -15],
+    spawnPosition: [0, 0, 0],
     gridSize: 1,
-    initialBoxes: generateRandomPattern(8).map(pos => ({
-      position: pos,
-    })),
   },
   2: {
     platforms: [
-      { position: [0, 0, 0], scale: [35, 1, 35] },  // Larger base platform
+      { position: [0, -1, 0], scale: [45, 1, 45] },
     ],
-    spawnerPosition: [-14, 1, -14],
-    portalPosition: [14, 1, 14],
-    spawnPosition: [0, 1, 0],
+    initialBoxes: generateMazePattern({ platforms: [], initialBoxes: [], portalPosition: [0, 0, 0], gridSize: 1 })
+      .map(v => ({ position: [v.x, v.y, v.z] })),
+    portalPosition: [18, 0, 18],
+    spawnerPosition: [-18, 0, -18],
+    spawnPosition: [0, 0, 0],
     gridSize: 1,
-    initialBoxes: generateSpiralPositions(10, 2).map(pos => ({
-      position: pos,
-    })),
   },
   3: {
     platforms: [
-      { position: [0, 0, 0], scale: [40, 1, 40] },  // Even larger base platform
+      { position: [0, -1, 0], scale: [50, 1, 50] },
     ],
-    spawnerPosition: [-16, 1, -16],
-    portalPosition: [16, 1, 16],
-    spawnPosition: [0, 1, 0],
+    initialBoxes: generateMazePattern({ platforms: [], initialBoxes: [], portalPosition: [0, 0, 0], gridSize: 1 })
+      .map(v => ({ position: [v.x, v.y, v.z] })),
+    portalPosition: [20, 0, 20],
+    spawnerPosition: [-20, 0, -20],
+    spawnPosition: [0, 0, 0],
     gridSize: 1,
-    initialBoxes: generateRandomPattern(12, 6).map(pos => ({
-      position: pos,
-    })),
   },
   4: {
     platforms: [
-      { position: [0, 0, 0], scale: [45, 1, 45] },  // Large arena platform
+      { position: [0, -1, 0], scale: [55, 1, 55] },
     ],
-    spawnerPosition: [-18, 1, -18],
-    portalPosition: [18, 1, 18],
-    spawnPosition: [0, 1, 0],
+    initialBoxes: generateMazePattern({ platforms: [], initialBoxes: [], portalPosition: [0, 0, 0], gridSize: 1 })
+      .map(v => ({ position: [v.x, v.y, v.z] })),
+    portalPosition: [22, 0, 22],
+    spawnerPosition: [-22, 0, -22],
+    spawnPosition: [0, 0, 0],
     gridSize: 1,
-    initialBoxes: generateRandomPattern(15, 8).map(pos => ({
-      position: pos,
-    })),
   },
   5: {
     platforms: [
-      { position: [0, 0, 0], scale: [50, 1, 50] },  // Largest arena platform
+      { position: [0, -1, 0], scale: [60, 1, 60] },
     ],
-    spawnerPosition: [-20, 1, -20],
-    portalPosition: [20, 1, 20],
-    spawnPosition: [0, 1, 0],
+    initialBoxes: generateMazePattern({ platforms: [], initialBoxes: [], portalPosition: [0, 0, 0], gridSize: 1 })
+      .map(v => ({ position: [v.x, v.y, v.z] })),
+    portalPosition: [25, 0, 25],
+    spawnerPosition: [-25, 0, -25],
+    spawnPosition: [0, 0, 0],
     gridSize: 1,
-    initialBoxes: generateSpiralPositions(18, 3).map(pos => ({
-      position: pos,
-    })),
   },
 };
 
@@ -141,6 +138,13 @@ export function Level() {
   const config = LEVEL_CONFIGS[currentLevel as keyof typeof LEVEL_CONFIGS];
   const spawnerPosition = new Vector3(...config.spawnerPosition);
 
+  const isOverInitialBlock = (position: Vector3) => {
+    return LEVEL_CONFIGS[currentLevel].initialBoxes.some(box => {
+      const [x, y, z] = box.position;
+      return position.x === x && position.y === y && position.z === z;
+    });
+  };
+
   const handleMouseMove = (event: MouseEvent) => {
     if (phase !== 'prep' || placedBoxes.length >= 20) return;
 
@@ -152,35 +156,29 @@ export function Level() {
     raycaster.current.setFromCamera(mouse, camera);
     const intersects = raycaster.current.intersectObjects(scene.children, true);
 
-    // First check for placed box intersections
-    const placedBoxHit = intersects.find(hit =>
-      hit.object.userData?.isPlaceableBox ||
-      hit.object.parent?.userData?.isPlaceableBox
-    );
-
-    setIsOverPlacedBox(!!placedBoxHit);
-
-    // Then check for platform intersections
     const platformHit = intersects.find(hit =>
       hit.object.name === 'platform' ||
-      hit.object.parent?.name === 'platform'
+      hit.object.name === 'placed-box' ||
+      hit.object.name === 'static-box'
     );
 
-    if (platformHit && !placedBoxHit) {
+    if (platformHit) {
       const { point } = platformHit;
       const gridSize = config.gridSize;
+      
       const snappedPosition = new Vector3(
         Math.round(point.x / gridSize) * gridSize,
-        Math.round((point.y + 0.5) / gridSize) * gridSize,
+        Math.round(point.y / gridSize) * gridSize,
         Math.round(point.z / gridSize) * gridSize
       );
 
-      // Check if position is already occupied
-      const isOccupied = placedBoxes.some(box =>
-        box.position.distanceTo(snappedPosition) < 0.1
-      );
+      setIsOverPlacedBox(placedBoxes.some(box =>
+        box.position[0] === snappedPosition.x &&
+        box.position[1] === snappedPosition.y &&
+        box.position[2] === snappedPosition.z
+      ));
 
-      if (!isOccupied) {
+      if (!isOverPlacedBox && !isOverInitialBlock(snappedPosition)) {
         setGhostBoxPosition(snappedPosition);
         if (isPlacing && (!lastPlacedPosition.current ||
           lastPlacedPosition.current.distanceTo(snappedPosition) > 0.1)) {
@@ -190,8 +188,6 @@ export function Level() {
       } else {
         setGhostBoxPosition(null);
       }
-    } else if (placedBoxHit) {
-      setGhostBoxPosition(placedBoxHit.object.parent?.position || placedBoxHit.object.position);
     } else {
       setGhostBoxPosition(null);
     }
