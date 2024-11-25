@@ -14,13 +14,28 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
   const rigidBodyRef = useRef<any>(null);
   const [health, setHealth] = useState(100);
   const [isHit, setIsHit] = useState(false);
+  const [isImmune, setIsImmune] = useState(true);
+  const [shieldOpacity, setShieldOpacity] = useState(1);
   const moveSpeed = 2;
   const ENEMY_SIZE = 0.6;
+  const ARENA_Y_LEVEL = 0.5; // Y level at which immunity is removed
 
-  useFrame(() => {
+  useFrame((state) => {
     if (!rigidBodyRef.current) return;
 
     const currentPosition = rigidBodyRef.current.translation();
+
+    // Check if enemy has reached arena level
+    if (isImmune && currentPosition.y <= ARENA_Y_LEVEL) {
+      setIsImmune(false);
+    }
+
+    // Update shield opacity based on position
+    if (isImmune) {
+      const pulseFrequency = state.clock.elapsedTime * 3;
+      setShieldOpacity(0.3 + Math.sin(pulseFrequency) * 0.2);
+    }
+
     const direction = new Vector3(
       target.x - currentPosition.x,
       0,
@@ -46,7 +61,7 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
   }, [health, onDeath]);
 
   const handleHit = (damage: number, knockback: Vector3) => {
-    if (!rigidBodyRef.current) return;
+    if (!rigidBodyRef.current || isImmune) return;
     
     setHealth(prev => prev - damage);
     setIsHit(true);
@@ -130,6 +145,20 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
             emissiveIntensity={isHit ? 0.5 : 0}
           />
         </mesh>
+
+        {/* Shield effect */}
+        {isImmune && (
+          <mesh scale={1.2}>
+            <sphereGeometry args={[ENEMY_SIZE]} />
+            <meshStandardMaterial
+              color="#00ffff"
+              transparent
+              opacity={shieldOpacity}
+              emissive="#00ffff"
+              emissiveIntensity={0.5}
+            />
+          </mesh>
+        )}
       </group>
     </RigidBody>
   );
