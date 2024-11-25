@@ -166,12 +166,12 @@ export function Projectile({ position, type, target, onComplete }: ProjectilePro
           <group ref={arrowRef} rotation={[-Math.PI/2, 0, 0]}>
             {/* Arrow shaft */}
             <mesh>
-              <cylinderGeometry args={[0.03, 0.03, 0.5]} />
+              <cylinderGeometry args={[0.07, 0.07, 1.2]} />
               <meshStandardMaterial color="#4a3728" />
             </mesh>
             {/* Arrow head */}
-            <mesh position={[0, 0.25, 0]}>
-              <coneGeometry args={[0.08, 0.2]} />
+            <mesh position={[0, 0.6, 0]}>
+              <coneGeometry args={[0.16, 0.4]} />
               <meshStandardMaterial color="#636363" />
             </mesh>
           </group>
