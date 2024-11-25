@@ -1,14 +1,22 @@
 import { RigidBody } from '@react-three/rapier';
 import { Vector3, Object3D } from 'three';
 import { useState } from 'react';
+import { useGameStore } from '../store/gameStore';
 
 interface PlaceableBoxProps {
-  position: Vector3;
+  position: [number, number, number];
   onRemove: () => void;
 }
 
 export function PlaceableBox({ position, onRemove }: PlaceableBoxProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const phase = useGameStore(state => state.phase);
+
+  const handleClick = () => {
+    if (phase === 'prep') {
+      onRemove();
+    }
+  };
 
   return (
     <RigidBody 
@@ -19,14 +27,14 @@ export function PlaceableBox({ position, onRemove }: PlaceableBoxProps) {
     >
       <mesh
         name="placed-box"
-        onPointerEnter={() => setIsHovered(true)}
+        onPointerEnter={() => phase === 'prep' && setIsHovered(true)}
         onPointerLeave={() => setIsHovered(false)}
-        onClick={onRemove}
+        onClick={handleClick}
         receiveShadow
         castShadow
       >
         <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color={isHovered ? "red" : "orange"} />
+        <meshStandardMaterial color={isHovered && phase === 'prep' ? "red" : "orange"} />
       </mesh>
     </RigidBody>
   );

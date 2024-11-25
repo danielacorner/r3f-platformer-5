@@ -44,8 +44,7 @@ export function EnemySpawner({ position }: EnemySpawnerProps) {
 
   // Handle enemy spawning
   useEffect(() => {
-    console.log('Spawn effect triggered. Phase:', phase, 'isSpawning:', isSpawning);
-    
+
     if (spawnTimerRef.current) {
       clearInterval(spawnTimerRef.current);
       spawnTimerRef.current = null;
@@ -53,7 +52,7 @@ export function EnemySpawner({ position }: EnemySpawnerProps) {
 
     if (phase === 'combat' && isSpawning) {
       console.log('Starting spawn timer...');
-      
+
       const spawnEnemy = () => {
         setEnemies(prev => {
           if (prev.length >= maxEnemies) {
@@ -102,16 +101,16 @@ export function EnemySpawner({ position }: EnemySpawnerProps) {
         {/* Base */}
         <mesh position={position}>
           <cylinderGeometry args={[1, 1.2, 0.2, 16]} />
-          <meshStandardMaterial 
-            color={phase === 'combat' ? "#400000" : "#202020"} 
+          <meshStandardMaterial
+            color={phase === 'combat' ? "#400000" : "#202020"}
             roughness={0.7}
           />
         </mesh>
-        
+
         {/* Spawner pillar */}
         <mesh position={position.clone().add(new Vector3(0, 0.6, 0))}>
           <cylinderGeometry args={[0.3, 0.3, 1, 16]} />
-          <meshStandardMaterial 
+          <meshStandardMaterial
             color={phase === 'combat' ? "red" : "#303030"}
             emissive={phase === 'combat' ? "red" : "#202020"}
             emissiveIntensity={isSpawning ? 0.8 : 0.2}
@@ -125,7 +124,7 @@ export function EnemySpawner({ position }: EnemySpawnerProps) {
             {/* Background panel */}
             <mesh position={[0, 0, -0.05]}>
               <boxGeometry args={[2.5, 1, 0.1]} />
-              <meshStandardMaterial 
+              <meshStandardMaterial
                 color="#000000"
                 transparent
                 opacity={0.8}
@@ -134,7 +133,7 @@ export function EnemySpawner({ position }: EnemySpawnerProps) {
             {/* Colored overlay */}
             <mesh>
               <boxGeometry args={[2.4, 0.9, 0.12]} />
-              <meshStandardMaterial 
+              <meshStandardMaterial
                 color={isSpawning ? "#400000" : "#202020"}
                 emissive={isSpawning ? "#400000" : "#202020"}
                 emissiveIntensity={0.5}

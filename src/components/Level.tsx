@@ -230,6 +230,7 @@ export function Level() {
   };
 
   const handleMouseDown = (event: MouseEvent) => {
+    // Only allow interactions during prep phase and when under box limit
     if (phase !== 'prep' || placedBoxes.length >= 20) return;
 
     const mouse = {

@@ -9,7 +9,12 @@ interface StaticBoxProps {
 
 export function StaticBox({ position, dimensions = [1, 1, 1], rotation = 0 }: StaticBoxProps) {
   return (
-    <RigidBody type="fixed" position={position} rotation={[0, rotation, 0]}>
+    <RigidBody 
+      type="fixed" 
+      position={position} 
+      rotation={[0, rotation, 0]}
+      userData={{ isBox: true }}
+    >
       <mesh castShadow receiveShadow>
         <boxGeometry args={dimensions} />
         <meshStandardMaterial color="#4a4a4a" metalness={0.5} roughness={0.5} />
