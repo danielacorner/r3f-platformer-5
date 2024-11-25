@@ -49,6 +49,7 @@ interface ProjectileProps {
 
 export function Projectile({ position, type, target, onComplete }: ProjectileProps) {
   const rigidBodyRef = useRef<any>(null);
+  const arrowRef = useRef<any>(null);
   const startPos = useRef(position.clone());
   const timeRef = useRef(0);
   const [showExplosion, setShowExplosion] = useState(false);
@@ -91,18 +92,15 @@ export function Projectile({ position, type, target, onComplete }: ProjectilePro
       nextPoint.y += Math.sin(nextProgress * Math.PI) * height;
 
       // Update rotation to match trajectory
-      if (!hasLanded) {
-        const velocity = nextPoint.clone().sub(currentPoint).normalize();
-        
-        // Calculate rotation angles based on velocity
-        const horizontalAngle = Math.atan2(velocity.x, velocity.z);
-        const verticalAngle = Math.atan2(velocity.y, Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z));
-        
-        rigidBodyRef.current.setRotation({
-          x: -verticalAngle,
-          y: horizontalAngle,
-          z: 0
-        }, true);
+      if (!hasLanded && arrowRef.current) {
+        const velocity = nextPoint.clone().sub(currentPoint);
+        if (velocity.length() > 0) {
+          // Create a temporary position ahead of the current position in the velocity direction
+          const ahead = currentPoint.clone().add(velocity);
+          arrowRef.current.lookAt(ahead);
+          // Adjust for the initial orientation of our arrow mesh
+          arrowRef.current.rotation.x += Math.PI / 2;
+        }
       }
 
       if (progress >= 1) {
@@ -165,14 +163,14 @@ export function Projectile({ position, type, target, onComplete }: ProjectilePro
       >
         <CuboidCollider args={[0.1, 0.1, 0.25]} sensor />
         {type === 'bow' ? (
-          <group>
+          <group ref={arrowRef} rotation={[-Math.PI/2, 0, 0]}>
             {/* Arrow shaft */}
             <mesh>
               <cylinderGeometry args={[0.03, 0.03, 0.5]} />
               <meshStandardMaterial color="#4a3728" />
             </mesh>
             {/* Arrow head */}
-            <mesh position={[0, 0, 0.25]}>
+            <mesh position={[0, 0.25, 0]}>
               <coneGeometry args={[0.08, 0.2]} />
               <meshStandardMaterial color="#636363" />
             </mesh>
