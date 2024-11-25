@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { Vector3 } from 'three';
+import { Vector3, Quaternion } from 'three';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { useFrame } from '@react-three/fiber';
 import { useSpring, animated } from '@react-spring/three';
@@ -95,11 +95,20 @@ export function Projectile({ position, type, target, onComplete }: ProjectilePro
       if (!hasLanded && arrowRef.current) {
         const velocity = nextPoint.clone().sub(currentPoint);
         if (velocity.length() > 0) {
-          // Create a temporary position ahead of the current position in the velocity direction
-          const ahead = currentPoint.clone().add(velocity);
-          arrowRef.current.lookAt(ahead);
-          // Adjust for the initial orientation of our arrow mesh
-          arrowRef.current.rotation.x += Math.PI / 2;
+          // Create a target point in the direction of travel
+          const target = currentPoint.clone().add(velocity);
+          
+          // Store the current position
+          const position = arrowRef.current.position.clone();
+          
+          // Look at the target
+          arrowRef.current.lookAt(target);
+          
+          // Rotate 90 degrees around the right vector to align arrow with trajectory
+          arrowRef.current.rotateOnAxis(new Vector3(1, 0, 0), Math.PI / 2);
+          
+          // Restore position (lookAt can sometimes affect position)
+          arrowRef.current.position.copy(position);
         }
       }
 

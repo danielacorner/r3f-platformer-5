@@ -133,15 +133,15 @@ export function HUD() {
 
       {/* Timer/Status */}
       <div style={{
-        position: 'absolute',
+        position: 'fixed',
         top: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
+        width: '100%',
         color: 'white',
         fontSize: '24px',
         fontFamily: 'Arial',
         textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
         textAlign: 'center',
+        pointerEvents: 'none',
       }}>
         {phase === 'combat' && (
           <>
@@ -172,7 +172,7 @@ export function HUD() {
       {/* Level Complete Interface */}
       {levelComplete && (
         <div style={{
-          position: 'absolute',
+          position: 'fixed',
           left: '50%',
           top: '50%',
           transform: 'translate(-50%, -50%)',

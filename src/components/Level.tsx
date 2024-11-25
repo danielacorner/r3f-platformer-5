@@ -7,7 +7,6 @@ import { GhostBox } from './GhostBox';
 import { PlaceableBox } from './PlaceableBox';
 import { StaticBox } from './StaticBox';
 import { EnemySpawner } from './EnemySpawner';
-import { HUD } from './HUD';
 
 // Generate spiral positions using golden ratio
 const generateSpiralPositions = (count: number, scale: number = 1): Vector3[] => {
@@ -266,58 +265,55 @@ export function Level() {
   }, [phase, camera, scene, config.gridSize, placedBoxes.length, isPlacing, isOverPlacedBox, ghostBoxPosition]);
 
   return (
-    <>
-      <HUD />
-      <group>
-        {/* Platforms */}
-        {config.platforms.map((platform, index) => (
-          <RigidBody key={index} type="fixed" colliders="cuboid">
-            <mesh
-              position={new Vector3(...platform.position)}
-              name="platform"
-              receiveShadow
-            >
-              <boxGeometry args={platform.scale} />
-              <meshStandardMaterial color="cornflowerblue" />
-            </mesh>
-          </RigidBody>
-        ))}
+    <group>
+      {/* Platforms */}
+      {config.platforms.map((platform, index) => (
+        <RigidBody key={index} type="fixed" colliders="cuboid">
+          <mesh
+            position={new Vector3(...platform.position)}
+            name="platform"
+            receiveShadow
+          >
+            <boxGeometry args={platform.scale} />
+            <meshStandardMaterial color="cornflowerblue" />
+          </mesh>
+        </RigidBody>
+      ))}
 
-        {/* Initial Static Boxes */}
-        {config.initialBoxes.map((box, index) => (
-          <StaticBox key={`static-${index}`} position={box.position} />
-        ))}
+      {/* Initial Static Boxes */}
+      {config.initialBoxes.map((box, index) => (
+        <StaticBox key={`static-${index}`} position={box.position} />
+      ))}
 
-        {/* Placeable Boxes */}
-        {placedBoxes.map((box) => (
-          <PlaceableBox
-            key={box.id}
-            position={box.position}
-            onRemove={() => removeBox(box.id)}
-          />
-        ))}
+      {/* Placeable Boxes */}
+      {placedBoxes.map((box) => (
+        <PlaceableBox
+          key={box.id}
+          position={box.position}
+          onRemove={() => removeBox(box.id)}
+        />
+      ))}
 
-        {/* Ghost Box */}
-        {phase === 'prep' && ghostBoxPosition && placedBoxes.length < 20 && (
-          <GhostBox
-            position={ghostBoxPosition}
-            isRemoveMode={isOverPlacedBox}
-          />
-        )}
+      {/* Ghost Box */}
+      {phase === 'prep' && ghostBoxPosition && placedBoxes.length < 20 && (
+        <GhostBox
+          position={ghostBoxPosition}
+          isRemoveMode={isOverPlacedBox}
+        />
+      )}
 
-        {/* Always render spawner */}
-        <EnemySpawner position={spawnerPosition} />
+      {/* Always render spawner */}
+      <EnemySpawner position={spawnerPosition} />
 
-        {/* Portal */}
-        <mesh position={new Vector3(...config.portalPosition)}>
-          <torusGeometry args={[1, 0.2, 16, 32]} />
-          <meshStandardMaterial
-            color="purple"
-            emissive="purple"
-            emissiveIntensity={0.5}
-          />
-        </mesh>
-      </group>
-    </>
+      {/* Portal */}
+      <mesh position={new Vector3(...config.portalPosition)}>
+        <torusGeometry args={[1, 0.2, 16, 32]} />
+        <meshStandardMaterial
+          color="purple"
+          emissive="purple"
+          emissiveIntensity={0.5}
+        />
+      </mesh>
+    </group>
   );
 }
