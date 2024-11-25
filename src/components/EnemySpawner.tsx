@@ -29,6 +29,7 @@ export function EnemySpawner({ position }: EnemySpawnerProps) {
   // Update queued enemies count
   useEffect(() => {
     if (phase === 'combat' && isSpawning) {
+      console.log('Combat phase, spawning enabled. Max:', maxEnemies, 'Current:', enemies.length);
       setQueuedEnemies(Math.max(0, maxEnemies - enemies.length));
     } else {
       setQueuedEnemies(0);
@@ -37,25 +38,29 @@ export function EnemySpawner({ position }: EnemySpawnerProps) {
 
   // Update enemies alive count
   useEffect(() => {
-    console.log('Enemies updated:', enemies.length);
+    console.log('Updating enemies alive count:', enemies.length);
     setEnemiesAlive(enemies.length);
-  }, [enemies.length, setEnemiesAlive]);
+  }, [enemies, setEnemiesAlive]);
 
   // Handle enemy spawning
   useEffect(() => {
-    // Clear existing timer
+    console.log('Spawn effect triggered. Phase:', phase, 'isSpawning:', isSpawning);
+    
     if (spawnTimerRef.current) {
       clearInterval(spawnTimerRef.current);
       spawnTimerRef.current = null;
     }
 
-    // Start spawning if conditions are met
     if (phase === 'combat' && isSpawning) {
       console.log('Starting spawn timer...');
-      spawnTimerRef.current = setInterval(() => {
+      
+      const spawnEnemy = () => {
         setEnemies(prev => {
-          if (prev.length >= maxEnemies || !isSpawning) return prev;
-          console.log('Spawning enemy...', prev.length + 1);
+          if (prev.length >= maxEnemies) {
+            console.log('Max enemies reached:', maxEnemies);
+            return prev;
+          }
+          console.log('Spawning new enemy. Current count:', prev.length);
           return [
             ...prev,
             {
@@ -64,18 +69,24 @@ export function EnemySpawner({ position }: EnemySpawnerProps) {
             }
           ];
         });
-      }, spawnInterval);
+      };
+
+      // Initial spawn
+      spawnEnemy();
+      // Set up interval for subsequent spawns
+      spawnTimerRef.current = setInterval(spawnEnemy, spawnInterval);
     }
 
-    // Cleanup
     return () => {
       if (spawnTimerRef.current) {
         clearInterval(spawnTimerRef.current);
+        spawnTimerRef.current = null;
       }
     };
-  }, [phase, isSpawning, maxEnemies]);
+  }, [phase, isSpawning, maxEnemies, position, spawnInterval]);
 
   const handleEnemyDeath = (enemyId: string) => {
+    console.log('Enemy death:', enemyId);
     setEnemies(prev => prev.filter(enemy => enemy.id !== enemyId));
   };
 

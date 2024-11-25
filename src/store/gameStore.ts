@@ -56,33 +56,38 @@ export const useGameStore = create<GameState>((set) => ({
     console.log('Setting enemies alive:', count);
     set((state) => {
       // Only complete level if no enemies are left and timer has run out
-      if (count === 0 && state.phase === 'combat' && state.timer <= 0) {
+      if (count === 0 && state.phase === 'combat' && !state.isSpawning) {
         console.log('Level complete!');
         return { enemiesAlive: count, levelComplete: true };
       }
       return { enemiesAlive: count };
     });
   },
-  setIsSpawning: (spawning) => set({ isSpawning: spawning }),
+  setIsSpawning: (spawning) => {
+    console.log('Setting isSpawning:', spawning);
+    set({ isSpawning: spawning });
+  },
   setLevelComplete: (complete) => set({ levelComplete: complete }),
-  setPhase: (phase) => set((state) => {
-    if (phase === 'combat') {
+  setPhase: (phase) => {
+    console.log('Setting phase:', phase);
+    set((state) => {
+      if (phase === 'combat') {
+        return { 
+          phase,
+          isSpawning: true,
+          timer: state.timer,
+          levelComplete: false
+        };
+      }
       return { 
         phase,
-        isSpawning: true,
-        timer: state.timer,
-        levelComplete: false,
-        enemiesAlive: 0
+        isSpawning: false,
+        timer: 4,
+        enemiesAlive: 0,
+        levelComplete: false
       };
-    }
-    return { 
-      phase,
-      isSpawning: false,
-      timer: 4,
-      enemiesAlive: 0,
-      levelComplete: false
-    };
-  }),
+    });
+  },
   addBox: (position) => set((state) => {
     if (state.placedBoxes.length >= 20) return state;
     return {

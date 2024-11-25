@@ -15,7 +15,7 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
   const [health, setHealth] = useState(100);
   const [isHit, setIsHit] = useState(false);
   const moveSpeed = 2;
-  const ENEMY_SIZE = 0.6; // Increased size for easier targeting
+  const ENEMY_SIZE = 0.6;
 
   useFrame(() => {
     if (!rigidBodyRef.current) return;
@@ -39,22 +39,31 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
     );
   });
 
+  useEffect(() => {
+    if (health <= 0) {
+      onDeath();
+    }
+  }, [health, onDeath]);
+
   const handleHit = (damage: number, knockback: Vector3) => {
     if (!rigidBodyRef.current) return;
     
-    setHealth(prev => {
-      const newHealth = prev - damage;
-      if (newHealth <= 0) {
-        onDeath();
-      }
-      return newHealth;
-    });
-
+    setHealth(prev => prev - damage);
     setIsHit(true);
-    setTimeout(() => setIsHit(false), 200);
 
     // Apply knockback
-    rigidBodyRef.current.applyImpulse(knockback.multiplyScalar(2), true);
+    const currentVel = rigidBodyRef.current.linvel();
+    rigidBodyRef.current.setLinvel(
+      {
+        x: currentVel.x + knockback.x,
+        y: currentVel.y + knockback.y,
+        z: currentVel.z + knockback.z
+      },
+      true
+    );
+
+    // Reset hit effect
+    setTimeout(() => setIsHit(false), 200);
   };
 
   const handleCollision = (event: any) => {
