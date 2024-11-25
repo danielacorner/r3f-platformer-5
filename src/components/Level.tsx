@@ -1,12 +1,15 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { useThree } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
-import { Vector3, Raycaster } from 'three';
+import { Environment } from '@react-three/drei';
+import { Vector3, Raycaster, AmbientLight, DirectionalLight, MeshStandardMaterial } from 'three';
 import { useGameStore } from '../store/gameStore';
 import { GhostBox } from './GhostBox';
 import { PlaceableBox } from './PlaceableBox';
 import { StaticBox } from './StaticBox';
 import { EnemySpawner } from './EnemySpawner';
+import { Portal } from './Portal';
+import { Player } from './Player';
 
 // Generate spiral positions using golden ratio
 const generateSpiralPositions = (count: number, scale: number = 1): Vector3[] => {
@@ -342,8 +345,81 @@ export function Level() {
     };
   }, [phase, camera, scene, config.gridSize, placedBoxes.length, isPlacing, isOverPlacedBox, ghostBoxPosition]);
 
+  // Create ambient and directional lights
+  const ambientLight = useMemo(() => new AmbientLight(0x404040, 0.5), []);
+  const mainLight = useMemo(() => {
+    const light = new DirectionalLight(0xffffff, 0.8);
+    light.position.set(10, 20, 10);
+    light.castShadow = true;
+    light.shadow.mapSize.width = 2048;
+    light.shadow.mapSize.height = 2048;
+    light.shadow.camera.near = 0.5;
+    light.shadow.camera.far = 100;
+    light.shadow.camera.left = -30;
+    light.shadow.camera.right = 30;
+    light.shadow.camera.top = 30;
+    light.shadow.camera.bottom = -30;
+    return light;
+  }, []);
+
+  // Platform material with subtle metallic and roughness
+  const platformMaterial = useMemo(() => 
+    new MeshStandardMaterial({
+      color: 0x808080,
+      metalness: 0.2,
+      roughness: 0.7,
+    })
+  , []);
+
+  // Box material with different colors for different types
+  const staticBoxMaterial = useMemo(() => 
+    new MeshStandardMaterial({
+      color: 0x4a6fa5,
+      metalness: 0.3,
+      roughness: 0.6,
+    })
+  , []);
+
+  const placedBoxMaterial = useMemo(() => 
+    new MeshStandardMaterial({
+      color: 0x6b9080,
+      metalness: 0.3,
+      roughness: 0.6,
+    })
+  , []);
+
+  const ghostBoxMaterial = useMemo(() => 
+    new MeshStandardMaterial({
+      color: 0x90be6d,
+      transparent: true,
+      opacity: 0.5,
+      metalness: 0.1,
+      roughness: 0.8,
+    })
+  , []);
+
   return (
-    <group>
+    <>
+      <primitive object={ambientLight} />
+      <primitive object={mainLight} />
+      
+      {/* Environment */}
+      <Environment preset="sunset" />
+      
+      {/* Ground plane for better shadows */}
+      <mesh 
+        rotation={[-Math.PI / 2, 0, 0]} 
+        position={[0, -1.01, 0]} 
+        receiveShadow
+      >
+        <planeGeometry args={[100, 100]} />
+        <meshStandardMaterial 
+          color={0x808080} 
+          metalness={0.1}
+          roughness={0.9}
+        />
+      </mesh>
+
       {/* Platforms */}
       {config.platforms.map((platform, index) => (
         <RigidBody key={index} type="fixed" colliders="cuboid">
@@ -351,16 +427,17 @@ export function Level() {
             position={new Vector3(...platform.position)}
             name="platform"
             receiveShadow
+            castShadow
+            material={platformMaterial}
           >
             <boxGeometry args={platform.scale} />
-            <meshStandardMaterial color="cornflowerblue" />
           </mesh>
         </RigidBody>
       ))}
 
       {/* Initial Static Boxes */}
       {config.initialBoxes.map((box, index) => (
-        <StaticBox key={`static-${index}`} position={box.position} />
+        <StaticBox key={`static-${index}`} position={box.position} material={staticBoxMaterial} />
       ))}
 
       {/* Placeable Boxes */}
@@ -369,6 +446,7 @@ export function Level() {
           key={box.id}
           position={box.position}
           onRemove={() => removeBox(box.id)}
+          material={placedBoxMaterial}
         />
       ))}
 
@@ -377,6 +455,7 @@ export function Level() {
         <GhostBox
           position={ghostBoxPosition}
           isRemoveMode={isOverPlacedBox}
+          material={ghostBoxMaterial}
         />
       )}
 
@@ -392,6 +471,6 @@ export function Level() {
           emissiveIntensity={0.5}
         />
       </mesh>
-    </group>
+    </>
   );
 }
