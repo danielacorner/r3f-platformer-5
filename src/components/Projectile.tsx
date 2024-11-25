@@ -93,10 +93,14 @@ export function Projectile({ position, type, target, onComplete }: ProjectilePro
       // Update rotation to match trajectory
       if (!hasLanded) {
         const velocity = nextPoint.clone().sub(currentPoint).normalize();
-        const angle = Math.atan2(velocity.z, velocity.x);
+        
+        // Calculate rotation angles based on velocity
+        const horizontalAngle = Math.atan2(velocity.x, velocity.z);
+        const verticalAngle = Math.atan2(velocity.y, Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z));
+        
         rigidBodyRef.current.setRotation({
-          x: -velocity.y * Math.PI / 2,
-          y: angle,
+          x: -verticalAngle,
+          y: horizontalAngle,
           z: 0
         }, true);
       }
@@ -161,14 +165,14 @@ export function Projectile({ position, type, target, onComplete }: ProjectilePro
       >
         <CuboidCollider args={[0.1, 0.1, 0.25]} sensor />
         {type === 'bow' ? (
-          <group rotation={[Math.PI / 2, 0, 0]}>
+          <group>
             {/* Arrow shaft */}
             <mesh>
               <cylinderGeometry args={[0.03, 0.03, 0.5]} />
               <meshStandardMaterial color="#4a3728" />
             </mesh>
             {/* Arrow head */}
-            <mesh position={[0, 0.3, 0]}>
+            <mesh position={[0, 0, 0.25]}>
               <coneGeometry args={[0.08, 0.2]} />
               <meshStandardMaterial color="#636363" />
             </mesh>
