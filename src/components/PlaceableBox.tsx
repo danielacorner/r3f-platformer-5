@@ -1,7 +1,6 @@
 import { RigidBody } from '@react-three/rapier';
-import { Vector3 } from 'three';
-import { useGameStore } from '../store/gameStore';
-import { ThreeEvent } from '@react-three/fiber';
+import { Vector3, Object3D } from 'three';
+import { useState } from 'react';
 
 interface PlaceableBoxProps {
   position: Vector3;
@@ -9,30 +8,25 @@ interface PlaceableBoxProps {
 }
 
 export function PlaceableBox({ position, onRemove }: PlaceableBoxProps) {
-  const phase = useGameStore(state => state.phase);
-
-  const handleClick = (e: ThreeEvent<MouseEvent>) => {
-    if (phase === 'prep') {
-      e.stopPropagation();
-      onRemove();
-    }
-  };
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <RigidBody type={phase === 'prep' ? 'fixed' : 'dynamic'} position={position}>
+    <RigidBody 
+      type="fixed" 
+      position={position}
+      colliders="cuboid"
+      userData={{ isPlaceableBox: true }}
+    >
       <mesh
-        castShadow
+        name="placed-box"
+        onPointerEnter={() => setIsHovered(true)}
+        onPointerLeave={() => setIsHovered(false)}
+        onClick={onRemove}
         receiveShadow
-        onClick={handleClick}
-        onPointerDown={(e) => {
-          if (phase === 'prep') {
-            e.stopPropagation();
-          }
-        }}
-        userData={{ isPlaceableBox: true }}
+        castShadow
       >
         <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="#8B4513" />
+        <meshStandardMaterial color={isHovered ? "red" : "orange"} />
       </mesh>
     </RigidBody>
   );

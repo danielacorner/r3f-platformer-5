@@ -155,30 +155,31 @@ export function Level() {
 
     raycaster.current.setFromCamera(mouse, camera);
     const intersects = raycaster.current.intersectObjects(scene.children, true);
-
-    const platformHit = intersects.find(hit =>
-      hit.object.name === 'platform' ||
-      hit.object.name === 'placed-box' ||
-      hit.object.name === 'static-box'
+    const platformIntersect = intersects.find(intersect => 
+      intersect.object.name === 'platform' || 
+      intersect.object.name === 'placed-box' ||
+      intersect.object.name === 'static-box'
     );
 
-    if (platformHit) {
-      const { point } = platformHit;
+    if (platformIntersect) {
+      const point = platformIntersect.point;
       const gridSize = config.gridSize;
       
       const snappedPosition = new Vector3(
         Math.round(point.x / gridSize) * gridSize,
-        Math.round(point.y / gridSize) * gridSize,
+        0, // Force y position to ground level
         Math.round(point.z / gridSize) * gridSize
       );
 
-      setIsOverPlacedBox(placedBoxes.some(box =>
+      const canPlace = intersects.some(intersect => intersect.object.name === 'platform');
+
+      setIsOverPlacedBox(placedBoxes.some(box => 
         box.position[0] === snappedPosition.x &&
         box.position[1] === snappedPosition.y &&
         box.position[2] === snappedPosition.z
       ));
 
-      if (!isOverPlacedBox && !isOverInitialBlock(snappedPosition)) {
+      if (!isOverPlacedBox && !isOverInitialBlock(snappedPosition) && canPlace) {
         setGhostBoxPosition(snappedPosition);
         if (isPlacing && (!lastPlacedPosition.current ||
           lastPlacedPosition.current.distanceTo(snappedPosition) > 0.1)) {
