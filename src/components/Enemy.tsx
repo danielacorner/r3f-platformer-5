@@ -62,7 +62,7 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
 
   const handleHit = (damage: number, knockback: Vector3) => {
     if (!rigidBodyRef.current || isImmune) return;
-    
+
     setHealth(prev => prev - damage);
     setIsHit(true);
 
@@ -139,8 +139,8 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
         {/* Enemy mesh */}
         <mesh castShadow scale={isHit ? 1.2 : 1}>
           <sphereGeometry args={[ENEMY_SIZE]} />
-          <meshStandardMaterial 
-            color={isHit ? '#ff0000' : '#aa0000'} 
+          <meshStandardMaterial
+            color={isHit ? '#ff0000' : '#aa0000'}
             emissive={isHit ? '#ff0000' : '#000000'}
             emissiveIntensity={isHit ? 0.5 : 0}
           />

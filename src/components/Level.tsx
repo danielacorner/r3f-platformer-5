@@ -33,20 +33,43 @@ const generateMazePattern = (levelNumber: number) => {
   const boxes = [];
   const gridSize = 2;
   const centerSize = 8;
+  const possibleLengths = [1, 2, 3]; // Exact multiples of unit width
   
   for (let x = -centerSize; x <= centerSize; x += gridSize) {
     for (let z = -centerSize; z <= centerSize; z += gridSize) {
-      if (Math.abs(x) < 2 && Math.abs(z) < 2) continue;
+      if (Math.abs(x) < 2 && Math.abs(z) < 2) continue; // Keep center clear
       
       if (Math.random() < 0.4) {
+        // Randomly choose length from possible lengths
+        const length = possibleLengths[Math.floor(Math.random() * possibleLengths.length)];
+        
+        // Each block independently chooses orientation
+        const isAlongX = Math.random() < 0.5;
+        
+        // Calculate position and offset
+        const halfLength = (length - 1) / 2;
+        const direction = Math.random() < 0.5 ? 1 : -1;
+        
+        let finalX = x;
+        let finalZ = z;
+        let rotation = 0;
+        
+        if (isAlongX) {
+          finalX += halfLength * direction;
+          rotation = 0; // Aligned with X-axis
+        } else {
+          finalZ += halfLength * direction;
+          rotation = Math.PI * 0.5; // Perpendicular to X-axis
+        }
+        
         boxes.push({
-          position: [x, 0.5, z] as [number, number, number],
+          position: [finalX, 0, finalZ] as [number, number, number],
           dimensions: [
-            1 + Math.floor(Math.random() * 3), // length 1-3
-            1, // height always 1
-            0.5 + Math.random() * 0.5 // width 0.5-1
+            isAlongX ? length : 1,
+            1,
+            isAlongX ? 1 : length
           ] as [number, number, number],
-          rotation: Math.random() * Math.PI
+          rotation
         });
       }
     }
