@@ -29,78 +29,34 @@ const generateSpiralPositions = (count: number, scale: number = 1): Vector3[] =>
 };
 
 // Generate maze-like pattern
-const generateMazePattern = (levelNumber: number): Vector3[] => {
-  const positions: Vector3[] = [];
-  const gridSize = 2; // Size of each cell
-  const centerSize = 8; // Size of the center area (half-width)
-  const density = 0.4; // Probability of placing a block
-
-  // Calculate spawn and portal positions based on level size
-  const levelSize = 15 + (levelNumber - 1) * 5; // Increases by 5 each level
-  const spawnerPos = new Vector3(-levelSize, 0, -levelSize);
-  const portalPos = new Vector3(levelSize, 0, levelSize);
-  const centerPos = new Vector3(0, 0, 0);
-
-  // Create paths from spawner to center and center to portal
-  const createPath = (start: Vector3, end: Vector3, width: number = 2) => {
-    const direction = end.clone().sub(start).normalize();
-    const perpendicular = new Vector3(-direction.z, 0, direction.x);
-    const pathPoints: Vector3[] = [];
-
-    // Calculate path bounds
-    const pathLength = start.distanceTo(end);
-    for (let d = 0; d <= pathLength; d += gridSize) {
-      const point = start.clone().add(direction.clone().multiplyScalar(d));
-      // Add points on either side of the path to prevent blocks from being placed there
-      for (let w = -width; w <= width; w += gridSize) {
-        pathPoints.push(point.clone().add(perpendicular.clone().multiplyScalar(w)));
-      }
-    }
-    return pathPoints;
-  };
-
-  const pathToCenter = createPath(spawnerPos, centerPos);
-  const pathFromCenter = createPath(centerPos, portalPos);
-  const allPathPoints = [...pathToCenter, ...pathFromCenter];
-
-  // Helper function to check if a position is on a path
-  const isOnPath = (pos: Vector3): boolean => {
-    return allPathPoints.some(pathPoint => 
-      Math.abs(pathPoint.x - pos.x) < gridSize && 
-      Math.abs(pathPoint.z - pos.z) < gridSize
-    );
-  };
-
-  // Create ground-level maze pattern in center area
+const generateMazePattern = (levelNumber: number) => {
+  const boxes = [];
+  const gridSize = 2;
+  const centerSize = 8;
+  
   for (let x = -centerSize; x <= centerSize; x += gridSize) {
     for (let z = -centerSize; z <= centerSize; z += gridSize) {
-      const pos = new Vector3(x, 0, z);
-      
-      // Skip if position is on a path
-      if (isOnPath(pos)) continue;
-
-      // Skip the immediate center area
       if (Math.abs(x) < 2 && Math.abs(z) < 2) continue;
       
-      // Create some continuous walls
-      if (Math.abs(x) % 4 === 0 || Math.abs(z) % 4 === 0) {
-        if (Math.random() < 0.7) { // 70% chance for wall blocks
-          positions.push(pos);
-        }
-      }
-      // Add some random blocks for organic feel
-      else if (Math.random() < density) {
-        positions.push(pos);
+      if (Math.random() < 0.4) {
+        boxes.push({
+          position: [x, 0.5, z] as [number, number, number],
+          dimensions: [
+            1 + Math.floor(Math.random() * 3), // length 1-3
+            1, // height always 1
+            0.5 + Math.random() * 0.5 // width 0.5-1
+          ] as [number, number, number],
+          rotation: Math.random() * Math.PI
+        });
       }
     }
   }
-
-  return positions;
+  return boxes;
 };
 
 interface LevelConfig {
   platforms: { position: [number, number, number]; scale: [number, number, number] }[];
-  initialBoxes: { position: [number, number, number] }[];
+  initialBoxes: { position: [number, number, number], dimensions: [number, number, number], rotation: number }[];
   portalPosition: [number, number, number];
   spawnerPosition: [number, number, number];
   spawnPosition: [number, number, number];
@@ -121,8 +77,7 @@ export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
       // West
       { position: [-15, 0, 0], scale: [10, 1, 20] },
     ],
-    initialBoxes: generateMazePattern(1)
-      .map(v => ({ position: [v.x, v.y, v.z] as [number, number, number] })),
+    initialBoxes: generateMazePattern(1),
     portalPosition: [15, 1, 15],
     spawnerPosition: [-15, 1, -15],
     spawnPosition: [0, 1, 0],
@@ -141,8 +96,7 @@ export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
       // West
       { position: [-17.5, 0, 0], scale: [10, 1, 25] },
     ],
-    initialBoxes: generateMazePattern(2)
-      .map(v => ({ position: [v.x, v.y, v.z] as [number, number, number] })),
+    initialBoxes: generateMazePattern(2),
     portalPosition: [18, 1, 18],
     spawnerPosition: [-18, 1, -18],
     spawnPosition: [0, 1, 0],
@@ -161,8 +115,7 @@ export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
       // West
       { position: [-20, 0, 0], scale: [10, 1, 30] },
     ],
-    initialBoxes: generateMazePattern(3)
-      .map(v => ({ position: [v.x, v.y, v.z] as [number, number, number] })),
+    initialBoxes: generateMazePattern(3),
     portalPosition: [20, 1, 20],
     spawnerPosition: [-20, 1, -20],
     spawnPosition: [0, 1, 0],
@@ -181,8 +134,7 @@ export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
       // West
       { position: [-22.5, 0, 0], scale: [10, 1, 35] },
     ],
-    initialBoxes: generateMazePattern(4)
-      .map(v => ({ position: [v.x, v.y, v.z] as [number, number, number] })),
+    initialBoxes: generateMazePattern(4),
     portalPosition: [22, 1, 22],
     spawnerPosition: [-22, 1, -22],
     spawnPosition: [0, 1, 0],
@@ -201,8 +153,7 @@ export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
       // West
       { position: [-25, 0, 0], scale: [10, 1, 40] },
     ],
-    initialBoxes: generateMazePattern(5)
-      .map(v => ({ position: [v.x, v.y, v.z] as [number, number, number] })),
+    initialBoxes: generateMazePattern(5),
     portalPosition: [25, 1, 25],
     spawnerPosition: [-25, 1, -25],
     spawnPosition: [0, 1, 0],
@@ -437,7 +388,7 @@ export function Level() {
 
       {/* Initial Static Boxes */}
       {config.initialBoxes.map((box, index) => (
-        <StaticBox key={`static-${index}`} position={box.position} material={staticBoxMaterial} />
+        <StaticBox key={`static-${index}`} position={box.position} dimensions={box.dimensions} rotation={box.rotation} material={staticBoxMaterial} />
       ))}
 
       {/* Placeable Boxes */}
