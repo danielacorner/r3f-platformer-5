@@ -26,32 +26,68 @@ const generateSpiralPositions = (count: number, scale: number = 1): Vector3[] =>
 };
 
 // Generate maze-like pattern
-const generateMazePattern = (config: LevelConfig): Vector3[] => {
+const generateMazePattern = (levelNumber: number): Vector3[] => {
   const positions: Vector3[] = [];
   const gridSize = 2; // Size of each cell
-  const mazeSize = 10; // Size of the maze
+  const centerSize = 8; // Size of the center area (half-width)
   const density = 0.4; // Probability of placing a block
-  
-  // Create ground-level maze pattern
-  for (let x = -mazeSize; x <= mazeSize; x += gridSize) {
-    for (let z = -mazeSize; z <= mazeSize; z += gridSize) {
-      // Skip the center area to ensure player has space
-      if (Math.abs(x) < 3 && Math.abs(z) < 3) continue;
+
+  // Calculate spawn and portal positions based on level size
+  const levelSize = 15 + (levelNumber - 1) * 5; // Increases by 5 each level
+  const spawnerPos = new Vector3(-levelSize, 0, -levelSize);
+  const portalPos = new Vector3(levelSize, 0, levelSize);
+  const centerPos = new Vector3(0, 0, 0);
+
+  // Create paths from spawner to center and center to portal
+  const createPath = (start: Vector3, end: Vector3, width: number = 2) => {
+    const direction = end.clone().sub(start).normalize();
+    const perpendicular = new Vector3(-direction.z, 0, direction.x);
+    const pathPoints: Vector3[] = [];
+
+    // Calculate path bounds
+    const pathLength = start.distanceTo(end);
+    for (let d = 0; d <= pathLength; d += gridSize) {
+      const point = start.clone().add(direction.clone().multiplyScalar(d));
+      // Add points on either side of the path to prevent blocks from being placed there
+      for (let w = -width; w <= width; w += gridSize) {
+        pathPoints.push(point.clone().add(perpendicular.clone().multiplyScalar(w)));
+      }
+    }
+    return pathPoints;
+  };
+
+  const pathToCenter = createPath(spawnerPos, centerPos);
+  const pathFromCenter = createPath(centerPos, portalPos);
+  const allPathPoints = [...pathToCenter, ...pathFromCenter];
+
+  // Helper function to check if a position is on a path
+  const isOnPath = (pos: Vector3): boolean => {
+    return allPathPoints.some(pathPoint => 
+      Math.abs(pathPoint.x - pos.x) < gridSize && 
+      Math.abs(pathPoint.z - pos.z) < gridSize
+    );
+  };
+
+  // Create ground-level maze pattern in center area
+  for (let x = -centerSize; x <= centerSize; x += gridSize) {
+    for (let z = -centerSize; z <= centerSize; z += gridSize) {
+      const pos = new Vector3(x, 0, z);
+      
+      // Skip if position is on a path
+      if (isOnPath(pos)) continue;
+
+      // Skip the immediate center area
+      if (Math.abs(x) < 2 && Math.abs(z) < 2) continue;
       
       // Create some continuous walls
       if (Math.abs(x) % 4 === 0 || Math.abs(z) % 4 === 0) {
         if (Math.random() < 0.7) { // 70% chance for wall blocks
-          positions.push(new Vector3(x, 0, z));
+          positions.push(pos);
         }
       }
       // Add some random blocks for organic feel
       else if (Math.random() < density) {
-        positions.push(new Vector3(x, 0, z));
-      }
-      
-      // Add extra density near the edges for more interesting boundaries
-      if ((Math.abs(x) >= mazeSize - 2 || Math.abs(z) >= mazeSize - 2) && Math.random() < 0.3) {
-        positions.push(new Vector3(x, 0, z));
+        positions.push(pos);
       }
     }
   }
@@ -71,57 +107,102 @@ interface LevelConfig {
 export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
   1: {
     platforms: [
-      { position: [0, -1, 0], scale: [40, 1, 40] }, // Ground
+      // Base platform
+      { position: [0, -1, 0], scale: [40, 1, 40] },
+      // Outer elevated ring - North
+      { position: [0, 0, -15], scale: [40, 1, 10] },
+      // South
+      { position: [0, 0, 15], scale: [40, 1, 10] },
+      // East
+      { position: [15, 0, 0], scale: [10, 1, 20] },
+      // West
+      { position: [-15, 0, 0], scale: [10, 1, 20] },
     ],
-    initialBoxes: generateMazePattern({ platforms: [], initialBoxes: [], portalPosition: [0, 0, 0], gridSize: 1 })
-      .map(v => ({ position: [v.x, v.y, v.z] })),
-    portalPosition: [15, 0, 15],
-    spawnerPosition: [-15, 0, -15],
-    spawnPosition: [0, 0, 0],
+    initialBoxes: generateMazePattern(1)
+      .map(v => ({ position: [v.x, v.y, v.z] as [number, number, number] })),
+    portalPosition: [15, 1, 15],
+    spawnerPosition: [-15, 1, -15],
+    spawnPosition: [0, 1, 0],
     gridSize: 1,
   },
   2: {
     platforms: [
+      // Base platform
       { position: [0, -1, 0], scale: [45, 1, 45] },
+      // Outer elevated ring - North
+      { position: [0, 0, -17.5], scale: [45, 1, 10] },
+      // South
+      { position: [0, 0, 17.5], scale: [45, 1, 10] },
+      // East
+      { position: [17.5, 0, 0], scale: [10, 1, 25] },
+      // West
+      { position: [-17.5, 0, 0], scale: [10, 1, 25] },
     ],
-    initialBoxes: generateMazePattern({ platforms: [], initialBoxes: [], portalPosition: [0, 0, 0], gridSize: 1 })
-      .map(v => ({ position: [v.x, v.y, v.z] })),
-    portalPosition: [18, 0, 18],
-    spawnerPosition: [-18, 0, -18],
-    spawnPosition: [0, 0, 0],
+    initialBoxes: generateMazePattern(2)
+      .map(v => ({ position: [v.x, v.y, v.z] as [number, number, number] })),
+    portalPosition: [18, 1, 18],
+    spawnerPosition: [-18, 1, -18],
+    spawnPosition: [0, 1, 0],
     gridSize: 1,
   },
   3: {
     platforms: [
+      // Base platform
       { position: [0, -1, 0], scale: [50, 1, 50] },
+      // Outer elevated ring - North
+      { position: [0, 0, -20], scale: [50, 1, 10] },
+      // South
+      { position: [0, 0, 20], scale: [50, 1, 10] },
+      // East
+      { position: [20, 0, 0], scale: [10, 1, 30] },
+      // West
+      { position: [-20, 0, 0], scale: [10, 1, 30] },
     ],
-    initialBoxes: generateMazePattern({ platforms: [], initialBoxes: [], portalPosition: [0, 0, 0], gridSize: 1 })
-      .map(v => ({ position: [v.x, v.y, v.z] })),
-    portalPosition: [20, 0, 20],
-    spawnerPosition: [-20, 0, -20],
-    spawnPosition: [0, 0, 0],
+    initialBoxes: generateMazePattern(3)
+      .map(v => ({ position: [v.x, v.y, v.z] as [number, number, number] })),
+    portalPosition: [20, 1, 20],
+    spawnerPosition: [-20, 1, -20],
+    spawnPosition: [0, 1, 0],
     gridSize: 1,
   },
   4: {
     platforms: [
+      // Base platform
       { position: [0, -1, 0], scale: [55, 1, 55] },
+      // Outer elevated ring - North
+      { position: [0, 0, -22.5], scale: [55, 1, 10] },
+      // South
+      { position: [0, 0, 22.5], scale: [55, 1, 10] },
+      // East
+      { position: [22.5, 0, 0], scale: [10, 1, 35] },
+      // West
+      { position: [-22.5, 0, 0], scale: [10, 1, 35] },
     ],
-    initialBoxes: generateMazePattern({ platforms: [], initialBoxes: [], portalPosition: [0, 0, 0], gridSize: 1 })
-      .map(v => ({ position: [v.x, v.y, v.z] })),
-    portalPosition: [22, 0, 22],
-    spawnerPosition: [-22, 0, -22],
-    spawnPosition: [0, 0, 0],
+    initialBoxes: generateMazePattern(4)
+      .map(v => ({ position: [v.x, v.y, v.z] as [number, number, number] })),
+    portalPosition: [22, 1, 22],
+    spawnerPosition: [-22, 1, -22],
+    spawnPosition: [0, 1, 0],
     gridSize: 1,
   },
   5: {
     platforms: [
+      // Base platform
       { position: [0, -1, 0], scale: [60, 1, 60] },
+      // Outer elevated ring - North
+      { position: [0, 0, -25], scale: [60, 1, 10] },
+      // South
+      { position: [0, 0, 25], scale: [60, 1, 10] },
+      // East
+      { position: [25, 0, 0], scale: [10, 1, 40] },
+      // West
+      { position: [-25, 0, 0], scale: [10, 1, 40] },
     ],
-    initialBoxes: generateMazePattern({ platforms: [], initialBoxes: [], portalPosition: [0, 0, 0], gridSize: 1 })
-      .map(v => ({ position: [v.x, v.y, v.z] })),
-    portalPosition: [25, 0, 25],
-    spawnerPosition: [-25, 0, -25],
-    spawnPosition: [0, 0, 0],
+    initialBoxes: generateMazePattern(5)
+      .map(v => ({ position: [v.x, v.y, v.z] as [number, number, number] })),
+    portalPosition: [25, 1, 25],
+    spawnerPosition: [-25, 1, -25],
+    spawnPosition: [0, 1, 0],
     gridSize: 1,
   },
 };
