@@ -34,26 +34,26 @@ const generateMazePattern = (levelNumber: number) => {
   const gridSize = 3; // Increased grid size for more spacing
   const centerSize = 8;
   const possibleLengths = [2, 3, 4, 5]; // Increased potential lengths
-  
+
   for (let x = -centerSize; x <= centerSize; x += gridSize) {
     for (let z = -centerSize; z <= centerSize; z += gridSize) {
       if (Math.abs(x) < 3 && Math.abs(z) < 3) continue; // Slightly larger center clearing
-      
-      if (Math.random() < 0.3) { // Reduced probability for fewer blocks
+
+      if (Math.random() < 0.5) { // Reduced probability for fewer blocks
         // Randomly choose length from possible lengths
         const length = possibleLengths[Math.floor(Math.random() * possibleLengths.length)];
-        
+
         // Each block independently chooses orientation
         const isAlongX = Math.random() < 0.5;
-        
+
         // Calculate position and offset
         const halfLength = (length - 1) / 2;
         const direction = Math.random() < 0.5 ? 1 : -1;
-        
+
         let finalX = x;
         let finalZ = z;
         let rotation = 0;
-        
+
         if (isAlongX) {
           finalX += halfLength * direction;
           rotation = 0; // Aligned with X-axis
@@ -61,7 +61,7 @@ const generateMazePattern = (levelNumber: number) => {
           finalZ += halfLength * direction;
           rotation = Math.PI * 0.5; // Perpendicular to X-axis
         }
-        
+
         // Check if block would extend too far from center
         const maxExtent = Math.max(
           Math.abs(finalX + (isAlongX ? (length / 2) : 0.5) * direction),
@@ -69,7 +69,7 @@ const generateMazePattern = (levelNumber: number) => {
           Math.abs(finalZ + (!isAlongX ? (length / 2) : 0.5) * direction),
           Math.abs(finalZ - (!isAlongX ? (length / 2) : 0.5) * direction)
         );
-        
+
         if (maxExtent <= centerSize) {
           boxes.push({
             position: [finalX, 0, finalZ] as [number, number, number],
@@ -201,6 +201,7 @@ export function Level() {
   const [ghostBoxPosition, setGhostBoxPosition] = useState<Vector3 | null>(null);
   const [isOverPlacedBox, setIsOverPlacedBox] = useState(false);
   const [isPlacing, setIsPlacing] = useState(false);
+  const [showGhostBox, setShowGhostBox] = useState(false);
   const lastPlacedPosition = useRef<Vector3 | null>(null);
 
   const config = LEVEL_CONFIGS[currentLevel as keyof typeof LEVEL_CONFIGS];
@@ -210,6 +211,22 @@ export function Level() {
     return LEVEL_CONFIGS[currentLevel].initialBoxes.some(box => {
       const [x, y, z] = box.position;
       return position.x === x && position.y === y && position.z === z;
+    });
+  };
+
+  const isOverlappingInitialBlock = (position: Vector3) => {
+    const config = LEVEL_CONFIGS[currentLevel];
+    return config.initialBoxes.some(box => {
+      const boxPos = new Vector3(box.position[0], box.position[1], box.position[2]);
+      const boxDim = new Vector3(box.dimensions[0], box.dimensions[1], box.dimensions[2]);
+      
+      // Account for rotation in dimension check
+      const effectiveDimX = Math.abs(Math.cos(box.rotation)) * boxDim.x + Math.abs(Math.sin(box.rotation)) * boxDim.z;
+      const effectiveDimZ = Math.abs(Math.sin(box.rotation)) * boxDim.x + Math.abs(Math.cos(box.rotation)) * boxDim.z;
+      
+      // Check if position is within the box bounds
+      return Math.abs(position.x - boxPos.x) <= effectiveDimX / 2 &&
+             Math.abs(position.z - boxPos.z) <= effectiveDimZ / 2;
     });
   };
 
@@ -223,42 +240,47 @@ export function Level() {
 
     raycaster.current.setFromCamera(mouse, camera);
     const intersects = raycaster.current.intersectObjects(scene.children, true);
-    const platformIntersect = intersects.find(intersect => 
-      intersect.object.name === 'platform' || 
+    const platformIntersect = intersects.find(intersect =>
+      intersect.object.name === 'platform' ||
       intersect.object.name === 'placed-box' ||
       intersect.object.name === 'static-box'
     );
 
     if (platformIntersect) {
       const point = platformIntersect.point;
+      const config = LEVEL_CONFIGS[currentLevel];
       const gridSize = config.gridSize;
-      
+
       const snappedPosition = new Vector3(
         Math.round(point.x / gridSize) * gridSize,
-        0, // Force y position to ground level
+        0,
         Math.round(point.z / gridSize) * gridSize
       );
 
-      const canPlace = intersects.some(intersect => intersect.object.name === 'platform');
-
-      setIsOverPlacedBox(placedBoxes.some(box => 
+      const isOverPlaced = placedBoxes.some(box =>
         box.position[0] === snappedPosition.x &&
         box.position[1] === snappedPosition.y &&
         box.position[2] === snappedPosition.z
-      ));
+      );
 
-      if (!isOverPlacedBox && !isOverInitialBlock(snappedPosition) && canPlace) {
+      const isOverInitial = isOverlappingInitialBlock(snappedPosition);
+      const canPlaceHere = !isOverPlaced && !isOverInitial;
+
+      setIsOverPlacedBox(isOverPlaced || isOverInitial);
+      
+      if (canPlaceHere) {
         setGhostBoxPosition(snappedPosition);
+        setShowGhostBox(true);
         if (isPlacing && (!lastPlacedPosition.current ||
           lastPlacedPosition.current.distanceTo(snappedPosition) > 0.1)) {
           addBox(snappedPosition);
           lastPlacedPosition.current = snappedPosition.clone();
         }
       } else {
-        setGhostBoxPosition(null);
+        setShowGhostBox(false);
       }
     } else {
-      setGhostBoxPosition(null);
+      setShowGhostBox(false);
     }
   };
 
@@ -348,32 +370,32 @@ export function Level() {
   }, []);
 
   // Platform material with subtle metallic and roughness
-  const platformMaterial = useMemo(() => 
+  const platformMaterial = useMemo(() =>
     new MeshStandardMaterial({
       color: 0x808080,
       metalness: 0.2,
       roughness: 0.7,
     })
-  , []);
+    , []);
 
   // Box material with different colors for different types
-  const staticBoxMaterial = useMemo(() => 
+  const staticBoxMaterial = useMemo(() =>
     new MeshStandardMaterial({
       color: 0x4a6fa5,
       metalness: 0.3,
       roughness: 0.6,
     })
-  , []);
+    , []);
 
-  const placedBoxMaterial = useMemo(() => 
+  const placedBoxMaterial = useMemo(() =>
     new MeshStandardMaterial({
       color: 0x6b9080,
       metalness: 0.3,
       roughness: 0.6,
     })
-  , []);
+    , []);
 
-  const ghostBoxMaterial = useMemo(() => 
+  const ghostBoxMaterial = useMemo(() =>
     new MeshStandardMaterial({
       color: 0x90be6d,
       transparent: true,
@@ -381,25 +403,25 @@ export function Level() {
       metalness: 0.1,
       roughness: 0.8,
     })
-  , []);
+    , []);
 
   return (
     <>
       <primitive object={ambientLight} />
       <primitive object={mainLight} />
-      
+
       {/* Environment */}
       <Environment preset="sunset" />
-      
+
       {/* Ground plane for better shadows */}
-      <mesh 
-        rotation={[-Math.PI / 2, 0, 0]} 
-        position={[0, -1.01, 0]} 
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -1.01, 0]}
         receiveShadow
       >
         <planeGeometry args={[100, 100]} />
-        <meshStandardMaterial 
-          color={0x808080} 
+        <meshStandardMaterial
+          color={0x808080}
           metalness={0.1}
           roughness={0.9}
         />
@@ -436,7 +458,7 @@ export function Level() {
       ))}
 
       {/* Ghost Box */}
-      {phase === 'prep' && ghostBoxPosition && placedBoxes.length < 20 && (
+      {phase === 'prep' && ghostBoxPosition && placedBoxes.length < 20 && showGhostBox && (
         <GhostBox
           position={ghostBoxPosition}
           isRemoveMode={isOverPlacedBox}

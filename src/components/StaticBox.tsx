@@ -11,10 +11,13 @@ export function StaticBox({ position, dimensions = [1, 1, 1], rotation = 0 }: St
     <RigidBody
       type="fixed"
       position={position}
-      rotation={[0, rotation, 0]}
-      userData={{ isBox: true }}
+      colliders="cuboid"
     >
-      <mesh castShadow receiveShadow>
+      <mesh 
+        castShadow 
+        receiveShadow
+        rotation={[0, rotation, 0]}
+      >
         <boxGeometry args={dimensions} />
         <meshStandardMaterial color="#4a4a4a" metalness={0.5} roughness={0.5} />
       </mesh>
