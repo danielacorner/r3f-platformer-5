@@ -131,11 +131,38 @@ export function Player() {
     }
   };
 
+  const checkGrounded = () => {
+    if (!playerRef.current) return false;
+    const position = playerRef.current.translation();
+    const rayOrigin = new Vector3(position.x, position.y - 0.4, position.z);
+    const rayDirection = new Vector3(0, -1, 0);
+    raycaster.current.set(rayOrigin, rayDirection);
+    
+    const intersects = raycaster.current.intersectObjects(scene.children, true);
+    const groundHit = intersects.find(hit => 
+      hit.object.name === 'platform' ||
+      hit.object.name === 'placed-box' ||
+      hit.object.name === 'static-box' ||
+      hit.object.parent?.name === 'platform' ||
+      hit.object.parent?.name === 'placed-box' ||
+      hit.object.parent?.name === 'static-box'
+    );
+    
+    return groundHit && groundHit.distance < 0.3;
+  };
+
   useFrame((_, delta) => {
     if (!playerRef.current) return;
 
     // Check for falling below threshold
     checkAndRespawn();
+
+    // Update grounded state
+    const wasGrounded = isGrounded;
+    const nowGrounded = checkGrounded();
+    if (wasGrounded !== nowGrounded) {
+      setIsGrounded(nowGrounded);
+    }
 
     // Calculate movement direction in camera space
     const moveDirection = new Vector3(0, 0, 0);
@@ -200,8 +227,7 @@ export function Player() {
         lockRotations
         mass={1}
         colliders="ball"
-        onCollisionEnter={() => setIsGrounded(true)}
-        onCollisionExit={() => setIsGrounded(false)}
+        friction={0.2}
       >
         <mesh castShadow>
           <sphereGeometry args={[0.5]} />
