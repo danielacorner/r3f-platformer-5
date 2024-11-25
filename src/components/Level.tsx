@@ -113,13 +113,17 @@ export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
       // Base platform
       { position: [0, -1, 0], scale: [40, 1, 40] },
       // Outer elevated ring - North
-      { position: [0, 0, -15], scale: [40, 1, 10] },
+      { position: [0, 0, -15], scale: [30, 1, 10] }, 
       // South
-      { position: [0, 0, 15], scale: [40, 1, 10] },
+      { position: [0, 0, 15], scale: [30, 1, 10] }, 
       // East
       { position: [15, 0, 0], scale: [10, 1, 20] },
       // West
       { position: [-15, 0, 0], scale: [10, 1, 20] },
+      // Path from spawner to center
+      { position: [-15, -1, -15], scale: [3, 1, 15] },
+      // Path from center to portal
+      { position: [15, -1, 15], scale: [3, 1, 15] },
     ],
     initialBoxes: generateMazePattern(1)
       .map(v => ({ position: [v.x, v.y, v.z] as [number, number, number] })),
@@ -133,18 +137,22 @@ export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
       // Base platform
       { position: [0, -1, 0], scale: [45, 1, 45] },
       // Outer elevated ring - North
-      { position: [0, 0, -17.5], scale: [45, 1, 10] },
+      { position: [0, 0, -17.5], scale: [35, 1, 10] }, 
       // South
-      { position: [0, 0, 17.5], scale: [45, 1, 10] },
+      { position: [0, 0, 17.5], scale: [35, 1, 10] }, 
       // East
       { position: [17.5, 0, 0], scale: [10, 1, 25] },
       // West
       { position: [-17.5, 0, 0], scale: [10, 1, 25] },
+      // Path from spawner to center
+      { position: [-17.5, -1, -17.5], scale: [3, 1, 17.5] },
+      // Path from center to portal
+      { position: [17.5, -1, 17.5], scale: [3, 1, 17.5] },
     ],
     initialBoxes: generateMazePattern(2)
       .map(v => ({ position: [v.x, v.y, v.z] as [number, number, number] })),
-    portalPosition: [18, 1, 18],
-    spawnerPosition: [-18, 1, -18],
+    portalPosition: [17.5, 1, 17.5],
+    spawnerPosition: [-17.5, 1, -17.5],
     spawnPosition: [0, 1, 0],
     gridSize: 1,
   },
@@ -153,13 +161,17 @@ export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
       // Base platform
       { position: [0, -1, 0], scale: [50, 1, 50] },
       // Outer elevated ring - North
-      { position: [0, 0, -20], scale: [50, 1, 10] },
+      { position: [0, 0, -20], scale: [40, 1, 10] }, 
       // South
-      { position: [0, 0, 20], scale: [50, 1, 10] },
+      { position: [0, 0, 20], scale: [40, 1, 10] }, 
       // East
       { position: [20, 0, 0], scale: [10, 1, 30] },
       // West
       { position: [-20, 0, 0], scale: [10, 1, 30] },
+      // Path from spawner to center
+      { position: [-20, -1, -20], scale: [3, 1, 20] },
+      // Path from center to portal
+      { position: [20, -1, 20], scale: [3, 1, 20] },
     ],
     initialBoxes: generateMazePattern(3)
       .map(v => ({ position: [v.x, v.y, v.z] as [number, number, number] })),
@@ -173,18 +185,22 @@ export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
       // Base platform
       { position: [0, -1, 0], scale: [55, 1, 55] },
       // Outer elevated ring - North
-      { position: [0, 0, -22.5], scale: [55, 1, 10] },
+      { position: [0, 0, -22.5], scale: [45, 1, 10] }, 
       // South
-      { position: [0, 0, 22.5], scale: [55, 1, 10] },
+      { position: [0, 0, 22.5], scale: [45, 1, 10] }, 
       // East
       { position: [22.5, 0, 0], scale: [10, 1, 35] },
       // West
       { position: [-22.5, 0, 0], scale: [10, 1, 35] },
+      // Path from spawner to center
+      { position: [-22.5, -1, -22.5], scale: [3, 1, 22.5] },
+      // Path from center to portal
+      { position: [22.5, -1, 22.5], scale: [3, 1, 22.5] },
     ],
     initialBoxes: generateMazePattern(4)
       .map(v => ({ position: [v.x, v.y, v.z] as [number, number, number] })),
-    portalPosition: [22, 1, 22],
-    spawnerPosition: [-22, 1, -22],
+    portalPosition: [22.5, 1, 22.5],
+    spawnerPosition: [-22.5, 1, -22.5],
     spawnPosition: [0, 1, 0],
     gridSize: 1,
   },
@@ -193,13 +209,17 @@ export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
       // Base platform
       { position: [0, -1, 0], scale: [60, 1, 60] },
       // Outer elevated ring - North
-      { position: [0, 0, -25], scale: [60, 1, 10] },
+      { position: [0, 0, -25], scale: [50, 1, 10] }, 
       // South
-      { position: [0, 0, 25], scale: [60, 1, 10] },
+      { position: [0, 0, 25], scale: [50, 1, 10] }, 
       // East
       { position: [25, 0, 0], scale: [10, 1, 40] },
       // West
       { position: [-25, 0, 0], scale: [10, 1, 40] },
+      // Path from spawner to center
+      { position: [-25, -1, -25], scale: [3, 1, 25] },
+      // Path from center to portal
+      { position: [25, -1, 25], scale: [3, 1, 25] },
     ],
     initialBoxes: generateMazePattern(5)
       .map(v => ({ position: [v.x, v.y, v.z] as [number, number, number] })),
