@@ -1,5 +1,5 @@
-import { useRef, useState, useEffect } from 'react';
-import { Vector3, Quaternion } from 'three';
+import { useRef, useState, } from 'react';
+import { Vector3, } from 'three';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { useFrame } from '@react-three/fiber';
 import { useSpring, animated } from '@react-spring/three';

@@ -1,8 +1,11 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { Vector3 } from 'three';
 import { RigidBody } from '@react-three/rapier';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
+import { pathFinder } from '../utils/pathfinding';
+import { useGameStore } from '../store/gameStore';
+import { LEVEL_CONFIGS } from '../components/Level';
 
 interface EnemyProps {
   position: Vector3;
@@ -16,9 +19,84 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
   const [isHit, setIsHit] = useState(false);
   const [isImmune, setIsImmune] = useState(true);
   const [shieldOpacity, setShieldOpacity] = useState(1);
+  const [currentPath, setCurrentPath] = useState<Vector3[]>([]);
+  const [currentWaypoint, setCurrentWaypoint] = useState<Vector3 | null>(null);
+  const [isStuck, setIsStuck] = useState(false);
+  const lastPosition = useRef<Vector3>(new Vector3());
+  const stuckCheckTimeout = useRef<NodeJS.Timeout | null>(null);
+  const pathUpdateInterval = useRef<NodeJS.Timeout | null>(null);
+  
   const moveSpeed = 2;
   const ENEMY_SIZE = 0.6;
-  const ARENA_Y_LEVEL = 0.5; // Y level at which immunity is removed
+  const ARENA_Y_LEVEL = 0.5;
+  const WAYPOINT_THRESHOLD = 0.5;
+  const STUCK_THRESHOLD = 0.1;
+  const STUCK_CHECK_INTERVAL = 1000; // 1 second
+  const PATH_UPDATE_INTERVAL = 500; // 0.5 seconds
+  
+  const currentLevel = useGameStore(state => state.currentLevel);
+
+  useEffect(() => {
+    if (LEVEL_CONFIGS[currentLevel]) {
+      pathFinder.updateObstacles(LEVEL_CONFIGS[currentLevel].initialBoxes);
+    }
+  }, [currentLevel]);
+
+  // Check if enemy is stuck
+  useEffect(() => {
+    const checkIfStuck = () => {
+      if (rigidBodyRef.current) {
+        const currentPos = new Vector3(
+          rigidBodyRef.current.translation().x,
+          0,
+          rigidBodyRef.current.translation().z
+        );
+        
+        if (currentPos.distanceTo(lastPosition.current) < STUCK_THRESHOLD) {
+          setIsStuck(true);
+          // Force path recalculation
+          updatePath(true);
+        } else {
+          setIsStuck(false);
+        }
+        
+        lastPosition.current.copy(currentPos);
+      }
+    };
+
+    stuckCheckTimeout.current = setInterval(checkIfStuck, STUCK_CHECK_INTERVAL);
+    return () => {
+      if (stuckCheckTimeout.current) {
+        clearInterval(stuckCheckTimeout.current);
+      }
+    };
+  }, []);
+
+  const updatePath = useCallback((forceUpdate: boolean = false) => {
+    if (rigidBodyRef.current && (forceUpdate || isStuck)) {
+      const currentPos = rigidBodyRef.current.translation();
+      const newPath = pathFinder.findPath(
+        new Vector3(currentPos.x, 0, currentPos.z),
+        target
+      );
+      
+      if (newPath.length > 0) {
+        setCurrentPath(newPath);
+        setCurrentWaypoint(newPath[0]);
+        setIsStuck(false);
+      }
+    }
+  }, [target, isStuck]);
+
+  // Regularly update path
+  useEffect(() => {
+    pathUpdateInterval.current = setInterval(() => updatePath(), PATH_UPDATE_INTERVAL);
+    return () => {
+      if (pathUpdateInterval.current) {
+        clearInterval(pathUpdateInterval.current);
+      }
+    };
+  }, [updatePath]);
 
   useFrame((state) => {
     if (!rigidBodyRef.current) return;
@@ -36,22 +114,48 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
       setShieldOpacity(0.3 + Math.sin(pulseFrequency) * 0.2);
     }
 
+    // Move towards current waypoint or target
+    let moveTarget = currentWaypoint || target;
     const direction = new Vector3(
-      target.x - currentPosition.x,
+      moveTarget.x - currentPosition.x,
       0,
-      target.z - currentPosition.z
-    ).normalize();
+      moveTarget.z - currentPosition.z
+    );
 
-    const velocity = rigidBodyRef.current.linvel();
+    // Check if we've reached the current waypoint
+    if (currentWaypoint && direction.length() < WAYPOINT_THRESHOLD) {
+      const nextWaypointIndex = currentPath.indexOf(currentWaypoint) + 1;
+      if (nextWaypointIndex < currentPath.length) {
+        setCurrentWaypoint(currentPath[nextWaypointIndex]);
+      } else {
+        setCurrentWaypoint(null);
+      }
+    }
 
-    rigidBodyRef.current.setLinvel(
-      {
+    // Apply movement
+    if (direction.length() > 0.1) {
+      direction.normalize();
+      const velocity = rigidBodyRef.current.linvel();
+      
+      // Add slight randomization to movement to prevent getting stuck
+      const randomOffset = isStuck ? new Vector3(
+        (Math.random() - 0.5) * 0.2,
+        0,
+        (Math.random() - 0.5) * 0.2
+      ) : new Vector3();
+      
+      direction.add(randomOffset).normalize();
+
+      rigidBodyRef.current.setLinvel({
         x: direction.x * moveSpeed,
         y: velocity.y,
         z: direction.z * moveSpeed
-      },
-      true
-    );
+      });
+
+      // Rotate enemy to face movement direction
+      const angle = Math.atan2(direction.x, direction.z);
+      rigidBodyRef.current.setRotation({ x: 0, y: angle, z: 0 });
+    }
   });
 
   useEffect(() => {
