@@ -31,15 +31,15 @@ const generateSpiralPositions = (count: number, scale: number = 1): Vector3[] =>
 // Generate maze-like pattern
 const generateMazePattern = (levelNumber: number) => {
   const boxes = [];
-  const gridSize = 2;
+  const gridSize = 3; // Increased grid size for more spacing
   const centerSize = 8;
-  const possibleLengths = [1, 2, 3]; // Exact multiples of unit width
+  const possibleLengths = [2, 3, 4, 5]; // Increased potential lengths
   
   for (let x = -centerSize; x <= centerSize; x += gridSize) {
     for (let z = -centerSize; z <= centerSize; z += gridSize) {
-      if (Math.abs(x) < 2 && Math.abs(z) < 2) continue; // Keep center clear
+      if (Math.abs(x) < 3 && Math.abs(z) < 3) continue; // Slightly larger center clearing
       
-      if (Math.random() < 0.4) {
+      if (Math.random() < 0.3) { // Reduced probability for fewer blocks
         // Randomly choose length from possible lengths
         const length = possibleLengths[Math.floor(Math.random() * possibleLengths.length)];
         
@@ -62,15 +62,25 @@ const generateMazePattern = (levelNumber: number) => {
           rotation = Math.PI * 0.5; // Perpendicular to X-axis
         }
         
-        boxes.push({
-          position: [finalX, 0, finalZ] as [number, number, number],
-          dimensions: [
-            isAlongX ? length : 1,
-            1,
-            isAlongX ? 1 : length
-          ] as [number, number, number],
-          rotation
-        });
+        // Check if block would extend too far from center
+        const maxExtent = Math.max(
+          Math.abs(finalX + (isAlongX ? (length / 2) : 0.5) * direction),
+          Math.abs(finalX - (isAlongX ? (length / 2) : 0.5) * direction),
+          Math.abs(finalZ + (!isAlongX ? (length / 2) : 0.5) * direction),
+          Math.abs(finalZ - (!isAlongX ? (length / 2) : 0.5) * direction)
+        );
+        
+        if (maxExtent <= centerSize) {
+          boxes.push({
+            position: [finalX, 0, finalZ] as [number, number, number],
+            dimensions: [
+              isAlongX ? length : 1,
+              1,
+              isAlongX ? 1 : length
+            ] as [number, number, number],
+            rotation
+          });
+        }
       }
     }
   }
