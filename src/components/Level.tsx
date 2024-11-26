@@ -231,97 +231,113 @@ export function Level() {
     });
   };
 
-  const handleMouseMove = (event: MouseEvent) => {
-    if (phase !== 'prep' || placedBoxes.length >= 20) return;
+  useEffect(() => {
+    const canvas = document.querySelector('canvas');
+    if (!canvas) return;
 
-    const mouse = {
-      x: (event.clientX / window.innerWidth) * 2 - 1,
-      y: -(event.clientY / window.innerHeight) * 2 + 1
-    };
+    const handleMouseMove = (event: MouseEvent) => {
+      if (phase !== 'prep' || placedBoxes.length >= 20) return;
 
-    raycaster.current.setFromCamera(mouse, camera);
-    const intersects = raycaster.current.intersectObjects(scene.children, true);
-    const platformIntersect = intersects.find(intersect =>
-      intersect.object.name === 'platform' ||
-      intersect.object.name === 'placed-box' ||
-      intersect.object.name === 'static-box'
-    );
+      const rect = canvas.getBoundingClientRect();
+      const mouse = {
+        x: ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        y: -((event.clientY - rect.top) / rect.height) * 2 + 1
+      };
 
-    if (platformIntersect) {
-      const point = platformIntersect.point;
-      const config = LEVEL_CONFIGS[currentLevel];
-      const gridSize = config.gridSize;
-
-      const snappedPosition = new Vector3(
-        Math.round(point.x / gridSize) * gridSize,
-        0,
-        Math.round(point.z / gridSize) * gridSize
+      raycaster.current.setFromCamera(mouse, camera);
+      const intersects = raycaster.current.intersectObjects(scene.children, true);
+      const platformIntersect = intersects.find(intersect =>
+        intersect.object.name === 'platform' ||
+        intersect.object.name === 'placed-box' ||
+        intersect.object.name === 'static-box'
       );
 
-      const isOverPlaced = placedBoxes.some(box =>
-        box.position[0] === snappedPosition.x &&
-        box.position[1] === snappedPosition.y &&
-        box.position[2] === snappedPosition.z
-      );
+      if (platformIntersect) {
+        const point = platformIntersect.point;
+        const config = LEVEL_CONFIGS[currentLevel];
+        const gridSize = config.gridSize;
 
-      const isOverInitial = isOverlappingInitialBlock(snappedPosition);
-      const canPlaceHere = !isOverPlaced && !isOverInitial;
+        const snappedPosition = new Vector3(
+          Math.round(point.x / gridSize) * gridSize,
+          0,
+          Math.round(point.z / gridSize) * gridSize
+        );
 
-      setIsOverPlacedBox(isOverPlaced || isOverInitial);
-      
-      if (canPlaceHere) {
-        setGhostBoxPosition(snappedPosition);
-        setShowGhostBox(true);
-        if (isPlacing && (!lastPlacedPosition.current ||
-          lastPlacedPosition.current.distanceTo(snappedPosition) > 0.1)) {
-          addBox(snappedPosition);
-          lastPlacedPosition.current = snappedPosition.clone();
+        const isOverPlaced = placedBoxes.some(box =>
+          box.position[0] === snappedPosition.x &&
+          box.position[1] === snappedPosition.y &&
+          box.position[2] === snappedPosition.z
+        );
+
+        const isOverInitial = isOverlappingInitialBlock(snappedPosition);
+        const canPlaceHere = !isOverPlaced && !isOverInitial;
+
+        setIsOverPlacedBox(isOverPlaced || isOverInitial);
+        
+        if (canPlaceHere) {
+          setGhostBoxPosition(snappedPosition);
+          setShowGhostBox(true);
+          if (isPlacing && (!lastPlacedPosition.current ||
+            lastPlacedPosition.current.distanceTo(snappedPosition) > 0.1)) {
+            addBox(snappedPosition);
+            lastPlacedPosition.current = snappedPosition.clone();
+          }
+        } else {
+          setShowGhostBox(false);
         }
       } else {
         setShowGhostBox(false);
       }
-    } else {
-      setShowGhostBox(false);
-    }
-  };
-
-  const handleMouseDown = (event: MouseEvent) => {
-    // Only allow interactions during prep phase and when under box limit
-    if (phase !== 'prep' || placedBoxes.length >= 20) return;
-
-    const mouse = {
-      x: (event.clientX / window.innerWidth) * 2 - 1,
-      y: -(event.clientY / window.innerHeight) * 2 + 1
     };
 
-    raycaster.current.setFromCamera(mouse, camera);
-    const intersects = raycaster.current.intersectObjects(scene.children, true);
+    const handleMouseDown = (event: MouseEvent) => {
+      if (phase !== 'prep' || placedBoxes.length >= 20) return;
 
-    const placedBoxHit = intersects.find(hit =>
-      hit.object.userData?.isPlaceableBox ||
-      hit.object.parent?.userData?.isPlaceableBox
-    );
+      const rect = canvas.getBoundingClientRect();
+      const mouse = {
+        x: ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        y: -((event.clientY - rect.top) / rect.height) * 2 + 1
+      };
 
-    if (placedBoxHit) {
-      const boxPosition = placedBoxHit.object.parent?.position || placedBoxHit.object.position;
-      const boxToRemove = placedBoxes.find(box =>
-        box.position.distanceTo(boxPosition) < 0.1
+      raycaster.current.setFromCamera(mouse, camera);
+      const intersects = raycaster.current.intersectObjects(scene.children, true);
+
+      const placedBoxHit = intersects.find(hit =>
+        hit.object.userData?.isPlaceableBox ||
+        hit.object.parent?.userData?.isPlaceableBox
       );
-      if (boxToRemove) {
-        removeBox(boxToRemove.id);
-        event.stopPropagation();
-      }
-    } else if (ghostBoxPosition && !isOverPlacedBox) {
-      setIsPlacing(true);
-      addBox(ghostBoxPosition);
-      lastPlacedPosition.current = ghostBoxPosition.clone();
-    }
-  };
 
-  const handleMouseUp = () => {
-    setIsPlacing(false);
-    lastPlacedPosition.current = null;
-  };
+      if (placedBoxHit) {
+        const boxPosition = placedBoxHit.object.parent?.position || placedBoxHit.object.position;
+        const boxToRemove = placedBoxes.find(box =>
+          box.position.distanceTo(boxPosition) < 0.1
+        );
+        if (boxToRemove) {
+          removeBox(boxToRemove.id);
+          event.stopPropagation();
+        }
+      } else if (ghostBoxPosition && !isOverPlacedBox) {
+        setIsPlacing(true);
+        addBox(ghostBoxPosition);
+        lastPlacedPosition.current = ghostBoxPosition.clone();
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsPlacing(false);
+      lastPlacedPosition.current = null;
+    };
+
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mousedown', handleMouseDown);
+    canvas.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      canvas.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('mousedown', handleMouseDown);
+      canvas.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [phase, placedBoxes.length, camera, scene, currentLevel, isPlacing, ghostBoxPosition, isOverPlacedBox]);
 
   useEffect(() => {
     if (phase === 'combat') {
@@ -340,18 +356,6 @@ export function Level() {
       setLevelComplete(true);
     }
   }, [phase, enemiesAlive, isSpawning, timer, setLevelComplete]);
-
-  useEffect(() => {
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [phase, camera, scene, config.gridSize, placedBoxes.length, isPlacing, isOverPlacedBox, ghostBoxPosition]);
 
   // Create ambient and directional lights
   const ambientLight = useMemo(() => new AmbientLight(0x404040, 0.5), []);
