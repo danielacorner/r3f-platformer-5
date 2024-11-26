@@ -50,7 +50,7 @@ export default function App() {
         <p>Time Remaining: {timer}s</p>
         <p>Enemies: {enemiesAlive}</p>
         <p>Boxes Placed: {placedBoxes.length}/20</p>
-        
+
         {/* Combat status messages */}
         {phase === 'combat' && (
           <div className="text-center mt-4">
@@ -119,7 +119,7 @@ export default function App() {
             shadow-bias={-0.0001}
           />
 
-          <Physics gravity={[0, -30, 0]}>
+          <Physics debug={true} gravity={[0, -30, 0]}>
             <Player />
             <Level />
           </Physics>

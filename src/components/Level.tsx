@@ -10,6 +10,7 @@ import { StaticBox } from './StaticBox';
 import { EnemySpawner } from './EnemySpawner';
 import { Portal } from './Portal';
 import { Player } from './Player';
+import { BlockedAreas } from './BlockedAreas';
 
 // Generate spiral positions using golden ratio
 const generateSpiralPositions = (count: number, scale: number = 1): Vector3[] => {
@@ -478,6 +479,9 @@ export function Level() {
           emissiveIntensity={0.5}
         />
       </mesh>
+
+      {/* Show blocked areas during prep phase */}
+      {phase === 'prep' && <BlockedAreas currentLevel={currentLevel} />}
     </>
   );
 }

@@ -12,9 +12,10 @@ export function StaticBox({ position, dimensions = [1, 1, 1], rotation = 0 }: St
       type="fixed"
       position={position}
       colliders="cuboid"
+      rotation={[0, rotation, 0]}
     >
-      <mesh 
-        castShadow 
+      <mesh
+        castShadow
         receiveShadow
         rotation={[0, rotation, 0]}
       >
