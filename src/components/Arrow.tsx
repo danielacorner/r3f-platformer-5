@@ -1,75 +1,80 @@
-import { useRef } from 'react';
-import { Vector3, Quaternion } from 'three';
+import { useRef, useEffect } from 'react';
+import { Vector3, Float32BufferAttribute } from 'three';
 import { useFrame } from '@react-three/fiber';
-import { RigidBody, CuboidCollider } from '@react-three/rapier';
 
 const ARROW_SPEED = 30;
 const LIFETIME = 2; // seconds
+const ARROW_DAMAGE = 20;
 
 export function Arrow({ position, direction, onComplete }: { 
   position: Vector3;
   direction: Vector3;
   onComplete: () => void;
 }) {
-  const ref = useRef<any>();
+  // Store initial position
+  const pos = useRef(position.clone());
+  const dir = useRef(direction.clone());
   const startTime = useRef(Date.now());
-  const hitEnemy = useRef(false);
-
-  // Calculate rotation to face direction
-  const rotation = new Quaternion();
-  rotation.setFromUnitVectors(new Vector3(0, 0, 1), direction);
+  
+  useEffect(() => {
+    console.log('Arrow mounted at world position:', pos.current.toArray());
+  }, []);
 
   useFrame((state, delta) => {
-    if (!ref.current || hitEnemy.current) return;
+    // Update position
+    const movement = dir.current.clone().multiplyScalar(ARROW_SPEED * delta);
+    pos.current.add(movement);
+    
+    console.log('Arrow frame update, world position:', pos.current.toArray());
 
-    // Move arrow
-    const pos = ref.current.translation();
-    ref.current.setTranslation({
-      x: pos.x + direction.x * ARROW_SPEED * delta,
-      y: pos.y + direction.y * ARROW_SPEED * delta,
-      z: pos.z + direction.z * ARROW_SPEED * delta
-    });
+    // Check for enemies
+    const enemiesGroup = state.scene.getObjectByName('enemies');
+    if (enemiesGroup) {
+      for (const enemy of enemiesGroup.children) {
+        const distance = pos.current.distanceTo(enemy.position);
+        if (distance < 1) {
+          console.log('Hit enemy at distance:', distance);
+          if (enemy.userData?.takeDamage) {
+            enemy.userData.takeDamage(ARROW_DAMAGE, dir.current.clone().multiplyScalar(5));
+          }
+          onComplete();
+          return;
+        }
+      }
+    }
 
     // Check lifetime
     if (Date.now() - startTime.current > LIFETIME * 1000) {
+      console.log('Arrow expired');
       onComplete();
     }
   });
 
   return (
-    <RigidBody
-      ref={ref}
-      type="dynamic"
-      position={position}
-      colliders={false}
-      sensor
-      onIntersectionEnter={({ other }) => {
-        if (other.rigidBody?.userData?.isEnemy && !hitEnemy.current) {
-          hitEnemy.current = true;
-          // Apply damage to enemy
-          other.rigidBody.userData.takeDamage?.(1);
-          onComplete();
-        }
-      }}
-    >
-      <group quaternion={rotation}>
-        {/* Arrow head */}
-        <mesh position={[0, 0, 0.4]}>
-          <coneGeometry args={[0.1, 0.3, 8]} />
-          <meshStandardMaterial color="#666666" />
-        </mesh>
-        {/* Arrow shaft */}
-        <mesh position={[0, 0, 0]}>
-          <cylinderGeometry args={[0.03, 0.03, 0.8, 8]} />
-          <meshStandardMaterial color="#8b4513" />
-        </mesh>
-        {/* Arrow fletching */}
-        <mesh position={[0, 0, -0.3]} rotation={[0, Math.PI / 4, 0]}>
-          <boxGeometry args={[0.2, 0.2, 0.01]} />
-          <meshStandardMaterial color="#4a4a4a" />
-        </mesh>
-      </group>
-      <CuboidCollider args={[0.1, 0.1, 0.5]} sensor />
-    </RigidBody>
+    <>
+      {/* Super large debug sphere */}
+      <mesh position={pos.current.toArray()}>
+        <sphereGeometry args={[3]} />
+        <meshBasicMaterial color="#ff0000" transparent opacity={0.5} />
+      </mesh>
+
+      {/* Direction line */}
+      <line>
+        <bufferGeometry>
+          <float32BufferAttribute
+            attach="attributes-position"
+            array={new Float32Array([
+              pos.current.x, pos.current.y, pos.current.z,
+              pos.current.x + dir.current.x * 10,
+              pos.current.y + dir.current.y * 10,
+              pos.current.z + dir.current.z * 10
+            ])}
+            itemSize={3}
+            count={2}
+          />
+        </bufferGeometry>
+        <lineBasicMaterial color="#ffff00" linewidth={5} />
+      </line>
+    </>
   );
 }

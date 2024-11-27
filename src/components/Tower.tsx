@@ -1,5 +1,5 @@
 import { Vector3 } from 'three';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
 import { useGameStore } from '../store/gameStore';
@@ -8,59 +8,70 @@ import { Arrow } from './Arrow';
 const ATTACK_RANGE = 15;
 const ATTACK_COOLDOWN = 1000; // ms
 
-export function Tower({ position }: { position: Vector3 }) {
+export function Tower({ position, onArrowSpawn }: { 
+  position: Vector3;
+  onArrowSpawn: (arrow: { position: Vector3; direction: Vector3; id: number }) => void;
+}) {
   const phase = useGameStore(state => state.phase);
   const lastAttackTime = useRef(0);
-  const activeArrows = useRef<{ position: Vector3; direction: Vector3; id: number }[]>([]);
   const nextArrowId = useRef(0);
 
+  // Debug sphere to show tower position
+  const debugSphere = (
+    <mesh position={[0, 2, 0]}>
+      <sphereGeometry args={[0.5]} />
+      <meshBasicMaterial color="#00ff00" />
+    </mesh>
+  );
+
   useFrame((state) => {
-    if (phase !== 'combat') return;
+    if (phase !== 'combat') {
+      return;
+    }
 
     const now = Date.now();
     if (now - lastAttackTime.current >= ATTACK_COOLDOWN) {
-      // Find closest enemy
-      const enemies = Array.from(state.scene.getObjectByName('enemies')?.children || [])
-        .filter(obj => obj.userData.type === 'enemy')
+      // Find enemies group
+      const enemiesGroup = state.scene.getObjectByName('enemies');
+      console.log('Found enemies group:', enemiesGroup?.name, 'Children:', enemiesGroup?.children.length);
+      if (!enemiesGroup) return;
+
+      // Get all enemies and their positions
+      const enemies = enemiesGroup.children
         .map(obj => ({
           position: obj.position,
-          parent: obj
-        }));
+          distance: new Vector3(position.x, position.y + 2, position.z)
+            .distanceTo(obj.position)
+        }))
+        .filter(enemy => enemy.distance <= ATTACK_RANGE)
+        .sort((a, b) => a.distance - b.distance);
 
-      let closestEnemy = null;
-      let closestDistance = Infinity;
+      console.log('Enemies in range:', enemies.length, 'Total enemies:', enemiesGroup.children.length);
 
-      enemies.forEach(enemy => {
-        const distance = new Vector3(position.x, position.y + 2, position.z)
-          .distanceTo(enemy.position);
-        if (distance < closestDistance && distance <= ATTACK_RANGE) {
-          closestEnemy = enemy;
-          closestDistance = distance;
-        }
-      });
-
-      if (closestEnemy) {
-        // Calculate direction to enemy
+      if (enemies.length > 0) {
+        const target = enemies[0]; // Target closest enemy
+        console.log('Tower position:', position.toArray());
+        console.log('Enemy position:', target.position.toArray());
+        console.log('Targeting enemy at distance:', target.distance);
+        
+        const spawnPos = new Vector3(position.x, position.y + 2, position.z);
         const direction = new Vector3()
-          .subVectors(closestEnemy.position, new Vector3(position.x, position.y + 2, position.z))
+          .subVectors(target.position, spawnPos)
           .normalize();
 
-        // Add new arrow
-        activeArrows.current.push({
-          position: new Vector3(position.x, position.y + 2, position.z),
-          direction,
+        console.log('Spawning arrow at:', spawnPos.toArray(), 'with direction:', direction.toArray());
+
+        // Spawn new arrow
+        onArrowSpawn({
+          position: spawnPos,
+          direction: direction,
           id: nextArrowId.current++
         });
 
         lastAttackTime.current = now;
+        console.log('Fired arrow at enemy');
       }
     }
-
-    // Clean up completed arrows
-    activeArrows.current = activeArrows.current.filter(arrow => {
-      const age = now - arrow.id * ATTACK_COOLDOWN;
-      return age < 2000; // Remove arrows after 2 seconds
-    });
   });
 
   return (
@@ -85,17 +96,36 @@ export function Tower({ position }: { position: Vector3 }) {
         ))}
       </RigidBody>
 
-      {/* Active Arrows */}
-      {activeArrows.current.map((arrow) => (
+      {/* Debug sphere */}
+      {debugSphere}
+
+      {/* Range indicator (only in prep phase) */}
+      {phase === 'prep' && (
+        <mesh position={[0, 0.1, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[ATTACK_RANGE - 0.1, ATTACK_RANGE, 64]} />
+          <meshBasicMaterial color="#4444ff" transparent opacity={0.2} />
+        </mesh>
+      )}
+    </group>
+  );
+}
+
+// Render arrows at root level to avoid local group transform
+export function ArrowManager({ position, arrows, onArrowComplete }: {
+  position: Vector3;
+  arrows: { position: Vector3; direction: Vector3; id: number }[];
+  onArrowComplete: (id: number) => void;
+}) {
+  return (
+    <>
+      {arrows.map((arrow) => (
         <Arrow
           key={arrow.id}
           position={arrow.position}
           direction={arrow.direction}
-          onComplete={() => {
-            activeArrows.current = activeArrows.current.filter(a => a.id !== arrow.id);
-          }}
+          onComplete={() => onArrowComplete(arrow.id)}
         />
       ))}
-    </group>
+    </>
   );
 }

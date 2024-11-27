@@ -21,6 +21,7 @@ export function EnemySpawner({ position }: EnemySpawnerProps) {
   // Reset enemies when phase changes to prep
   useEffect(() => {
     if (phase === 'prep') {
+      console.log('Prep phase - resetting enemies');
       setEnemies([]);
       setEnemiesAlive(0);
     }
@@ -29,7 +30,7 @@ export function EnemySpawner({ position }: EnemySpawnerProps) {
   // Update queued enemies count
   useEffect(() => {
     if (phase === 'combat' && isSpawning) {
-      console.log('Combat phase, spawning enabled. Max:', maxEnemies, 'Current:', enemies.length);
+      console.log('Combat phase - updating queue. Max:', maxEnemies, 'Current:', enemies.length);
       setQueuedEnemies(Math.max(0, maxEnemies - enemies.length));
     } else {
       setQueuedEnemies(0);
@@ -44,7 +45,6 @@ export function EnemySpawner({ position }: EnemySpawnerProps) {
 
   // Handle enemy spawning
   useEffect(() => {
-
     if (spawnTimerRef.current) {
       clearInterval(spawnTimerRef.current);
       spawnTimerRef.current = null;

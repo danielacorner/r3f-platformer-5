@@ -13,7 +13,7 @@ import { EnemySpawner } from './EnemySpawner';
 import { Portal } from './Portal';
 import { Player } from './Player';
 import { BlockedAreas } from './BlockedAreas';
-import { Tower } from './Tower';
+import { Tower, ArrowManager } from './Tower';
 import { Cannon } from './Cannon';
 
 // Generate spiral positions using golden ratio
@@ -414,8 +414,20 @@ export function Level() {
     })
     , []);
 
+  const [towers] = useState([
+    new Vector3(-9, 0, -1),
+    new Vector3(-1, 0, -9),
+    new Vector3(-19, 0, -18),
+  ]);
+
+  const [arrows, setArrows] = useState<{ position: Vector3; direction: Vector3; id: number }[]>([]);
+
+  const handleArrowComplete = (id: number) => {
+    setArrows(prev => prev.filter(a => a.id !== id));
+  };
+
   return (
-    <>
+    <group>
       <primitive object={ambientLight} />
       <primitive object={mainLight} />
 
@@ -489,6 +501,7 @@ export function Level() {
               <Tower
                 key={box.id}
                 position={box.position}
+                onArrowSpawn={(arrow) => setArrows(prev => [...prev, arrow])}
               />
             );
           case 'cannon':
@@ -500,6 +513,14 @@ export function Level() {
             );
         }
       })}
+
+      {/* Towers */}
+      {towers.map((position, index) => (
+        <Tower key={index} position={position} onArrowSpawn={(arrow) => setArrows(prev => [...prev, arrow])} />
+      ))}
+
+      {/* Arrows rendered at root level */}
+      <ArrowManager arrows={arrows} onArrowComplete={handleArrowComplete} />
 
       {/* Always render spawner */}
       <EnemySpawner position={spawnerPosition} />
@@ -516,6 +537,6 @@ export function Level() {
 
       {/* Show blocked areas during prep phase */}
       {phase === 'prep' && <BlockedAreas currentLevel={currentLevel} />}
-    </>
+    </group>
   );
 }

@@ -17,8 +17,6 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
   const rigidBodyRef = useRef<any>(null);
   const [health, setHealth] = useState(100);
   const [isHit, setIsHit] = useState(false);
-  const [isImmune, setIsImmune] = useState(true);
-  const [shieldOpacity, setShieldOpacity] = useState(1);
   const [currentPath, setCurrentPath] = useState<Vector3[]>([]);
   const [currentWaypoint, setCurrentWaypoint] = useState<Vector3 | null>(null);
   const [isStuck, setIsStuck] = useState(false);
@@ -35,6 +33,10 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
   const PATH_UPDATE_INTERVAL = 500; // 0.5 seconds
   
   const currentLevel = useGameStore(state => state.currentLevel);
+
+  useEffect(() => {
+    console.log('Enemy spawned at:', position.toArray());
+  }, [position]);
 
   useEffect(() => {
     if (LEVEL_CONFIGS[currentLevel]) {
@@ -56,6 +58,7 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
           setIsStuck(true);
           // Force path recalculation
           updatePath(true);
+          console.log('Enemy is stuck');
         } else {
           setIsStuck(false);
         }
@@ -84,6 +87,7 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
         setCurrentPath(newPath);
         setCurrentWaypoint(newPath[0]);
         setIsStuck(false);
+        console.log('Updated enemy path');
       }
     }
   }, [target, isStuck]);
@@ -102,17 +106,6 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
     if (!rigidBodyRef.current) return;
 
     const currentPosition = rigidBodyRef.current.translation();
-
-    // Check if enemy has reached arena level
-    if (isImmune && currentPosition.y <= ARENA_Y_LEVEL) {
-      setIsImmune(false);
-    }
-
-    // Update shield opacity based on position
-    if (isImmune) {
-      const pulseFrequency = state.clock.elapsedTime * 3;
-      setShieldOpacity(0.3 + Math.sin(pulseFrequency) * 0.2);
-    }
 
     // Move towards current waypoint or target
     let moveTarget = currentWaypoint || target;
@@ -165,13 +158,15 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
 
   useEffect(() => {
     if (health <= 0) {
+      console.log('Enemy died');
       onDeath();
     }
   }, [health, onDeath]);
 
   const handleHit = (damage: number, knockback: Vector3) => {
-    if (!rigidBodyRef.current || isImmune) return;
+    if (!rigidBodyRef.current) return;
 
+    console.log('Enemy taking damage:', damage, 'Current health:', health);
     setHealth(prev => prev - damage);
     setIsHit(true);
 
@@ -214,8 +209,9 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
       linearDamping={0.5}
       gravityScale={1}
       onCollisionEnter={handleCollision}
+      userData={{ type: 'enemy', takeDamage: handleHit }}
     >
-      <group userData={{ type: 'enemy' }}>
+      <group>
         {/* Health bar */}
         <Html
           position={[0, ENEMY_SIZE * 2, 0]}
@@ -254,20 +250,6 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
             emissiveIntensity={isHit ? 0.5 : 0}
           />
         </mesh>
-
-        {/* Shield effect */}
-        {isImmune && (
-          <mesh scale={1.2}>
-            <sphereGeometry args={[ENEMY_SIZE]} />
-            <meshStandardMaterial
-              color="#00ffff"
-              transparent
-              opacity={shieldOpacity}
-              emissive="#00ffff"
-              emissiveIntensity={0.5}
-            />
-          </mesh>
-        )}
       </group>
     </RigidBody>
   );
