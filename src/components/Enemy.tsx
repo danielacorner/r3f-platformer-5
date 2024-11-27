@@ -116,6 +116,11 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
 
     // Move towards current waypoint or target
     let moveTarget = currentWaypoint || target;
+    if (!moveTarget) {
+      console.warn('No valid target for enemy movement');
+      return;
+    }
+    
     const direction = new Vector3(
       moveTarget.x - currentPosition.x,
       0,
@@ -210,7 +215,7 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
       gravityScale={1}
       onCollisionEnter={handleCollision}
     >
-      <group>
+      <group userData={{ type: 'enemy' }}>
         {/* Health bar */}
         <Html
           position={[0, ENEMY_SIZE * 2, 0]}

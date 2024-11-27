@@ -99,72 +99,43 @@ export function EnemySpawner({ position }: EnemySpawnerProps) {
       {/* Always visible spawner */}
       <group>
         {/* Base */}
-        <mesh position={position}>
-          <cylinderGeometry args={[1, 1.2, 0.2, 16]} />
-          <meshStandardMaterial
-            color={phase === 'combat' ? "#400000" : "#202020"}
-            roughness={0.7}
-          />
+        <mesh position={[0, 0.1, 0]}>
+          <cylinderGeometry args={[1.2, 1.2, 0.2, 32]} />
+          <meshStandardMaterial color="#444444" />
         </mesh>
-
-        {/* Spawner pillar */}
-        <mesh position={position.clone().add(new Vector3(0, 0.6, 0))}>
-          <cylinderGeometry args={[0.3, 0.3, 1, 16]} />
-          <meshStandardMaterial
-            color={phase === 'combat' ? "red" : "#303030"}
-            emissive={phase === 'combat' ? "red" : "#202020"}
-            emissiveIntensity={isSpawning ? 0.8 : 0.2}
-            roughness={0.3}
-          />
+        {/* Spawn point indicator */}
+        <mesh position={[0, 0.3, 0]}>
+          <cylinderGeometry args={[0.1, 1, 0.4, 8]} />
+          <meshStandardMaterial color="#ff0000" transparent opacity={0.6} />
         </mesh>
-
-        {/* Enemy queue indicator */}
-        {phase === 'combat' && (
-          <group position={position.clone().add(new Vector3(0, 2.5, 0))}>
-            {/* Background panel */}
-            <mesh position={[0, 0, -0.05]}>
-              <boxGeometry args={[2.5, 1, 0.1]} />
-              <meshStandardMaterial
-                color="#000000"
-                transparent
-                opacity={0.8}
-              />
-            </mesh>
-            {/* Colored overlay */}
-            <mesh>
-              <boxGeometry args={[2.4, 0.9, 0.12]} />
-              <meshStandardMaterial
-                color={isSpawning ? "#400000" : "#202020"}
-                emissive={isSpawning ? "#400000" : "#202020"}
-                emissiveIntensity={0.5}
-                transparent
-                opacity={0.9}
-              />
-            </mesh>
-            <Text
-              position={[0, 0, 0.1]}
-              fontSize={0.4}
-              color="white"
-              anchorX="center"
-              anchorY="middle"
-              outlineWidth={0.02}
-              outlineColor="#000000"
-            >
-              {isSpawning ? `Incoming: ${queuedEnemies}` : 'Spawner Idle'}
-            </Text>
-          </group>
-        )}
       </group>
 
+      {/* Queued enemies indicator */}
+      {queuedEnemies > 0 && (
+        <group position={[0, 2, 0]}>
+          <Text
+            position={[0, 0, 0]}
+            fontSize={0.5}
+            color="white"
+            anchorX="center"
+            anchorY="middle"
+          >
+            {queuedEnemies}
+          </Text>
+        </group>
+      )}
+
       {/* Enemies */}
-      {enemies.map(enemy => (
-        <Enemy
-          key={enemy.id}
-          position={enemy.position}
-          target={portalPosition}
-          onDeath={() => handleEnemyDeath(enemy.id)}
-        />
-      ))}
+      <group name="enemies">
+        {enemies.map(enemy => (
+          <Enemy
+            key={enemy.id}
+            position={enemy.position}
+            target={portalPosition}
+            onDeath={() => handleEnemyDeath(enemy.id)}
+          />
+        ))}
+      </group>
     </>
   );
 }

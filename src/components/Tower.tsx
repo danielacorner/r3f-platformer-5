@@ -14,22 +14,25 @@ export function Tower({ position }: { position: Vector3 }) {
   const activeArrows = useRef<{ position: Vector3; direction: Vector3; id: number }[]>([]);
   const nextArrowId = useRef(0);
 
-  useFrame(() => {
+  useFrame((state) => {
     if (phase !== 'combat') return;
 
     const now = Date.now();
     if (now - lastAttackTime.current >= ATTACK_COOLDOWN) {
       // Find closest enemy
-      const enemies = Array.from(document.querySelectorAll('[data-enemy]')).map(elem => {
-        const enemyObject = (window as any)._three.getObjectByProperty('uuid', elem.id);
-        return enemyObject?.parent;
-      }).filter(Boolean);
+      const enemies = Array.from(state.scene.getObjectByName('enemies')?.children || [])
+        .filter(obj => obj.userData.type === 'enemy')
+        .map(obj => ({
+          position: obj.position,
+          parent: obj
+        }));
 
       let closestEnemy = null;
       let closestDistance = Infinity;
 
       enemies.forEach(enemy => {
-        const distance = position.distanceTo(enemy.position);
+        const distance = new Vector3(position.x, position.y + 2, position.z)
+          .distanceTo(enemy.position);
         if (distance < closestDistance && distance <= ATTACK_RANGE) {
           closestEnemy = enemy;
           closestDistance = distance;
@@ -52,6 +55,12 @@ export function Tower({ position }: { position: Vector3 }) {
         lastAttackTime.current = now;
       }
     }
+
+    // Clean up completed arrows
+    activeArrows.current = activeArrows.current.filter(arrow => {
+      const age = now - arrow.id * ATTACK_COOLDOWN;
+      return age < 2000; // Remove arrows after 2 seconds
+    });
   });
 
   return (

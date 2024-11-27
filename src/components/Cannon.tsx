@@ -15,21 +15,24 @@ export function Cannon({ position }: { position: Vector3 }) {
   const activeFireballs = useRef<{ position: Vector3; direction: Vector3; id: number }[]>([]);
   const nextFireballId = useRef(0);
 
-  useFrame(() => {
+  useFrame((state) => {
     if (phase !== 'combat') return;
 
     const now = Date.now();
     if (now - lastAttackTime.current >= ATTACK_COOLDOWN) {
       // Find enemies in range
-      const enemies = Array.from(document.querySelectorAll('[data-enemy]')).map(elem => {
-        const enemyObject = (window as any)._three.getObjectByProperty('uuid', elem.id);
-        return enemyObject?.parent;
-      }).filter(Boolean);
+      const enemies = Array.from(state.scene.getObjectByName('enemies')?.children || [])
+        .filter(obj => obj.userData.type === 'enemy')
+        .map(obj => ({
+          position: obj.position,
+          parent: obj
+        }));
 
       // Group enemies by proximity
       const enemyGroups: Vector3[][] = [];
       enemies.forEach(enemy => {
-        const distance = position.distanceTo(enemy.position);
+        const distance = new Vector3(position.x, position.y + 1, position.z)
+          .distanceTo(enemy.position);
         if (distance <= ATTACK_RANGE) {
           // Check if enemy is close to any existing group
           let addedToGroup = false;
@@ -71,6 +74,12 @@ export function Cannon({ position }: { position: Vector3 }) {
         lastAttackTime.current = now;
       }
     }
+
+    // Clean up completed fireballs
+    activeFireballs.current = activeFireballs.current.filter(fireball => {
+      const age = now - fireball.id * ATTACK_COOLDOWN;
+      return age < 2000; // Remove fireballs after 2 seconds
+    });
   });
 
   return (
