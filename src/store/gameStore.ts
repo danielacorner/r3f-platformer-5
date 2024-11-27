@@ -3,40 +3,44 @@ import { Vector3 } from 'three';
 import { RapierRigidBody } from '@react-three/rapier';
 
 interface PlacedBox {
+  id: number;
   position: Vector3;
-  id: string;
+  type: 'block' | 'tower' | 'cannon';
 }
 
 interface GameState {
   currentLevel: number;
+  phase: 'prep' | 'combat';
   timer: number;
   enemiesAlive: number;
   isSpawning: boolean;
   levelComplete: boolean;
-  phase: 'prep' | 'combat';
   placedBoxes: PlacedBox[];
+  selectedObjectType: 'block' | 'tower' | 'cannon';
   playerRef: React.MutableRefObject<RapierRigidBody | null>;
   setCurrentLevel: (level: number) => void;
-  setTimer: (time: number) => void;
-  setEnemiesAlive: (count: number) => void;
-  setIsSpawning: (spawning: boolean) => void;
-  setLevelComplete: (complete: boolean) => void;
   setPhase: (phase: 'prep' | 'combat') => void;
-  addBox: (position: Vector3) => void;
-  removeBox: (id: string) => void;
-  clearBoxes: () => void;
+  setTimer: (timer: number) => void;
+  setEnemiesAlive: (count: number) => void;
+  setIsSpawning: (isSpawning: boolean) => void;
+  setLevelComplete: (complete: boolean) => void;
+  addPlacedBox: (position: Vector3, type: 'block' | 'tower' | 'cannon') => void;
+  removePlacedBox: (id: number) => void;
+  setSelectedObjectType: (type: 'block' | 'tower' | 'cannon') => void;
   setPlayerRef: (ref: React.MutableRefObject<RapierRigidBody | null>) => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
   currentLevel: 1,
+  phase: 'prep',
   timer: 4,
   enemiesAlive: 0,
   isSpawning: false,
   levelComplete: false,
-  phase: 'prep',
   placedBoxes: [],
+  selectedObjectType: 'block',
   playerRef: { current: null },
+  setPlayerRef: (ref) => set({ playerRef: ref }),
   setCurrentLevel: (level) => set({ 
     currentLevel: level,
     timer: 4,
@@ -46,28 +50,6 @@ export const useGameStore = create<GameState>((set) => ({
     phase: 'prep',
     placedBoxes: []
   }),
-  setTimer: (time) => {
-    set({ timer: time });
-    if (time <= 0) {
-      set({ isSpawning: false });
-    }
-  },
-  setEnemiesAlive: (count) => {
-    console.log('Setting enemies alive:', count);
-    set((state) => {
-      // Only complete level if no enemies are left and timer has run out
-      if (count === 0 && state.phase === 'combat' && !state.isSpawning) {
-        console.log('Level complete!');
-        return { enemiesAlive: count, levelComplete: true };
-      }
-      return { enemiesAlive: count };
-    });
-  },
-  setIsSpawning: (spawning) => {
-    console.log('Setting isSpawning:', spawning);
-    set({ isSpawning: spawning });
-  },
-  setLevelComplete: (complete) => set({ levelComplete: complete }),
   setPhase: (phase) => {
     console.log('Setting phase:', phase);
     set((state) => {
@@ -88,18 +70,40 @@ export const useGameStore = create<GameState>((set) => ({
       };
     });
   },
-  addBox: (position) => set((state) => {
+  setTimer: (timer) => {
+    set({ timer });
+    if (timer <= 0) {
+      set({ isSpawning: false });
+    }
+  },
+  setEnemiesAlive: (count) => {
+    console.log('Setting enemies alive:', count);
+    set((state) => {
+      // Only complete level if no enemies are left and timer has run out
+      if (count === 0 && state.phase === 'combat' && !state.isSpawning) {
+        console.log('Level complete!');
+        return { enemiesAlive: count, levelComplete: true };
+      }
+      return { enemiesAlive: count };
+    });
+  },
+  setIsSpawning: (isSpawning) => {
+    console.log('Setting isSpawning:', isSpawning);
+    set({ isSpawning });
+  },
+  setLevelComplete: (complete) => set({ levelComplete: complete }),
+  addPlacedBox: (position, type) => set((state) => {
     if (state.placedBoxes.length >= 20) return state;
     return {
       placedBoxes: [...state.placedBoxes, {
+        id: state.placedBoxes.length,
         position: position.clone(),
-        id: Math.random().toString(36).substr(2, 9)
+        type
       }]
     };
   }),
-  removeBox: (id) => set((state) => ({
-    placedBoxes: state.placedBoxes.filter(box => box.id !== id)
+  removePlacedBox: (id) => set((state) => ({
+    placedBoxes: state.placedBoxes.filter((box) => box.id !== id)
   })),
-  clearBoxes: () => set({ placedBoxes: [] }),
-  setPlayerRef: (ref) => set({ playerRef: ref })
+  setSelectedObjectType: (type) => set({ selectedObjectType: type }),
 }));

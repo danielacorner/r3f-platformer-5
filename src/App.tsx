@@ -7,6 +7,7 @@ import { Level } from './components/Level';
 import { useGameStore } from './store/gameStore';
 import { CameraController } from './components/CameraController';
 import { useEffect } from 'react';
+import { BuildMenu } from './components/BuildMenu';
 
 export default function App() {
   const { currentLevel, timer, enemiesAlive, phase, placedBoxes, setPhase, setIsSpawning, levelComplete, setCurrentLevel, setTimer, setLevelComplete } = useGameStore();
@@ -44,59 +45,53 @@ export default function App() {
 
   return (
     <div className="h-screen w-screen">
-      <div className="absolute top-0 left-0 p-4 text-white z-10">
-        <p>Level: {currentLevel}</p>
-        <p>Phase: {phase}</p>
-        <p>Time Remaining: {timer}s</p>
-        <p>Enemies: {enemiesAlive}</p>
-        <p>Boxes Placed: {placedBoxes.length}/20</p>
-
-        {/* Combat status messages */}
-        {phase === 'combat' && (
-          <div className="text-center mt-4">
-            {timer > 0 ? (
-              <>Time until reinforcements stop: {timer}s</>
-            ) : (
-              <>
-                No more reinforcements!
-                <br />
-                Defeat remaining {enemiesAlive} {enemiesAlive === 1 ? 'enemy' : 'enemies'}!
-              </>
-            )}
+      {/* Game Interface */}
+      <div className="fixed inset-0 pointer-events-none z-10">
+        {/* Timer */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/50 px-4 py-2 rounded-lg pointer-events-none">
+          <div className="text-white text-xl font-bold">
+            {phase === 'prep' ? 'Preparation Phase' : `Time: ${timer}s`}
           </div>
-        )}
-
-        <p className="mt-2 text-sm opacity-75">
-          {phase === 'prep' ? (
-            <>Click on platforms to place boxes (up to 20)<br />Click placed boxes to remove them</>
-          ) : (
-            <>WASD to move, SPACE to jump<br />Left-click to shoot arrow, Right-click to throw boomerang</>
-          )}
-        </p>
-        {phase === 'prep' && placedBoxes.length >= 3 && (
-          <button
-            className="mt-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-            onClick={handleStartCombat}
-          >
-            Start Combat
-          </button>
-        )}
-      </div>
-
-      {/* Level Complete Interface */}
-      {levelComplete && (
-        <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 p-5 rounded-xl text-center pointer-events-auto">
-          <div className="text-green-500 text-3xl mb-5 text-shadow-lg">
-            Level {currentLevel} Complete!
-          </div>
-          <button
-            onClick={handleNextLevel}
-            className="px-6 py-3 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
-          >
-            Next Level
-          </button>
         </div>
-      )}
+
+        {/* Start Combat Button */}
+        {phase === 'prep' && placedBoxes.length > 0 && (
+          <div className="absolute top-4 right-4 pointer-events-auto">
+            <button
+              onClick={handleStartCombat}
+              className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+            >
+              Start Combat
+            </button>
+          </div>
+        )}
+
+        {/* Enemies Counter */}
+        {phase === 'combat' && (
+          <div className="absolute top-4 right-4 bg-black/50 px-4 py-2 rounded-lg pointer-events-none">
+            <div className="text-white text-xl">
+              Enemies: {enemiesAlive}
+            </div>
+          </div>
+        )}
+
+        {/* Level Complete Interface */}
+        {levelComplete && (
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 p-5 rounded-xl text-center pointer-events-auto">
+            <div className="text-green-500 text-3xl mb-5 text-shadow-lg">
+              Level {currentLevel} Complete!
+            </div>
+            <button
+              onClick={handleNextLevel}
+              className="px-6 py-3 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+            >
+              Next Level
+            </button>
+          </div>
+        )}
+
+        <BuildMenu />
+      </div>
 
       <Canvas shadows>
         <Suspense fallback={null}>

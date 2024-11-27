@@ -5,12 +5,16 @@ import { Environment } from '@react-three/drei';
 import { Vector3, Raycaster, AmbientLight, DirectionalLight, MeshStandardMaterial } from 'three';
 import { useGameStore } from '../store/gameStore';
 import { GhostBox } from './GhostBox';
+import { GhostTower } from './GhostTower';
+import { GhostCannon } from './GhostCannon';
 import { PlaceableBox } from './PlaceableBox';
 import { StaticBox } from './StaticBox';
 import { EnemySpawner } from './EnemySpawner';
 import { Portal } from './Portal';
 import { Player } from './Player';
 import { BlockedAreas } from './BlockedAreas';
+import { Tower } from './Tower';
+import { Cannon } from './Cannon';
 
 // Generate spiral positions using golden ratio
 const generateSpiralPositions = (count: number, scale: number = 1): Vector3[] => {
@@ -196,7 +200,7 @@ export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
 };
 
 export function Level() {
-  const { currentLevel, phase, placedBoxes, addBox, removeBox, timer, setIsSpawning, setLevelComplete, enemiesAlive, isSpawning } = useGameStore();
+  const { currentLevel, phase, placedBoxes, addPlacedBox, removePlacedBox, timer, setIsSpawning, setLevelComplete, enemiesAlive, isSpawning, selectedObjectType } = useGameStore();
   const { camera, scene } = useThree();
   const raycaster = useRef(new Raycaster());
   const [ghostBoxPosition, setGhostBoxPosition] = useState<Vector3 | null>(null);
@@ -220,14 +224,14 @@ export function Level() {
     return config.initialBoxes.some(box => {
       const boxPos = new Vector3(box.position[0], box.position[1], box.position[2]);
       const boxDim = new Vector3(box.dimensions[0], box.dimensions[1], box.dimensions[2]);
-      
+
       // Account for rotation in dimension check
       const effectiveDimX = Math.abs(Math.cos(box.rotation)) * boxDim.x + Math.abs(Math.sin(box.rotation)) * boxDim.z;
       const effectiveDimZ = Math.abs(Math.sin(box.rotation)) * boxDim.x + Math.abs(Math.cos(box.rotation)) * boxDim.z;
-      
+
       // Check if position is within the box bounds
       return Math.abs(position.x - boxPos.x) <= effectiveDimX / 2 &&
-             Math.abs(position.z - boxPos.z) <= effectiveDimZ / 2;
+        Math.abs(position.z - boxPos.z) <= effectiveDimZ / 2;
     });
   };
 
@@ -273,13 +277,13 @@ export function Level() {
         const canPlaceHere = !isOverPlaced && !isOverInitial;
 
         setIsOverPlacedBox(isOverPlaced || isOverInitial);
-        
+
         if (canPlaceHere) {
           setGhostBoxPosition(snappedPosition);
           setShowGhostBox(true);
           if (isPlacing && (!lastPlacedPosition.current ||
             lastPlacedPosition.current.distanceTo(snappedPosition) > 0.1)) {
-            addBox(snappedPosition);
+            addPlacedBox(snappedPosition, selectedObjectType);
             lastPlacedPosition.current = snappedPosition.clone();
           }
         } else {
@@ -313,12 +317,12 @@ export function Level() {
           box.position.distanceTo(boxPosition) < 0.1
         );
         if (boxToRemove) {
-          removeBox(boxToRemove.id);
+          removePlacedBox(boxToRemove.id);
           event.stopPropagation();
         }
       } else if (ghostBoxPosition && !isOverPlacedBox) {
         setIsPlacing(true);
-        addBox(ghostBoxPosition);
+        addPlacedBox(ghostBoxPosition, selectedObjectType);
         lastPlacedPosition.current = ghostBoxPosition.clone();
       }
     };
@@ -337,7 +341,7 @@ export function Level() {
       canvas.removeEventListener('mousedown', handleMouseDown);
       canvas.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [phase, placedBoxes.length, camera, scene, currentLevel, isPlacing, ghostBoxPosition, isOverPlacedBox]);
+  }, [phase, placedBoxes.length, camera, scene, currentLevel, isPlacing, ghostBoxPosition, isOverPlacedBox, selectedObjectType]);
 
   useEffect(() => {
     if (phase === 'combat') {
@@ -452,24 +456,50 @@ export function Level() {
         <StaticBox key={`static-${index}`} position={box.position} dimensions={box.dimensions} rotation={box.rotation} material={staticBoxMaterial} />
       ))}
 
-      {/* Placeable Boxes */}
-      {placedBoxes.map((box) => (
-        <PlaceableBox
-          key={box.id}
-          position={box.position}
-          onRemove={() => removeBox(box.id)}
-          material={placedBoxMaterial}
-        />
-      ))}
-
-      {/* Ghost Box */}
-      {phase === 'prep' && ghostBoxPosition && placedBoxes.length < 20 && showGhostBox && (
-        <GhostBox
-          position={ghostBoxPosition}
-          isRemoveMode={isOverPlacedBox}
-          material={ghostBoxMaterial}
-        />
+      {/* Ghost Preview */}
+      {showGhostBox && ghostBoxPosition && (
+        <>
+          {selectedObjectType === 'block' && (
+            <GhostBox position={ghostBoxPosition} isRemoveMode={isOverPlacedBox} objectType={selectedObjectType} />
+          )}
+          {selectedObjectType === 'tower' && (
+            <GhostTower position={ghostBoxPosition} />
+          )}
+          {selectedObjectType === 'cannon' && (
+            <GhostCannon position={ghostBoxPosition} />
+          )}
+        </>
       )}
+
+      {/* Placed Objects */}
+      {placedBoxes.map((box) => {
+        const pos = [box.position.x, box.position.y, box.position.z] as [number, number, number];
+        switch (box.type) {
+          case 'block':
+            return (
+              <PlaceableBox
+                key={box.id}
+                position={pos}
+                onRemove={() => removePlacedBox(box.id)}
+                objectType={box.type}
+              />
+            );
+          case 'tower':
+            return (
+              <Tower
+                key={box.id}
+                position={box.position}
+              />
+            );
+          case 'cannon':
+            return (
+              <Cannon
+                key={box.id}
+                position={box.position}
+              />
+            );
+        }
+      })}
 
       {/* Always render spawner */}
       <EnemySpawner position={spawnerPosition} />

@@ -1,0 +1,112 @@
+import { Vector3 } from 'three';
+import { useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import { RigidBody } from '@react-three/rapier';
+import { useGameStore } from '../store/gameStore';
+import { Fireball } from './Fireball';
+
+const ATTACK_RANGE = 20;
+const ATTACK_COOLDOWN = 2000; // ms
+const SPLASH_RADIUS = 5;
+
+export function Cannon({ position }: { position: Vector3 }) {
+  const phase = useGameStore(state => state.phase);
+  const lastAttackTime = useRef(0);
+  const activeFireballs = useRef<{ position: Vector3; direction: Vector3; id: number }[]>([]);
+  const nextFireballId = useRef(0);
+
+  useFrame(() => {
+    if (phase !== 'combat') return;
+
+    const now = Date.now();
+    if (now - lastAttackTime.current >= ATTACK_COOLDOWN) {
+      // Find enemies in range
+      const enemies = Array.from(document.querySelectorAll('[data-enemy]')).map(elem => {
+        const enemyObject = (window as any)._three.getObjectByProperty('uuid', elem.id);
+        return enemyObject?.parent;
+      }).filter(Boolean);
+
+      // Group enemies by proximity
+      const enemyGroups: Vector3[][] = [];
+      enemies.forEach(enemy => {
+        const distance = position.distanceTo(enemy.position);
+        if (distance <= ATTACK_RANGE) {
+          // Check if enemy is close to any existing group
+          let addedToGroup = false;
+          for (const group of enemyGroups) {
+            if (group[0].distanceTo(enemy.position) < SPLASH_RADIUS) {
+              group.push(enemy.position);
+              addedToGroup = true;
+              break;
+            }
+          }
+          if (!addedToGroup) {
+            enemyGroups.push([enemy.position]);
+          }
+        }
+      });
+
+      // Find largest group
+      let targetGroup = enemyGroups.reduce((largest, current) => 
+        current.length > largest.length ? current : largest
+      , [] as Vector3[]);
+
+      if (targetGroup.length > 0) {
+        // Calculate center of group
+        const center = targetGroup.reduce((sum, pos) => sum.add(pos), new Vector3())
+          .divideScalar(targetGroup.length);
+
+        // Calculate direction to target
+        const direction = new Vector3()
+          .subVectors(center, new Vector3(position.x, position.y + 1, position.z))
+          .normalize();
+
+        // Add new fireball
+        activeFireballs.current.push({
+          position: new Vector3(position.x, position.y + 1, position.z),
+          direction,
+          id: nextFireballId.current++
+        });
+
+        lastAttackTime.current = now;
+      }
+    }
+  });
+
+  return (
+    <group position={position}>
+      <RigidBody type="fixed" colliders="hull">
+        {/* Base */}
+        <mesh position={[0, 0.5, 0]}>
+          <cylinderGeometry args={[0.7, 0.8, 1, 8]} />
+          <meshStandardMaterial color="#666666" />
+        </mesh>
+        {/* Cannon barrel */}
+        <mesh position={[0, 1, 0]} rotation={[0, 0, -Math.PI / 4]}>
+          <cylinderGeometry args={[0.3, 0.4, 1.5, 8]} />
+          <meshStandardMaterial color="#444444" />
+        </mesh>
+        {/* Reinforcement rings */}
+        {[0.2, 0.6, 1].map((pos, index) => (
+          <mesh key={index} position={[0, 1, 0]} rotation={[0, 0, -Math.PI / 4]}>
+            <torusGeometry args={[0.4, 0.05, 8, 16]} />
+            <meshStandardMaterial color="#555555" />
+          </mesh>
+        ))}
+      </RigidBody>
+
+      {/* Active Fireballs */}
+      {activeFireballs.current.map((fireball) => (
+        <Fireball
+          key={fireball.id}
+          position={fireball.position}
+          direction={fireball.direction}
+          splashRadius={SPLASH_RADIUS}
+          onComplete={() => {
+            activeFireballs.current = activeFireballs.current.filter(f => f.id !== fireball.id);
+          }}
+        />
+      ))}
+    </group>
+  );
+}
