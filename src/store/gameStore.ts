@@ -2,10 +2,13 @@ import { create } from 'zustand';
 import { Vector3 } from 'three';
 import { RapierRigidBody } from '@react-three/rapier';
 
+export type TowerType = 'arrow' | 'cannon' | 'laser' | 'boomerang';
+type PlaceableObjectType = 'block' | TowerType;
+
 interface PlacedBox {
   id: number;
   position: Vector3;
-  type: 'block' | 'tower' | 'cannon' | 'boomerang';
+  type: PlaceableObjectType;
 }
 
 interface GameState {
@@ -16,7 +19,7 @@ interface GameState {
   isSpawning: boolean;
   levelComplete: boolean;
   placedBoxes: PlacedBox[];
-  selectedObjectType: 'block' | 'tower' | 'cannon' | 'boomerang';
+  selectedObjectType: PlaceableObjectType;
   playerRef: React.MutableRefObject<RapierRigidBody | null>;
   money: number;
 }
@@ -34,7 +37,6 @@ const initialState: GameState = {
   money: 20, // Starting money
 };
 
-export type TowerType = 'basic' | 'cannon' | 'arrow' | 'boomerang';
 
 export interface Tower {
   id: number;
@@ -43,9 +45,9 @@ export interface Tower {
 }
 
 export const towerCosts: Record<TowerType, number> = {
-  basic: 5,
+  arrow: 5,
   cannon: 15,
-  arrow: 8,
+  laser: 8,
   boomerang: 12
 };
 
@@ -56,9 +58,9 @@ export const useGameStore = create<GameState & {
   setEnemiesAlive: (count: number) => void;
   setIsSpawning: (isSpawning: boolean) => void;
   setLevelComplete: (complete: boolean) => void;
-  addPlacedBox: (position: Vector3, type: 'block' | 'tower' | 'cannon' | 'boomerang') => void;
+  addPlacedBox: (position: Vector3, type: PlaceableObjectType) => void;
   removePlacedBox: (id: number) => void;
-  setSelectedObjectType: (type: 'block' | 'tower' | 'cannon' | 'boomerang') => void;
+  setSelectedObjectType: (type: PlaceableObjectType) => void;
   setPlayerRef: (ref: React.MutableRefObject<RapierRigidBody | null>) => void;
   addMoney: (amount: number) => void;
   spendMoney: (amount: number) => boolean;
@@ -105,8 +107,10 @@ export const useGameStore = create<GameState & {
       let cost = 0;
       if (type === 'block') {
         cost = 1;
-      } else if (type === 'tower') {
-        cost = towerCosts.basic;
+      } else if (type === 'arrow') {
+        cost = towerCosts.arrow;
+      } else if (type === 'laser') {
+        cost = towerCosts.laser;
       } else if (type === 'cannon') {
         cost = towerCosts.cannon;
       } else if (type === 'boomerang') {
@@ -130,19 +134,21 @@ export const useGameStore = create<GameState & {
     set((state) => {
       const box = state.placedBoxes.find(box => box.id === id);
       if (!box) return state;
-      
+
       // Refund the cost of the removed box
       let refundAmount = 0;
       if (box.type === 'block') {
         refundAmount = 1;
-      } else if (box.type === 'tower') {
-        refundAmount = towerCosts.basic;
+      } else if (box.type === 'arrow') {
+        refundAmount = towerCosts.arrow;
+      } else if (box.type === 'laser') {
+        refundAmount = towerCosts.laser;
       } else if (box.type === 'cannon') {
         refundAmount = towerCosts.cannon;
       } else if (box.type === 'boomerang') {
         refundAmount = towerCosts.boomerang;
       }
-      
+
       return {
         placedBoxes: state.placedBoxes.filter((box) => box.id !== id),
         money: state.money + refundAmount
@@ -171,9 +177,10 @@ export const useGameStore = create<GameState & {
 }));
 
 // Box costs
-export const getBoxCost = (type: 'block' | 'tower' | 'cannon' | 'boomerang'): number => {
+export const getBoxCost = (type: PlaceableObjectType): number => {
   if (type === 'block') return 1;
-  if (type === 'tower') return towerCosts.basic;
+  if (type === 'arrow') return towerCosts.arrow;
+  if (type === 'laser') return towerCosts.laser;
   if (type === 'cannon') return towerCosts.cannon;
   if (type === 'boomerang') return towerCosts.boomerang;
   return 0;

@@ -7,7 +7,7 @@ export function BuildMenu() {
 
   const items = [
     { type: 'block', label: 'Block', cost: getBoxCost('block') },
-    { type: 'tower', label: 'Arrow Tower', cost: getBoxCost('tower') },
+    { type: 'tower', label: 'Laser Tower', cost: getBoxCost('laser') },
     { type: 'cannon', label: 'Cannon', cost: getBoxCost('cannon') },
     { type: 'boomerang', label: 'Boomerang Tower', cost: getBoxCost('boomerang') },
   ] as const;
@@ -18,7 +18,7 @@ export function BuildMenu() {
       <div className="text-yellow-400 text-xl font-bold mb-2 text-center">
         Gold: {money}
       </div>
-      
+
       <div className="flex gap-2">
         {items.map(({ type, label, cost }) => (
           <button
