@@ -1,133 +1,145 @@
 import { Vector3 } from 'three';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
 import { useGameStore } from '../store/gameStore';
 import { Fireball } from './Fireball';
 
-const ATTACK_RANGE = 12;
+const ATTACK_RANGE = 15;
 const ATTACK_COOLDOWN = 2000; // ms
 const SPLASH_RADIUS = 5;
+
+interface Enemy {
+  position: Vector3;
+  distance: number;
+}
 
 export function Cannon({ position }: { position: Vector3 }) {
   const phase = useGameStore(state => state.phase);
   const lastAttackTime = useRef(0);
-  const activeFireballs = useRef<{ position: Vector3; direction: Vector3; id: number }[]>([]);
+  const [rotation, setRotation] = useState(0);
+  const [activeFireballs, setActiveFireballs] = useState<Array<{
+    id: number;
+    position: Vector3;
+    direction: Vector3;
+  }>>([]);
   const nextFireballId = useRef(0);
+  const cannonRef = useRef<THREE.Group>(null);
 
   useFrame((state) => {
     if (phase !== 'combat') return;
 
     const now = Date.now();
     if (now - lastAttackTime.current >= ATTACK_COOLDOWN) {
-      // Find enemies in range
-      const enemies = Array.from(state.scene.getObjectByName('enemies')?.children || [])
-        .filter(obj => obj.userData.type === 'enemy')
-        .map(obj => ({
-          position: obj.position,
-          distance: new Vector3(position.x, position.y + 1, position.z)
-            .distanceTo(obj.position)
-        }))
-        .filter(enemy => enemy.distance <= ATTACK_RANGE);
+      // Find enemies group
+      const enemiesGroup = state.scene.getObjectByName('enemies');
+      if (!enemiesGroup) {
+        return;
+      }
 
-      if (enemies.length > 0) {
-        // Group enemies by proximity
-        const enemyGroups: Vector3[][] = [];
-        enemies.forEach(enemy => {
-          let addedToGroup = false;
-          for (const group of enemyGroups) {
-            if (group[0].distanceTo(enemy.position) < SPLASH_RADIUS) {
-              group.push(enemy.position);
-              addedToGroup = true;
-              break;
-            }
-          }
-          if (!addedToGroup) {
-            enemyGroups.push([enemy.position]);
-          }
-        });
-
-        // Find largest group
-        let targetGroup = enemyGroups.reduce((largest, current) => 
-          current.length > largest.length ? current : largest
-        , [] as Vector3[]);
-
-        if (targetGroup.length > 0) {
-          // Calculate center of group
-          const center = targetGroup.reduce((sum, pos) => sum.add(pos), new Vector3())
-            .divideScalar(targetGroup.length);
-
-          // Calculate direction to target
-          const direction = new Vector3()
-            .subVectors(center, new Vector3(position.x, position.y + 1, position.z))
-            .normalize();
-
-          // Add new fireball
-          activeFireballs.current.push({
-            position: new Vector3(position.x, position.y + 1, position.z),
-            direction,
-            id: nextFireballId.current++
+      // Get all enemies in range
+      const enemiesInRange: Enemy[] = [];
+      enemiesGroup.children.forEach(enemy => {
+        const enemyPos = enemy.position;
+        const cannonPos = new Vector3(position.x, position.y + 1, position.z);
+        const distance = cannonPos.distanceTo(enemyPos);
+        
+        if (distance <= ATTACK_RANGE) {
+          enemiesInRange.push({
+            position: enemyPos,
+            distance: distance
           });
-
-          lastAttackTime.current = now;
         }
+      });
+
+      // Sort by distance and take closest
+      enemiesInRange.sort((a, b) => a.distance - b.distance);
+
+      if (enemiesInRange.length > 0) {
+        const target = enemiesInRange[0];
+        const spawnPos = new Vector3(position.x, position.y + 1, position.z);
+        
+        // Calculate direction to target with slight upward arc
+        const direction = target.position.clone()
+          .sub(spawnPos)
+          .normalize();
+        
+        // Add slight upward arc
+        direction.y += 0.2;
+        direction.normalize();
+
+        // Calculate rotation to face target
+        const angle = Math.atan2(direction.x, direction.z);
+        setRotation(angle);
+
+        // Create new fireball
+        const fireballId = nextFireballId.current++;
+        setActiveFireballs(prev => [...prev, {
+          id: fireballId,
+          position: spawnPos.clone(),
+          direction: direction.clone()
+        }]);
+
+        lastAttackTime.current = now;
       }
     }
-
-    // Clean up completed fireballs
-    activeFireballs.current = activeFireballs.current.filter(fireball => {
-      const age = now - fireball.id * ATTACK_COOLDOWN;
-      return age < 2000; // Remove fireballs after 2 seconds
-    });
   });
 
   return (
-    <group position={position}>
+    <group position={position} ref={cannonRef}>
       <RigidBody type="fixed" colliders="hull">
         {/* Base */}
-        <mesh position={[0, 0.5, 0]}>
+        <mesh position={[0, 0.5, 0]} castShadow receiveShadow>
           <cylinderGeometry args={[0.7, 0.8, 1, 8]} />
-          <meshStandardMaterial color="#666666" />
+          <meshStandardMaterial color="#666666" metalness={0.6} roughness={0.2} />
         </mesh>
-        {/* Cannon barrel */}
-        <mesh position={[0, 1, 0]} rotation={[0, 0, -Math.PI / 4]}>
-          <cylinderGeometry args={[0.3, 0.4, 1.5, 8]} />
-          <meshStandardMaterial color="#444444" />
-        </mesh>
-        {/* Reinforcement rings */}
-        {[0.2, 0.6, 1].map((pos, index) => (
-          <mesh key={index} position={[0, 1, 0]} rotation={[0, 0, -Math.PI / 4]}>
-            <torusGeometry args={[0.4, 0.05, 8, 16]} />
-            <meshStandardMaterial color="#333333" />
+
+        {/* Rotating turret */}
+        <group rotation={[0, rotation, 0]}>
+          {/* Cannon barrel */}
+          <mesh position={[0, 1, 0]} rotation={[0, 0, -Math.PI / 4]} castShadow>
+            <cylinderGeometry args={[0.3, 0.4, 1.5, 8]} />
+            <meshStandardMaterial color="#444444" metalness={0.7} roughness={0.2} />
           </mesh>
-        ))}
+
+          {/* Reinforcement rings */}
+          {[0.2, 0.6, 1].map((pos, index) => (
+            <mesh 
+              key={index} 
+              position={[0, 1, 0]} 
+              rotation={[0, 0, -Math.PI / 4]}
+              castShadow
+            >
+              <torusGeometry args={[0.4, 0.05, 8, 16]} />
+              <meshStandardMaterial color="#333333" metalness={0.8} roughness={0.1} />
+            </mesh>
+          ))}
+
+          {/* Decorative details */}
+          <mesh position={[0, 0.8, 0]} castShadow>
+            <cylinderGeometry args={[0.5, 0.5, 0.2, 8]} />
+            <meshStandardMaterial color="#555555" metalness={0.7} roughness={0.2} />
+          </mesh>
+        </group>
       </RigidBody>
 
-      {/* Range indicators (only in prep phase) */}
+      {/* Range indicator (only in prep phase) */}
       {phase === 'prep' && (
-        <>
-          {/* Attack range indicator */}
-          <mesh position={[0, 0.1, 0]} rotation={[Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[ATTACK_RANGE - 0.1, ATTACK_RANGE, 64]} />
-            <meshBasicMaterial color="#ff4444" transparent opacity={0.2} />
-          </mesh>
-          {/* Splash radius indicator */}
-          <mesh position={[0, 0.05, 0]} rotation={[Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[SPLASH_RADIUS - 0.1, SPLASH_RADIUS, 32]} />
-            <meshBasicMaterial color="#ff8844" transparent opacity={0.1} />
-          </mesh>
-        </>
+        <mesh position={[0, 0.1, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0, ATTACK_RANGE, 32]} />
+          <meshBasicMaterial color="#ff8844" transparent opacity={0.1} />
+        </mesh>
       )}
 
-      {/* Active Fireballs */}
-      {activeFireballs.current.map((fireball) => (
+      {/* Active fireballs */}
+      {activeFireballs.map(({ id, position: pos, direction }) => (
         <Fireball
-          key={fireball.id}
-          position={fireball.position}
-          direction={fireball.direction}
+          key={id}
+          position={pos}
+          direction={direction}
           splashRadius={SPLASH_RADIUS}
           onComplete={() => {
-            activeFireballs.current = activeFireballs.current.filter(f => f.id !== fireball.id);
+            setActiveFireballs(prev => prev.filter(f => f.id !== id));
           }}
         />
       ))}

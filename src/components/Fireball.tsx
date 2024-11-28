@@ -1,39 +1,67 @@
-import { useRef } from 'react';
+import { useRef, useMemo } from 'react';
 import { Vector3, Quaternion } from 'three';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 
 const FIREBALL_SPEED = 25;
 const LIFETIME = 2; // seconds
+const FIREBALL_DAMAGE = 30; // Base damage
+const PARTICLE_COUNT = 100;
 
-export function Fireball({ position, direction, splashRadius, onComplete }: { 
+interface FireballProps {
   position: Vector3;
   direction: Vector3;
   splashRadius: number;
   onComplete: () => void;
-}) {
+}
+
+export function Fireball({ position, direction, splashRadius, onComplete }: FireballProps) {
   const ref = useRef<any>();
   const startTime = useRef(Date.now());
   const hasExploded = useRef(false);
+  const particlesRef = useRef<any>();
+  const currentPosition = useRef(position.clone());
 
   // Calculate rotation to face direction
-  const rotation = new Quaternion();
-  rotation.setFromUnitVectors(new Vector3(0, 0, 1), direction);
+  const rotation = useMemo(() => {
+    const q = new Quaternion();
+    q.setFromUnitVectors(new Vector3(0, 0, 1), direction);
+    return q;
+  }, [direction]);
+
+  // Create random particles positions
+  const particles = useMemo(() => {
+    const arr = new Float32Array(PARTICLE_COUNT * 3);
+    for (let i = 0; i < PARTICLE_COUNT * 3; i += 3) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = Math.random() * 0.5;
+      arr[i] = Math.cos(angle) * radius;
+      arr[i + 1] = Math.sin(angle) * radius;
+      arr[i + 2] = (Math.random() - 0.5) * 0.5;
+    }
+    return arr;
+  }, []);
 
   useFrame((state, delta) => {
-    if (!ref.current || hasExploded.current) return;
+    if (hasExploded.current) return;
 
-    // Move fireball
-    const pos = ref.current.translation();
-    ref.current.setTranslation({
-      x: pos.x + direction.x * FIREBALL_SPEED * delta,
-      y: pos.y + direction.y * FIREBALL_SPEED * delta,
-      z: pos.z + direction.z * FIREBALL_SPEED * delta
-    });
+    // Update position
+    currentPosition.current.add(direction.clone().multiplyScalar(FIREBALL_SPEED * delta));
+    
+    // Update rigid body position if it exists
+    if (ref.current) {
+      ref.current.setTranslation(currentPosition.current);
+    }
+
+    // Rotate particles
+    if (particlesRef.current) {
+      particlesRef.current.rotation.x += delta * 2;
+      particlesRef.current.rotation.y += delta * 3;
+    }
 
     // Check lifetime
     if (Date.now() - startTime.current > LIFETIME * 1000) {
-      explode(new Vector3(pos.x, pos.y, pos.z));
+      explode(currentPosition.current);
     }
   });
 
@@ -51,8 +79,8 @@ export function Fireball({ position, direction, splashRadius, onComplete }: {
       const distance = position.distanceTo(enemy.position);
       if (distance <= splashRadius) {
         // Calculate damage based on distance (more damage closer to center)
-        const damage = Math.ceil(3 * (1 - distance / splashRadius));
-        enemy.userData.takeDamage?.(damage);
+        const damage = Math.ceil(FIREBALL_DAMAGE * (1 - distance / splashRadius));
+        enemy.userData.takeDamage?.(damage, direction.clone().multiplyScalar(10));
       }
     });
 
@@ -68,35 +96,68 @@ export function Fireball({ position, direction, splashRadius, onComplete }: {
       sensor
       onIntersectionEnter={({ other }) => {
         if (other.rigidBody?.userData?.isEnemy && !hasExploded.current) {
-          explode(other.rigidBody.translation());
+          explode(currentPosition.current);
         }
       }}
     >
       <group quaternion={rotation}>
         {/* Fireball core */}
-        <mesh>
-          <sphereGeometry args={[0.3]} />
+        <mesh castShadow>
+          <sphereGeometry args={[0.4]} />
           <meshStandardMaterial
             color="#ff4400"
             emissive="#ff4400"
-            emissiveIntensity={2}
+            emissiveIntensity={3}
+            toneMapped={false}
           />
         </mesh>
+
+        {/* Inner glow */}
+        <mesh scale={1.2}>
+          <sphereGeometry args={[0.3]} />
+          <meshBasicMaterial
+            color="#ff8800"
+            transparent
+            opacity={0.4}
+          />
+        </mesh>
+
         {/* Fire particles */}
-        <points>
+        <group ref={particlesRef}>
+          <points>
+            <bufferGeometry>
+              <bufferAttribute
+                attach="attributes-position"
+                count={PARTICLE_COUNT}
+                array={particles}
+                itemSize={3}
+              />
+            </bufferGeometry>
+            <pointsMaterial
+              size={0.15}
+              color="#ff8800"
+              transparent
+              opacity={0.8}
+              sizeAttenuation
+            />
+          </points>
+        </group>
+
+        {/* Trail particles */}
+        <points position={[0, 0, -1]}>
           <bufferGeometry>
             <bufferAttribute
               attach="attributes-position"
               count={50}
-              array={new Float32Array(150).map(() => (Math.random() - 0.5) * 0.5)}
+              array={new Float32Array(150).map(() => (Math.random() - 0.5) * 0.3)}
               itemSize={3}
             />
           </bufferGeometry>
           <pointsMaterial
             size={0.1}
-            color="#ff8800"
+            color="#ff4400"
             transparent
-            opacity={0.8}
+            opacity={0.5}
           />
         </points>
       </group>
