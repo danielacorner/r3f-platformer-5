@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useGameStore, ObjectType } from '../store/gameStore';
 import { Tower } from './Tower';
 import { Cannon } from './Cannon';
+import { BoomerangTower } from './BoomerangTower';
 
 interface PlaceableBoxProps {
   position: [number, number, number];
@@ -27,6 +28,8 @@ export function PlaceableBox({ position, onRemove, objectType }: PlaceableBoxPro
         return <Tower position={position} />;
       case 'cannon':
         return <Cannon position={position} />;
+      case 'boomerang':
+        return <BoomerangTower position={position} />;
       default:
         return (
           <mesh

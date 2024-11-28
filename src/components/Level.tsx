@@ -7,6 +7,7 @@ import { useGameStore } from '../store/gameStore';
 import { GhostBox } from './GhostBox';
 import { GhostTower } from './GhostTower';
 import { GhostCannon } from './GhostCannon';
+import { GhostBoomerangTower } from './GhostBoomerangTower';
 import { PlaceableBox } from './PlaceableBox';
 import { StaticBox } from './StaticBox';
 import { EnemySpawner } from './EnemySpawner';
@@ -15,6 +16,7 @@ import { Player } from './Player';
 import { BlockedAreas } from './BlockedAreas';
 import { Tower, ArrowManager } from './Tower';
 import { Cannon } from './Cannon';
+import { BoomerangTower } from './BoomerangTower';
 
 // Generate spiral positions using golden ratio
 const generateSpiralPositions = (count: number, scale: number = 1): Vector3[] => {
@@ -474,6 +476,9 @@ export function Level() {
           {selectedObjectType === 'cannon' && (
             <GhostCannon position={ghostBoxPosition} />
           )}
+          {selectedObjectType === 'boomerang' && (
+            <GhostBoomerangTower position={ghostBoxPosition} />
+          )}
         </>
       )}
 
@@ -501,6 +506,13 @@ export function Level() {
           case 'cannon':
             return (
               <Cannon
+                key={box.id}
+                position={box.position}
+              />
+            );
+          case 'boomerang':
+            return (
+              <BoomerangTower
                 key={box.id}
                 position={box.position}
               />

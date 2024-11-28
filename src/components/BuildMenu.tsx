@@ -9,6 +9,7 @@ export function BuildMenu() {
     { type: 'block', label: 'Block', cost: getBoxCost('block') },
     { type: 'tower', label: 'Arrow Tower', cost: getBoxCost('tower') },
     { type: 'cannon', label: 'Cannon', cost: getBoxCost('cannon') },
+    { type: 'boomerang', label: 'Boomerang Tower', cost: getBoxCost('boomerang') },
   ] as const;
 
   return (
