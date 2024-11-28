@@ -9,6 +9,8 @@ const BOOMERANG_DAMAGE = 25;
 const ROTATION_SPEED = 15;
 const CURVE_STRENGTH = 8;
 const RETURN_SPEED_MULTIPLIER = 1.5;
+const MIN_HEIGHT = 1; // Minimum height above the ground
+const HEIGHT_CURVE_STRENGTH = 2; // Strength of the vertical curve
 
 interface BoomerangProps {
   position: Vector3;
@@ -24,6 +26,7 @@ export function Boomerang({ position, direction, onComplete, returnPosition }: B
   const rotationAngle = useRef(0);
   const hasHitEnemies = useRef(new Set<string>());
   const phase = useRef<'outward' | 'return'>('outward');
+  const initialHeight = position.y;
   
   // Calculate perpendicular vector for curved path
   const perpendicular = direction.clone().cross(new Vector3(0, 1, 0)).normalize();
@@ -33,6 +36,7 @@ export function Boomerang({ position, direction, onComplete, returnPosition }: B
     if (!ref.current) return;
     
     const elapsed = (Date.now() - startTime.current) / 1000;
+    const progress = elapsed / (LIFETIME / 2); // Normalized progress (0 to 1)
     
     // Update rotation
     rotationAngle.current += ROTATION_SPEED * delta;
@@ -48,20 +52,39 @@ export function Boomerang({ position, direction, onComplete, returnPosition }: B
         .multiplyScalar(delta)
         .add(curveOffset.multiplyScalar(delta));
       
+      // Add vertical curve
+      const heightOffset = Math.sin(progress * Math.PI) * HEIGHT_CURVE_STRENGTH;
+      movement.y = heightOffset * delta;
+      
       currentPosition.current.add(movement);
+      
+      // Ensure minimum height
+      if (currentPosition.current.y < MIN_HEIGHT) {
+        currentPosition.current.y = MIN_HEIGHT;
+      }
       
       // Check if it's time to return
       if (elapsed >= LIFETIME / 2) {
         phase.current = 'return';
       }
     } else {
-      // Return phase - move towards return position
-      const toReturn = returnPosition.clone()
-        .sub(currentPosition.current)
-        .normalize()
-        .multiplyScalar(BOOMERANG_SPEED * RETURN_SPEED_MULTIPLIER * delta);
+      // Return phase - move towards return position with arc
+      const toReturn = returnPosition.clone().sub(currentPosition.current);
+      const distance = toReturn.length();
+      const returnProgress = 1 - (distance / (returnPosition.clone().sub(position).length()));
+      
+      // Add height curve during return
+      const heightOffset = Math.sin(returnProgress * Math.PI) * HEIGHT_CURVE_STRENGTH;
+      
+      toReturn.normalize().multiplyScalar(BOOMERANG_SPEED * RETURN_SPEED_MULTIPLIER * delta);
+      toReturn.y += heightOffset * delta;
       
       currentPosition.current.add(toReturn);
+      
+      // Ensure minimum height
+      if (currentPosition.current.y < MIN_HEIGHT) {
+        currentPosition.current.y = MIN_HEIGHT;
+      }
       
       // Check if returned
       if (currentPosition.current.distanceTo(returnPosition) < 1) {
