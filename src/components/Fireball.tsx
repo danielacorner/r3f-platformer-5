@@ -90,35 +90,32 @@ export function Fireball({ position, direction, targetPosition, splashRadius, on
       return;
     }
 
-    // Find all enemies within explosion radius and apply damage
-    enemiesGroup.children.forEach((enemy) => {
-      if (!enemy.userData?.rigidBody) return;
+    // Apply AOE damage to all enemies in range
+    for (const enemy of enemiesGroup.children) {
+      const distance = position.distanceTo(enemy.position);
       
-      const enemyPos = new Vector3();
-      const enemyRB = enemy.userData.rigidBody;
-      const translation = enemyRB.translation();
-      enemyPos.set(translation.x, translation.y, translation.z);
-      
-      const distanceToExplosion = position.distanceTo(enemyPos);
-      
-      if (distanceToExplosion <= EXPLOSION_RADIUS) {
-        const damageMultiplier = 1 - (distanceToExplosion / EXPLOSION_RADIUS);
+      if (distance <= EXPLOSION_RADIUS) {
+        // Calculate damage based on distance from explosion center
+        const damageMultiplier = 1 - (distance / EXPLOSION_RADIUS);
         const damage = Math.ceil(FIREBALL_DAMAGE * damageMultiplier);
         
+        // Calculate knockback direction (away from explosion)
         const knockbackDir = new Vector3()
-          .subVectors(enemyPos, position)
+          .subVectors(enemy.position, position)
           .normalize();
         
+        // Add slight upward force
         knockbackDir.y += 0.3;
         knockbackDir.normalize();
         
-        const knockbackForce = knockbackDir.multiplyScalar(EXPLOSION_FORCE * damageMultiplier);
-        
-        if (enemyRB.userData?.takeDamage) {
-          enemyRB.userData.takeDamage(damage, knockbackForce);
+        // Apply damage and knockback if enemy has handler
+        if (enemy.userData?.takeDamage) {
+          const knockbackForce = knockbackDir.multiplyScalar(EXPLOSION_FORCE * damageMultiplier);
+          enemy.userData.takeDamage(damage, knockbackForce);
+          console.log(`Applied ${damage} damage to enemy at distance ${distance}`);
         }
       }
-    });
+    }
   };
 
   useFrame((state, delta) => {
