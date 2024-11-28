@@ -23,15 +23,20 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
   const lastPosition = useRef<Vector3>(new Vector3());
   const stuckCheckTimeout = useRef<NodeJS.Timeout | null>(null);
   const pathUpdateInterval = useRef<NodeJS.Timeout | null>(null);
-  
-  const moveSpeed = 2;
+  const randomOffset = useRef<Vector3>(new Vector3());
+  const lastRandomUpdateTime = useRef<number>(0);
+
+  const moveSpeed = 5;
   const ENEMY_SIZE = 0.6;
   const ARENA_Y_LEVEL = 0.5;
   const WAYPOINT_THRESHOLD = 0.5;
   const STUCK_THRESHOLD = 0.1;
   const STUCK_CHECK_INTERVAL = 1000; // 1 second
   const PATH_UPDATE_INTERVAL = 500; // 0.5 seconds
-  
+  const RANDOM_UPDATE_INTERVAL = 300; // Update random direction every 0.3 seconds
+  const RANDOM_WALK_STRENGTH = 0.4; // Strength of random movement (0-1)
+  const PORTAL_BIAS = 0.7; // Bias towards portal (0-1)
+
   const currentLevel = useGameStore(state => state.currentLevel);
 
   useEffect(() => {
@@ -106,6 +111,17 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
     if (!rigidBodyRef.current) return;
 
     const currentPosition = rigidBodyRef.current.translation();
+    const now = state.clock.getElapsedTime() * 1000;
+
+    // Update random offset periodically
+    if (now - lastRandomUpdateTime.current > RANDOM_UPDATE_INTERVAL) {
+      randomOffset.current.set(
+        (Math.random() - 0.5) * 2 * RANDOM_WALK_STRENGTH,
+        0,
+        (Math.random() - 0.5) * 2 * RANDOM_WALK_STRENGTH
+      );
+      lastRandomUpdateTime.current = now;
+    }
 
     // Move towards current waypoint or target
     let moveTarget = currentWaypoint || target;
@@ -130,28 +146,24 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
       }
     }
 
-    // Apply movement
+    // Apply movement with random walk and portal bias
     if (direction.length() > 0.1) {
       direction.normalize();
       const velocity = rigidBodyRef.current.linvel();
       
-      // Add slight randomization to movement to prevent getting stuck
-      const randomOffset = isStuck ? new Vector3(
-        (Math.random() - 0.5) * 0.2,
-        0,
-        (Math.random() - 0.5) * 0.2
-      ) : new Vector3();
-      
-      direction.add(randomOffset).normalize();
+      // Combine portal direction with random walk
+      const finalDirection = direction.clone().multiplyScalar(PORTAL_BIAS)
+        .add(randomOffset.current)
+        .normalize();
 
       rigidBodyRef.current.setLinvel({
-        x: direction.x * moveSpeed,
+        x: finalDirection.x * moveSpeed,
         y: velocity.y,
-        z: direction.z * moveSpeed
+        z: finalDirection.z * moveSpeed
       });
 
       // Rotate enemy to face movement direction
-      const angle = Math.atan2(direction.x, direction.z);
+      const angle = Math.atan2(finalDirection.x, finalDirection.z);
       rigidBodyRef.current.setRotation({ x: 0, y: angle, z: 0 });
     }
   });
