@@ -46,7 +46,7 @@ export default function App() {
   return (
     <div className="h-screen w-screen">
       {/* Game Interface */}
-      <div className="fixed inset-0 pointer-events-none z-10">
+      <div className="fixed inset-0 z-10 pointer-events-none">
         {/* Timer */}
         <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/50 px-4 py-2 rounded-lg pointer-events-none">
           <div className="text-white text-xl font-bold">

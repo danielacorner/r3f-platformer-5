@@ -414,12 +414,6 @@ export function Level() {
     })
     , []);
 
-  const [towers] = useState([
-    new Vector3(-9, 0, -1),
-    new Vector3(-1, 0, -9),
-    new Vector3(-19, 0, -18),
-  ]);
-
   const [arrows, setArrows] = useState<{ position: Vector3; direction: Vector3; id: number }[]>([]);
 
   const handleArrowComplete = (id: number) => {
@@ -513,11 +507,6 @@ export function Level() {
             );
         }
       })}
-
-      {/* Towers */}
-      {towers.map((position, index) => (
-        <Tower key={index} position={position} onArrowSpawn={(arrow) => setArrows(prev => [...prev, arrow])} />
-      ))}
 
       {/* Arrows rendered at root level */}
       <ArrowManager arrows={arrows} onArrowComplete={handleArrowComplete} />

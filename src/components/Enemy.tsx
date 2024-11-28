@@ -156,9 +156,26 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
     }
   });
 
+  const handleDeath = () => {
+    if (health <= 0) return;
+    setHealth(0);
+    
+    // Drop money on death
+    useGameStore.getState().addMoney(1);
+    
+    // Update enemy count
+    useGameStore.getState().setEnemiesAlive(prev => Math.max(0, prev - 1));
+    
+    // Check if level is complete
+    if (useGameStore.getState().enemiesAlive <= 1) {
+      useGameStore.getState().setLevelComplete(true);
+    }
+  };
+
   useEffect(() => {
     if (health <= 0) {
       console.log('Enemy died');
+      handleDeath();
       onDeath();
     }
   }, [health, onDeath]);

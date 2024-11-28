@@ -1,35 +1,41 @@
-import { useGameStore } from '../store/gameStore';
+import { useGameStore, getBoxCost } from '../store/gameStore';
 
 export function BuildMenu() {
-  const phase = useGameStore(state => state.phase);
-  const selectedObjectType = useGameStore(state => state.selectedObjectType);
-  const setSelectedObjectType = useGameStore(state => state.setSelectedObjectType);
+  const { phase, selectedObjectType, setSelectedObjectType, money } = useGameStore();
 
   if (phase !== 'prep') return null;
 
   const items = [
-    { type: 'block', name: 'Block', description: 'Basic defensive block' },
-    { type: 'tower', name: 'Arrow Tower', description: 'Shoots arrows at enemies' },
-    { type: 'cannon', name: 'Cannon', description: 'Launches explosive fireballs' }
+    { type: 'block', label: 'Block', cost: getBoxCost('block') },
+    { type: 'tower', label: 'Arrow Tower', cost: getBoxCost('tower') },
+    { type: 'cannon', label: 'Cannon', cost: getBoxCost('cannon') },
   ] as const;
 
   return (
-    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-4 pointer-events-auto">
-      {items.map(item => (
-        <button
-          key={item.type}
-          className={`
-            w-24 h-24 bg-gray-800/80 rounded-lg p-2 
-            flex flex-col items-center justify-center
-            transition-all hover:bg-gray-700/80
-            ${selectedObjectType === item.type ? 'ring-2 ring-blue-500' : ''}
-          `}
-          onClick={() => setSelectedObjectType(item.type)}
-        >
-          <div className="text-white font-bold mb-1">{item.name}</div>
-          <div className="text-gray-300 text-xs text-center">{item.description}</div>
-        </button>
-      ))}
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-black/50 p-4 rounded-lg pointer-events-auto">
+      {/* Money Display */}
+      <div className="text-yellow-400 text-xl font-bold mb-2 text-center">
+        Gold: {money}
+      </div>
+      
+      <div className="flex gap-2">
+        {items.map(({ type, label, cost }) => (
+          <button
+            key={type}
+            onClick={() => setSelectedObjectType(type)}
+            className={`
+              px-4 py-2 rounded
+              ${selectedObjectType === type ? 'bg-blue-500' : 'bg-gray-700'}
+              ${money >= cost ? 'hover:bg-blue-600' : 'opacity-50 cursor-not-allowed'}
+              transition-colors
+            `}
+            disabled={money < cost}
+          >
+            <div className="text-white">{label}</div>
+            <div className="text-yellow-400 text-sm">{cost} gold</div>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
