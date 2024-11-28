@@ -22,6 +22,7 @@ export function Cannon({ position }: { position: Vector3 }) {
     id: number;
     position: Vector3;
     direction: Vector3;
+    targetPosition: Vector3;
   }>>([]);
   const nextFireballId = useRef(0);
   const cannonRef = useRef<THREE.Group>(null);
@@ -59,14 +60,10 @@ export function Cannon({ position }: { position: Vector3 }) {
         const target = enemiesInRange[0];
         const spawnPos = new Vector3(position.x, position.y + 1, position.z);
         
-        // Calculate direction to target with slight upward arc
+        // Calculate direction to target
         const direction = target.position.clone()
           .sub(spawnPos)
           .normalize();
-        
-        // Add slight upward arc
-        direction.y += 0.2;
-        direction.normalize();
 
         // Calculate rotation to face target
         const angle = Math.atan2(direction.x, direction.z);
@@ -77,7 +74,8 @@ export function Cannon({ position }: { position: Vector3 }) {
         setActiveFireballs(prev => [...prev, {
           id: fireballId,
           position: spawnPos.clone(),
-          direction: direction.clone()
+          direction: direction.clone(),
+          targetPosition: target.position.clone()
         }]);
 
         lastAttackTime.current = now;
@@ -132,11 +130,12 @@ export function Cannon({ position }: { position: Vector3 }) {
       )}
 
       {/* Active fireballs */}
-      {activeFireballs.map(({ id, position: pos, direction }) => (
+      {activeFireballs.map(({ id, position: pos, direction, targetPosition }) => (
         <Fireball
           key={id}
           position={pos}
           direction={direction}
+          targetPosition={targetPosition}
           splashRadius={SPLASH_RADIUS}
           onComplete={() => {
             setActiveFireballs(prev => prev.filter(f => f.id !== id));
