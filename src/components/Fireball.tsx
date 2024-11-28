@@ -1,15 +1,18 @@
 import { useRef, useMemo, useState } from 'react';
-import { Vector3, Quaternion, Color } from 'three';
-import { useFrame } from '@react-three/fiber';
+import { Vector3, Quaternion } from 'three';
+import { useFrame, useThree } from '@react-three/fiber';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { Sparkles, Billboard } from '@react-three/drei';
 
-const FIREBALL_SPEED = 10; // Reduced from 15 for shorter range
-const LIFETIME = 3; // seconds
-const FIREBALL_DAMAGE = 30; // Base damage
+const FIREBALL_SPEED = 12;
+const LIFETIME = 3;
+const FIREBALL_DAMAGE = 40;
 const PARTICLE_COUNT = 100;
-const GRAVITY = -20; // Increased gravity for steeper arc
-const MIN_HEIGHT = 6; // Slightly reduced arc height
+const GRAVITY = -20;
+const MIN_HEIGHT = 6;
+const EXPLOSION_RADIUS = 5;
+const EXPLOSION_DURATION = 0.8;
+const EXPLOSION_FORCE = 20;
 
 interface FireballProps {
   position: Vector3;
@@ -20,6 +23,7 @@ interface FireballProps {
 }
 
 export function Fireball({ position, direction, targetPosition, splashRadius, onComplete }: FireballProps) {
+  const { scene } = useThree();
   const ref = useRef<any>();
   const startTime = useRef(Date.now());
   const hasExploded = useRef(false);
@@ -27,51 +31,41 @@ export function Fireball({ position, direction, targetPosition, splashRadius, on
   const currentPosition = useRef(position.clone());
   const [showExplosion, setShowExplosion] = useState(false);
   const [explosionPosition, setExplosionPosition] = useState(new Vector3());
+  const [explosionScale, setExplosionScale] = useState(0);
 
   // Calculate initial velocity for lobbed trajectory
   const velocity = useRef((() => {
     const distance = position.distanceTo(targetPosition);
-    
-    // Reduce effective target distance to make projectile land closer
-    const targetScale = 0.5; // Scale factor to reduce range
+    const targetScale = 0.6;
     const adjustedTarget = new Vector3(
       position.x + (targetPosition.x - position.x) * targetScale,
       targetPosition.y,
       position.z + (targetPosition.z - position.z) * targetScale
     );
     
-    // Calculate horizontal components based on adjusted target
     const horizontalDist = new Vector3(adjustedTarget.x - position.x, 0, adjustedTarget.z - position.z).length();
     const horizontalSpeed = FIREBALL_SPEED * (horizontalDist / distance);
     const timeToTarget = horizontalDist / horizontalSpeed;
     
-    // Calculate arc height based on adjusted distance
     const arcHeight = Math.min(MIN_HEIGHT, horizontalDist * 0.6);
-    
-    // Calculate direction to adjusted target
     const horizontalDir = new Vector3(
       adjustedTarget.x - position.x,
       0,
       adjustedTarget.z - position.z
     ).normalize();
     
-    // Initial velocity with proper horizontal direction
     const vInitial = horizontalDir.multiplyScalar(horizontalSpeed);
-    
-    // Add vertical component for arc
     vInitial.y = (arcHeight - 0.5 * GRAVITY * timeToTarget * timeToTarget) / timeToTarget;
     
     return vInitial;
   })());
 
-  // Calculate rotation to face direction of travel
   const rotation = useMemo(() => {
     const q = new Quaternion();
     q.setFromUnitVectors(new Vector3(0, 0, 1), direction);
     return q;
   }, [direction]);
 
-  // Create random particles positions
   const particles = useMemo(() => {
     const arr = new Float32Array(PARTICLE_COUNT * 3);
     for (let i = 0; i < PARTICLE_COUNT * 3; i += 3) {
@@ -85,31 +79,35 @@ export function Fireball({ position, direction, targetPosition, splashRadius, on
   }, []);
 
   useFrame((state, delta) => {
-    if (hasExploded.current) return;
+    if (hasExploded.current) {
+      if (showExplosion) {
+        const elapsed = (Date.now() - startTime.current) / 1000;
+        if (elapsed > EXPLOSION_DURATION) {
+          setShowExplosion(false);
+          onComplete();
+        }
+        const scale = Math.min(1, elapsed / (EXPLOSION_DURATION * 0.3));
+        setExplosionScale(scale * EXPLOSION_RADIUS);
+      }
+      return;
+    }
 
-    // Update velocity with gravity
     velocity.current.y += GRAVITY * delta;
-
-    // Update position
     currentPosition.current.add(velocity.current.clone().multiplyScalar(delta));
     
-    // Update rigid body position
     if (ref.current) {
       ref.current.setTranslation(currentPosition.current);
       
-      // Update rotation to match velocity direction
       const newRotation = new Quaternion();
       newRotation.setFromUnitVectors(new Vector3(0, 0, 1), velocity.current.clone().normalize());
       ref.current.setRotation(newRotation);
     }
 
-    // Rotate particles
     if (particlesRef.current) {
       particlesRef.current.rotation.x += delta * 2;
       particlesRef.current.rotation.y += delta * 3;
     }
 
-    // Check for ground collision or lifetime
     if (currentPosition.current.y < 0 || Date.now() - startTime.current > LIFETIME * 1000) {
       explode(currentPosition.current);
     }
@@ -120,51 +118,45 @@ export function Fireball({ position, direction, targetPosition, splashRadius, on
     hasExploded.current = true;
     setExplosionPosition(position.clone());
     setShowExplosion(true);
-
-    // Find enemies group using useThree
-    const scene = (window as any)?._three?.scene;
-    if (!scene) {
-      console.warn('Scene not available for explosion');
-      onComplete();
-      return;
-    }
+    startTime.current = Date.now();
 
     const enemiesGroup = scene.getObjectByName('enemies');
     if (!enemiesGroup) {
-      console.warn('Enemies group not found');
+      console.warn('Enemies group not found, skipping damage application');
       onComplete();
       return;
     }
 
-    // Check each enemy in range
+    // Apply damage to all enemies in radius
     enemiesGroup.children.forEach((enemy: any) => {
-      if (!enemy.userData) return;
+      const rigidBody = enemy.children[0]?.userData?.rigidBody;
+      if (!rigidBody) return;
       
-      const distance = position.distanceTo(enemy.position);
-      if (distance <= splashRadius) {
-        // Calculate damage based on distance (more damage closer to center)
-        const damage = Math.ceil(FIREBALL_DAMAGE * (1 - distance / splashRadius));
+      const enemyPosition = new Vector3(
+        rigidBody.translation().x,
+        rigidBody.translation().y,
+        rigidBody.translation().z
+      );
+      
+      const distanceToExplosion = position.distanceTo(enemyPosition);
+      if (distanceToExplosion <= EXPLOSION_RADIUS) {
+        const damageMultiplier = 1 - (distanceToExplosion / EXPLOSION_RADIUS);
+        const damage = Math.ceil(FIREBALL_DAMAGE * damageMultiplier);
         
-        // Get enemy's handleHit function
-        const handleHit = enemy.userData.handleHit;
-        if (handleHit && typeof handleHit === 'function') {
-          // Calculate knockback direction and force
-          const knockbackDir = new Vector3()
-            .subVectors(enemy.position, position)
-            .normalize();
-          const knockbackForce = knockbackDir.multiplyScalar(10 * (1 - distance / splashRadius));
-          
-          // Apply damage and knockback
-          handleHit(damage, knockbackForce);
+        const knockbackDir = new Vector3()
+          .subVectors(enemyPosition, position)
+          .normalize();
+        
+        knockbackDir.y += 0.3;
+        knockbackDir.normalize();
+        
+        const knockbackForce = knockbackDir.multiplyScalar(EXPLOSION_FORCE * damageMultiplier);
+        
+        if (rigidBody.userData?.takeDamage) {
+          rigidBody.userData.takeDamage(damage, knockbackForce);
         }
       }
     });
-
-    // Clean up explosion after delay
-    setTimeout(() => {
-      setShowExplosion(false);
-      onComplete();
-    }, 1000);
   };
 
   return (
@@ -175,14 +167,15 @@ export function Fireball({ position, direction, targetPosition, splashRadius, on
         position={position}
         colliders={false}
         sensor
+        name="projectile"
+        userData={{ isProjectile: true }}
         onIntersectionEnter={({ other }) => {
-          if (other.rigidBody?.userData?.isEnemy && !hasExploded.current) {
+          if (!hasExploded.current && other.rigidBody?.userData?.type === 'enemy') {
             explode(currentPosition.current);
           }
         }}
       >
         <group quaternion={rotation}>
-          {/* Fireball core */}
           <mesh castShadow>
             <sphereGeometry args={[0.4]} />
             <meshStandardMaterial
@@ -193,7 +186,6 @@ export function Fireball({ position, direction, targetPosition, splashRadius, on
             />
           </mesh>
 
-          {/* Inner glow */}
           <mesh scale={1.2}>
             <sphereGeometry args={[0.3]} />
             <meshBasicMaterial
@@ -203,7 +195,6 @@ export function Fireball({ position, direction, targetPosition, splashRadius, on
             />
           </mesh>
 
-          {/* Fire particles */}
           <group ref={particlesRef}>
             <points>
               <bufferGeometry>
@@ -224,7 +215,6 @@ export function Fireball({ position, direction, targetPosition, splashRadius, on
             </points>
           </group>
 
-          {/* Trail particles */}
           <points position={[0, 0, -1]}>
             <bufferGeometry>
               <bufferAttribute
@@ -245,31 +235,58 @@ export function Fireball({ position, direction, targetPosition, splashRadius, on
         <CuboidCollider args={[0.3, 0.3, 0.3]} sensor />
       </RigidBody>
 
-      {/* Explosion effect */}
       {showExplosion && (
         <group position={explosionPosition}>
           <Sparkles
-            count={50}
-            scale={[3, 3, 3]}
-            size={6}
-            speed={0.3}
+            count={80}
+            scale={[explosionScale, explosionScale, explosionScale]}
+            size={8}
+            speed={0.4}
             color="#ff4400"
           />
+          
           <Billboard>
-            <mesh>
-              <planeGeometry args={[3, 3]} />
+            <mesh scale={[explosionScale, explosionScale, 1]}>
+              <planeGeometry args={[2, 2]} />
               <meshBasicMaterial
                 color="#ff4400"
                 transparent
-                opacity={0.5}
+                opacity={Math.max(0, 0.7 - explosionScale / EXPLOSION_RADIUS)}
                 depthWrite={false}
               />
             </mesh>
           </Billboard>
+
+          <Sparkles
+            count={60}
+            scale={[explosionScale * 0.8, explosionScale * 0.8, explosionScale * 0.8]}
+            size={6}
+            speed={0.3}
+            color="#ff8800"
+          />
+
+          <Sparkles
+            count={40}
+            scale={[explosionScale * 0.6, explosionScale * 0.6, explosionScale * 0.6]}
+            size={4}
+            speed={0.2}
+            color="#ffaa00"
+          />
+
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+            <planeGeometry args={[explosionScale * 1.5, explosionScale * 1.5]} />
+            <meshBasicMaterial
+              color="#331100"
+              transparent
+              opacity={Math.max(0, 0.4 - explosionScale / (EXPLOSION_RADIUS * 2))}
+              depthWrite={false}
+            />
+          </mesh>
+
           <pointLight
             color="#ff4400"
-            intensity={5}
-            distance={4}
+            intensity={Math.max(0, 12 - explosionScale)}
+            distance={explosionScale * 3}
             decay={2}
           />
         </group>
