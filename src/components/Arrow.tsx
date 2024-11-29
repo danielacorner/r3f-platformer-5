@@ -69,26 +69,26 @@ export function Arrow({
       <group rotation={[Math.PI / 2, 0, 0]}>
         {/* Arrow shaft */}
         <mesh>
-          <cylinderGeometry args={[0.05, 0.05, 0.8]} />
+          <cylinderGeometry args={[0.08, 0.08, 1.2]} />
           <meshStandardMaterial color="#8B4513" />
         </mesh>
 
         {/* Arrow head */}
-        <mesh position={[0, 0.5, 0]}>
-          <coneGeometry args={[0.12, 0.3]} />
+        <mesh position={[0, 0.7, 0]}>
+          <coneGeometry args={[0.16, 0.4]} />
           <meshStandardMaterial color="#4a4a4a" />
         </mesh>
 
         {/* Arrow fletching (feathers) */}
-        <group position={[0, -0.3, 0]}>
+        <group position={[0, -0.5, 0]}>
           {/* Vertical fletching */}
           <mesh rotation={[0, 0, 0]}>
-            <boxGeometry args={[0.01, 0.2, 0.1]} />
+            <boxGeometry args={[0.02, 0.3, 0.15]} />
             <meshStandardMaterial color="#A0522D" />
           </mesh>
           {/* Horizontal fletching */}
           <mesh rotation={[0, Math.PI / 2, 0]}>
-            <boxGeometry args={[0.01, 0.2, 0.1]} />
+            <boxGeometry args={[0.02, 0.3, 0.15]} />
             <meshStandardMaterial color="#A0522D" />
           </mesh>
         </group>

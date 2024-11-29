@@ -114,7 +114,7 @@ export default function App() {
             shadow-bias={-0.0001}
           />
 
-          <Physics debug={false} gravity={[0, -30, 0]}>
+          <Physics debug={true} gravity={[0, -30, 0]}>
             <Player />
             <Level />
           </Physics>

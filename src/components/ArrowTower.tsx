@@ -1,62 +1,69 @@
-import { useRef, useState } from 'react';
-import { Vector3 } from 'three';
+import { useRef, useState, useEffect } from 'react';
+import { Vector3, Euler } from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useSpring, animated } from '@react-spring/three';
 import { Arrow } from './Arrow';
 
-const ARROW_RANGE = 15;
-const ARROW_DAMAGE = 5;
-const ATTACK_COOLDOWN = 300; // Very fast repeat rate (300ms)
+interface ArrowTowerProps {
+  position: Vector3;
+}
 
-export function ArrowTower({ position }: { position: Vector3 }) {
+export function ArrowTower({ position }: ArrowTowerProps) {
   const [target, setTarget] = useState<Vector3 | null>(null);
+  const [arrows, setArrows] = useState<{ id: number; position: Vector3; direction: Vector3; }[]>([]);
+  const nextArrowId = useRef(0);
   const lastAttackTime = useRef(0);
   const towerRef = useRef<THREE.Group>(null);
-  const [arrows, setArrows] = useState<{ id: number; position: Vector3; direction: Vector3 }[]>([]);
-  const nextArrowId = useRef(0);
+  const ATTACK_COOLDOWN = 300; // ms
+  const ATTACK_RANGE = 15;
+  const ARROW_DAMAGE = 5;
 
-  // Animation for tower rotation
+  // Spring animation for tower rotation
   const { rotation } = useSpring({
     rotation: target ? [0, Math.atan2(
       target.x - position.x,
       target.z - position.z
     ), 0] : [0, 0, 0],
-    config: { tension: 120, friction: 14 }
+    config: { tension: 100, friction: 10 }
   });
 
   useFrame((state) => {
     const currentTime = Date.now();
-    if (currentTime - lastAttackTime.current < ATTACK_COOLDOWN) {
-      return;
-    }
+    if (currentTime - lastAttackTime.current < ATTACK_COOLDOWN) return;
 
     // Find closest enemy
     const enemiesGroup = state.scene.getObjectByName('enemies');
-    if (!enemiesGroup) return;
-
     let closestEnemy = null;
     let closestDistance = Infinity;
 
-    enemiesGroup.children.forEach((enemy) => {
-      const distance = position.distanceTo(enemy.position);
-      if (distance < ARROW_RANGE && distance < closestDistance) {
-        closestDistance = distance;
-        closestEnemy = enemy;
+    if (enemiesGroup) {
+      for (const enemy of enemiesGroup.children) {
+        const distance = position.distanceTo(enemy.position);
+        if (distance < closestDistance && distance < ATTACK_RANGE) {
+          closestDistance = distance;
+          closestEnemy = enemy;
+        }
       }
-    });
+    }
 
     if (closestEnemy) {
       const targetPos = closestEnemy.position.clone();
       setTarget(targetPos);
 
-      // Calculate spawn position at the tip of the launcher
-      const spawnOffset = new Vector3(0, 1.2, 0.3);
-      const spawnPos = position.clone().add(spawnOffset);
+      // Get current tower rotation
+      const currentRotation = towerRef.current?.rotation.y || 0;
 
-      // Calculate direction for the arrow
-      const direction = targetPos.clone()
-        .sub(spawnPos)
-        .normalize();
+      // Calculate spawn position relative to tower
+      const spawnPos = position.clone();
+      spawnPos.y += 1.4; // Height offset to top of tower
+      
+      // Calculate forward offset based on current rotation
+      const forwardOffset = new Vector3(0, 0, 0);
+      forwardOffset.applyEuler(new Euler(0, currentRotation, 0));
+      spawnPos.add(forwardOffset);
+
+      // Calculate direction to target
+      const direction = targetPos.clone().sub(spawnPos).normalize();
 
       // Create new arrow
       const arrowId = nextArrowId.current++;
@@ -72,8 +79,8 @@ export function ArrowTower({ position }: { position: Vector3 }) {
     }
   });
 
-  // Handle arrow cleanup
-  const handleArrowComplete = (arrowId: number) => {
+  // Remove arrows that have completed their flight
+  const removeArrow = (arrowId: number) => {
     setArrows(prev => prev.filter(arrow => arrow.id !== arrowId));
   };
 
@@ -93,8 +100,8 @@ export function ArrowTower({ position }: { position: Vector3 }) {
         </mesh>
 
         {/* Arrow launcher */}
-        <mesh position={[0, 1.2, 0.3]} rotation={[Math.PI / 2, 0, 0]}>
-          <cylinderGeometry args={[0.08, 0.08, 0.6]} />
+        <mesh position={[0, 1.4, 0]} rotation={[0, 0, 0]}>
+          <cylinderGeometry args={[0.08, 0.08, 0.3]} />
           <meshStandardMaterial color="#6B4423" metalness={0.5} roughness={0.6} />
         </mesh>
       </animated.group>
@@ -105,18 +112,12 @@ export function ArrowTower({ position }: { position: Vector3 }) {
           key={arrow.id}
           position={arrow.position}
           direction={arrow.direction}
-          onComplete={() => handleArrowComplete(arrow.id)}
+          onComplete={() => removeArrow(arrow.id)}
           damage={ARROW_DAMAGE}
           speed={40}
-          scale={0.6}
+          scale={1.0}
         />
       ))}
-
-      {/* Range Indicator (only visible during placement) */}
-      <mesh position={[0, 0.1, 0]} rotation={[-Math.PI / 2, 0, 0]} visible={false}>
-        <ringGeometry args={[0, ARROW_RANGE, 32]} />
-        <meshBasicMaterial color="#8B4513" transparent opacity={0.2} />
-      </mesh>
     </group>
   );
 }
