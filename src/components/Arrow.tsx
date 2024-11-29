@@ -68,7 +68,7 @@ export function Arrow({
       {/* Rotate to align with direction */}
       <group rotation={[Math.PI / 2, 0, 0]}>
         {/* Arrow shaft */}
-        <mesh>
+        <mesh position={[0, 0, 0]}>
           <cylinderGeometry args={[0.08, 0.08, 1.2]} />
           <meshStandardMaterial color="#8B4513" />
         </mesh>

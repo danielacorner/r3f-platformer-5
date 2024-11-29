@@ -1,8 +1,8 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import { Vector3, Euler } from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useSpring, animated } from '@react-spring/three';
-import { Arrow } from './Arrow';
+import { Projectile } from './Projectile';
 
 interface ArrowTowerProps {
   position: Vector3;
@@ -10,13 +10,12 @@ interface ArrowTowerProps {
 
 export function ArrowTower({ position }: ArrowTowerProps) {
   const [target, setTarget] = useState<Vector3 | null>(null);
-  const [arrows, setArrows] = useState<{ id: number; position: Vector3; direction: Vector3; }[]>([]);
-  const nextArrowId = useRef(0);
+  const [projectiles, setProjectiles] = useState<{ id: number; position: Vector3; target: Vector3; }[]>([]);
+  const nextProjectileId = useRef(0);
   const lastAttackTime = useRef(0);
   const towerRef = useRef<THREE.Group>(null);
   const ATTACK_COOLDOWN = 300; // ms
   const ATTACK_RANGE = 15;
-  const ARROW_DAMAGE = 5;
 
   // Spring animation for tower rotation
   const { rotation } = useSpring({
@@ -50,27 +49,16 @@ export function ArrowTower({ position }: ArrowTowerProps) {
       const targetPos = closestEnemy.position.clone();
       setTarget(targetPos);
 
-      // Get current tower rotation
-      const currentRotation = towerRef.current?.rotation.y || 0;
-
-      // Calculate spawn position relative to tower
+      // Calculate spawn position
       const spawnPos = position.clone();
-      spawnPos.y += 1.4; // Height offset to top of tower
-      
-      // Calculate forward offset based on current rotation
-      const forwardOffset = new Vector3(0, 0, 0);
-      forwardOffset.applyEuler(new Euler(0, currentRotation, 0));
-      spawnPos.add(forwardOffset);
+      spawnPos.y += 1.4; // Height of arrow launcher
 
-      // Calculate direction to target
-      const direction = targetPos.clone().sub(spawnPos).normalize();
-
-      // Create new arrow
-      const arrowId = nextArrowId.current++;
-      setArrows(prev => [...prev, {
-        id: arrowId,
+      // Create new projectile
+      const projectileId = nextProjectileId.current++;
+      setProjectiles(prev => [...prev, {
+        id: projectileId,
         position: spawnPos,
-        direction: direction
+        target: targetPos
       }]);
 
       lastAttackTime.current = currentTime;
@@ -79,9 +67,9 @@ export function ArrowTower({ position }: ArrowTowerProps) {
     }
   });
 
-  // Remove arrows that have completed their flight
-  const removeArrow = (arrowId: number) => {
-    setArrows(prev => prev.filter(arrow => arrow.id !== arrowId));
+  // Remove projectiles that have completed their flight
+  const removeProjectile = (position: Vector3, id: number) => {
+    setProjectiles(prev => prev.filter(p => p.id !== id));
   };
 
   return (
@@ -106,16 +94,14 @@ export function ArrowTower({ position }: ArrowTowerProps) {
         </mesh>
       </animated.group>
 
-      {/* Active Arrows */}
-      {arrows.map(arrow => (
-        <Arrow
-          key={arrow.id}
-          position={arrow.position}
-          direction={arrow.direction}
-          onComplete={() => removeArrow(arrow.id)}
-          damage={ARROW_DAMAGE}
-          speed={40}
-          scale={1.0}
+      {/* Active Projectiles */}
+      {projectiles.map(projectile => (
+        <Projectile
+          key={projectile.id}
+          position={projectile.position}
+          target={projectile.target}
+          type="bow"
+          onComplete={(pos) => removeProjectile(pos, projectile.id)}
         />
       ))}
     </group>
