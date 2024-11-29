@@ -3,14 +3,14 @@ import { Vector3, Quaternion } from 'three';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
 
-const BOOMERANG_SPEED = 20;
-const LIFETIME = 2;
+const BOOMERANG_SPEED = 25; // Increased speed for faster travel
+const LIFETIME = 1.5; // Reduced lifetime for tighter paths
 const BOOMERANG_DAMAGE = 25;
 const ROTATION_SPEED = 15;
-const CURVE_STRENGTH = 8;
-const RETURN_SPEED_MULTIPLIER = 1.5;
+const CURVE_STRENGTH = 4; // Reduced curve for more direct paths
+const RETURN_SPEED_MULTIPLIER = 2; // Increased return speed
 const MIN_HEIGHT = 1; // Minimum height above the ground
-const HEIGHT_CURVE_STRENGTH = 2; // Strength of the vertical curve
+const HEIGHT_CURVE_STRENGTH = 1.5; // Reduced height curve for more predictable paths
 
 interface BoomerangProps {
   position: Vector3;
