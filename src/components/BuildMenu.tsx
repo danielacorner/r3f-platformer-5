@@ -7,6 +7,7 @@ export function BuildMenu() {
 
   const items = [
     { type: 'block', label: 'Block', cost: getBoxCost('block') },
+    { type: 'arrow', label: 'Arrow Tower', cost: getBoxCost('arrow') },
     { type: 'tower', label: 'Laser Tower', cost: getBoxCost('laser') },
     { type: 'cannon', label: 'Cannon', cost: getBoxCost('cannon') },
     { type: 'boomerang', label: 'Boomerang Tower', cost: getBoxCost('boomerang') },

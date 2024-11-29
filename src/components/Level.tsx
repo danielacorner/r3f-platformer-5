@@ -17,6 +17,8 @@ import { BlockedAreas } from './BlockedAreas';
 import { Tower, ArrowManager } from './Tower';
 import { Cannon } from './Cannon';
 import { BoomerangTower } from './BoomerangTower';
+import { ArrowTower } from './ArrowTower';
+import { GhostArrowTower } from './GhostArrowTower';
 
 // Generate spiral positions using golden ratio
 const generateSpiralPositions = (count: number, scale: number = 1): Vector3[] => {
@@ -473,6 +475,9 @@ export function Level() {
           {selectedObjectType === 'tower' && (
             <GhostTower position={ghostBoxPosition} />
           )}
+          {selectedObjectType === 'arrow' && (
+            <GhostArrowTower position={ghostBoxPosition} />
+          )}
           {selectedObjectType === 'cannon' && (
             <GhostCannon position={ghostBoxPosition} />
           )}
@@ -488,11 +493,11 @@ export function Level() {
         switch (box.type) {
           case 'block':
             return (
-              <PlaceableBox
+              <StaticBox
                 key={box.id}
-                position={pos}
-                onRemove={() => removePlacedBox(box.id)}
-                objectType={box.type}
+                position={box.position}
+                dimensions={[2, 2, 2]}
+                material={staticBoxMaterial}
               />
             );
           case 'tower':
@@ -501,6 +506,13 @@ export function Level() {
                 key={box.id}
                 position={box.position}
                 onArrowSpawn={(arrow) => setArrows(prev => [...prev, arrow])}
+              />
+            );
+          case 'arrow':
+            return (
+              <ArrowTower
+                key={box.id}
+                position={box.position}
               />
             );
           case 'cannon':

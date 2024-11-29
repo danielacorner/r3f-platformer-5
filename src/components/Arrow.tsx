@@ -1,41 +1,51 @@
 import { useRef, useEffect } from 'react';
-import { Vector3, Float32BufferAttribute } from 'three';
+import { Vector3 } from 'three';
 import { useFrame } from '@react-three/fiber';
 
-const ARROW_SPEED = 30;
 const LIFETIME = 2; // seconds
-const ARROW_DAMAGE = 20;
 
-export function Arrow({ position, direction, onComplete }: { 
+interface ArrowProps {
   position: Vector3;
   direction: Vector3;
   onComplete: () => void;
-}) {
-  // Store initial position
-  const pos = useRef(position.clone());
-  const dir = useRef(direction.clone());
+  damage?: number;
+  speed?: number;
+  scale?: number;
+}
+
+export function Arrow({ 
+  position, 
+  direction, 
+  onComplete,
+  damage = 20,
+  speed = 30,
+  scale = 1
+}: ArrowProps) {
+  const groupRef = useRef<THREE.Group>(null);
   const startTime = useRef(Date.now());
+  const velocity = useRef(direction.clone().normalize().multiplyScalar(speed));
   
   useEffect(() => {
-    console.log('Arrow mounted at world position:', pos.current.toArray());
-  }, []);
+    if (groupRef.current) {
+      groupRef.current.position.copy(position);
+    }
+  }, [position]);
 
   useFrame((state, delta) => {
+    if (!groupRef.current) return;
+
     // Update position
-    const movement = dir.current.clone().multiplyScalar(ARROW_SPEED * delta);
-    pos.current.add(movement);
-    
-    console.log('Arrow frame update, world position:', pos.current.toArray());
+    const movement = velocity.current.clone().multiplyScalar(delta);
+    groupRef.current.position.add(movement);
 
     // Check for enemies
     const enemiesGroup = state.scene.getObjectByName('enemies');
     if (enemiesGroup) {
       for (const enemy of enemiesGroup.children) {
-        const distance = pos.current.distanceTo(enemy.position);
+        const distance = groupRef.current.position.distanceTo(enemy.position);
         if (distance < 1) {
-          console.log('Hit enemy at distance:', distance);
           if (enemy.userData?.takeDamage) {
-            enemy.userData.takeDamage(ARROW_DAMAGE, dir.current.clone().multiplyScalar(5));
+            enemy.userData.takeDamage(damage, direction.clone().multiplyScalar(5));
           }
           onComplete();
           return;
@@ -45,36 +55,44 @@ export function Arrow({ position, direction, onComplete }: {
 
     // Check lifetime
     if (Date.now() - startTime.current > LIFETIME * 1000) {
-      console.log('Arrow expired');
       onComplete();
     }
   });
 
   return (
-    <>
-      {/* Super large debug sphere */}
-      <mesh position={pos.current.toArray()}>
-        <sphereGeometry args={[3]} />
-        <meshBasicMaterial color="#ff0000" transparent opacity={0.5} />
-      </mesh>
+    <group 
+      ref={groupRef}
+      rotation={[0, Math.atan2(direction.x, direction.z), 0]}
+      scale={[scale, scale, scale]}
+    >
+      {/* Rotate to align with direction */}
+      <group rotation={[Math.PI / 2, 0, 0]}>
+        {/* Arrow shaft */}
+        <mesh>
+          <cylinderGeometry args={[0.05, 0.05, 0.8]} />
+          <meshStandardMaterial color="#8B4513" />
+        </mesh>
 
-      {/* Direction line */}
-      <line>
-        <bufferGeometry>
-          <float32BufferAttribute
-            attach="attributes-position"
-            array={new Float32Array([
-              pos.current.x, pos.current.y, pos.current.z,
-              pos.current.x + dir.current.x * 10,
-              pos.current.y + dir.current.y * 10,
-              pos.current.z + dir.current.z * 10
-            ])}
-            itemSize={3}
-            count={2}
-          />
-        </bufferGeometry>
-        <lineBasicMaterial color="#ffff00" linewidth={5} />
-      </line>
-    </>
+        {/* Arrow head */}
+        <mesh position={[0, 0.5, 0]}>
+          <coneGeometry args={[0.12, 0.3]} />
+          <meshStandardMaterial color="#4a4a4a" />
+        </mesh>
+
+        {/* Arrow fletching (feathers) */}
+        <group position={[0, -0.3, 0]}>
+          {/* Vertical fletching */}
+          <mesh rotation={[0, 0, 0]}>
+            <boxGeometry args={[0.01, 0.2, 0.1]} />
+            <meshStandardMaterial color="#A0522D" />
+          </mesh>
+          {/* Horizontal fletching */}
+          <mesh rotation={[0, Math.PI / 2, 0]}>
+            <boxGeometry args={[0.01, 0.2, 0.1]} />
+            <meshStandardMaterial color="#A0522D" />
+          </mesh>
+        </group>
+      </group>
+    </group>
   );
 }
