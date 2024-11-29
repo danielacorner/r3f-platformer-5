@@ -285,7 +285,11 @@ export function Level() {
           0,
           Math.round(point.z / gridSize) * gridSize
         );
-
+        if (Math.abs(snappedPosition.x) > 10 || Math.abs(snappedPosition.z) > 10) {
+          setIsOverPlacedBox(true);
+          setShowGhostBox(false);
+          return;
+        }
         const isOverPlaced = placedBoxes.some(box =>
           box.position[0] === snappedPosition.x &&
           box.position[1] === snappedPosition.y &&
