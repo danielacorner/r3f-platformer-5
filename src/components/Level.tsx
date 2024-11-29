@@ -110,14 +110,15 @@ export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
     platforms: [
       // Base platform
       { position: [0, -1, 0], scale: [40, 1, 40] },
-      // Outer elevated ring - North
-      { position: [0, 0, -15], scale: [40, 1, 10] },
+      // Outer elevated rings:
+      // North
+      { position: [0, 0, -16.5], scale: [40, 1, 10] },
       // South
-      { position: [0, 0, 15], scale: [40, 1, 10] },
+      { position: [0, 0, 16.5], scale: [40, 1, 10] },
       // East
-      { position: [15, 0, 0], scale: [10, 1, 20] },
+      { position: [15.5, 0, 0], scale: [10, 1, 20] },
       // West
-      { position: [-15, 0, 0], scale: [10, 1, 20] },
+      { position: [-15.5, 0, 0], scale: [10, 1, 20] },
     ],
     initialBoxes: generateMazePattern(1),
     portalPosition: [15, 1, 15],
