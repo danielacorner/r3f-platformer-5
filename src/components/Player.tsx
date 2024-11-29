@@ -69,7 +69,7 @@ export function Player() {
 
       const position = playerRef.current?.translation();
       if (!position) return;
-      
+
       const playerPos = new Vector3(position.x, position.y + 0.5, position.z);
 
       if (event.button === 2 && boomerangsLeft > 0) {
@@ -116,12 +116,12 @@ export function Player() {
 
   const checkAndRespawn = () => {
     if (!playerRef.current) return;
-    
+
     const position = playerRef.current.translation();
     if (position.y < FALL_THRESHOLD) {
       const levelConfig = LEVEL_CONFIGS[currentLevel as keyof typeof LEVEL_CONFIGS];
       const spawnPos = levelConfig ? levelConfig.spawnPosition : SPAWN_POSITION;
-      
+
       playerRef.current.setTranslation({ x: spawnPos[0], y: spawnPos[1], z: spawnPos[2] });
       playerRef.current.setLinvel({ x: 0, y: 0, z: 0 });
       playerRef.current.setAngvel({ x: 0, y: 0, z: 0 });
@@ -139,7 +139,7 @@ export function Player() {
     const rayDirection = new Vector3(0, -1, 0);
     raycaster.current.set(rayOrigin, rayDirection);
     const intersects = raycaster.current.intersectObjects(scene.children, true);
-    
+
     // Find any valid ground object within a small distance
     const isNowGrounded = intersects.some(hit => {
       const objectName = hit.object.name.toLowerCase();
@@ -159,29 +159,29 @@ export function Player() {
 
     // Calculate movement direction in camera space
     const moveDirection = new Vector3(0, 0, 0);
-    
+
     if (forward) {
-      moveDirection.x -= 1;
+      // moveDirection.x -= 1;
       moveDirection.z -= 1;
     }
     if (backward) {
-      moveDirection.x += 1;
+      // moveDirection.x += 1;
       moveDirection.z += 1;
     }
     if (left) {
       moveDirection.x -= 1;
-      moveDirection.z += 1;
+      // moveDirection.z += 1;
     }
     if (right) {
       moveDirection.x += 1;
-      moveDirection.z -= 1;
+      // moveDirection.z -= 1;
     }
 
     const currentVel = playerRef.current.linvel();
 
     if (moveDirection.lengthSq() > 0) {
       moveDirection.normalize();
-      
+
       playerRef.current.setLinvel({
         x: moveDirection.x * MOVE_SPEED,
         y: currentVel.y,
@@ -207,7 +207,7 @@ export function Player() {
 
   return (
     <>
-      <RigidBody 
+      <RigidBody
         ref={playerRef}
         position={[0, 5, 0]}
         enabledRotations={[false, false, false]}
@@ -226,7 +226,7 @@ export function Player() {
             fontSize: '24px',
             fontWeight: 'bold',
             textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
-            pointerEvents: 'none', 
+            pointerEvents: 'none',
             userSelect: 'none'
           }}>
             {boomerangsLeft}
