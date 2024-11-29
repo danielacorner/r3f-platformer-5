@@ -40,7 +40,7 @@ const generateSpiralPositions = (count: number, scale: number = 1): Vector3[] =>
 // Generate maze-like pattern
 const generateMazePattern = (levelNumber: number) => {
   const boxes = [];
-  const gridSize = 3; // Increased grid size for more spacing
+  const gridSize = 2.2; // Increased grid size for more spacing
   const centerSize = 8;
   const possibleLengths = [2, 3, 4, 5]; // Increased potential lengths
 
@@ -116,9 +116,9 @@ export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
       // South
       { position: [0, 0, 16.5], scale: [40, 1, 10] },
       // East
-      { position: [15.5, 0, 0], scale: [10, 1, 20] },
+      { position: [15.5, 0, 0], scale: [10, 1, 21] },
       // West
-      { position: [-15.5, 0, 0], scale: [10, 1, 20] },
+      { position: [-15.5, 0, 0], scale: [10, 1, 21] },
     ],
     initialBoxes: generateMazePattern(1),
     portalPosition: [15, 1, 15],
