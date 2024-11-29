@@ -549,7 +549,7 @@ export function Level() {
               <StaticBox
                 key={box.id}
                 position={box.position}
-                dimensions={[2, 2, 2]}
+                dimensions={[1, 1, 1]}
                 material={staticBoxMaterial}
               />
             );
