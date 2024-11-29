@@ -40,7 +40,7 @@ const generateSpiralPositions = (count: number, scale: number = 1): Vector3[] =>
 // Generate maze-like pattern
 const generateMazePattern = (levelNumber: number) => {
   const boxes = [];
-  const gridSize = 2.2; // Increased grid size for more spacing
+  const gridSize = 2; // Increased grid size for more spacing
   const centerSize = 8;
   const possibleLengths = [2, 3, 4, 5]; // Increased potential lengths
 
