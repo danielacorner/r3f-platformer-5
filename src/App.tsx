@@ -108,7 +108,22 @@ export default function App() {
         <BuildMenu />
       </div>
 
-      <Canvas shadows>
+      <Canvas
+        shadows
+        camera={{
+          position: [0, 15, 20],
+          fov: 45,
+          rotation: [-0.7, 0, 0]
+        }}
+        style={{
+          width: '100vw',
+          height: '100vh',
+          touchAction: 'none',
+          position: 'fixed',
+          left: 0,
+          top: 0
+        }}
+      >
         <Suspense fallback={null}>
           <CameraController />
 

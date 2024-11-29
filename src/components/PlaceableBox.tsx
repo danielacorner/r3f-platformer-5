@@ -1,5 +1,4 @@
 import { RigidBody } from '@react-three/rapier';
-import { Vector3 } from 'three';
 import { useState } from 'react';
 import { useGameStore, ObjectType } from '../store/gameStore';
 import { Tower } from './Tower';
