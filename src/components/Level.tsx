@@ -211,6 +211,7 @@ export function Level() {
   const [isOverPlacedBox, setIsOverPlacedBox] = useState(false);
   const [isPlacing, setIsPlacing] = useState(false);
   const [showGhostBox, setShowGhostBox] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const lastPlacedPosition = useRef<Vector3 | null>(null);
 
   const config = LEVEL_CONFIGS[currentLevel as keyof typeof LEVEL_CONFIGS];
@@ -243,16 +244,30 @@ export function Level() {
     const canvas = document.querySelector('canvas');
     if (!canvas) return;
 
-    const handleMouseMove = (event: MouseEvent) => {
+    const getEventPosition = (event: MouseEvent | TouchEvent | PointerEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      let clientX, clientY;
+
+      if ('touches' in event && event.touches.length > 0) {
+        clientX = event.touches[0].clientX;
+        clientY = event.touches[0].clientY;
+      } else if ('clientX' in event) {
+        clientX = event.clientX;
+        clientY = event.clientY;
+      } else {
+        return null;
+      }
+
+      return {
+        x: ((clientX - rect.left) / rect.width) * 2 - 1,
+        y: -((clientY - rect.top) / rect.height) * 2 + 1
+      };
+    };
+
+    const updateGhostPosition = (coords: { x: number, y: number }) => {
       if (phase !== 'prep' || placedBoxes.length >= 20) return;
 
-      const rect = canvas.getBoundingClientRect();
-      const mouse = {
-        x: ((event.clientX - rect.left) / rect.width) * 2 - 1,
-        y: -((event.clientY - rect.top) / rect.height) * 2 + 1
-      };
-
-      raycaster.current.setFromCamera(mouse, camera);
+      raycaster.current.setFromCamera(coords, camera);
       const intersects = raycaster.current.intersectObjects(scene.children, true);
       const platformIntersect = intersects.find(intersect =>
         intersect.object.name === 'platform' ||
@@ -278,18 +293,11 @@ export function Level() {
         );
 
         const isOverInitial = isOverlappingInitialBlock(snappedPosition);
-        const canPlaceHere = !isOverPlaced && !isOverInitial;
-
         setIsOverPlacedBox(isOverPlaced || isOverInitial);
 
-        if (canPlaceHere) {
+        if (!isOverPlaced && !isOverInitial) {
           setGhostBoxPosition(snappedPosition);
           setShowGhostBox(true);
-          if (isPlacing && (!lastPlacedPosition.current ||
-            lastPlacedPosition.current.distanceTo(snappedPosition) > 0.1)) {
-            addPlacedBox(snappedPosition, selectedObjectType);
-            lastPlacedPosition.current = snappedPosition.clone();
-          }
         } else {
           setShowGhostBox(false);
         }
@@ -298,18 +306,9 @@ export function Level() {
       }
     };
 
-    const handleMouseDown = (event: MouseEvent) => {
-      if (phase !== 'prep' || placedBoxes.length >= 20) return;
-
-      const rect = canvas.getBoundingClientRect();
-      const mouse = {
-        x: ((event.clientX - rect.left) / rect.width) * 2 - 1,
-        y: -((event.clientY - rect.top) / rect.height) * 2 + 1
-      };
-
-      raycaster.current.setFromCamera(mouse, camera);
+    const checkForRemoval = (coords: { x: number, y: number }) => {
+      raycaster.current.setFromCamera(coords, camera);
       const intersects = raycaster.current.intersectObjects(scene.children, true);
-
       const placedBoxHit = intersects.find(hit =>
         hit.object.userData?.isPlaceableBox ||
         hit.object.parent?.userData?.isPlaceableBox
@@ -322,30 +321,81 @@ export function Level() {
         );
         if (boxToRemove) {
           removePlacedBox(boxToRemove.id);
-          event.stopPropagation();
+          return true;
         }
-      } else if (ghostBoxPosition && !isOverPlacedBox) {
-        setIsPlacing(true);
-        addPlacedBox(ghostBoxPosition, selectedObjectType);
-        lastPlacedPosition.current = ghostBoxPosition.clone();
+      }
+      return false;
+    };
+
+    const handleStart = (event: MouseEvent | TouchEvent | PointerEvent) => {
+      if (phase !== 'prep' || placedBoxes.length >= 20) return;
+      event.preventDefault();
+
+      const coords = getEventPosition(event);
+      if (!coords) return;
+
+      if (!checkForRemoval(coords)) {
+        setIsDragging(true);
+        updateGhostPosition(coords);
       }
     };
 
-    const handleMouseUp = () => {
-      setIsPlacing(false);
-      lastPlacedPosition.current = null;
+    const handleMove = (event: MouseEvent | TouchEvent | PointerEvent) => {
+      event.preventDefault();
+      const coords = getEventPosition(event);
+      if (!coords) return;
+
+      // Always show ghost preview on hover for devices that support it
+      if (!isDragging && ('pointerType' in event) && (event.pointerType === 'mouse')) {
+        updateGhostPosition(coords);
+      }
+      // Update position while dragging for all devices
+      else if (isDragging && phase === 'prep' && placedBoxes.length < 20) {
+        updateGhostPosition(coords);
+      }
     };
 
-    canvas.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('mousedown', handleMouseDown);
-    canvas.addEventListener('mouseup', handleMouseUp);
+    const handleEnd = (event: MouseEvent | TouchEvent | PointerEvent) => {
+      event.preventDefault();
+      if (isDragging && ghostBoxPosition && !isOverPlacedBox) {
+        addPlacedBox(ghostBoxPosition, selectedObjectType);
+      }
+      setIsDragging(false);
+      setShowGhostBox(false);
+    };
+
+    // Mouse events
+    canvas.addEventListener('mousedown', handleStart);
+    canvas.addEventListener('mousemove', handleMove);
+    canvas.addEventListener('mouseup', handleEnd);
+
+    // Touch events
+    canvas.addEventListener('touchstart', handleStart, { passive: false });
+    canvas.addEventListener('touchmove', handleMove, { passive: false });
+    canvas.addEventListener('touchend', handleEnd);
+
+    // Pointer events for devices that support them
+    canvas.addEventListener('pointerdown', handleStart);
+    canvas.addEventListener('pointermove', handleMove);
+    canvas.addEventListener('pointerup', handleEnd);
 
     return () => {
-      canvas.removeEventListener('mousemove', handleMouseMove);
-      canvas.removeEventListener('mousedown', handleMouseDown);
-      canvas.removeEventListener('mouseup', handleMouseUp);
+      // Mouse events
+      canvas.removeEventListener('mousedown', handleStart);
+      canvas.removeEventListener('mousemove', handleMove);
+      canvas.removeEventListener('mouseup', handleEnd);
+
+      // Touch events
+      canvas.removeEventListener('touchstart', handleStart);
+      canvas.removeEventListener('touchmove', handleMove);
+      canvas.removeEventListener('touchend', handleEnd);
+
+      // Pointer events
+      canvas.removeEventListener('pointerdown', handleStart);
+      canvas.removeEventListener('pointermove', handleMove);
+      canvas.removeEventListener('pointerup', handleEnd);
     };
-  }, [phase, placedBoxes.length, camera, scene, currentLevel, isPlacing, ghostBoxPosition, isOverPlacedBox, selectedObjectType]);
+  }, [phase, placedBoxes, camera, scene, isDragging, ghostBoxPosition, isOverPlacedBox, selectedObjectType, currentLevel]);
 
   useEffect(() => {
     if (phase === 'combat') {
@@ -424,6 +474,27 @@ export function Level() {
     setArrows(prev => prev.filter(a => a.id !== id));
   };
 
+  const ghostBox = useMemo(() => {
+    if (!showGhostBox || !ghostBoxPosition || !selectedObjectType) return null;
+
+    const GhostComponent = (() => {
+      switch (selectedObjectType) {
+        case 'tower':
+          return GhostTower;
+        case 'arrow':
+          return GhostArrowTower;
+        case 'cannon':
+          return GhostCannon;
+        case 'boomerang':
+          return GhostBoomerangTower;
+        default:
+          return GhostBox;
+      }
+    })();
+
+    return <GhostComponent position={ghostBoxPosition} />;
+  }, [showGhostBox, ghostBoxPosition, selectedObjectType]);
+
   return (
     <group>
       <primitive object={ambientLight} />
@@ -467,25 +538,7 @@ export function Level() {
       ))}
 
       {/* Ghost Preview */}
-      {showGhostBox && ghostBoxPosition && (
-        <>
-          {selectedObjectType === 'block' && (
-            <GhostBox position={ghostBoxPosition} isRemoveMode={isOverPlacedBox} objectType={selectedObjectType} />
-          )}
-          {selectedObjectType === 'tower' && (
-            <GhostTower position={ghostBoxPosition} />
-          )}
-          {selectedObjectType === 'arrow' && (
-            <GhostArrowTower position={ghostBoxPosition} />
-          )}
-          {selectedObjectType === 'cannon' && (
-            <GhostCannon position={ghostBoxPosition} />
-          )}
-          {selectedObjectType === 'boomerang' && (
-            <GhostBoomerangTower position={ghostBoxPosition} />
-          )}
-        </>
-      )}
+      {ghostBox}
 
       {/* Placed Objects */}
       {placedBoxes.map((box) => {

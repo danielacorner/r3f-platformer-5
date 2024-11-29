@@ -43,8 +43,23 @@ export default function App() {
     }
   }, [timer, setIsSpawning]);
 
+  useEffect(() => {
+    // Prevent default touch behaviors
+    const preventDefaultTouchBehaviors = (e: TouchEvent) => {
+      e.preventDefault();
+    };
+
+    document.addEventListener('touchstart', preventDefaultTouchBehaviors, { passive: false });
+    document.addEventListener('touchmove', preventDefaultTouchBehaviors, { passive: false });
+
+    return () => {
+      document.removeEventListener('touchstart', preventDefaultTouchBehaviors);
+      document.removeEventListener('touchmove', preventDefaultTouchBehaviors);
+    };
+  }, []);
+
   return (
-    <div className="h-screen w-screen">
+    <div className="h-screen w-screen touch-none">
       {/* Game Interface */}
       <div className="fixed inset-0 z-10 pointer-events-none">
         {/* Timer */}
