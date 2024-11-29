@@ -229,15 +229,19 @@ export function Level() {
     const config = LEVEL_CONFIGS[currentLevel];
     return config.initialBoxes.some(box => {
       const boxPos = new Vector3(box.position[0], box.position[1], box.position[2]);
-      const boxDim = new Vector3(box.dimensions[0], box.dimensions[1], box.dimensions[2]);
-
-      // Account for rotation in dimension check
-      const effectiveDimX = Math.abs(Math.cos(box.rotation)) * boxDim.x + Math.abs(Math.sin(box.rotation)) * boxDim.z;
-      const effectiveDimZ = Math.abs(Math.sin(box.rotation)) * boxDim.x + Math.abs(Math.cos(box.rotation)) * boxDim.z;
-
+      const [width, _, depth] = box.dimensions;
+      
+      // Check if this is a vertical block (rotated 90 degrees)
+      const isVertical = Math.abs(box.rotation - Math.PI * 0.5) < 0.01;
+      
+      // For vertical blocks (north-south), their length is in the Z dimension
+      // For horizontal blocks (east-west), their length is in the X dimension
+      const xExtent = isVertical ? 0.5 : width / 2;
+      const zExtent = isVertical ? depth / 2 : 0.5;
+      
       // Check if position is within the box bounds
-      return Math.abs(position.x - boxPos.x) <= effectiveDimX / 2 &&
-        Math.abs(position.z - boxPos.z) <= effectiveDimZ / 2;
+      return Math.abs(position.x - boxPos.x) <= xExtent &&
+             Math.abs(position.z - boxPos.z) <= zExtent;
     });
   };
 
