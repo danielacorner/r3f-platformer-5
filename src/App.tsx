@@ -8,7 +8,7 @@ import {
   Environment,
   Loader
 } from '@react-three/drei';
-import {
+import { 
   EffectComposer,
   Bloom,
   SMAA
@@ -16,6 +16,7 @@ import {
 import { Physics } from '@react-three/rapier';
 import { Level } from './components/Level';
 import { BuildMenu } from './components/BuildMenu';
+import { GameUI } from './components/GameUI';
 import { useGameStore } from './store/gameStore';
 
 function TDCamera() {
@@ -98,6 +99,7 @@ export default function App() {
         </Suspense>
       </Canvas>
       <BuildMenu />
+      <GameUI />
       <Loader />
     </div>
   );

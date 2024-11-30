@@ -5,6 +5,7 @@ import { Environment, useGLTF } from '@react-three/drei';
 import { Vector3, Raycaster, AmbientLight, DirectionalLight, MeshStandardMaterial, Color, DoubleSide } from 'three';
 import { useGameStore } from '../store/gameStore';
 import { Edges, MeshTransmissionMaterial, Float } from '@react-three/drei';
+import { WaveManager } from './WaveManager';
 
 const pathColor = new Color('#4338ca').convertSRGBToLinear();
 const platformColor = new Color('#1e293b').convertSRGBToLinear();
@@ -123,7 +124,7 @@ function generateElementTDPath() {
   }
 
   return {
-    pathPoints,
+    pathPoints: pathPoints.map(p => new Vector3(p[0], p[1], p[2])),
     segments
   };
 }
@@ -318,6 +319,9 @@ export function Level() {
       {/* Start and End Crystals */}
       <Crystal position={[-15, 1.5, -15]} scale={1.5} />
       <Crystal position={[15, 1.5, 15]} scale={1.5} />
+
+      {/* Wave Manager */}
+      <WaveManager pathPoints={path.pathPoints} />
     </group>
   );
 }
