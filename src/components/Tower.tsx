@@ -47,20 +47,17 @@ export function Tower({ position, type, level = 1, preview, onDamageEnemy, canAf
   useFrame((state, delta) => {
     setProjectiles(current => 
       current.map(proj => {
-        // Even faster movement for Element TD style
-        const newProgress = proj.progress + delta * 5;
+        // Super fast movement like Element TD
+        const newProgress = proj.progress + delta * 15;
         
-        // Remove projectile when it reaches target
         if (newProgress >= 1) {
           return null;
         }
 
-        // Almost direct path with minimal height variation
+        // Completely straight line path
         const x = lerp(proj.position[0], proj.target[0], newProgress);
         const z = lerp(proj.position[2], proj.target[2], newProgress);
-        // Keep projectile at a consistent low height
-        const baseHeight = 1.0; // Lower base height
-        const y = lerp(baseHeight, baseHeight, newProgress) + Math.sin(newProgress * Math.PI) * 0.1;
+        const y = 0.5; // Fixed low height
 
         return {
           ...proj,
@@ -93,17 +90,15 @@ export function Tower({ position, type, level = 1, preview, onDamageEnemy, canAf
     }
 
     if (closestCreep) {
-      // Start position just above tower base
       const startPos: [number, number, number] = [
         towerPos.x, 
-        1.0, // Lower starting height
+        0.5, // Fixed low height
         towerPos.z
       ];
       
-      // Target just above ground level
       const targetPos: [number, number, number] = [
         closestCreep.position[0],
-        1.0, // Keep same height for direct path
+        0.5, // Same height for straight line
         closestCreep.position[2]
       ];
 
@@ -168,38 +163,38 @@ export function Tower({ position, type, level = 1, preview, onDamageEnemy, canAf
       {/* Projectiles */}
       {projectiles.map(proj => (
         <group key={proj.id} position={proj.position}>
-          {/* Main projectile - smaller and more focused */}
+          {/* Main projectile */}
           <mesh castShadow>
-            <sphereGeometry args={[0.15]} />
+            <sphereGeometry args={[0.1]} />
             <meshStandardMaterial 
               color={stats.emissive} 
               emissive={stats.emissive}
-              emissiveIntensity={3}
+              emissiveIntensity={5}
               toneMapped={false}
             />
           </mesh>
           
           {/* Bright core */}
-          <pointLight color={stats.emissive} intensity={1} distance={1} />
+          <pointLight color={stats.emissive} intensity={2} distance={0.5} />
           
-          {/* Trailing particles - tighter formation */}
-          {Array.from({ length: 6 }).map((_, i) => (
+          {/* Very tight trail */}
+          {Array.from({ length: 4 }).map((_, i) => (
             <mesh
               key={i}
               position={[
-                (Math.random() - 0.5) * 0.03,
-                -(i * 0.03),
-                (Math.random() - 0.5) * 0.03
+                (Math.random() - 0.5) * 0.01,
+                -(i * 0.02),
+                (Math.random() - 0.5) * 0.01
               ]}
-              scale={(6 - i) / 6}
+              scale={(4 - i) / 4}
             >
-              <sphereGeometry args={[0.1]} />
+              <sphereGeometry args={[0.08]} />
               <meshStandardMaterial 
                 color={stats.emissive} 
                 emissive={stats.emissive}
-                emissiveIntensity={2}
+                emissiveIntensity={4}
                 transparent 
-                opacity={(6 - i) / 12}
+                opacity={(4 - i) / 4}
                 toneMapped={false}
               />
             </mesh>
