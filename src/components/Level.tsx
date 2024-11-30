@@ -288,78 +288,93 @@ export function Level() {
   const [towers, setTowers] = useState<{ position: Vector3; type: TowerType; id: number }[]>([]);
   const [placementIndicator, setPlacementIndicator] = useState<Vector3 | null>(null);
   const nextTowerId = useRef(0);
-  const { camera, scene } = useThree();
   const groundPlane = new Plane(new Vector3(0, 1, 0), 0);
-  const mouse = new Vector2();
+  const { camera } = useThree();
   const raycaster = new Raycaster();
+  const mouse = new Vector2();
 
-  // Handle mouse movement for placement indicator
-  useEffect(() => {
-    const handleMouseMove = (event: MouseEvent) => {
-      if (!selectedObjectType) return;
+  // Handle pointer movement and placement
+  const handlePointerMove = (event: any) => {
+    console.log('Pointer move:', { selectedObjectType });
+    if (!selectedObjectType) return;
 
-      // Calculate mouse position in normalized device coordinates
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    // Update the picking ray with the camera and pointer position
+    raycaster.setFromCamera(event.pointer, camera);
 
-      // Update the picking ray with the camera and mouse position
-      raycaster.setFromCamera(mouse, camera);
+    // Calculate intersection with the ground plane
+    const intersection = new Vector3();
+    if (raycaster.ray.intersectPlane(groundPlane, intersection)) {
+      // Snap to grid
+      intersection.x = Math.round(intersection.x);
+      intersection.z = Math.round(intersection.z);
+      intersection.y = 0;
 
-      // Calculate intersection with the ground plane
-      const intersection = new Vector3();
-      if (raycaster.ray.intersectPlane(groundPlane, intersection)) {
-        // Snap to grid
-        intersection.x = Math.round(intersection.x);
-        intersection.z = Math.round(intersection.z);
-        intersection.y = 0;
+      // Check if position is valid (not on path or existing tower)
+      const isOnPath = path.segments.some(segment => {
+        const dx = Math.abs(intersection.x - segment.position[0]);
+        const dz = Math.abs(intersection.z - segment.position[2]);
+        return dx < 2 && dz < 2;
+      });
 
-        // Check if position is valid (not on path or existing tower)
-        const isOnPath = path.segments.some(segment => {
-          const dx = Math.abs(intersection.x - segment.position[0]);
-          const dz = Math.abs(intersection.z - segment.position[2]);
-          return dx < 2 && dz < 2;
-        });
+      const isOnTower = towers.some(tower =>
+        tower.position.distanceTo(intersection) < 2
+      );
 
-        const isOnTower = towers.some(tower =>
-          tower.position.distanceTo(intersection) < 2
-        );
-
-        if (!isOnPath && !isOnTower) {
-          setPlacementIndicator(intersection);
-        } else {
-          setPlacementIndicator(null);
-        }
+      if (!isOnPath && !isOnTower) {
+        setPlacementIndicator(intersection);
+      } else {
+        setPlacementIndicator(null);
       }
-    };
+    }
+  };
 
-    const handleClick = () => {
-      if (selectedObjectType && placementIndicator && money >= TOWER_STATS[selectedObjectType].cost) {
-        // Add new tower
-        setTowers(prev => [...prev, {
-          position: placementIndicator.clone(),
-          type: selectedObjectType,
-          id: nextTowerId.current++
-        }]);
+  const handleClick = (event: any) => {
+    console.log('Click event:', { 
+      selectedObjectType,
+      placementIndicator: placementIndicator?.toArray(),
+      money,
+      cost: selectedObjectType ? TOWER_STATS[selectedObjectType].cost : 0
+    });
 
-        // Deduct money
-        removeMoney(TOWER_STATS[selectedObjectType].cost);
-      }
-    };
+    if (selectedObjectType && placementIndicator && money >= TOWER_STATS[selectedObjectType].cost) {
+      // Add new tower
+      setTowers(prev => [...prev, {
+        position: placementIndicator.clone(),
+        type: selectedObjectType,
+        id: nextTowerId.current++
+      }]);
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('click', handleClick);
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('click', handleClick);
-    };
-  }, [selectedObjectType, placementIndicator, money]);
+      // Deduct money
+      removeMoney(TOWER_STATS[selectedObjectType].cost);
+    }
+  };
 
   return (
     <group>
+      {/* Ground plane for pointer events */}
+      <mesh 
+        position={[0, 0, 0]} 
+        rotation={[-Math.PI / 2, 0, 0]}
+        onPointerMove={handlePointerMove}
+        onClick={handleClick}
+      >
+        <planeGeometry args={[40, 40]} />
+        <meshBasicMaterial 
+          color="#ff0000"
+          opacity={0.1}
+          transparent
+          visible={!!selectedObjectType}
+        />
+      </mesh>
+
       {/* Main Platform */}
       <RigidBody type="fixed" colliders="cuboid">
-        <mesh receiveShadow position={[0, -0.1, 0]} material={platformMaterial}>
+        <mesh 
+          receiveShadow 
+          position={[0, -0.1, 0]} 
+          material={platformMaterial}
+          onClick={handleClick}
+        >
           <boxGeometry args={[40, 0.2, 40]} />
         </mesh>
       </RigidBody>

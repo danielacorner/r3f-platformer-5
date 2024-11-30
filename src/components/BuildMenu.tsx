@@ -1,6 +1,6 @@
 import { useGameStore } from '../store/gameStore';
 import { FaCoins } from 'react-icons/fa';
-import { 
+import {
   GiWaterDrop,
   GiFireBowl,
   GiSnowflake1,
@@ -62,12 +62,12 @@ const TOWER_TYPES = {
   }
 } as const;
 
-function TowerButton({ 
-  tower, 
-  isSelected, 
+function TowerButton({
+  tower,
+  isSelected,
   canAfford,
-  onClick 
-}: { 
+  onClick
+}: {
   tower: typeof TOWER_TYPES[keyof typeof TOWER_TYPES];
   isSelected: boolean;
   canAfford: boolean;
@@ -81,7 +81,7 @@ function TowerButton({
     >
       <div className="tower-button-icon">{tower.icon}</div>
       <div className="tower-button-label">{tower.label.split(' ')[0]}</div>
-      
+
       <div className="tower-tooltip">
         <div className="font-medium mb-1">{tower.label}</div>
         <div className="text-gray-400 text-xs mb-1">{tower.description}</div>
@@ -111,7 +111,14 @@ export function BuildMenu() {
             tower={tower}
             isSelected={selectedObjectType === tower.type}
             canAfford={money >= tower.cost}
-            onClick={() => money >= tower.cost && setSelectedObjectType(tower.type)}
+            // if it's already selected, unselect it
+            onClick={() => {
+              if (money >= tower.cost && selectedObjectType !== tower.type) {
+                setSelectedObjectType(tower.type);
+              } else {
+                setSelectedObjectType(null);
+              }
+            }}
           />
         ))}
       </div>
