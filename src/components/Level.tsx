@@ -2,10 +2,11 @@ import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { Environment, useGLTF } from '@react-three/drei';
-import { Vector3, Raycaster, AmbientLight, DirectionalLight, MeshStandardMaterial, Color, DoubleSide } from 'three';
-import { useGameStore } from '../store/gameStore';
+import { Vector3, Raycaster, AmbientLight, DirectionalLight, MeshStandardMaterial, Color, DoubleSide, Plane, Vector2 } from 'three';
+import { TOWER_STATS, useGameStore } from '../store/gameStore';
 import { Edges, MeshTransmissionMaterial, Float } from '@react-three/drei';
 import { WaveManager } from './WaveManager';
+import { Tower, TowerType } from './Tower';
 
 const pathColor = new Color('#4338ca').convertSRGBToLinear();
 const platformColor = new Color('#1e293b').convertSRGBToLinear();
@@ -283,6 +284,76 @@ export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
 
 export function Level() {
   const path = generateElementTDPath();
+  const { selectedObjectType, money, removeMoney } = useGameStore();
+  const [towers, setTowers] = useState<{ position: Vector3; type: TowerType; id: number }[]>([]);
+  const [placementIndicator, setPlacementIndicator] = useState<Vector3 | null>(null);
+  const nextTowerId = useRef(0);
+  const { camera, scene } = useThree();
+  const groundPlane = new Plane(new Vector3(0, 1, 0), 0);
+  const mouse = new Vector2();
+  const raycaster = new Raycaster();
+
+  // Handle mouse movement for placement indicator
+  useEffect(() => {
+    const handleMouseMove = (event: MouseEvent) => {
+      if (!selectedObjectType) return;
+
+      // Calculate mouse position in normalized device coordinates
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      // Update the picking ray with the camera and mouse position
+      raycaster.setFromCamera(mouse, camera);
+
+      // Calculate intersection with the ground plane
+      const intersection = new Vector3();
+      if (raycaster.ray.intersectPlane(groundPlane, intersection)) {
+        // Snap to grid
+        intersection.x = Math.round(intersection.x);
+        intersection.z = Math.round(intersection.z);
+        intersection.y = 0;
+
+        // Check if position is valid (not on path or existing tower)
+        const isOnPath = path.segments.some(segment => {
+          const dx = Math.abs(intersection.x - segment.position[0]);
+          const dz = Math.abs(intersection.z - segment.position[2]);
+          return dx < 2 && dz < 2;
+        });
+
+        const isOnTower = towers.some(tower =>
+          tower.position.distanceTo(intersection) < 2
+        );
+
+        if (!isOnPath && !isOnTower) {
+          setPlacementIndicator(intersection);
+        } else {
+          setPlacementIndicator(null);
+        }
+      }
+    };
+
+    const handleClick = () => {
+      if (selectedObjectType && placementIndicator && money >= TOWER_STATS[selectedObjectType].cost) {
+        // Add new tower
+        setTowers(prev => [...prev, {
+          position: placementIndicator.clone(),
+          type: selectedObjectType,
+          id: nextTowerId.current++
+        }]);
+
+        // Deduct money
+        removeMoney(TOWER_STATS[selectedObjectType].cost);
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('click', handleClick);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('click', handleClick);
+    };
+  }, [selectedObjectType, placementIndicator, money]);
 
   return (
     <group>
@@ -319,6 +390,37 @@ export function Level() {
       {/* Start and End Crystals */}
       <Crystal position={[-15, 1.5, -15]} scale={1.5} />
       <Crystal position={[15, 1.5, 15]} scale={1.5} />
+
+      {/* Placement Indicator */}
+      {placementIndicator && selectedObjectType && (
+        <Tower
+          position={placementIndicator}
+          type={selectedObjectType}
+          onDamageEnemy={(enemyId, damage, effects) => {
+            const enemy = scene.getObjectByName('enemies')?.children
+              .find(obj => obj.userData.enemyId === enemyId);
+            if (enemy?.userData.takeDamage) {
+              enemy.userData.takeDamage(damage, effects);
+            }
+          }}
+        />
+      )}
+
+      {/* Placed Towers */}
+      {towers.map(tower => (
+        <Tower
+          key={tower.id}
+          position={tower.position}
+          type={tower.type}
+          onDamageEnemy={(enemyId, damage, effects) => {
+            const enemy = scene.getObjectByName('enemies')?.children
+              .find(obj => obj.userData.enemyId === enemyId);
+            if (enemy?.userData.takeDamage) {
+              enemy.userData.takeDamage(damage, effects);
+            }
+          }}
+        />
+      ))}
 
       {/* Wave Manager */}
       <WaveManager pathPoints={path.pathPoints} />

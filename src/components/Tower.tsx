@@ -1,109 +1,194 @@
-import { Vector3 } from 'three';
+import { Vector3, Color } from 'three';
 import { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
 import { useGameStore } from '../store/gameStore';
 import { Arrow } from './Arrow';
+import { Edges, Float } from '@react-three/drei';
 
-const ATTACK_RANGE = 15;
-const ATTACK_COOLDOWN = 1000; // ms
+export type TowerType = 'light' | 'fire' | 'ice' | 'nature' | 'water' | 'dark';
 
-export function Tower({ position, onArrowSpawn }: { 
+interface TowerStats {
+  damage: number;
+  range: number;
+  attackSpeed: number;
+  cost: number;
+  color: string;
+  emissive: string;
+}
+
+const TOWER_STATS: Record<TowerType, TowerStats> = {
+  light: {
+    damage: 20,
+    range: 18,
+    attackSpeed: 1.2,
+    cost: 150,
+    color: '#fef3c7',
+    emissive: '#fcd34d'
+  },
+  fire: {
+    damage: 40,
+    range: 12,
+    attackSpeed: 1,
+    cost: 100,
+    color: '#fecaca',
+    emissive: '#ef4444'
+  },
+  ice: {
+    damage: 15,
+    range: 15,
+    attackSpeed: 1.5,
+    cost: 100,
+    color: '#e0f2fe',
+    emissive: '#38bdf8'
+  },
+  nature: {
+    damage: 25,
+    range: 14,
+    attackSpeed: 0.8,
+    cost: 125,
+    color: '#dcfce7',
+    emissive: '#22c55e'
+  },
+  water: {
+    damage: 30,
+    range: 13,
+    attackSpeed: 1.1,
+    cost: 125,
+    color: '#dbeafe',
+    emissive: '#3b82f6'
+  },
+  dark: {
+    damage: 35,
+    range: 16,
+    attackSpeed: 0.9,
+    cost: 150,
+    color: '#f3e8ff',
+    emissive: '#a855f7'
+  }
+};
+
+export interface TowerProps {
   position: Vector3;
-  onArrowSpawn: (arrow: { position: Vector3; direction: Vector3; id: number }) => void;
-}) {
+  type: TowerType;
+  level?: number;
+  onDamageEnemy?: (enemyId: number, damage: number, effects: any) => void;
+}
+
+export function Tower({ position, type, level = 1, onDamageEnemy }: TowerProps) {
   const phase = useGameStore(state => state.phase);
   const lastAttackTime = useRef(0);
-  const nextArrowId = useRef(0);
-
-  // Debug sphere to show tower position
-  const debugSphere = (
-    <mesh position={[0, 2, 0]}>
-      <sphereGeometry args={[0.5]} />
-      <meshBasicMaterial color="#00ff00" />
-    </mesh>
-  );
+  const stats = TOWER_STATS[type];
+  const attackCooldown = 1000 / stats.attackSpeed;
+  const range = stats.range * (1 + (level - 1) * 0.2); // 20% range increase per level
+  const damage = stats.damage * (1 + (level - 1) * 0.3); // 30% damage increase per level
 
   useFrame((state) => {
-    if (phase !== 'combat') {
-      return;
-    }
+    if (phase !== 'combat') return;
 
     const now = Date.now();
-    if (now - lastAttackTime.current >= ATTACK_COOLDOWN) {
+    if (now - lastAttackTime.current >= attackCooldown) {
       // Find enemies group
       const enemiesGroup = state.scene.getObjectByName('enemies');
-      console.log('Found enemies group:', enemiesGroup?.name, 'Children:', enemiesGroup?.children.length);
       if (!enemiesGroup) return;
 
       // Get all enemies and their positions
       const enemies = enemiesGroup.children
         .map(obj => ({
+          id: obj.userData.enemyId,
           position: obj.position,
           distance: new Vector3(position.x, position.y + 2, position.z)
             .distanceTo(obj.position)
         }))
-        .filter(enemy => enemy.distance <= ATTACK_RANGE)
+        .filter(enemy => enemy.distance <= range)
         .sort((a, b) => a.distance - b.distance);
 
-      console.log('Enemies in range:', enemies.length, 'Total enemies:', enemiesGroup.children.length);
-
       if (enemies.length > 0) {
-        const target = enemies[0]; // Target closest enemy
-        console.log('Tower position:', position.toArray());
-        console.log('Enemy position:', target.position.toArray());
-        console.log('Targeting enemy at distance:', target.distance);
+        const target = enemies[0];
         
-        const spawnPos = new Vector3(position.x, position.y + 2, position.z);
-        const direction = new Vector3()
-          .subVectors(target.position, spawnPos)
-          .normalize();
+        // Apply damage and effects based on tower type
+        const effects = {
+          slow: type === 'ice' ? 0.5 : 0,
+          amplify: type === 'light' ? 1.3 : 1,
+          dot: type === 'nature' ? damage * 0.2 : 0,
+          splash: type === 'water' ? 0.6 : 0,
+          armor: type === 'dark' ? -2 : 0
+        };
 
-        console.log('Spawning arrow at:', spawnPos.toArray(), 'with direction:', direction.toArray());
-
-        // Spawn new arrow
-        onArrowSpawn({
-          position: spawnPos,
-          direction: direction,
-          id: nextArrowId.current++
-        });
-
+        onDamageEnemy?.(target.id, damage, effects);
         lastAttackTime.current = now;
-        console.log('Fired arrow at enemy');
+
+        // Visual feedback
+        // TODO: Add particle effects based on tower type
       }
     }
   });
 
   return (
     <group position={position}>
-      <RigidBody type="fixed" colliders="hull">
-        {/* Base */}
-        <mesh position={[0, 1, 0]}>
-          <cylinderGeometry args={[0.6, 0.8, 2, 8]} />
-          <meshStandardMaterial color="#666666" />
-        </mesh>
-        {/* Top */}
-        <mesh position={[0, 2.2, 0]}>
-          <cylinderGeometry args={[0.7, 0.6, 0.4, 8]} />
-          <meshStandardMaterial color="#666666" />
-        </mesh>
-        {/* Arrow slots */}
-        {[0, Math.PI/2, Math.PI, Math.PI*1.5].map((rotation, index) => (
-          <mesh key={index} position={[0, 2, 0]} rotation={[0, rotation, 0]}>
-            <boxGeometry args={[0.2, 0.3, 1]} />
-            <meshStandardMaterial color="#444444" />
+      <Float 
+        speed={2} 
+        rotationIntensity={0.2} 
+        floatIntensity={0.5}
+      >
+        <RigidBody type="fixed" colliders="hull">
+          {/* Base */}
+          <mesh position={[0, 1, 0]} castShadow>
+            <cylinderGeometry args={[0.6, 0.8, 2, 8]} />
+            <meshStandardMaterial 
+              color={stats.color}
+              emissive={stats.emissive}
+              emissiveIntensity={0.5}
+              metalness={0.8}
+              roughness={0.2}
+            />
+            <Edges color={stats.emissive} />
           </mesh>
-        ))}
-      </RigidBody>
 
-      {/* Debug sphere */}
-      {debugSphere}
+          {/* Top */}
+          <mesh position={[0, 2.2, 0]} castShadow>
+            <cylinderGeometry args={[0.7, 0.6, 0.4, 8]} />
+            <meshStandardMaterial 
+              color={stats.color}
+              emissive={stats.emissive}
+              emissiveIntensity={0.8}
+              metalness={0.9}
+              roughness={0.1}
+            />
+            <Edges color={stats.emissive} />
+          </mesh>
+
+          {/* Element-specific decorations */}
+          {[0, Math.PI/2, Math.PI, Math.PI*1.5].map((rotation, index) => (
+            <mesh 
+              key={index} 
+              position={[0, 2, 0]} 
+              rotation={[0, rotation, 0]}
+              castShadow
+            >
+              <boxGeometry args={[0.2, 0.3, 1]} />
+              <meshStandardMaterial 
+                color={stats.emissive}
+                emissive={stats.emissive}
+                emissiveIntensity={1}
+                metalness={1}
+                roughness={0}
+              />
+              <Edges color={stats.color} />
+            </mesh>
+          ))}
+        </RigidBody>
+      </Float>
 
       {/* Range indicator (only in prep phase) */}
       {phase === 'prep' && (
         <mesh position={[0, 0.1, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[ATTACK_RANGE - 0.1, ATTACK_RANGE, 64]} />
-          <meshBasicMaterial color="#4444ff" transparent opacity={0.2} />
+          <ringGeometry args={[range - 0.1, range, 64]} />
+          <meshBasicMaterial 
+            color={stats.emissive} 
+            transparent 
+            opacity={0.2} 
+          />
         </mesh>
       )}
     </group>

@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGameStore } from '../store/gameStore';
 import { Vector3, MeshStandardMaterial, Color } from 'three';
@@ -61,7 +61,14 @@ export function Creep({ position, pathPoints, type, health, id }: CreepProps) {
   const pathIndex = useRef(0);
   const lerpFactor = useRef(0);
   const currentHealth = useRef(health);
-  const { loseLife } = useGameStore();
+  const { loseLife, removeEnemy, addMoney } = useGameStore();
+  const [effects, setEffects] = useState({
+    slow: 0,
+    amplify: 1,
+    dot: 0,
+    splash: 0,
+    armor: 0
+  });
 
   // Calculate the next position along the path
   const moveAlongPath = (delta: number) => {
@@ -98,9 +105,57 @@ export function Creep({ position, pathPoints, type, health, id }: CreepProps) {
     }
   };
 
+  // Handle damage and effects
+  const takeDamage = (damage: number, newEffects: any) => {
+    // Apply armor and damage amplification
+    const effectiveArmor = Math.max(-10, Math.min(10, effects.armor + newEffects.armor));
+    const damageMultiplier = effects.amplify * newEffects.amplify;
+    const armorMultiplier = 1 - (effectiveArmor > 0 ? effectiveArmor * 0.05 : effectiveArmor * 0.03);
+    const finalDamage = damage * damageMultiplier * armorMultiplier;
+
+    currentHealth.current -= finalDamage;
+
+    // Update effects
+    setEffects({
+      slow: Math.max(effects.slow, newEffects.slow),
+      amplify: newEffects.amplify > 1 ? newEffects.amplify : effects.amplify,
+      dot: effects.dot + newEffects.dot,
+      splash: Math.max(effects.splash, newEffects.splash),
+      armor: effectiveArmor
+    });
+
+    // Check for death
+    if (currentHealth.current <= 0) {
+      if (creepRef.current) {
+        // Add money based on enemy type
+        const bounty = type === 'boss' ? 100 :
+                      type === 'armored' ? 40 :
+                      type === 'fast' ? 25 : 20;
+        addMoney(bounty);
+        
+        // Remove enemy
+        removeEnemy(id);
+        creepRef.current.parent?.remove(creepRef.current);
+      }
+    }
+  };
+
+  // Apply damage over time effects
   useFrame((state, delta) => {
-    moveAlongPath(delta);
+    if (effects.dot > 0) {
+      takeDamage(effects.dot * delta, { amplify: 1, armor: 0, slow: 0, dot: 0, splash: 0 });
+    }
+    
+    moveAlongPath(delta * (1 - effects.slow));
   });
+
+  // Add enemy to userData for targeting
+  useEffect(() => {
+    if (creepRef.current) {
+      creepRef.current.userData.enemyId = id;
+      creepRef.current.userData.takeDamage = takeDamage;
+    }
+  }, [id]);
 
   return (
     <group ref={creepRef} position={position}>
