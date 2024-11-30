@@ -1,5 +1,5 @@
 import { Vector3, Color, Euler } from 'three';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
 import { useGameStore } from '../store/gameStore';
@@ -37,6 +37,8 @@ export function Tower({ position, type, level = 1, preview, onDamageEnemy, canAf
     target: [number, number, number];
     progress: number;
   }[]>([]);
+  const time = useRef(0);
+  const lastPhoenixTime = useRef(0);
 
   // Linear interpolation helper
   function lerp(start: number, end: number, t: number): number {
@@ -68,11 +70,96 @@ export function Tower({ position, type, level = 1, preview, onDamageEnemy, canAf
     );
   });
 
+  const handleAttack = useCallback((creep: { id: number, position: [number, number, number] }) => {
+    if (!stats.special) return;
+
+    const { applyEffectToCreep, damageCreep } = useGameStore.getState();
+
+    switch (stats.special.type) {
+      // Light Tower Effects
+      case 'amplify':
+        applyEffectToCreep(creep.id, 'amplify', stats.special.value, 2.5);
+        break;
+      case 'chain_amplify':
+        applyEffectToCreep(creep.id, 'amplify', stats.special.value, 2.5);
+        const nearbyCreeps = findNearbyCreeps(creep.position, 3);
+        nearbyCreeps.slice(0, stats.special.bounces || 2).forEach(nearby => {
+          applyEffectToCreep(nearby.id, 'amplify', stats.special.value * 0.8, 2);
+        });
+        break;
+      case 'aura_amplify':
+        const auraCreeps = findNearbyCreeps(position, stats.special.radius || 4);
+        auraCreeps.forEach(nearby => {
+          applyEffectToCreep(nearby.id, 'amplify', stats.special.value, 1);
+        });
+        break;
+      case 'purify':
+        applyEffectToCreep(creep.id, 'amplify', stats.special.value, 3);
+        applyEffectToCreep(creep.id, 'heal_block', stats.special.heal_block || 5, 3);
+        break;
+      case 'divine_mark':
+        applyEffectToCreep(creep.id, 'amplify', stats.special.value, 3);
+        applyEffectToCreep(creep.id, 'mark', stats.special.explosion || 100, 5);
+        break;
+
+      // Fire Tower Effects
+      case 'burn':
+        applyEffectToCreep(creep.id, 'burn', stats.special.value, 3);
+        break;
+      case 'meteor':
+        if (Math.random() < 0.2) {
+          const meteorTargets = findNearbyCreeps(creep.position, stats.special.radius || 2);
+          meteorTargets.forEach(target => {
+            applyEffectToCreep(target.id, 'burn', stats.special.value, 2);
+            damageCreep(target.id, stats.special.value);
+          });
+        }
+        break;
+      case 'inferno':
+        const creepState = useGameStore.getState().creeps.find(c => c.id === creep.id);
+        const stacks = creepState?.effects?.burn?.stacks || 0;
+        applyEffectToCreep(creep.id, 'burn', stats.special.value * Math.pow(stats.special.stack_multiplier || 1.5, stacks), 3);
+        break;
+      case 'phoenix':
+        applyEffectToCreep(creep.id, 'burn', stats.special.value, 2);
+        if (!lastPhoenixTime.current || time.current - lastPhoenixTime.current > (stats.special.cooldown || 10) * 1000) {
+          const phoenixTargets = findNearbyCreeps(position, range);
+          phoenixTargets.forEach(target => damageCreep(target.id, stats.special.value));
+          lastPhoenixTime.current = time.current;
+        }
+        break;
+
+      // Ice Tower Effects
+      case 'slow':
+        applyEffectToCreep(creep.id, 'slow', stats.special.value, 2);
+        break;
+      case 'frozen_ground':
+        const groundTargets = findNearbyCreeps(position, stats.special.radius || 3);
+        groundTargets.forEach(target => {
+          applyEffectToCreep(target.id, 'slow', stats.special.value, stats.special.duration || 3);
+        });
+        break;
+      case 'shatter':
+        const creepData = useGameStore.getState().creeps.find(c => c.id === creep.id);
+        if (creepData?.effects?.slow?.value >= (stats.special.shatter_threshold || 0.5)) {
+          damageCreep(creep.id, stats.damage * 2);
+        }
+        applyEffectToCreep(creep.id, 'slow', stats.special.value, 2);
+        break;
+
+      // Add other effects similarly...
+    }
+
+    // Apply base damage
+    damageCreep(creep.id, stats.damage);
+  }, [stats, position, range, time]);
+
   // Handle attacking
   useFrame((state) => {
+    time.current = state.clock.getElapsedTime() * 1000;
     if (phase !== 'combat' || preview) return;
 
-    const currentTime = state.clock.getElapsedTime() * 1000;
+    const currentTime = time.current;
     if (currentTime - lastAttackTime.current < attackCooldown) return;
 
     const towerPos = position instanceof Vector3 ? position : new Vector3(...position);
@@ -110,12 +197,8 @@ export function Tower({ position, type, level = 1, preview, onDamageEnemy, canAf
       }]);
 
       if (onDamageEnemy) {
-        onDamageEnemy(closestCreep.id, damage, {
-          slow: type === 'ice' ? 0.5 : 0,
-          amplify: type === 'arcane' ? 0.3 : 0,
-          poison: type === 'nature' ? damage * 0.2 : 0,
-          armor: type === 'void' ? 0.2 : 0,
-        });
+        handleAttack(closestCreep);
+        onDamageEnemy(closestCreep.id, damage, {});
       }
 
       lastAttackTime.current = currentTime;

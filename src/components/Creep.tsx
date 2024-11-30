@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo } from 'react';
+import { useRef, useEffect, useMemo, useState, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGameStore } from '../store/gameStore';
 import { Vector3 } from 'three';
@@ -16,11 +16,12 @@ interface CreepData {
   health: number;
   maxHealth: number;
   effects: {
-    slow: number;
-    amplify: number;
-    dot: number;
-    armor: number;
-    splash: number;
+    [key: string]: {
+      value: number;
+      duration: number;
+      startTime: number;
+      stacks?: number;
+    };
   };
 }
 
@@ -57,9 +58,16 @@ const creepRewards = {
 const effectColors = {
   slow: '#00ffff',
   amplify: '#ffff00',
-  dot: '#00ff00',
-  armor: '#ff0000',
+  poison: '#00ff00',
+  armor_reduction: '#ff0000',
   splash: '#ff00ff',
+  freeze: '#0000ff',
+  fear: '#ff0000',
+  burn: '#ff9900',
+  thorns: '#33cc33',
+  curse: '#6600cc',
+  mana_burn: '#cc00cc',
+  mark: '#ff00ff',
 };
 
 export function Creep({ id, pathPoints }: { id: number; pathPoints: Vector3[] }) {
@@ -73,12 +81,70 @@ export function Creep({ id, pathPoints }: { id: number; pathPoints: Vector3[] })
   const pathIndex = useRef(1);
   const lastPosition = useRef<Vector3 | null>(null);
 
+  const [effects, setEffects] = useState<{
+    [key: string]: {
+      value: number;
+      duration: number;
+      startTime: number;
+      stacks?: number;
+    };
+  }>({});
+
+  const applyEffect = useCallback((type: string, value: number, duration: number) => {
+    setEffects(prev => {
+      const currentTime = Date.now();
+      const existing = prev[type];
+      
+      // Handle stacking effects
+      if (existing) {
+        const newStacks = (existing.stacks || 1) + 1;
+        return {
+          ...prev,
+          [type]: {
+            value: Math.max(existing.value, value),
+            duration,
+            startTime: currentTime,
+            stacks: newStacks
+          }
+        };
+      }
+
+      return {
+        ...prev,
+        [type]: {
+          value,
+          duration,
+          startTime: currentTime,
+          stacks: 1
+        }
+      };
+    });
+  }, []);
+
+  const getEffectValue = useCallback((type: string) => {
+    const effect = effects[type];
+    if (!effect) return 0;
+
+    const elapsed = (Date.now() - effect.startTime) / 1000;
+    if (elapsed > effect.duration) return 0;
+
+    return effect.value;
+  }, [effects]);
+
+  const hasEffect = useCallback((type: string) => {
+    return !!effects[type];
+  }, [effects]);
+
+  const getEffectStacks = useCallback((type: string) => {
+    return effects[type]?.stacks || 0;
+  }, [effects]);
+
   if (!creepData) {
     console.log('No creep data found for id:', id);
     return null;
   }
 
-  const { position, type, health, maxHealth, effects } = creepData;
+  const { position, type, health, maxHealth } = creepData;
 
   // Movement
   useFrame((state, delta) => {
@@ -89,9 +155,9 @@ export function Creep({ id, pathPoints }: { id: number; pathPoints: Vector3[] })
     const direction = targetPos.clone().sub(currentPos).normalize();
     
     // Calculate speed with effects
-    const slowEffect = effects.slow || 0;
+    const slowValue = getEffectValue('slow');
     const baseSpeed = (creepSpeeds[type] || 0.1) * SPEED_MULTIPLIER;
-    const currentSpeed = baseSpeed * (1 - slowEffect);
+    const currentSpeed = baseSpeed * (1 - slowValue);
 
     // Move towards next point
     const newPos = currentPos.clone().add(direction.multiplyScalar(currentSpeed * delta));
@@ -100,28 +166,86 @@ export function Creep({ id, pathPoints }: { id: number; pathPoints: Vector3[] })
     // Check if reached target
     const distanceToTarget = newPos.distanceTo(targetPos);
     if (distanceToTarget < 0.5) {
-      console.log(`Creep ${id} reached point ${pathIndex.current}, moving to next point`);
       pathIndex.current++;
       
       // Reached end of path
       if (pathIndex.current >= pathPoints.length) {
-        console.log(`Creep ${id} reached end of path`);
         loseLife();
         removeCreep(id);
         return;
       }
     }
 
-    // Update position
+    // Handle damage over time effects
+    let dotDamage = 0;
+
+    // Poison damage
+    const poisonValue = getEffectValue('poison');
+    if (poisonValue > 0) {
+      dotDamage += poisonValue * delta;
+    }
+
+    // Burn damage
+    const burnValue = getEffectValue('burn');
+    if (burnValue > 0) {
+      dotDamage += burnValue * delta;
+    }
+
+    // Apply total dot damage
+    if (dotDamage > 0) {
+      const amplifyValue = getEffectValue('amplify');
+      const armorReduction = getEffectValue('armor_reduction');
+      const totalDamage = dotDamage * (1 + amplifyValue) * (1 + armorReduction);
+      updateCreep(id, {
+        health: health - totalDamage
+      });
+    }
+
+    // Handle curse effect when nearby enemies die
+    if (hasEffect('curse')) {
+      const nearbyDeaths = 0; // Replace with actual implementation
+      if (nearbyDeaths > 0) {
+        const curseValue = getEffectValue('curse');
+        updateCreep(id, {
+          health: health - nearbyDeaths * curseValue * maxHealth
+        });
+      }
+    }
+
+    // Handle mana burn
+    if (hasEffect('mana_burn')) {
+      const manaValue = getEffectValue('mana_burn');
+      // Replace with actual implementation
+    }
+
+    // Check for death effects
+    if (health <= 0) {
+      if (hasEffect('mark')) {
+        const explosionDamage = getEffectValue('mark');
+        // Replace with actual implementation
+      }
+      removeCreep(id);
+    }
+
+    // Clean up expired effects
+    setEffects(prev => {
+      const currentTime = Date.now();
+      const newEffects = { ...prev };
+      
+      Object.entries(prev).forEach(([type, effect]) => {
+        const elapsed = (currentTime - effect.startTime) / 1000;
+        if (elapsed > effect.duration) {
+          delete newEffects[type];
+        }
+      });
+
+      return newEffects;
+    });
+
+    // Update position and decay effects
     updateCreep(id, { 
       position: [newPos.x, newPos.y, newPos.z],
-      effects: {
-        ...effects,
-        slow: Math.max(0, (effects.slow || 0) - 0.1 * delta),
-        amplify: Math.max(0, (effects.amplify || 0) - 0.2 * delta),
-        poison: Math.max(0, (effects.poison || 0) - 5 * delta),
-        armor: Math.max(0, (effects.armor || 0) - 0.1 * delta)
-      }
+      effects: effects
     });
 
     // Store last position for rotation
@@ -132,9 +256,8 @@ export function Creep({ id, pathPoints }: { id: number; pathPoints: Vector3[] })
   useEffect(() => {
     if (health <= 0) {
       addMoney(creepRewards[type]);
-      removeCreep(id);
     }
-  }, [health, type, id, addMoney, removeCreep]);
+  }, [health, type, id, addMoney]);
 
   // Calculate rotation to face movement direction
   const rotation = useMemo(() => {
