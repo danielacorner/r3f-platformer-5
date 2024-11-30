@@ -102,7 +102,7 @@ function generateElementTDPath() {
 
   // Generate path segments
   const segments = [];
-  for (let i = 0; i < pathPoints.length - 1; i++) {
+  for (let i = 0; i <pathPoints.length - 1; i++) {
     const start = pathPoints[i];
     const end = pathPoints[i + 1];
     const length = Math.sqrt(
@@ -377,6 +377,14 @@ export function Level() {
           visible={!!selectedObjectType}
         />
       </mesh>
+
+      {/* Placeable area indicator */}
+      {selectedObjectType && money >= TOWER_STATS[selectedObjectType].cost && (
+        <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[40, 40]} />
+          <meshBasicMaterial color="#44ff44" transparent opacity={0.1} />
+        </mesh>
+      )}
 
       {/* Main Platform */}
       <RigidBody type="fixed" colliders="cuboid">

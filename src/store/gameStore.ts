@@ -77,6 +77,15 @@ interface PlacedTower {
   kills: number;
 }
 
+interface Creep {
+  id: number;
+  position: [number, number, number];
+  type: string;
+  health: number;
+  maxHealth: number;
+  effects: any;
+}
+
 interface GameState {
   phase: 'prep' | 'combat';
   currentLevel: number;
@@ -89,6 +98,8 @@ interface GameState {
   money: number;
   score: number;
   lives: number;
+  wave: number;
+  creeps: Creep[];
 }
 
 const initialState: GameState = {
@@ -102,7 +113,9 @@ const initialState: GameState = {
   selectedObjectType: null,
   money: 100, // Starting money
   score: 0,
-  lives: 20
+  lives: 20,
+  wave: 0,
+  creeps: []
 };
 
 export const useGameStore = create<GameState & {
@@ -121,6 +134,10 @@ export const useGameStore = create<GameState & {
   addScore: (amount: number) => void;
   loseLife: () => void;
   resetLevel: () => void;
+  setWave: (wave: number) => void;
+  addCreep: (creep: Creep) => void;
+  removeCreep: (id: number) => void;
+  updateCreep: (id: number, updates: Partial<Creep>) => void;
 }>((set) => ({
   ...initialState,
 
@@ -213,5 +230,15 @@ export const useGameStore = create<GameState & {
   resetLevel: () => set((state) => ({
     ...initialState,
     currentLevel: state.currentLevel
-  }))
+  })),
+  
+  setWave: (wave) => set({ wave }),
+  
+  addCreep: (creep) => set((state) => ({ creeps: [...state.creeps, creep] })),
+  
+  removeCreep: (id) => set((state) => ({ creeps: state.creeps.filter(c => c.id !== id) })),
+  
+  updateCreep: (id, updates) => set((state) => ({
+    creeps: state.creeps.map(c => c.id === id ? { ...c, ...updates } : c)
+  })),
 }));

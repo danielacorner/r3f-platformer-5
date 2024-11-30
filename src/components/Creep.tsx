@@ -66,11 +66,13 @@ const creepScales = {
   boss: 1.5,
 };
 
+const baseSpeed = 5; // Increased from previous value
+
 const creepSpeeds = {
-  normal: 0.05,
-  armored: 0.03,
-  fast: 0.08,
-  boss: 0.02,
+  normal: baseSpeed * 0.05,
+  armored: baseSpeed * 0.03,
+  fast: baseSpeed * 0.08,
+  boss: baseSpeed * 0.02,
 };
 
 const creepHealth = {

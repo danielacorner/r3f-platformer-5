@@ -34,101 +34,57 @@ export function Tower({ position, type, level = 1, preview, onDamageEnemy, canAf
   useFrame((state) => {
     if (phase !== 'combat' || preview) return;
 
-    const now = Date.now();
-    if (now - lastAttackTime.current >= attackCooldown) {
-      // Find enemies group
-      const enemiesGroup = state.scene.getObjectByName('enemies');
-      if (!enemiesGroup) return;
+    const currentTime = state.clock.getElapsedTime() * 1000;
+    if (currentTime - lastAttackTime.current < attackCooldown) return;
 
-      // Get all enemies within range
-      const enemies = enemiesGroup.children
-        .filter(enemy => {
-          const distance = new Vector3(...position as [number, number, number])
-            .distanceTo(enemy.position);
-          return distance <= range && enemy.userData?.enemyId !== undefined;
-        })
-        .map(enemy => ({
-          distance: new Vector3(...position as [number, number, number])
-            .distanceTo(enemy.position),
-          enemy
-        }))
-        .sort((a, b) => a.distance - b.distance);
+    // Get all creeps
+    const creeps = useGameStore.getState().creeps;
+    if (!creeps.length) return;
 
-      if (enemies.length > 0) {
-        // Get target enemy
-        const { enemy: targetEnemy } = enemies[0];
-        const enemyId = targetEnemy.userData?.enemyId;
+    // Find closest creep in range
+    const towerPos = position instanceof Vector3 ? position : new Vector3(...position);
+    let closestCreep = null;
+    let closestDistance = Infinity;
 
-        // Calculate effects based on tower type and level
-        const effects = {
-          slow: 0,
-          amplify: 1,
-          dot: 0,
-          armor: 0,
-          splash: 0
-        };
+    for (const creep of creeps) {
+      const creepPos = new Vector3(creep.position[0], creep.position[1], creep.position[2]);
+      const distance = towerPos.distanceTo(creepPos);
 
-        // Apply special effects based on tower type
-        if (stats.special) {
-          switch (stats.special.type) {
-            case 'slow':
-              effects.slow = stats.special.value;
-              break;
-            case 'amplify':
-              effects.amplify = 1 + stats.special.value;
-              break;
-            case 'poison':
-              effects.dot = stats.special.value * damage;
-              break;
-            case 'splash':
-              effects.splash = stats.special.value;
-              // Apply splash damage to nearby enemies
-              if (effects.splash > 0) {
-                enemies.slice(1).forEach(({ enemy, distance }) => {
-                  if (distance <= range * 0.5) { // Splash range is 50% of tower range
-                    const splashDamageMultiplier = 1 - (distance / (range * 0.5)); // Linear falloff
-                    const splashDamage = damage * effects.splash * splashDamageMultiplier;
-                    if (enemy.userData?.enemyId !== undefined) {
-                      onDamageEnemy?.(enemy.userData.enemyId, splashDamage, effects);
-                    }
-                  }
-                });
-              }
-              break;
-            case 'armor_reduction':
-              effects.armor = stats.special.value;
-              break;
-          }
-        }
-
-        // Deal damage to primary target
-        onDamageEnemy?.(enemyId, damage, effects);
-        lastAttackTime.current = now;
-
-        // Create arrow effect
-        const arrowDirection = new Vector3()
-          .subVectors(targetEnemy.position, new Vector3(...position as [number, number, number]))
-          .normalize();
-
-        setArrows(prev => [
-          ...prev,
-          {
-            id: now,
-            position: new Vector3(...position as [number, number, number]).add(new Vector3(0, 1.5, 0)),
-            direction: arrowDirection,
-            startTime: now
-          }
-        ]);
+      if (distance <= range && distance < closestDistance) {
+        closestDistance = distance;
+        closestCreep = creep;
       }
     }
 
-    // Update and remove old arrows
-    setArrows(prev => 
-      prev.filter(arrow => {
-        const age = now - arrow.startTime;
-        return age < 1000; // Remove arrows after 1 second
-      })
-    );
+    if (closestCreep) {
+      // Create arrow
+      const creepPos = new Vector3(closestCreep.position[0], closestCreep.position[1], closestCreep.position[2]);
+      const direction = creepPos.clone().sub(towerPos).normalize();
+
+      const newArrow = {
+        id: Math.random(),
+        position: new Vector3(towerPos.x, towerPos.y + 2, towerPos.z),
+        direction: direction,
+        startTime: currentTime,
+      };
+
+      setArrows(prev => [...prev, newArrow]);
+
+      // Apply damage
+      if (onDamageEnemy) {
+        onDamageEnemy(closestCreep.id, damage, {
+          slow: type === 'ice' ? 0.5 : 0,
+          amplify: type === 'arcane' ? 0.3 : 0,
+          poison: type === 'nature' ? damage * 0.2 : 0,
+          armor: type === 'void' ? 0.2 : 0,
+        });
+      }
+
+      lastAttackTime.current = currentTime;
+    }
+
+    // Cleanup old arrows
+    setArrows(prev => prev.filter(arrow => currentTime - arrow.startTime < 1000));
   });
 
   return (
@@ -234,8 +190,8 @@ export function Tower({ position, type, level = 1, preview, onDamageEnemy, canAf
   );
 }
 
-function Arrow({ startPosition, direction, color }: { 
-  startPosition: Vector3; 
+function Arrow({ startPosition, direction, color }: {
+  startPosition: Vector3;
   direction: Vector3;
   color: string;
 }) {
@@ -250,9 +206,9 @@ function Arrow({ startPosition, direction, color }: {
     const position = startPosition.clone().add(
       direction.clone().multiplyScalar(age * speed)
     );
-    
+
     arrowRef.current.position.copy(position);
-    
+
     // Point in direction of travel
     const rotation = new Vector3(0, 0, 0);
     rotation.y = Math.atan2(direction.x, direction.z);
