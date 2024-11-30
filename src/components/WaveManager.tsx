@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
-import { Creep } from './Creep';
 import { Vector3 } from 'three';
 
 interface Wave {
@@ -60,7 +59,7 @@ interface WaveManagerProps {
 }
 
 export function WaveManager({ pathPoints }: WaveManagerProps) {
-  const { phase, currentLevel, setPhase, setEnemiesAlive } = useGameStore();
+  const { phase, currentLevel, setPhase, setEnemiesAlive, addCreep } = useGameStore();
   const waveQueue = useRef<Array<{ type: 'normal' | 'armored' | 'fast' | 'boss'; health: number }>>([]);
   const spawnTimerRef = useRef<number | null>(null);
   const enemyIdCounter = useRef(0);
@@ -93,49 +92,49 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
         
         // Add enemy to scene
         const startPos = pathPoints[0].clone();
-        startPos.y += 1; // Lift slightly above ground
+        startPos.y = 1; // Set exact height instead of adding
 
         // Create new creep
-        return {
+        const newCreep = {
           position: [startPos.x, startPos.y, startPos.z] as [number, number, number],
           type: enemy.type,
           health: enemy.health,
-          id: enemyIdCounter.current
+          maxHealth: enemy.health,
+          id: enemyIdCounter.current,
+          effects: {
+            slow: 0,
+            amplify: 0,
+            dot: 0,
+            armor: 0,
+            splash: 0
+          }
         };
+
+        // Add to game store
+        addCreep(newCreep);
+        console.log('Spawned creep:', newCreep);
+        return newCreep;
       }
       return null;
     };
 
-    spawnTimerRef.current = window.setInterval(() => {
-      spawnEnemy();
-      if (waveQueue.current.length === 0) {
-        if (spawnTimerRef.current) {
-          clearInterval(spawnTimerRef.current);
-        }
+    const interval = setInterval(() => {
+      const spawned = spawnEnemy();
+      if (!spawned && waveQueue.current.length === 0) {
+        clearInterval(interval);
       }
     }, wave.spawnInterval);
+
+    spawnTimerRef.current = interval;
 
     return () => {
       if (spawnTimerRef.current) {
         clearInterval(spawnTimerRef.current);
       }
     };
-  }, [phase, currentLevel, setPhase, setEnemiesAlive]);
+  }, [phase, currentLevel, setPhase, setEnemiesAlive, addCreep, pathPoints]);
 
   if (phase !== 'combat') return null;
 
-  return (
-    <>
-      {waveQueue.current.map((enemy, index) => (
-        <Creep
-          key={`enemy-${index}`}
-          position={[pathPoints[0].x, pathPoints[0].y + 1, pathPoints[0].z]}
-          pathPoints={pathPoints}
-          type={enemy.type}
-          health={enemy.health}
-          id={index}
-        />
-      ))}
-    </>
-  );
+  return null; // Creeps are now managed through the store
 }

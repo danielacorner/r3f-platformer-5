@@ -7,6 +7,7 @@ import { TOWER_STATS, useGameStore } from '../store/gameStore';
 import { Edges, MeshTransmissionMaterial, Float } from '@react-three/drei';
 import { WaveManager } from './WaveManager';
 import { Tower, TowerType } from './Tower';
+import { Creep } from './Creep'; // Assuming Creep component is defined in Creep.tsx
 
 const pathColor = new Color('#4338ca').convertSRGBToLinear();
 const platformColor = new Color('#1e293b').convertSRGBToLinear();
@@ -284,7 +285,18 @@ export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
 
 export function Level() {
   const path = generateElementTDPath();
-  const { selectedObjectType, money, spendMoney, addPlacedTower, placedTowers, setSelectedObjectType } = useGameStore();
+  const pathPoints = useMemo(() => {
+    const points: Vector3[] = [
+      new Vector3(-15, 0, -15),
+      new Vector3(-15, 0, 0),
+      new Vector3(0, 0, 0),
+      new Vector3(0, 0, 15),
+      new Vector3(15, 0, 15),
+    ];
+    return points;
+  }, []);
+
+  const { selectedObjectType, money, spendMoney, addPlacedTower, placedTowers, setSelectedObjectType, creeps } = useGameStore();
   const [placementIndicator, setPlacementIndicator] = useState<Vector3 | null>(null);
   const groundPlane = new Plane(new Vector3(0, 1, 0), 0);
   const { camera } = useThree();
@@ -369,34 +381,9 @@ export function Level() {
         onPointerMove={handlePointerMove}
         onClick={handleClick}
       >
-        <planeGeometry args={[40, 40]} />
-        <meshBasicMaterial
-          color="#ff0000"
-          opacity={0.1}
-          transparent
-          visible={!!selectedObjectType}
-        />
+        <planeGeometry args={[100, 100]} />
+        <meshStandardMaterial color="#1a472a" />
       </mesh>
-
-      {/* Placeable area indicator */}
-      {selectedObjectType && money >= TOWER_STATS[selectedObjectType].cost && (
-        <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[40, 40]} />
-          <meshBasicMaterial color="#44ff44" transparent opacity={0.1} />
-        </mesh>
-      )}
-
-      {/* Main Platform */}
-      <RigidBody type="fixed" colliders="cuboid">
-        <mesh
-          receiveShadow
-          position={[0, -0.1, 0]}
-          material={platformMaterial}
-          onClick={handleClick}
-        >
-          <boxGeometry args={[40, 0.2, 40]} />
-        </mesh>
-      </RigidBody>
 
       {/* Path */}
       {path.segments.map((segment, index) => (
@@ -425,6 +412,15 @@ export function Level() {
       <Crystal position={[-15, 1.5, -15]} scale={1.5} />
       <Crystal position={[15, 1.5, 15]} scale={1.5} />
 
+      {/* Creeps */}
+      {creeps.map(creep => (
+        <Creep
+          key={creep.id}
+          id={creep.id}
+          pathPoints={pathPoints}
+        />
+      ))}
+
       {/* Placement Preview */}
       {selectedObjectType && placementIndicator && (
         <Tower
@@ -436,23 +432,32 @@ export function Level() {
       )}
 
       {/* Placed Towers */}
-      {placedTowers.map(tower => (
+      {placedTowers.map((tower, index) => (
         <Tower
-          key={tower.id}
+          key={index}
           position={tower.position}
           type={tower.type}
           onDamageEnemy={(enemyId, damage, effects) => {
-            const enemy = scene.getObjectByName('enemies')?.children
-              .find(obj => obj.userData.enemyId === enemyId);
-            if (enemy?.userData.takeDamage) {
-              enemy.userData.takeDamage(damage, effects);
+            const enemy = creeps.find(c => c.id === enemyId);
+            if (enemy) {
+              const newHealth = enemy.health - damage;
+              useGameStore.getState().updateCreep(enemyId, {
+                health: newHealth,
+                effects: {
+                  ...enemy.effects,
+                  slow: Math.max(enemy.effects.slow || 0, effects.slow || 0),
+                  amplify: Math.max(enemy.effects.amplify || 0, effects.amplify || 0),
+                  poison: Math.max(enemy.effects.poison || 0, effects.poison || 0),
+                  armor: Math.max(enemy.effects.armor || 0, effects.armor || 0)
+                }
+              });
             }
           }}
         />
       ))}
 
       {/* Wave Manager */}
-      <WaveManager pathPoints={path.pathPoints} />
+      <WaveManager pathPoints={pathPoints} />
     </group>
   );
 }

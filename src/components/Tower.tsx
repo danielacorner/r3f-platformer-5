@@ -1,10 +1,10 @@
-import { Vector3, Color } from 'three';
+import { Vector3, Color, Euler } from 'three';
 import { useRef, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
 import { useGameStore } from '../store/gameStore';
 import { TOWER_STATS } from '../store/gameStore';
-import { Edges, Float } from '@react-three/drei';
+import { Edges, Float, Trail } from '@react-three/drei';
 
 interface TowerProps {
   position: Vector3 | [number, number, number];
@@ -24,6 +24,7 @@ interface Arrow {
 
 export function Tower({ position, type, level = 1, preview, onDamageEnemy, canAfford = true }: TowerProps) {
   const phase = useGameStore(state => state.phase);
+  const creeps = useGameStore(state => state.creeps);
   const lastAttackTime = useRef(0);
   const stats = TOWER_STATS[type];
   const attackCooldown = 1000 / stats.attackSpeed;
@@ -31,15 +32,18 @@ export function Tower({ position, type, level = 1, preview, onDamageEnemy, canAf
   const damage = stats.damage * (1 + (level - 1) * 0.3); // 30% damage increase per level
   const [arrows, setArrows] = useState<Arrow[]>([]);
 
+  // Skip combat logic if preview
   useFrame((state) => {
     if (phase !== 'combat' || preview) return;
 
     const currentTime = state.clock.getElapsedTime() * 1000;
     if (currentTime - lastAttackTime.current < attackCooldown) return;
 
-    // Get all creeps
-    const creeps = useGameStore.getState().creeps;
-    if (!creeps.length) return;
+    if (!creeps.length) {
+      console.log('No creeps found');
+      return;
+    }
+    console.log('Found creeps:', creeps.length);
 
     // Find closest creep in range
     const towerPos = position instanceof Vector3 ? position : new Vector3(...position);
@@ -57,18 +61,23 @@ export function Tower({ position, type, level = 1, preview, onDamageEnemy, canAf
     }
 
     if (closestCreep) {
+      console.log('Found target creep at distance:', closestDistance);
       // Create arrow
       const creepPos = new Vector3(closestCreep.position[0], closestCreep.position[1], closestCreep.position[2]);
       const direction = creepPos.clone().sub(towerPos).normalize();
 
       const newArrow = {
         id: Math.random(),
-        position: new Vector3(towerPos.x, towerPos.y + 2, towerPos.z),
+        position: towerPos.clone().add(new Vector3(0, 2, 0)),
         direction: direction,
         startTime: currentTime,
       };
 
-      setArrows(prev => [...prev, newArrow]);
+      console.log('Creating new arrow:', newArrow);
+      setArrows(prev => {
+        console.log('Current arrows:', prev.length);
+        return [...prev, newArrow];
+      });
 
       // Apply damage
       if (onDamageEnemy) {
@@ -81,10 +90,14 @@ export function Tower({ position, type, level = 1, preview, onDamageEnemy, canAf
       }
 
       lastAttackTime.current = currentTime;
-    }
 
-    // Cleanup old arrows
-    setArrows(prev => prev.filter(arrow => currentTime - arrow.startTime < 1000));
+      // Cleanup old arrows after 2 seconds
+      setTimeout(() => {
+        setArrows(prev => prev.filter(a => a.id !== newArrow.id));
+      }, 2000);
+    } else {
+      console.log('No creep in range. Range:', range);
+    }
   });
 
   return (
@@ -159,7 +172,7 @@ export function Tower({ position, type, level = 1, preview, onDamageEnemy, canAf
               color={stats.color}
               transparent
               opacity={preview ? (canAfford ? 0.2 : 0.1) : 0.15}
-              side={2} // Double sided
+              side={2}
               depthWrite={false}
             />
           </mesh>
@@ -170,7 +183,7 @@ export function Tower({ position, type, level = 1, preview, onDamageEnemy, canAf
               color={stats.emissive}
               transparent
               opacity={preview ? (canAfford ? 0.6 : 0.3) : 0.4}
-              side={2} // Double sided
+              side={2}
               depthWrite={false}
             />
           </mesh>
@@ -178,53 +191,81 @@ export function Tower({ position, type, level = 1, preview, onDamageEnemy, canAf
       )}
 
       {/* Arrows */}
-      {!preview && arrows.map(arrow => (
+      {arrows.map(arrow => (
         <Arrow
           key={arrow.id}
           startPosition={arrow.position}
           direction={arrow.direction}
-          color={stats.color}
+          color={stats.emissive}
+          startTime={arrow.startTime}
         />
       ))}
     </group>
   );
 }
 
-function Arrow({ startPosition, direction, color }: {
+function Arrow({ startPosition, direction, color, startTime }: {
   startPosition: Vector3;
   direction: Vector3;
   color: string;
+  startTime: number;
 }) {
   const arrowRef = useRef<THREE.Group>(null);
-  const startTime = useRef(Date.now());
+  const speed = 1.5; // Increased speed
 
-  useFrame(() => {
+  useFrame((state) => {
     if (!arrowRef.current) return;
 
-    const age = (Date.now() - startTime.current) / 1000; // Convert to seconds
-    const speed = 20; // Units per second
+    const currentTime = state.clock.getElapsedTime();
+    const age = currentTime - startTime / 1000; // Convert to seconds
+    
+    // Update position
     const position = startPosition.clone().add(
-      direction.clone().multiplyScalar(age * speed)
+      direction.clone().multiplyScalar(age * speed * 60)
     );
-
     arrowRef.current.position.copy(position);
 
     // Point in direction of travel
-    const rotation = new Vector3(0, 0, 0);
+    const rotation = new Euler(0, 0, 0);
     rotation.y = Math.atan2(direction.x, direction.z);
-    rotation.x = Math.asin(-direction.y);
-    arrowRef.current.rotation.set(rotation.x, rotation.y, rotation.z);
+    rotation.x = Math.atan2(-direction.y, Math.sqrt(direction.x * direction.x + direction.z * direction.z));
+    arrowRef.current.setRotationFromEuler(rotation);
   });
 
   return (
     <group ref={arrowRef}>
-      <mesh>
-        <cylinderGeometry args={[0.05, 0.05, 0.4, 8]} />
-        <meshStandardMaterial color={color} />
+      {/* Arrow trail effect */}
+      <Trail
+        width={2}
+        length={4}
+        color={new Color(color)}
+        attenuation={(t) => t * t}
+      >
+        <mesh visible={false}>
+          <sphereGeometry args={[0.1]} />
+        </mesh>
+      </Trail>
+
+      {/* Arrow shaft */}
+      <mesh castShadow>
+        <cylinderGeometry args={[0.15, 0.15, 1.5, 8]} />
+        <meshStandardMaterial 
+          color={color}
+          emissive={color}
+          emissiveIntensity={10}
+          toneMapped={false}
+        />
       </mesh>
-      <mesh position={[0, 0.25, 0]}>
-        <coneGeometry args={[0.1, 0.2, 8]} />
-        <meshStandardMaterial color={color} />
+
+      {/* Arrow head */}
+      <mesh position={[0, 0.8, 0]} castShadow>
+        <coneGeometry args={[0.3, 0.6, 8]} />
+        <meshStandardMaterial 
+          color={color}
+          emissive={color}
+          emissiveIntensity={10}
+          toneMapped={false}
+        />
       </mesh>
     </group>
   );
