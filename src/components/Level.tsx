@@ -284,14 +284,11 @@ export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
 
 export function Level() {
   const path = generateElementTDPath();
-  const { selectedObjectType, money, removeMoney } = useGameStore();
-  const [towers, setTowers] = useState<{ position: Vector3; type: TowerType; id: number }[]>([]);
+  const { selectedObjectType, money, spendMoney, addPlacedTower, placedTowers } = useGameStore();
   const [placementIndicator, setPlacementIndicator] = useState<Vector3 | null>(null);
-  const nextTowerId = useRef(0);
   const groundPlane = new Plane(new Vector3(0, 1, 0), 0);
   const { camera } = useThree();
   const raycaster = new Raycaster();
-  const mouse = new Vector2();
 
   // Handle pointer movement and placement
   const handlePointerMove = (event: any) => {
@@ -316,11 +313,7 @@ export function Level() {
         return dx < 2 && dz < 2;
       });
 
-      const isOnTower = towers.some(tower =>
-        tower.position.distanceTo(intersection) < 2
-      );
-
-      if (!isOnPath && !isOnTower) {
+      if (!isOnPath) {
         setPlacementIndicator(intersection);
       } else {
         setPlacementIndicator(null);
@@ -329,23 +322,16 @@ export function Level() {
   };
 
   const handleClick = (event: any) => {
+    event.stopPropagation();
     console.log('Click event:', { 
       selectedObjectType,
       placementIndicator: placementIndicator?.toArray(),
-      money,
-      cost: selectedObjectType ? TOWER_STATS[selectedObjectType].cost : 0
+      money
     });
 
-    if (selectedObjectType && placementIndicator && money >= TOWER_STATS[selectedObjectType].cost) {
-      // Add new tower
-      setTowers(prev => [...prev, {
-        position: placementIndicator.clone(),
-        type: selectedObjectType,
-        id: nextTowerId.current++
-      }]);
-
-      // Deduct money
-      removeMoney(TOWER_STATS[selectedObjectType].cost);
+    if (selectedObjectType && placementIndicator) {
+      // Add tower through game store
+      addPlacedTower(placementIndicator, selectedObjectType);
     }
   };
 
@@ -406,23 +392,17 @@ export function Level() {
       <Crystal position={[-15, 1.5, -15]} scale={1.5} />
       <Crystal position={[15, 1.5, 15]} scale={1.5} />
 
-      {/* Placement Indicator */}
-      {placementIndicator && selectedObjectType && (
+      {/* Placement Preview */}
+      {selectedObjectType && placementIndicator && (
         <Tower
           position={placementIndicator}
           type={selectedObjectType}
-          onDamageEnemy={(enemyId, damage, effects) => {
-            const enemy = scene.getObjectByName('enemies')?.children
-              .find(obj => obj.userData.enemyId === enemyId);
-            if (enemy?.userData.takeDamage) {
-              enemy.userData.takeDamage(damage, effects);
-            }
-          }}
+          preview={true}
         />
       )}
 
       {/* Placed Towers */}
-      {towers.map(tower => (
+      {placedTowers.map(tower => (
         <Tower
           key={tower.id}
           position={tower.position}
