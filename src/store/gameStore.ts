@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { Vector3 } from 'three';
 import { RapierRigidBody } from '@react-three/rapier';
 
-export type ElementType = 
+export type ElementType =
   | 'light1' | 'light2' | 'light3' | 'light4' | 'light5'
   | 'fire1' | 'fire2' | 'fire3' | 'fire4' | 'fire5'
   | 'ice1' | 'ice2' | 'ice3' | 'ice4' | 'ice5'
@@ -111,7 +111,7 @@ const initialState: GameState = {
   levelComplete: false,
   placedTowers: [],
   selectedObjectType: null,
-  money: 100, // Starting money
+  money: 200, // Starting money
   score: 0,
   lives: 20,
   wave: 0,
@@ -142,14 +142,14 @@ export const useGameStore = create<GameState & {
   ...initialState,
 
   setPhase: (phase) => set({ phase }),
-  
-  setCurrentLevel: (level) => set((state) => ({ 
+
+  setCurrentLevel: (level) => set((state) => ({
     currentLevel: level,
     money: state.money + (level * 50) // Bonus money each level
   })),
-  
+
   setTimer: (timer) => set({ timer }),
-  
+
   setEnemiesAlive: (count) => set((state) => {
     if (count === 0 && state.phase === 'combat') {
       return {
@@ -160,15 +160,15 @@ export const useGameStore = create<GameState & {
     }
     return { enemiesAlive: count };
   }),
-  
+
   setIsSpawning: (isSpawning) => set({ isSpawning }),
-  
+
   setLevelComplete: (complete) => set({ levelComplete: complete }),
-  
+
   addPlacedTower: (position, type) => set((state) => {
     const cost = TOWER_STATS[type].cost; // Get cost from TOWER_STATS
     if (state.money < cost) return state;
-    
+
     return {
       placedTowers: [
         ...state.placedTowers,
@@ -183,19 +183,19 @@ export const useGameStore = create<GameState & {
       money: state.money - cost
     };
   }),
-  
+
   removePlacedTower: (id) => set((state) => ({
     placedTowers: state.placedTowers.filter((tower) => tower.id !== id),
     money: state.money + 50 // Refund half the cost
   })),
-  
+
   upgradeTower: (id) => set((state) => {
     const tower = state.placedTowers.find((t) => t.id === id);
     if (!tower) return state;
-    
+
     const upgradeCost = TOWER_STATS[tower.type].cost * tower.level; // Cost increases with level
     if (state.money < upgradeCost) return state;
-    
+
     return {
       placedTowers: state.placedTowers.map((t) =>
         t.id === id ? { ...t, level: t.level + 1 } : t
@@ -203,22 +203,22 @@ export const useGameStore = create<GameState & {
       money: state.money - upgradeCost
     };
   }),
-  
+
   setSelectedObjectType: (type) => set({ selectedObjectType: type }),
-  
-  addMoney: (amount) => set((state) => ({ 
-    money: state.money + amount 
+
+  addMoney: (amount) => set((state) => ({
+    money: state.money + amount
   })),
-  
+
   spendMoney: (amount) => set((state) => {
     if (state.money < amount) return state;
     return { money: state.money - amount };
   }),
-  
+
   addScore: (amount) => set((state) => ({
     score: state.score + amount
   })),
-  
+
   loseLife: () => set((state) => {
     const lives = state.lives - 1;
     if (lives <= 0) {
@@ -226,18 +226,18 @@ export const useGameStore = create<GameState & {
     }
     return { lives };
   }),
-  
+
   resetLevel: () => set((state) => ({
     ...initialState,
     currentLevel: state.currentLevel
   })),
-  
+
   setWave: (wave) => set({ wave }),
-  
+
   addCreep: (creep) => set((state) => ({ creeps: [...state.creeps, creep] })),
-  
+
   removeCreep: (id) => set((state) => ({ creeps: state.creeps.filter(c => c.id !== id) })),
-  
+
   updateCreep: (id, updates) => set((state) => ({
     creeps: state.creeps.map(c => c.id === id ? { ...c, ...updates } : c)
   })),

@@ -5,6 +5,7 @@ import { RigidBody } from '@react-three/rapier';
 import { useGameStore } from '../store/gameStore';
 import { TOWER_STATS } from '../store/gameStore';
 import { Edges, Float, Trail } from '@react-three/drei';
+import { Html } from '@react-three/drei';
 
 interface TowerProps {
   position: Vector3 | [number, number, number];
@@ -17,7 +18,7 @@ interface TowerProps {
 
 interface Arrow {
   id: number;
-  position: Vector3;
+  startPosition: Vector3;
   direction: Vector3;
   startTime: number;
 }
@@ -28,24 +29,55 @@ export function Tower({ position, type, level = 1, preview, onDamageEnemy, canAf
   const lastAttackTime = useRef(0);
   const stats = TOWER_STATS[type];
   const attackCooldown = 1000 / stats.attackSpeed;
-  const range = stats.range * (1 + (level - 1) * 0.2); // 20% range increase per level
-  const damage = stats.damage * (1 + (level - 1) * 0.3); // 30% damage increase per level
-  const [arrows, setArrows] = useState<Arrow[]>([]);
+  const range = stats.range * (1 + (level - 1) * 0.2);
+  const damage = stats.damage * (1 + (level - 1) * 0.3);
+  const [projectiles, setProjectiles] = useState<{
+    id: number;
+    position: [number, number, number];
+    target: [number, number, number];
+    progress: number;
+  }[]>([]);
 
-  // Skip combat logic if preview
+  // Linear interpolation helper
+  function lerp(start: number, end: number, t: number): number {
+    return start * (1 - t) + end * t;
+  }
+
+  // Handle projectile movement
+  useFrame((state, delta) => {
+    setProjectiles(current => 
+      current.map(proj => {
+        // Even faster movement for Element TD style
+        const newProgress = proj.progress + delta * 5;
+        
+        // Remove projectile when it reaches target
+        if (newProgress >= 1) {
+          return null;
+        }
+
+        // Almost direct path with minimal height variation
+        const x = lerp(proj.position[0], proj.target[0], newProgress);
+        const z = lerp(proj.position[2], proj.target[2], newProgress);
+        // Keep projectile at a consistent low height
+        const baseHeight = 1.0; // Lower base height
+        const y = lerp(baseHeight, baseHeight, newProgress) + Math.sin(newProgress * Math.PI) * 0.1;
+
+        return {
+          ...proj,
+          position: [x, y, z] as [number, number, number],
+          progress: newProgress
+        };
+      }).filter(Boolean)
+    );
+  });
+
+  // Handle attacking
   useFrame((state) => {
     if (phase !== 'combat' || preview) return;
 
     const currentTime = state.clock.getElapsedTime() * 1000;
     if (currentTime - lastAttackTime.current < attackCooldown) return;
 
-    if (!creeps.length) {
-      console.log('No creeps found');
-      return;
-    }
-    console.log('Found creeps:', creeps.length);
-
-    // Find closest creep in range
     const towerPos = position instanceof Vector3 ? position : new Vector3(...position);
     let closestCreep = null;
     let closestDistance = Infinity;
@@ -61,25 +93,27 @@ export function Tower({ position, type, level = 1, preview, onDamageEnemy, canAf
     }
 
     if (closestCreep) {
-      console.log('Found target creep at distance:', closestDistance);
-      // Create arrow
-      const creepPos = new Vector3(closestCreep.position[0], closestCreep.position[1], closestCreep.position[2]);
-      const direction = creepPos.clone().sub(towerPos).normalize();
+      // Start position just above tower base
+      const startPos: [number, number, number] = [
+        towerPos.x, 
+        1.0, // Lower starting height
+        towerPos.z
+      ];
+      
+      // Target just above ground level
+      const targetPos: [number, number, number] = [
+        closestCreep.position[0],
+        1.0, // Keep same height for direct path
+        closestCreep.position[2]
+      ];
 
-      const newArrow = {
-        id: Math.random(),
-        position: towerPos.clone().add(new Vector3(0, 2, 0)),
-        direction: direction,
-        startTime: currentTime,
-      };
+      setProjectiles(prev => [...prev, {
+        id: Date.now(),
+        position: startPos,
+        target: targetPos,
+        progress: 0
+      }]);
 
-      console.log('Creating new arrow:', newArrow);
-      setArrows(prev => {
-        console.log('Current arrows:', prev.length);
-        return [...prev, newArrow];
-      });
-
-      // Apply damage
       if (onDamageEnemy) {
         onDamageEnemy(closestCreep.id, damage, {
           slow: type === 'ice' ? 0.5 : 0,
@@ -90,183 +124,88 @@ export function Tower({ position, type, level = 1, preview, onDamageEnemy, canAf
       }
 
       lastAttackTime.current = currentTime;
-
-      // Cleanup old arrows after 2 seconds
-      setTimeout(() => {
-        setArrows(prev => prev.filter(a => a.id !== newArrow.id));
-      }, 2000);
-    } else {
-      console.log('No creep in range. Range:', range);
     }
   });
 
   return (
     <group position={position instanceof Vector3 ? position.toArray() : position}>
-      <Float
-        speed={2}
-        rotationIntensity={0.2}
-        floatIntensity={0.5}
-      >
-        <RigidBody type="fixed" colliders="hull">
-          {/* Base */}
-          <mesh position={[0, 1, 0]} castShadow>
-            <cylinderGeometry args={[0.6, 0.8, 2, 8]} />
-            <meshStandardMaterial
-              color={stats.color}
-              emissive={stats.emissive}
-              emissiveIntensity={0.5}
-              metalness={0.8}
-              roughness={0.2}
-              transparent={preview}
-              opacity={preview ? (canAfford ? 0.7 : 0.3) : 1}
-            />
-            <Edges color={stats.emissive} />
-          </mesh>
+      {/* Base Tower */}
+      <mesh position={[0, 1, 0]} castShadow>
+        <cylinderGeometry args={[0.6, 0.8, 2, 8]} />
+        <meshStandardMaterial
+          color={stats.color}
+          emissive={stats.emissive}
+          emissiveIntensity={0.5}
+          metalness={0.8}
+          roughness={0.2}
+          transparent={preview}
+          opacity={preview ? (canAfford ? 0.7 : 0.3) : 1}
+        />
+      </mesh>
 
-          {/* Top */}
-          <mesh position={[0, 2.2, 0]} castShadow>
-            <cylinderGeometry args={[0.7, 0.6, 0.4, 8]} />
-            <meshStandardMaterial
-              color={stats.color}
-              emissive={stats.emissive}
-              emissiveIntensity={0.8}
-              metalness={0.9}
-              roughness={0.1}
-              transparent={preview}
-              opacity={preview ? (canAfford ? 0.7 : 0.3) : 1}
-            />
-            <Edges color={stats.emissive} />
-          </mesh>
+      {/* Top */}
+      <mesh position={[0, 2.2, 0]} castShadow>
+        <cylinderGeometry args={[0.7, 0.6, 0.4, 8]} />
+        <meshStandardMaterial
+          color={stats.color}
+          emissive={stats.emissive}
+          emissiveIntensity={0.8}
+          metalness={0.9}
+          roughness={0.1}
+          transparent={preview}
+          opacity={preview ? (canAfford ? 0.7 : 0.3) : 1}
+        />
+      </mesh>
 
-          {/* Element-specific decorations */}
-          {[0, Math.PI / 2, Math.PI, Math.PI * 1.5].map((rotation, index) => (
-            <mesh
-              key={index}
-              position={[0, 2, 0]}
-              rotation={[0, rotation, 0]}
-              castShadow
-            >
-              <boxGeometry args={[0.2, 0.3, 1]} />
-              <meshStandardMaterial
-                color={stats.emissive}
-                emissive={stats.emissive}
-                emissiveIntensity={1}
-                metalness={1}
-                roughness={0}
-                transparent={preview}
-                opacity={preview ? (canAfford ? 0.7 : 0.3) : 1}
-              />
-              <Edges color={stats.color} />
-            </mesh>
-          ))}
-        </RigidBody>
-      </Float>
-
-      {/* Range indicator */}
+      {/* Range Indicator */}
       {(phase === 'prep' || preview) && (
-        <>
-          {/* Filled range circle */}
-          <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-            <circleGeometry args={[range, 64]} />
-            <meshBasicMaterial
-              color={stats.color}
-              transparent
-              opacity={preview ? (canAfford ? 0.2 : 0.1) : 0.15}
-              side={2}
-              depthWrite={false}
-            />
-          </mesh>
-          {/* Range outline */}
-          <mesh position={[0, 0.06, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[range - 0.05, range, 128]} />
-            <meshBasicMaterial
-              color={stats.emissive}
-              transparent
-              opacity={preview ? (canAfford ? 0.6 : 0.3) : 0.4}
-              side={2}
-              depthWrite={false}
-            />
-          </mesh>
-        </>
+        <mesh position={[0, 0.1, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0, range, 32]} />
+          <meshBasicMaterial color={stats.emissive} transparent opacity={0.2} />
+        </mesh>
       )}
 
-      {/* Arrows */}
-      {arrows.map(arrow => (
-        <Arrow
-          key={arrow.id}
-          startPosition={arrow.position}
-          direction={arrow.direction}
-          color={stats.emissive}
-          startTime={arrow.startTime}
-        />
+      {/* Projectiles */}
+      {projectiles.map(proj => (
+        <group key={proj.id} position={proj.position}>
+          {/* Main projectile - smaller and more focused */}
+          <mesh castShadow>
+            <sphereGeometry args={[0.15]} />
+            <meshStandardMaterial 
+              color={stats.emissive} 
+              emissive={stats.emissive}
+              emissiveIntensity={3}
+              toneMapped={false}
+            />
+          </mesh>
+          
+          {/* Bright core */}
+          <pointLight color={stats.emissive} intensity={1} distance={1} />
+          
+          {/* Trailing particles - tighter formation */}
+          {Array.from({ length: 6 }).map((_, i) => (
+            <mesh
+              key={i}
+              position={[
+                (Math.random() - 0.5) * 0.03,
+                -(i * 0.03),
+                (Math.random() - 0.5) * 0.03
+              ]}
+              scale={(6 - i) / 6}
+            >
+              <sphereGeometry args={[0.1]} />
+              <meshStandardMaterial 
+                color={stats.emissive} 
+                emissive={stats.emissive}
+                emissiveIntensity={2}
+                transparent 
+                opacity={(6 - i) / 12}
+                toneMapped={false}
+              />
+            </mesh>
+          ))}
+        </group>
       ))}
-    </group>
-  );
-}
-
-function Arrow({ startPosition, direction, color, startTime }: {
-  startPosition: Vector3;
-  direction: Vector3;
-  color: string;
-  startTime: number;
-}) {
-  const arrowRef = useRef<THREE.Group>(null);
-  const speed = 1.5; // Increased speed
-
-  useFrame((state) => {
-    if (!arrowRef.current) return;
-
-    const currentTime = state.clock.getElapsedTime();
-    const age = currentTime - startTime / 1000; // Convert to seconds
-    
-    // Update position
-    const position = startPosition.clone().add(
-      direction.clone().multiplyScalar(age * speed * 60)
-    );
-    arrowRef.current.position.copy(position);
-
-    // Point in direction of travel
-    const rotation = new Euler(0, 0, 0);
-    rotation.y = Math.atan2(direction.x, direction.z);
-    rotation.x = Math.atan2(-direction.y, Math.sqrt(direction.x * direction.x + direction.z * direction.z));
-    arrowRef.current.setRotationFromEuler(rotation);
-  });
-
-  return (
-    <group ref={arrowRef}>
-      {/* Arrow trail effect */}
-      <Trail
-        width={2}
-        length={4}
-        color={new Color(color)}
-        attenuation={(t) => t * t}
-      >
-        <mesh visible={false}>
-          <sphereGeometry args={[0.1]} />
-        </mesh>
-      </Trail>
-
-      {/* Arrow shaft */}
-      <mesh castShadow>
-        <cylinderGeometry args={[0.15, 0.15, 1.5, 8]} />
-        <meshStandardMaterial 
-          color={color}
-          emissive={color}
-          emissiveIntensity={10}
-          toneMapped={false}
-        />
-      </mesh>
-
-      {/* Arrow head */}
-      <mesh position={[0, 0.8, 0]} castShadow>
-        <coneGeometry args={[0.3, 0.6, 8]} />
-        <meshStandardMaterial 
-          color={color}
-          emissive={color}
-          emissiveIntensity={10}
-          toneMapped={false}
-        />
-      </mesh>
     </group>
   );
 }
