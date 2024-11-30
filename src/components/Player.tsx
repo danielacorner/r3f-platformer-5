@@ -10,9 +10,9 @@ import { useGameStore } from '../store/gameStore';
 import { LEVEL_CONFIGS } from './Level';
 
 const MOVE_SPEED = 8;
-const JUMP_FORCE = 10;
-const FALL_THRESHOLD = -10; // Height at which player will respawn
-const SPAWN_POSITION = [0, 2, 0]; // Default spawn position
+const JUMP_FORCE = 15;
+const FALL_THRESHOLD = -10;
+const SPAWN_POSITION = [0, 2, 0];
 
 export function Player() {
   const playerRef = useRef<any>(null);
@@ -21,13 +21,13 @@ export function Player() {
   const [boomerangsLeft, setBoomerangsLeft] = useState(3);
   const [targetPosition, setTargetPosition] = useState<Vector3 | null>(null);
   const [isGrounded, setIsGrounded] = useState(false);
-  const { forward, backward, left, right, jump } = useKeyboardControls();
-  const { camera, scene } = useThree();
   const raycaster = useRef(new Raycaster());
   const lastShotTime = useRef(0);
-  const SHOT_COOLDOWN = 0.3; // seconds
+  const SHOT_COOLDOWN = 0.3;
   const phase = useGameStore(state => state.phase);
   const currentLevel = useGameStore(state => state.currentLevel);
+  const { forward, backward, left, right, jump } = useKeyboardControls();
+  const { camera, scene } = useThree();
 
   // Store player ref in game store for camera following
   useEffect(() => {
@@ -58,6 +58,7 @@ export function Player() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [camera, scene, phase]);
 
+  // Handle projectile shooting
   useEffect(() => {
     const handleMouseDown = (event: MouseEvent) => {
       if (phase !== 'combat' || !targetPosition) return;
@@ -68,7 +69,7 @@ export function Player() {
 
       const position = playerRef.current?.translation();
       if (!position) return;
-      
+
       const playerPos = new Vector3(position.x, position.y + 0.5, position.z);
 
       if (event.button === 2 && boomerangsLeft > 0) {
@@ -102,7 +103,6 @@ export function Player() {
 
   const handleProjectileComplete = (position: Vector3, type: string, id: number) => {
     if (type === 'boomerang') {
-      // Check if player is close to the boomerang
       if (playerRef.current) {
         const playerPos = playerRef.current.translation();
         const distance = position.distanceTo(new Vector3(playerPos.x, playerPos.y, playerPos.z));
@@ -114,17 +114,14 @@ export function Player() {
     setProjectiles(prev => prev.filter(p => p.id !== id));
   };
 
-  // Handle respawn when falling
   const checkAndRespawn = () => {
     if (!playerRef.current) return;
-    
+
     const position = playerRef.current.translation();
     if (position.y < FALL_THRESHOLD) {
-      // Get the current level's spawn position or use default
       const levelConfig = LEVEL_CONFIGS[currentLevel as keyof typeof LEVEL_CONFIGS];
       const spawnPos = levelConfig ? levelConfig.spawnPosition : SPAWN_POSITION;
-      
-      // Reset position and velocity
+
       playerRef.current.setTranslation({ x: spawnPos[0], y: spawnPos[1], z: spawnPos[2] });
       playerRef.current.setLinvel({ x: 0, y: 0, z: 0 });
       playerRef.current.setAngvel({ x: 0, y: 0, z: 0 });
@@ -134,40 +131,57 @@ export function Player() {
   useFrame((_, delta) => {
     if (!playerRef.current) return;
 
-    // Check for falling below threshold
     checkAndRespawn();
+
+    // Check if grounded using a short raycast downward
+    const position = playerRef.current.translation();
+    const rayOrigin = new Vector3(position.x, position.y, position.z);
+    const rayDirection = new Vector3(0, -1, 0);
+    raycaster.current.set(rayOrigin, rayDirection);
+    const intersects = raycaster.current.intersectObjects(scene.children, true);
+
+    // Find any valid ground object within a small distance
+    const isNowGrounded = intersects.some(hit => {
+      const objectName = hit.object.name.toLowerCase();
+      const parentName = hit.object.parent?.name.toLowerCase() || '';
+      const isValidGround = (
+        objectName.includes('platform') ||
+        objectName.includes('box') ||
+        parentName.includes('platform') ||
+        parentName.includes('box')
+      );
+      return isValidGround && hit.distance < 0.6;
+    });
+
+    if (isNowGrounded !== isGrounded) {
+      setIsGrounded(isNowGrounded);
+    }
 
     // Calculate movement direction in camera space
     const moveDirection = new Vector3(0, 0, 0);
-    
-    // In isometric view:
-    // Forward (W) should move up-right
-    // Left (A) should move up-left
-    // Back (S) should move down-left
-    // Right (D) should move down-right
-    
+
     if (forward) {
-      moveDirection.x -= 1; // Move left
-      moveDirection.z -= 1; // Move forward
+      // moveDirection.x -= 1;
+      moveDirection.z -= 1;
     }
     if (backward) {
-      moveDirection.x += 1; // Move right
-      moveDirection.z += 1; // Move back
+      // moveDirection.x += 1;
+      moveDirection.z += 1;
     }
     if (left) {
-      moveDirection.x -= 1; // Move left
-      moveDirection.z += 1; // Move back
+      moveDirection.x -= 1;
+      // moveDirection.z += 1;
     }
     if (right) {
-      moveDirection.x += 1; // Move right
-      moveDirection.z -= 1; // Move forward
+      moveDirection.x += 1;
+      // moveDirection.z -= 1;
     }
 
     const currentVel = playerRef.current.linvel();
 
     if (moveDirection.lengthSq() > 0) {
       moveDirection.normalize();
-      
+
       playerRef.current.setLinvel({
         x: moveDirection.x * MOVE_SPEED,
         y: currentVel.y,
@@ -181,27 +195,26 @@ export function Player() {
       });
     }
 
+    // Only allow jumping when grounded
     if (jump && isGrounded) {
       playerRef.current.setLinvel({
         x: currentVel.x,
         y: JUMP_FORCE,
         z: currentVel.z
       });
-      setIsGrounded(false);
     }
   });
 
   return (
     <>
-      <RigidBody 
+      <RigidBody
         ref={playerRef}
         position={[0, 5, 0]}
         enabledRotations={[false, false, false]}
         lockRotations
         mass={1}
         colliders="ball"
-        onCollisionEnter={() => setIsGrounded(true)}
-        onCollisionExit={() => setIsGrounded(false)}
+        friction={0.2}
       >
         <mesh castShadow>
           <sphereGeometry args={[0.5]} />
@@ -213,7 +226,7 @@ export function Player() {
             fontSize: '24px',
             fontWeight: 'bold',
             textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
-            pointerEvents: 'none', 
+            pointerEvents: 'none',
             userSelect: 'none'
           }}>
             {boomerangsLeft}

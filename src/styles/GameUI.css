@@ -1,0 +1,71 @@
+.game-ui {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.game-stats {
+  background: rgba(15, 23, 42, 0.8);
+  padding: 12px 20px;
+  border-radius: 8px;
+  display: flex;
+  gap: 24px;
+  backdrop-filter: blur(8px);
+  pointer-events: auto;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stat-label {
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.stat-value {
+  color: #e2e8f0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.game-controls {
+  pointer-events: auto;
+}
+
+.control-button {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+}
+
+.control-button:hover {
+  background: #2563eb;
+}
+
+.start-wave {
+  background: #22c55e;
+}
+
+.start-wave:hover {
+  background: #16a34a;
+}

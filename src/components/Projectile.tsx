@@ -1,5 +1,5 @@
-import { useRef, useState, useEffect } from 'react';
-import { Vector3, Quaternion } from 'three';
+import { useRef, useState, } from 'react';
+import { Vector3, } from 'three';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { useFrame } from '@react-three/fiber';
 import { useSpring, animated } from '@react-spring/three';
@@ -24,7 +24,7 @@ function ExplosionEffect({ position }: { position: Vector3 }) {
           opacity={opacity}
         />
       </animated.mesh>
-      
+
       {/* Outer glow */}
       <animated.mesh scale={scale.to(s => [s * 1.2, s * 1.2, s * 1.2])}>
         <sphereGeometry args={[0.3]} />
@@ -97,16 +97,16 @@ export function Projectile({ position, type, target, onComplete }: ProjectilePro
         if (velocity.length() > 0) {
           // Create a target point in the direction of travel
           const target = currentPoint.clone().add(velocity);
-          
+
           // Store the current position
           const position = arrowRef.current.position.clone();
-          
+
           // Look at the target
           arrowRef.current.lookAt(target);
-          
+
           // Rotate 90 degrees around the right vector to align arrow with trajectory
           arrowRef.current.rotateOnAxis(new Vector3(1, 0, 0), Math.PI / 2);
-          
+
           // Restore position (lookAt can sometimes affect position)
           arrowRef.current.position.copy(position);
         }
@@ -142,10 +142,10 @@ export function Projectile({ position, type, target, onComplete }: ProjectilePro
         const enemyPos = enemy.translation();
         const distance = new Vector3(enemyPos.x, enemyPos.y, enemyPos.z)
           .distanceTo(new Vector3(pos.x, pos.y, pos.z));
-        
+
         // Mark hit as AOE for damage calculation
         enemy.rigidBodyObject.userData.isAOE = distance > 0.5;
-        
+
         // Trigger collision with each nearby enemy
         enemy.rigidBodyObject?.onCollisionEnter?.({
           other: { rigidBodyObject: rigidBodyRef.current.rigidBodyObject, rigidBody: rigidBodyRef.current }
@@ -172,7 +172,7 @@ export function Projectile({ position, type, target, onComplete }: ProjectilePro
       >
         <CuboidCollider args={[0.1, 0.1, 0.25]} sensor />
         {type === 'bow' ? (
-          <group ref={arrowRef} rotation={[-Math.PI/2, 0, 0]}>
+          <group ref={arrowRef} rotation={[-Math.PI / 2, 0, 0]}>
             {/* Arrow shaft */}
             <mesh>
               <cylinderGeometry args={[0.07, 0.07, 1.2]} />

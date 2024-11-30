@@ -21,6 +21,7 @@ export function EnemySpawner({ position }: EnemySpawnerProps) {
   // Reset enemies when phase changes to prep
   useEffect(() => {
     if (phase === 'prep') {
+      console.log('Prep phase - resetting enemies');
       setEnemies([]);
       setEnemiesAlive(0);
     }
@@ -29,6 +30,7 @@ export function EnemySpawner({ position }: EnemySpawnerProps) {
   // Update queued enemies count
   useEffect(() => {
     if (phase === 'combat' && isSpawning) {
+      console.log('Combat phase - updating queue. Max:', maxEnemies, 'Current:', enemies.length);
       setQueuedEnemies(Math.max(0, maxEnemies - enemies.length));
     } else {
       setQueuedEnemies(0);
@@ -37,25 +39,27 @@ export function EnemySpawner({ position }: EnemySpawnerProps) {
 
   // Update enemies alive count
   useEffect(() => {
-    console.log('Enemies updated:', enemies.length);
+    console.log('Updating enemies alive count:', enemies.length);
     setEnemiesAlive(enemies.length);
-  }, [enemies.length, setEnemiesAlive]);
+  }, [enemies, setEnemiesAlive]);
 
   // Handle enemy spawning
   useEffect(() => {
-    // Clear existing timer
     if (spawnTimerRef.current) {
       clearInterval(spawnTimerRef.current);
       spawnTimerRef.current = null;
     }
 
-    // Start spawning if conditions are met
     if (phase === 'combat' && isSpawning) {
       console.log('Starting spawn timer...');
-      spawnTimerRef.current = setInterval(() => {
+
+      const spawnEnemy = () => {
         setEnemies(prev => {
-          if (prev.length >= maxEnemies || !isSpawning) return prev;
-          console.log('Spawning enemy...', prev.length + 1);
+          if (prev.length >= maxEnemies) {
+            console.log('Max enemies reached:', maxEnemies);
+            return prev;
+          }
+          console.log('Spawning new enemy. Current count:', prev.length);
           return [
             ...prev,
             {
@@ -64,18 +68,24 @@ export function EnemySpawner({ position }: EnemySpawnerProps) {
             }
           ];
         });
-      }, spawnInterval);
+      };
+
+      // Initial spawn
+      spawnEnemy();
+      // Set up interval for subsequent spawns
+      spawnTimerRef.current = setInterval(spawnEnemy, spawnInterval);
     }
 
-    // Cleanup
     return () => {
       if (spawnTimerRef.current) {
         clearInterval(spawnTimerRef.current);
+        spawnTimerRef.current = null;
       }
     };
-  }, [phase, isSpawning, maxEnemies]);
+  }, [phase, isSpawning, maxEnemies, position, spawnInterval]);
 
   const handleEnemyDeath = (enemyId: string) => {
+    console.log('Enemy death:', enemyId);
     setEnemies(prev => prev.filter(enemy => enemy.id !== enemyId));
   };
 
@@ -89,72 +99,43 @@ export function EnemySpawner({ position }: EnemySpawnerProps) {
       {/* Always visible spawner */}
       <group>
         {/* Base */}
-        <mesh position={position}>
-          <cylinderGeometry args={[1, 1.2, 0.2, 16]} />
-          <meshStandardMaterial 
-            color={phase === 'combat' ? "#400000" : "#202020"} 
-            roughness={0.7}
-          />
+        <mesh position={[0, 0.1, 0]}>
+          <cylinderGeometry args={[1.2, 1.2, 0.2, 32]} />
+          <meshStandardMaterial color="#444444" />
         </mesh>
-        
-        {/* Spawner pillar */}
-        <mesh position={position.clone().add(new Vector3(0, 0.6, 0))}>
-          <cylinderGeometry args={[0.3, 0.3, 1, 16]} />
-          <meshStandardMaterial 
-            color={phase === 'combat' ? "red" : "#303030"}
-            emissive={phase === 'combat' ? "red" : "#202020"}
-            emissiveIntensity={isSpawning ? 0.8 : 0.2}
-            roughness={0.3}
-          />
+        {/* Spawn point indicator */}
+        <mesh position={[0, 0.3, 0]}>
+          <cylinderGeometry args={[0.1, 1, 0.4, 8]} />
+          <meshStandardMaterial color="#ff0000" transparent opacity={0.6} />
         </mesh>
-
-        {/* Enemy queue indicator */}
-        {phase === 'combat' && (
-          <group position={position.clone().add(new Vector3(0, 2.5, 0))}>
-            {/* Background panel */}
-            <mesh position={[0, 0, -0.05]}>
-              <boxGeometry args={[2.5, 1, 0.1]} />
-              <meshStandardMaterial 
-                color="#000000"
-                transparent
-                opacity={0.8}
-              />
-            </mesh>
-            {/* Colored overlay */}
-            <mesh>
-              <boxGeometry args={[2.4, 0.9, 0.12]} />
-              <meshStandardMaterial 
-                color={isSpawning ? "#400000" : "#202020"}
-                emissive={isSpawning ? "#400000" : "#202020"}
-                emissiveIntensity={0.5}
-                transparent
-                opacity={0.9}
-              />
-            </mesh>
-            <Text
-              position={[0, 0, 0.1]}
-              fontSize={0.4}
-              color="white"
-              anchorX="center"
-              anchorY="middle"
-              outlineWidth={0.02}
-              outlineColor="#000000"
-            >
-              {isSpawning ? `Incoming: ${queuedEnemies}` : 'Spawner Idle'}
-            </Text>
-          </group>
-        )}
       </group>
 
+      {/* Queued enemies indicator */}
+      {queuedEnemies > 0 && (
+        <group position={[0, 2, 0]}>
+          <Text
+            position={[0, 0, 0]}
+            fontSize={0.5}
+            color="white"
+            anchorX="center"
+            anchorY="middle"
+          >
+            {queuedEnemies}
+          </Text>
+        </group>
+      )}
+
       {/* Enemies */}
-      {enemies.map(enemy => (
-        <Enemy
-          key={enemy.id}
-          position={enemy.position}
-          target={portalPosition}
-          onDeath={() => handleEnemyDeath(enemy.id)}
-        />
-      ))}
+      <group name="enemies">
+        {enemies.map(enemy => (
+          <Enemy
+            key={enemy.id}
+            position={enemy.position}
+            target={portalPosition}
+            onDeath={() => handleEnemyDeath(enemy.id)}
+          />
+        ))}
+      </group>
     </>
   );
 }
