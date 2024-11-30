@@ -180,7 +180,8 @@ export const useGameStore = create<GameState & {
           kills: 0
         }
       ],
-      money: state.money - cost
+      money: state.money - cost,
+      selectedObjectType: type // Keep the tower type selected
     };
   }),
 

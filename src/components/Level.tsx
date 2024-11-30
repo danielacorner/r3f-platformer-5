@@ -325,7 +325,13 @@ export function Level() {
         return dx < 2 && dz < 2;
       });
 
-      if (!isOnPath) {
+      // Check if there's already a tower at this position
+      const hasTower = placedTowers.some(tower => 
+        Math.abs(tower.position.x - intersection.x) < 0.5 && 
+        Math.abs(tower.position.z - intersection.z) < 0.5
+      );
+
+      if (!isOnPath && !hasTower) {
         setPlacementIndicator(intersection);
       } else {
         setPlacementIndicator(null);
@@ -355,8 +361,7 @@ export function Level() {
       selectedObjectType
     );
 
-    // Spend money
-    spendMoney(towerStats.cost);
+    // Keep tower type selected
   };
 
   const handleClick = (event: any) => {

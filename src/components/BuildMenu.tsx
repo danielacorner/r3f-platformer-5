@@ -114,7 +114,7 @@ export function BuildMenu() {
       <div className="tower-groups">
         {Object.entries(towerGroups).map(([element, towers]) => (
           <div key={element} className="tower-group">
-            <div className="element-preview">
+            <div className="element-preview" data-element={element}>
               {element === 'water' && <GiWaterDrop />}
               {element === 'fire' && <GiFireBowl />}
               {element === 'ice' && <GiSnowflake1 />}
