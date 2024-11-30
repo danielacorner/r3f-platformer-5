@@ -1,167 +1,120 @@
-import { useGameStore, getBoxCost } from '../store/gameStore';
-import { useIsMobile } from '../hooks/useIsMobile';
-import { GiStoneBlock, GiArrowScope, GiLaserPrecision, GiCannonBall, GiBoomerang } from 'react-icons/gi';
+import { useGameStore } from '../store/gameStore';
 import { FaCoins } from 'react-icons/fa';
+import { 
+  GiWaterDrop,
+  GiFireBowl,
+  GiSnowflake1,
+  GiLeafSwirl,
+  GiSunbeams,
+  GiCrownedSkull
+} from 'react-icons/gi';
+import '../styles/BuildMenu.css';
 
-function MobileMenu({ 
-  items, 
-  selectedObjectType, 
-  setSelectedObjectType, 
-  money 
+// Element TD tower definitions
+const TOWER_TYPES = {
+  light: {
+    type: 'light',
+    label: 'Light Tower',
+    description: 'Amplifies nearby towers',
+    cost: 100,
+    icon: <GiSunbeams className="text-yellow-300" />,
+    color: 'from-yellow-900/80 to-yellow-600/80'
+  },
+  fire: {
+    type: 'fire',
+    label: 'Fire Tower',
+    description: 'High single target damage',
+    cost: 100,
+    icon: <GiFireBowl className="text-red-500" />,
+    color: 'from-red-900/80 to-red-600/80'
+  },
+  ice: {
+    type: 'ice',
+    label: 'Ice Tower',
+    description: 'Slows enemies',
+    cost: 100,
+    icon: <GiSnowflake1 className="text-blue-300" />,
+    color: 'from-blue-900/80 to-blue-600/80'
+  },
+  nature: {
+    type: 'nature',
+    label: 'Nature Tower',
+    description: 'Poison damage over time',
+    cost: 100,
+    icon: <GiLeafSwirl className="text-green-500" />,
+    color: 'from-green-900/80 to-green-600/80'
+  },
+  water: {
+    type: 'water',
+    label: 'Water Tower',
+    description: 'Area splash damage',
+    cost: 100,
+    icon: <GiWaterDrop className="text-blue-400" />,
+    color: 'from-blue-900/80 to-blue-500/80'
+  },
+  dark: {
+    type: 'dark',
+    label: 'Dark Tower',
+    description: 'Weakens enemy armor',
+    cost: 100,
+    icon: <GiCrownedSkull className="text-purple-400" />,
+    color: 'from-purple-900/80 to-purple-600/80'
+  }
+} as const;
+
+function TowerButton({ 
+  tower, 
+  isSelected, 
+  canAfford,
+  onClick 
 }: { 
-  items: { type: string; label: string; cost: number; icon: React.ReactNode; }[]; 
-  selectedObjectType: string | null; 
-  setSelectedObjectType: (type: string) => void; 
-  money: number; 
+  tower: typeof TOWER_TYPES[keyof typeof TOWER_TYPES];
+  isSelected: boolean;
+  canAfford: boolean;
+  onClick: () => void;
 }) {
   return (
-    <div className="fixed bottom-2 left-1/2 -translate-x-1/2 bg-black/95 p-2.5 rounded-lg z-50 w-[360px] max-w-[90vw] pointer-events-auto border border-gray-800">
-      <div className="flex items-center gap-2 px-2 mb-2">
-        <div className="text-yellow-500 font-medium text-sm flex items-center gap-1">
-          <FaCoins className="text-xs" /> {money}
+    <button
+      className={`tower-button ${isSelected ? 'selected' : ''}`}
+      onClick={onClick}
+      disabled={!canAfford}
+    >
+      <div className="tower-button-icon">{tower.icon}</div>
+      <div className="tower-button-label">{tower.label.split(' ')[0]}</div>
+      
+      <div className="tower-tooltip">
+        <div className="font-medium mb-1">{tower.label}</div>
+        <div className="text-gray-400 text-xs mb-1">{tower.description}</div>
+        <div className="text-yellow-500 text-xs flex items-center gap-1">
+          <FaCoins className="text-xs" /> {tower.cost}
         </div>
       </div>
-      <div className="grid grid-cols-5 gap-2.5">
-        {items.map(({ type, label, cost, icon }) => (
-          <button
-            key={type}
-            onTouchStart={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (money >= cost) {
-                setSelectedObjectType(type);
-              }
-            }}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (money >= cost) {
-                setSelectedObjectType(type);
-              }
-            }}
-            className={`
-              relative
-              w-14 h-14
-              rounded
-              ${selectedObjectType === type ? 'bg-gradient-to-br from-blue-900/80 to-blue-600/80' : 'bg-gradient-to-br from-gray-900/80 to-gray-800/80'}
-              ${money >= cost ? 'active:from-blue-800/80 active:to-blue-700/80' : 'opacity-50'}
-              transition-all
-              flex flex-col items-center justify-center
-              select-none
-              touch-manipulation
-              border
-              ${selectedObjectType === type ? 'border-blue-500' : money >= cost ? 'border-gray-700 hover:border-gray-600' : 'border-gray-800'}
-              group
-              overflow-hidden
-            `}
-            style={{ 
-              WebkitTapHighlightColor: 'transparent',
-              touchAction: 'manipulation'
-            }}
-            disabled={money < cost}
-            title={`${label} (${cost} gold)`}
-          >
-            <div className="absolute inset-0 flex items-center justify-center opacity-20 text-4xl text-white">
-              {icon}
-            </div>
-            <div className="relative flex flex-col items-center">
-              <div className="text-white text-lg mb-1">
-                {icon}
-              </div>
-              <div className="text-white text-[10px] font-medium">{label}</div>
-              <div className="text-yellow-500 text-[10px] flex items-center gap-0.5">
-                <FaCoins className="text-[8px]" /> {cost}
-              </div>
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function DesktopMenu({ 
-  items, 
-  selectedObjectType, 
-  setSelectedObjectType, 
-  money 
-}: { 
-  items: { type: string; label: string; cost: number; icon: React.ReactNode; }[]; 
-  selectedObjectType: string | null; 
-  setSelectedObjectType: (type: string) => void; 
-  money: number; 
-}) {
-  return (
-    <div className="fixed bottom-2 left-1/2 -translate-x-1/2 bg-black/95 p-2.5 rounded-lg pointer-events-auto border border-gray-800">
-      <div className="flex items-center gap-3">
-        <div className="text-yellow-500 font-medium text-sm flex items-center gap-1 px-2">
-          <FaCoins className="text-xs" /> {money}
-        </div>
-        <div className="h-8 w-px bg-gray-800"></div>
-        <div className="flex gap-2.5">
-          {items.map(({ type, label, cost, icon }) => (
-            <button
-              key={type}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setSelectedObjectType(type);
-              }}
-              className={`
-                relative
-                w-14 h-14
-                rounded
-                ${selectedObjectType === type ? 'bg-gradient-to-br from-blue-900/80 to-blue-600/80' : 'bg-gradient-to-br from-gray-900/80 to-gray-800/80'}
-                ${money >= cost ? 'hover:from-blue-800/80 hover:to-blue-700/80' : 'opacity-50 cursor-not-allowed'}
-                transition-all
-                border
-                ${selectedObjectType === type ? 'border-blue-500' : money >= cost ? 'border-gray-700 hover:border-gray-600' : 'border-gray-800'}
-                group
-                overflow-hidden
-              `}
-              disabled={money < cost}
-              title={`${label} (${cost} gold)`}
-            >
-              <div className="absolute inset-0 flex items-center justify-center opacity-20 text-4xl text-white">
-                {icon}
-              </div>
-              <div className="relative flex flex-col items-center">
-                <div className="text-white text-lg mb-1">
-                  {icon}
-                </div>
-                <div className="text-white text-[10px] font-medium">{label}</div>
-                <div className="text-yellow-500 text-[10px] flex items-center gap-0.5 opacity-75 group-hover:opacity-100">
-                  <FaCoins className="text-[8px]" /> {cost}
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
+    </button>
   );
 }
 
 export function BuildMenu() {
   const { phase, selectedObjectType, setSelectedObjectType, money } = useGameStore();
-  const isMobile = useIsMobile();
 
   if (phase !== 'prep') return null;
 
-  const items = [
-    { type: 'block', label: 'Block', cost: getBoxCost('block'), icon: <GiStoneBlock /> },
-    { type: 'arrow', label: 'Arrow', cost: getBoxCost('arrow'), icon: <GiArrowScope /> },
-    { type: 'tower', label: 'Laser', cost: getBoxCost('laser'), icon: <GiLaserPrecision /> },
-    { type: 'cannon', label: 'Cannon', cost: getBoxCost('cannon'), icon: <GiCannonBall /> },
-    { type: 'boomerang', label: 'Boom', cost: getBoxCost('boomerang'), icon: <GiBoomerang /> },
-  ] as const;
-
-  const menuProps = {
-    items,
-    selectedObjectType,
-    setSelectedObjectType,
-    money
-  };
-
-  return isMobile ? <MobileMenu {...menuProps} /> : <DesktopMenu {...menuProps} />;
+  return (
+    <div className="build-menu">
+      <div className="money-display">
+        <FaCoins className="money-icon" />
+        <span>{money}</span>
+      </div>
+      <div className="tower-grid">
+        {Object.values(TOWER_TYPES).map((tower) => (
+          <TowerButton
+            key={tower.type}
+            tower={tower}
+            isSelected={selectedObjectType === tower.type}
+            canAfford={money >= tower.cost}
+            onClick={() => money >= tower.cost && setSelectedObjectType(tower.type)}
+          />
+        ))}
+      </div>
+    </div>
+  );
 }

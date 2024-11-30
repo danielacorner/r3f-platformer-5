@@ -2,13 +2,78 @@ import { create } from 'zustand';
 import { Vector3 } from 'three';
 import { RapierRigidBody } from '@react-three/rapier';
 
-export type TowerType = 'arrow' | 'cannon' | 'laser' | 'boomerang';
-type PlaceableObjectType = 'block' | TowerType;
+export type ElementType = 'light' | 'fire' | 'ice' | 'nature' | 'water' | 'dark';
+type PlaceableObjectType = ElementType;
 
-interface PlacedBox {
+interface TowerStats {
+  damage: number;
+  range: number;
+  attackSpeed: number;
+  special?: {
+    type: 'slow' | 'amplify' | 'poison' | 'splash' | 'armor_reduction';
+    value: number;
+  };
+}
+
+export const TOWER_STATS: Record<ElementType, TowerStats> = {
+  light: {
+    damage: 15,
+    range: 8,
+    attackSpeed: 1,
+    special: {
+      type: 'amplify',
+      value: 0.2 // 20% damage amplification
+    }
+  },
+  fire: {
+    damage: 40,
+    range: 6,
+    attackSpeed: 0.8
+  },
+  ice: {
+    damage: 20,
+    range: 7,
+    attackSpeed: 1.2,
+    special: {
+      type: 'slow',
+      value: 0.3 // 30% slow
+    }
+  },
+  nature: {
+    damage: 25,
+    range: 7,
+    attackSpeed: 1,
+    special: {
+      type: 'poison',
+      value: 10 // 10 damage per second
+    }
+  },
+  water: {
+    damage: 30,
+    range: 6,
+    attackSpeed: 1.1,
+    special: {
+      type: 'splash',
+      value: 0.5 // 50% splash damage
+    }
+  },
+  dark: {
+    damage: 35,
+    range: 7,
+    attackSpeed: 0.9,
+    special: {
+      type: 'armor_reduction',
+      value: 0.2 // 20% armor reduction
+    }
+  }
+};
+
+interface PlacedTower {
   id: number;
   position: Vector3;
-  type: PlaceableObjectType;
+  type: ElementType;
+  level: number;
+  kills: number;
 }
 
 interface GameState {
@@ -18,10 +83,11 @@ interface GameState {
   enemiesAlive: number;
   isSpawning: boolean;
   levelComplete: boolean;
-  placedBoxes: PlacedBox[];
-  selectedObjectType: PlaceableObjectType;
-  playerRef: React.MutableRefObject<RapierRigidBody | null>;
+  placedTowers: PlacedTower[];
+  selectedObjectType: PlaceableObjectType | null;
   money: number;
+  score: number;
+  lives: number;
 }
 
 const initialState: GameState = {
@@ -31,157 +97,120 @@ const initialState: GameState = {
   enemiesAlive: 0,
   isSpawning: false,
   levelComplete: false,
-  placedBoxes: [],
-  selectedObjectType: 'block',
-  playerRef: { current: null },
-  money: 20, // Starting money
-};
-
-
-export interface Tower {
-  id: number;
-  type: TowerType;
-  position: Vector3;
-}
-
-export const towerCosts: Record<TowerType, number> = {
-  arrow: 5,
-  cannon: 15,
-  laser: 8,
-  boomerang: 12
+  placedTowers: [],
+  selectedObjectType: null,
+  money: 100, // Starting money
+  score: 0,
+  lives: 20
 };
 
 export const useGameStore = create<GameState & {
-  setPhase: (phase: 'prep' | 'combat') => void;
+  setPhase: (phase: GameState['phase']) => void;
   setCurrentLevel: (level: number) => void;
   setTimer: (timer: number) => void;
   setEnemiesAlive: (count: number) => void;
   setIsSpawning: (isSpawning: boolean) => void;
   setLevelComplete: (complete: boolean) => void;
-  addPlacedBox: (position: Vector3, type: PlaceableObjectType) => void;
-  removePlacedBox: (id: number) => void;
-  setSelectedObjectType: (type: PlaceableObjectType) => void;
-  setPlayerRef: (ref: React.MutableRefObject<RapierRigidBody | null>) => void;
+  addPlacedTower: (position: Vector3, type: ElementType) => void;
+  removePlacedTower: (id: number) => void;
+  upgradeTower: (id: number) => void;
+  setSelectedObjectType: (type: PlaceableObjectType | null) => void;
   addMoney: (amount: number) => void;
   spendMoney: (amount: number) => boolean;
+  addScore: (amount: number) => void;
+  loseLife: () => void;
   resetLevel: () => void;
 }>((set) => ({
   ...initialState,
 
   setPhase: (phase) => set({ phase }),
-  setCurrentLevel: (level) => set({
+  
+  setCurrentLevel: (level) => set((state) => ({ 
     currentLevel: level,
-    timer: 4,
-    enemiesAlive: 0,
-    isSpawning: false,
-    levelComplete: false,
-    phase: 'prep',
-    placedBoxes: []
-  }),
-  setTimer: (timer) => {
-    set({ timer });
-    if (timer <= 0) {
-      set({ isSpawning: false });
-    }
-  },
-  setEnemiesAlive: (count) => {
-    console.log('Setting enemies alive:', count);
-    set((state) => {
-      // Only complete level if no enemies are left and timer has run out
-      if (count === 0 && state.phase === 'combat' && !state.isSpawning) {
-        console.log('Level complete!');
-        return { enemiesAlive: count, levelComplete: true };
-      }
-      return { enemiesAlive: count };
-    });
-  },
-  setIsSpawning: (isSpawning) => {
-    console.log('Setting isSpawning:', isSpawning);
-    set({ isSpawning });
-  },
-  setLevelComplete: (complete) => set({ levelComplete: complete }),
-
-  addPlacedBox: (position, type) => {
-    set((state) => {
-      // Check if player has enough money
-      let cost = 0;
-      if (type === 'block') {
-        cost = 1;
-      } else if (type === 'arrow') {
-        cost = towerCosts.arrow;
-      } else if (type === 'laser') {
-        cost = towerCosts.laser;
-      } else if (type === 'cannon') {
-        cost = towerCosts.cannon;
-      } else if (type === 'boomerang') {
-        cost = towerCosts.boomerang;
-      }
-
-      if (state.money < cost) return state;
-
-      return {
-        placedBoxes: [...state.placedBoxes, {
-          id: state.placedBoxes.length,
-          position: position.clone(),
-          type
-        }],
-        money: state.money - cost
-      };
-    });
-  },
-
-  removePlacedBox: (id) => {
-    set((state) => {
-      const box = state.placedBoxes.find(box => box.id === id);
-      if (!box) return state;
-
-      // Refund the cost of the removed box
-      let refundAmount = 0;
-      if (box.type === 'block') {
-        refundAmount = 1;
-      } else if (box.type === 'arrow') {
-        refundAmount = towerCosts.arrow;
-      } else if (box.type === 'laser') {
-        refundAmount = towerCosts.laser;
-      } else if (box.type === 'cannon') {
-        refundAmount = towerCosts.cannon;
-      } else if (box.type === 'boomerang') {
-        refundAmount = towerCosts.boomerang;
-      }
-
-      return {
-        placedBoxes: state.placedBoxes.filter((box) => box.id !== id),
-        money: state.money + refundAmount
-      };
-    });
-  },
-
-  setSelectedObjectType: (type) => set({ selectedObjectType: type }),
-
-  setPlayerRef: (ref) => set({ playerRef: ref }),
-
-  addMoney: (amount) => set((state) => ({
-    money: state.money + amount
+    money: state.money + (level * 50) // Bonus money each level
   })),
-
+  
+  setTimer: (timer) => set({ timer }),
+  
+  setEnemiesAlive: (count) => set((state) => {
+    if (count === 0 && state.phase === 'combat') {
+      return {
+        enemiesAlive: count,
+        phase: 'prep',
+        levelComplete: true
+      };
+    }
+    return { enemiesAlive: count };
+  }),
+  
+  setIsSpawning: (isSpawning) => set({ isSpawning }),
+  
+  setLevelComplete: (complete) => set({ levelComplete: complete }),
+  
+  addPlacedTower: (position, type) => set((state) => {
+    const cost = 100; // Base tower cost
+    if (state.money < cost) return state;
+    
+    return {
+      placedTowers: [
+        ...state.placedTowers,
+        {
+          id: Date.now(),
+          position,
+          type,
+          level: 1,
+          kills: 0
+        }
+      ],
+      money: state.money - cost
+    };
+  }),
+  
+  removePlacedTower: (id) => set((state) => ({
+    placedTowers: state.placedTowers.filter((tower) => tower.id !== id),
+    money: state.money + 50 // Refund half the cost
+  })),
+  
+  upgradeTower: (id) => set((state) => {
+    const tower = state.placedTowers.find((t) => t.id === id);
+    if (!tower) return state;
+    
+    const upgradeCost = 100 * tower.level; // Cost increases with level
+    if (state.money < upgradeCost) return state;
+    
+    return {
+      placedTowers: state.placedTowers.map((t) =>
+        t.id === id ? { ...t, level: t.level + 1 } : t
+      ),
+      money: state.money - upgradeCost
+    };
+  }),
+  
+  setSelectedObjectType: (type) => set({ selectedObjectType: type }),
+  
+  addMoney: (amount) => set((state) => ({ 
+    money: state.money + amount 
+  })),
+  
   spendMoney: (amount) => set((state) => {
-    if (state.money < amount) return { money: state.money };
+    if (state.money < amount) return state;
     return { money: state.money - amount };
   }),
-
+  
+  addScore: (amount) => set((state) => ({
+    score: state.score + amount
+  })),
+  
+  loseLife: () => set((state) => {
+    const lives = state.lives - 1;
+    if (lives <= 0) {
+      return { ...initialState }; // Game over, reset everything
+    }
+    return { lives };
+  }),
+  
   resetLevel: () => set((state) => ({
     ...initialState,
-    currentLevel: state.currentLevel,
-    money: 10 // Reset money to starting amount
-  })),
+    currentLevel: state.currentLevel
+  }))
 }));
-
-// Box costs
-export const getBoxCost = (type: PlaceableObjectType): number => {
-  if (type === 'block') return 1;
-  if (type === 'arrow') return towerCosts.arrow;
-  if (type === 'laser') return towerCosts.laser;
-  if (type === 'cannon') return towerCosts.cannon;
-  if (type === 'boomerang') return towerCosts.boomerang;
-  return 0;
-};

@@ -1,103 +1,136 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
-import { useThree } from '@react-three/fiber';
-import { RigidBody } from '@react-three/rapier';
-import { Environment } from '@react-three/drei';
-import { Vector3, Raycaster, AmbientLight, DirectionalLight, MeshStandardMaterial } from 'three';
+import { useFrame, useThree } from '@react-three/fiber';
+import { RigidBody, CuboidCollider } from '@react-three/rapier';
+import { Environment, useGLTF } from '@react-three/drei';
+import { Vector3, Raycaster, AmbientLight, DirectionalLight, MeshStandardMaterial, Color, DoubleSide } from 'three';
 import { useGameStore } from '../store/gameStore';
-import { GhostBox } from './GhostBox';
-import { GhostTower } from './GhostTower';
-import { GhostCannon } from './GhostCannon';
-import { GhostBoomerangTower } from './GhostBoomerangTower';
-import { PlaceableBox } from './PlaceableBox';
-import { StaticBox } from './StaticBox';
-import { EnemySpawner } from './EnemySpawner';
-import { Portal } from './Portal';
-import { Player } from './Player';
-import { BlockedAreas } from './BlockedAreas';
-import { Tower, ArrowManager } from './Tower';
-import { Cannon } from './Cannon';
-import { BoomerangTower } from './BoomerangTower';
-import { ArrowTower } from './ArrowTower';
-import { GhostArrowTower } from './GhostArrowTower';
+import { Edges, MeshTransmissionMaterial, Float } from '@react-three/drei';
 
-// Generate spiral positions using golden ratio
-const generateSpiralPositions = (count: number, scale: number = 1): Vector3[] => {
-  const positions: Vector3[] = [];
-  const goldenAngle = Math.PI * (3 - Math.sqrt(5));
-  const radius = 10;
+const pathColor = new Color('#4338ca').convertSRGBToLinear();
+const platformColor = new Color('#1e293b').convertSRGBToLinear();
+const wallColor = new Color('#334155').convertSRGBToLinear();
+const crystalColor = new Color('#3b82f6').convertSRGBToLinear();
 
-  for (let i = 0; i < count; i++) {
-    const t = i / count;
-    const angle = i * goldenAngle;
-    const r = radius * Math.sqrt(t);
-    const x = Math.round(r * Math.cos(angle) * scale);
-    const z = Math.round(r * Math.sin(angle) * scale);
-    positions.push(new Vector3(x, 1, z));
-  }
-  return positions;
-};
+// Create shared materials to improve performance
+const pathMaterial = new MeshStandardMaterial({
+  color: pathColor,
+  roughness: 0.2,
+  metalness: 0.8,
+  envMapIntensity: 1.5,
+  emissive: pathColor,
+  emissiveIntensity: 0.2
+});
 
-// Generate maze-like pattern
-const generateMazePattern = (levelNumber: number) => {
-  const boxes = [];
-  const gridSize = 2; // Increased grid size for more spacing
-  const centerSize = 8;
-  const possibleLengths = [2, 3, 4, 5]; // Increased potential lengths
+const platformMaterial = new MeshStandardMaterial({
+  color: platformColor,
+  roughness: 0.8,
+  metalness: 0.3,
+  envMapIntensity: 1
+});
 
-  for (let x = -centerSize; x <= centerSize; x += gridSize) {
-    for (let z = -centerSize; z <= centerSize; z += gridSize) {
-      if (Math.abs(x) < 3 && Math.abs(z) < 3) continue; // Slightly larger center clearing
+const wallMaterial = new MeshStandardMaterial({
+  color: wallColor,
+  roughness: 0.3,
+  metalness: 0.7,
+  envMapIntensity: 1.2
+});
 
-      if (Math.random() < 0.5) { // Reduced probability for fewer blocks
-        // Randomly choose length from possible lengths
-        const length = possibleLengths[Math.floor(Math.random() * possibleLengths.length)];
+function Crystal({ position, scale = 1 }: { position: [number, number, number], scale?: number }) {
+  const crystalRef = useRef<THREE.Mesh>(null);
 
-        // Each block independently chooses orientation
-        const isAlongX = Math.random() < 0.5;
-
-        // Calculate position and offset
-        const halfLength = (length - 1) / 2;
-        const direction = Math.random() < 0.5 ? 1 : -1;
-
-        let finalX = x;
-        let finalZ = z;
-        let rotation = 0;
-
-        if (isAlongX) {
-          finalX += halfLength * direction;
-          rotation = 0; // Aligned with X-axis
-        } else {
-          finalZ += halfLength * direction;
-          rotation = Math.PI * 0.5; // Perpendicular to X-axis
-        }
-
-        // Check if block would extend too far from center
-        const maxExtent = Math.max(
-          Math.abs(finalX + (isAlongX ? (length / 2) : 0.5) * direction),
-          Math.abs(finalX - (isAlongX ? (length / 2) : 0.5) * direction),
-          Math.abs(finalZ + (!isAlongX ? (length / 2) : 0.5) * direction),
-          Math.abs(finalZ - (!isAlongX ? (length / 2) : 0.5) * direction)
-        );
-
-        if (maxExtent <= centerSize) {
-          boxes.push({
-            position: [finalX, 0, finalZ] as [number, number, number],
-            dimensions: [
-              isAlongX ? length : 1,
-              1,
-              isAlongX ? 1 : length
-            ] as [number, number, number],
-            rotation
-          });
-        }
-      }
+  useFrame((state) => {
+    if (crystalRef.current) {
+      crystalRef.current.rotation.y += 0.01;
     }
+  });
+
+  return (
+    <Float
+      speed={2}
+      rotationIntensity={0.2}
+      floatIntensity={0.5}
+      position={position}
+    >
+      <mesh ref={crystalRef} scale={scale} castShadow receiveShadow>
+        <octahedronGeometry args={[1, 0]} />
+        <MeshTransmissionMaterial
+          backside
+          samples={4}
+          thickness={0.5}
+          chromaticAberration={0.5}
+          transmission={1}
+          roughness={0}
+          metalness={0}
+          color={crystalColor}
+        />
+        <Edges color="#6495ED" />
+      </mesh>
+    </Float>
+  );
+}
+
+function Pillar({ position, height = 4 }: { position: [number, number, number], height?: number }) {
+  return (
+    <group position={position}>
+      {/* Base */}
+      <mesh position={[0, height * 0.25, 0]} castShadow receiveShadow material={wallMaterial}>
+        <boxGeometry args={[2, height * 0.5, 2]} />
+        <Edges color="#475569" />
+      </mesh>
+
+      {/* Crystal top */}
+      <Crystal position={[0, height + 0.5, 0]} scale={0.8} />
+    </group>
+  );
+}
+
+function generateElementTDPath() {
+  // Start and end points
+  const startPos = [-15, 0, -15];
+  const endPos = [15, 0, 15];
+
+  // Path points (can be customized for different layouts)
+  const pathPoints = [
+    startPos,
+    [-15, 0, 0],
+    [0, 0, 0],
+    [0, 0, 15],
+    endPos
+  ];
+
+  // Generate path segments
+  const segments = [];
+  for (let i = 0; i < pathPoints.length - 1; i++) {
+    const start = pathPoints[i];
+    const end = pathPoints[i + 1];
+    const length = Math.sqrt(
+      Math.pow(end[0] - start[0], 2) +
+      Math.pow(end[2] - start[2], 2)
+    );
+
+    segments.push({
+      position: [
+        (start[0] + end[0]) / 2,
+        0.1,
+        (start[2] + end[2]) / 2
+      ],
+      scale: [
+        Math.abs(end[0] - start[0]) || 4,
+        0.2,
+        Math.abs(end[2] - start[2]) || 4
+      ]
+    });
   }
-  return boxes;
-};
+
+  return {
+    pathPoints,
+    segments
+  };
+}
 
 interface LevelConfig {
-  platforms: { position: [number, number, number]; scale: [number, number, number] }[];
+  platforms: { position: [number, number, number]; scale: [number, number, number]; material: MeshStandardMaterial }[];
+  decorations: { crystals: { position: [number, number, number]; scale: number; rotation: number }[]; pillars: { position: [number, number, number] }[] };
   initialBoxes: { position: [number, number, number], dimensions: [number, number, number], rotation: number }[];
   portalPosition: [number, number, number];
   spawnerPosition: [number, number, number];
@@ -108,38 +141,69 @@ interface LevelConfig {
 export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
   1: {
     platforms: [
-      // Base platform
-      { position: [0, -1, 0], scale: [40, 1, 40] },
-      // Outer elevated rings:
-      // North
-      { position: [0, 0, -16.5], scale: [40, 1, 10] },
-      // South
-      { position: [0, 0, 16.5], scale: [40, 1, 10] },
-      // East
-      { position: [15.5, 0, 0], scale: [10, 1, 21] },
-      // West
-      { position: [-15.5, 0, 0], scale: [10, 1, 21] },
+      // Main elevated platform
+      { position: [0, 0, 0], scale: [40, 2, 40], material: platformMaterial },
+
+      // Path depressions (making the path lower than tower areas)
+      // Top path
+      { position: [0, 0.5, -10], scale: [30, 1, 4], material: pathMaterial },
+      // Middle path
+      { position: [0, 0.5, 0], scale: [30, 1, 4], material: pathMaterial },
+      // Bottom path
+      { position: [0, 0.5, 10], scale: [30, 1, 4], material: pathMaterial },
+      // Left vertical path
+      { position: [-14, 0.5, -5], scale: [4, 1, 10], material: pathMaterial },
+      // Right vertical path
+      { position: [14, 0.5, 5], scale: [4, 1, 10], material: pathMaterial },
+
+      // Decorative outer rim
+      { position: [0, 0, -19.5], scale: [40, 3, 1], material: wallMaterial },
+      { position: [0, 0, 19.5], scale: [40, 3, 1], material: wallMaterial },
+      { position: [19.5, 0, 0], scale: [1, 3, 40], material: wallMaterial },
+      { position: [-19.5, 0, 0], scale: [1, 3, 40], material: wallMaterial },
     ],
-    initialBoxes: generateMazePattern(1),
-    portalPosition: [15, 1, 15],
-    spawnerPosition: [-15, 1, -15],
-    spawnPosition: [0, 1, 0],
+    decorations: {
+      crystals: [
+        { position: [-15, 2, 15], scale: 1, rotation: Math.PI / 4 }, // Spawn crystal
+        { position: [15, 2, -15], scale: 1, rotation: Math.PI / 4 }, // End crystal
+      ],
+      pillars: [
+        // Corner pillars
+        { position: [-19, 1.5, -19] },
+        { position: [19, 1.5, -19] },
+        { position: [-19, 1.5, 19] },
+        { position: [19, 1.5, 19] },
+        // Path intersection pillars
+        { position: [-14, 1.5, -10] },
+        { position: [-14, 1.5, 0] },
+        { position: [14, 1.5, 0] },
+        { position: [14, 1.5, 10] },
+      ],
+    },
+    initialBoxes: generateElementTDPath().segments,
+    portalPosition: [15, 2, -15],
+    spawnerPosition: [-15, 2, 15],
+    spawnPosition: [0, 2, 0],
     gridSize: 1,
   },
   2: {
     platforms: [
       // Base platform
-      { position: [0, -1, 0], scale: [45, 1, 45] },
+      { position: [0, -1, 0], scale: [45, 1, 45], material: platformMaterial },
       // Outer elevated ring - North
-      { position: [0, 0, -17.5], scale: [45, 1, 10] },
+      { position: [0, 0, -17.5], scale: [45, 1, 10], material: pathMaterial },
       // South
-      { position: [0, 0, 17.5], scale: [45, 1, 10] },
+      { position: [0, 0, 17.5], scale: [45, 1, 10], material: pathMaterial },
       // East
-      { position: [17.5, 0, 0], scale: [10, 1, 25] },
+      { position: [17.5, 0, 0], scale: [10, 1, 25], material: pathMaterial },
       // West
-      { position: [-17.5, 0, 0], scale: [10, 1, 25] },
+      { position: [-17.5, 0, 0], scale: [10, 1, 25], material: pathMaterial },
     ],
-    initialBoxes: generateMazePattern(2),
+    decorations: {
+      crystals: [],
+      pillars: [],
+    },
+    initialBoxes: generateElementTDPath().segments,
     portalPosition: [18, 1, 18],
     spawnerPosition: [-18, 1, -18],
     spawnPosition: [0, 1, 0],
@@ -148,17 +212,21 @@ export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
   3: {
     platforms: [
       // Base platform
-      { position: [0, -1, 0], scale: [50, 1, 50] },
+      { position: [0, -1, 0], scale: [50, 1, 50], material: platformMaterial },
       // Outer elevated ring - North
-      { position: [0, 0, -20], scale: [50, 1, 10] },
+      { position: [0, 0, -20], scale: [50, 1, 10], material: pathMaterial },
       // South
-      { position: [0, 0, 20], scale: [50, 1, 10] },
+      { position: [0, 0, 20], scale: [50, 1, 10], material: pathMaterial },
       // East
-      { position: [20, 0, 0], scale: [10, 1, 30] },
+      { position: [20, 0, 0], scale: [10, 1, 30], material: pathMaterial },
       // West
-      { position: [-20, 0, 0], scale: [10, 1, 30] },
+      { position: [-20, 0, 0], scale: [10, 1, 30], material: pathMaterial },
     ],
-    initialBoxes: generateMazePattern(3),
+    decorations: {
+      crystals: [],
+      pillars: [],
+    },
+    initialBoxes: generateElementTDPath().segments,
     portalPosition: [20, 1, 20],
     spawnerPosition: [-20, 1, -20],
     spawnPosition: [0, 1, 0],
@@ -167,17 +235,21 @@ export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
   4: {
     platforms: [
       // Base platform
-      { position: [0, -1, 0], scale: [55, 1, 55] },
+      { position: [0, -1, 0], scale: [55, 1, 55], material: platformMaterial },
       // Outer elevated ring - North
-      { position: [0, 0, -22.5], scale: [55, 1, 10] },
+      { position: [0, 0, -22.5], scale: [55, 1, 10], material: pathMaterial },
       // South
-      { position: [0, 0, 22.5], scale: [55, 1, 10] },
+      { position: [0, 0, 22.5], scale: [55, 1, 10], material: pathMaterial },
       // East
-      { position: [22.5, 0, 0], scale: [10, 1, 35] },
+      { position: [22.5, 0, 0], scale: [10, 1, 35], material: pathMaterial },
       // West
-      { position: [-22.5, 0, 0], scale: [10, 1, 35] },
+      { position: [-22.5, 0, 0], scale: [10, 1, 35], material: pathMaterial },
     ],
-    initialBoxes: generateMazePattern(4),
+    decorations: {
+      crystals: [],
+      pillars: [],
+    },
+    initialBoxes: generateElementTDPath().segments,
     portalPosition: [22, 1, 22],
     spawnerPosition: [-22, 1, -22],
     spawnPosition: [0, 1, 0],
@@ -186,17 +258,21 @@ export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
   5: {
     platforms: [
       // Base platform
-      { position: [0, -1, 0], scale: [60, 1, 60] },
+      { position: [0, -1, 0], scale: [60, 1, 60], material: platformMaterial },
       // Outer elevated ring - North
-      { position: [0, 0, -25], scale: [60, 1, 10] },
+      { position: [0, 0, -25], scale: [60, 1, 10], material: pathMaterial },
       // South
-      { position: [0, 0, 25], scale: [60, 1, 10] },
+      { position: [0, 0, 25], scale: [60, 1, 10], material: pathMaterial },
       // East
-      { position: [25, 0, 0], scale: [10, 1, 40] },
+      { position: [25, 0, 0], scale: [10, 1, 40], material: pathMaterial },
       // West
-      { position: [-25, 0, 0], scale: [10, 1, 40] },
+      { position: [-25, 0, 0], scale: [10, 1, 40], material: pathMaterial },
     ],
-    initialBoxes: generateMazePattern(5),
+    decorations: {
+      crystals: [],
+      pillars: [],
+    },
+    initialBoxes: generateElementTDPath().segments,
     portalPosition: [25, 1, 25],
     spawnerPosition: [-25, 1, -25],
     spawnPosition: [0, 1, 0],
@@ -205,413 +281,43 @@ export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
 };
 
 export function Level() {
-  const { currentLevel, phase, placedBoxes, addPlacedBox, removePlacedBox, timer, setIsSpawning, setLevelComplete, enemiesAlive, isSpawning, selectedObjectType } = useGameStore();
-  const { camera, scene } = useThree();
-  const raycaster = useRef(new Raycaster());
-  const [ghostBoxPosition, setGhostBoxPosition] = useState<Vector3 | null>(null);
-  const [isOverPlacedBox, setIsOverPlacedBox] = useState(false);
-  const [isPlacing, setIsPlacing] = useState(false);
-  const [showGhostBox, setShowGhostBox] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const lastPlacedPosition = useRef<Vector3 | null>(null);
-
-  const config = LEVEL_CONFIGS[currentLevel as keyof typeof LEVEL_CONFIGS];
-  const spawnerPosition = new Vector3(...config.spawnerPosition);
-
-  const isOverInitialBlock = (position: Vector3) => {
-    return LEVEL_CONFIGS[currentLevel].initialBoxes.some(box => {
-      const [x, y, z] = box.position;
-      return position.x === x && position.y === y && position.z === z;
-    });
-  };
-
-  const isOverlappingInitialBlock = (position: Vector3) => {
-    const config = LEVEL_CONFIGS[currentLevel];
-    return config.initialBoxes.some(box => {
-      const boxPos = new Vector3(box.position[0], box.position[1], box.position[2]);
-      const [width, _, depth] = box.dimensions;
-      
-      // Check if this is a vertical block (rotated 90 degrees)
-      const isVertical = Math.abs(box.rotation - Math.PI * 0.5) < 0.01;
-      
-      // For vertical blocks (north-south), their length is in the Z dimension
-      // For horizontal blocks (east-west), their length is in the X dimension
-      const xExtent = isVertical ? 0.5 : width / 2;
-      const zExtent = isVertical ? depth / 2 : 0.5;
-      
-      // Check if position is within the box bounds
-      return Math.abs(position.x - boxPos.x) <= xExtent &&
-             Math.abs(position.z - boxPos.z) <= zExtent;
-    });
-  };
-
-  useEffect(() => {
-    const canvas = document.querySelector('canvas');
-    if (!canvas) return;
-
-    const getEventPosition = (event: MouseEvent | TouchEvent | PointerEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      let clientX, clientY;
-
-      if ('touches' in event && event.touches.length > 0) {
-        clientX = event.touches[0].clientX;
-        clientY = event.touches[0].clientY;
-      } else if ('clientX' in event) {
-        clientX = event.clientX;
-        clientY = event.clientY;
-      } else {
-        return null;
-      }
-
-      return {
-        x: ((clientX - rect.left) / rect.width) * 2 - 1,
-        y: -((clientY - rect.top) / rect.height) * 2 + 1
-      };
-    };
-
-    const updateGhostPosition = (coords: { x: number, y: number }) => {
-      if (phase !== 'prep' || placedBoxes.length >= 20) return;
-
-      raycaster.current.setFromCamera(coords, camera);
-      const intersects = raycaster.current.intersectObjects(scene.children, true);
-      const platformIntersect = intersects.find(intersect =>
-        intersect.object.name === 'platform' ||
-        intersect.object.name === 'placed-box' ||
-        intersect.object.name === 'static-box'
-      );
-
-      if (platformIntersect) {
-        const point = platformIntersect.point;
-        const config = LEVEL_CONFIGS[currentLevel];
-        const gridSize = config.gridSize;
-
-        const snappedPosition = new Vector3(
-          Math.round(point.x / gridSize) * gridSize,
-          0,
-          Math.round(point.z / gridSize) * gridSize
-        );
-        if (Math.abs(snappedPosition.x) > 10 || Math.abs(snappedPosition.z) > 10) {
-          setIsOverPlacedBox(true);
-          setShowGhostBox(false);
-          return;
-        }
-        const isOverPlaced = placedBoxes.some(box =>
-          box.position[0] === snappedPosition.x &&
-          box.position[1] === snappedPosition.y &&
-          box.position[2] === snappedPosition.z
-        );
-
-        const isOverInitial = isOverlappingInitialBlock(snappedPosition);
-        setIsOverPlacedBox(isOverPlaced || isOverInitial);
-
-        if (!isOverPlaced && !isOverInitial) {
-          setGhostBoxPosition(snappedPosition);
-          setShowGhostBox(true);
-        } else {
-          setShowGhostBox(false);
-        }
-      } else {
-        setShowGhostBox(false);
-      }
-    };
-
-    const checkForRemoval = (coords: { x: number, y: number }) => {
-      raycaster.current.setFromCamera(coords, camera);
-      const intersects = raycaster.current.intersectObjects(scene.children, true);
-      const placedBoxHit = intersects.find(hit =>
-        hit.object.userData?.isPlaceableBox ||
-        hit.object.parent?.userData?.isPlaceableBox
-      );
-
-      if (placedBoxHit) {
-        const boxPosition = placedBoxHit.object.parent?.position || placedBoxHit.object.position;
-        const boxToRemove = placedBoxes.find(box =>
-          box.position.distanceTo(boxPosition) < 0.1
-        );
-        if (boxToRemove) {
-          removePlacedBox(boxToRemove.id);
-          return true;
-        }
-      }
-      return false;
-    };
-
-    const handleStart = (event: MouseEvent | TouchEvent | PointerEvent) => {
-      if (phase !== 'prep' || placedBoxes.length >= 20) return;
-      event.preventDefault();
-
-      const coords = getEventPosition(event);
-      if (!coords) return;
-
-      if (!checkForRemoval(coords)) {
-        setIsDragging(true);
-        updateGhostPosition(coords);
-      }
-    };
-
-    const handleMove = (event: MouseEvent | TouchEvent | PointerEvent) => {
-      event.preventDefault();
-      const coords = getEventPosition(event);
-      if (!coords) return;
-
-      // Always show ghost preview on hover for devices that support it
-      if (!isDragging && ('pointerType' in event) && (event.pointerType === 'mouse')) {
-        updateGhostPosition(coords);
-      }
-      // Update position while dragging for all devices
-      else if (isDragging && phase === 'prep' && placedBoxes.length < 20) {
-        updateGhostPosition(coords);
-      }
-    };
-
-    const handleEnd = (event: MouseEvent | TouchEvent | PointerEvent) => {
-      event.preventDefault();
-      if (isDragging && ghostBoxPosition && !isOverPlacedBox) {
-        addPlacedBox(ghostBoxPosition, selectedObjectType);
-      }
-      setIsDragging(false);
-      setShowGhostBox(false);
-    };
-
-    // Mouse events
-    canvas.addEventListener('mousedown', handleStart);
-    canvas.addEventListener('mousemove', handleMove);
-    canvas.addEventListener('mouseup', handleEnd);
-
-    // Touch events
-    canvas.addEventListener('touchstart', handleStart, { passive: false });
-    canvas.addEventListener('touchmove', handleMove, { passive: false });
-    canvas.addEventListener('touchend', handleEnd);
-
-    // Pointer events for devices that support them
-    canvas.addEventListener('pointerdown', handleStart);
-    canvas.addEventListener('pointermove', handleMove);
-    canvas.addEventListener('pointerup', handleEnd);
-
-    return () => {
-      // Mouse events
-      canvas.removeEventListener('mousedown', handleStart);
-      canvas.removeEventListener('mousemove', handleMove);
-      canvas.removeEventListener('mouseup', handleEnd);
-
-      // Touch events
-      canvas.removeEventListener('touchstart', handleStart);
-      canvas.removeEventListener('touchmove', handleMove);
-      canvas.removeEventListener('touchend', handleEnd);
-
-      // Pointer events
-      canvas.removeEventListener('pointerdown', handleStart);
-      canvas.removeEventListener('pointermove', handleMove);
-      canvas.removeEventListener('pointerup', handleEnd);
-    };
-  }, [phase, placedBoxes, camera, scene, isDragging, ghostBoxPosition, isOverPlacedBox, selectedObjectType, currentLevel]);
-
-  useEffect(() => {
-    if (phase === 'combat') {
-      setIsSpawning(true);
-    }
-  }, [phase, setIsSpawning]);
-
-  useEffect(() => {
-    if (phase === 'combat' && timer <= 0) {
-      setIsSpawning(false);
-    }
-  }, [phase, timer, setIsSpawning]);
-
-  useEffect(() => {
-    if (phase === 'combat' && enemiesAlive === 0 && !isSpawning && timer <= 0) {
-      setLevelComplete(true);
-    }
-  }, [phase, enemiesAlive, isSpawning, timer, setLevelComplete]);
-
-  // Create ambient and directional lights
-  const ambientLight = useMemo(() => new AmbientLight(0x404040, 0.5), []);
-  const mainLight = useMemo(() => {
-    const light = new DirectionalLight(0xffffff, 0.8);
-    light.position.set(10, 20, 10);
-    light.castShadow = true;
-    light.shadow.mapSize.width = 2048;
-    light.shadow.mapSize.height = 2048;
-    light.shadow.camera.near = 0.5;
-    light.shadow.camera.far = 100;
-    light.shadow.camera.left = -30;
-    light.shadow.camera.right = 30;
-    light.shadow.camera.top = 30;
-    light.shadow.camera.bottom = -30;
-    return light;
-  }, []);
-
-  // Platform material with subtle metallic and roughness
-  const platformMaterial = useMemo(() =>
-    new MeshStandardMaterial({
-      color: 0x808080,
-      metalness: 0.2,
-      roughness: 0.7,
-    })
-    , []);
-
-  // Box material with different colors for different types
-  const staticBoxMaterial = useMemo(() =>
-    new MeshStandardMaterial({
-      color: 0x4a6fa5,
-      metalness: 0.3,
-      roughness: 0.6,
-    })
-    , []);
-
-  const placedBoxMaterial = useMemo(() =>
-    new MeshStandardMaterial({
-      color: 0x6b9080,
-      metalness: 0.3,
-      roughness: 0.6,
-    })
-    , []);
-
-  const ghostBoxMaterial = useMemo(() =>
-    new MeshStandardMaterial({
-      color: 0x90be6d,
-      transparent: true,
-      opacity: 0.5,
-      metalness: 0.1,
-      roughness: 0.8,
-    })
-    , []);
-
-  const [arrows, setArrows] = useState<{ position: Vector3; direction: Vector3; id: number }[]>([]);
-
-  const handleArrowComplete = (id: number) => {
-    setArrows(prev => prev.filter(a => a.id !== id));
-  };
-
-  const ghostBox = useMemo(() => {
-    if (!showGhostBox || !ghostBoxPosition || !selectedObjectType) return null;
-
-    const GhostComponent = (() => {
-      switch (selectedObjectType) {
-        case 'tower':
-          return GhostTower;
-        case 'arrow':
-          return GhostArrowTower;
-        case 'cannon':
-          return GhostCannon;
-        case 'boomerang':
-          return GhostBoomerangTower;
-        default:
-          return GhostBox;
-      }
-    })();
-
-    return <GhostComponent position={ghostBoxPosition} />;
-  }, [showGhostBox, ghostBoxPosition, selectedObjectType]);
+  const path = generateElementTDPath();
 
   return (
     <group>
-      <primitive object={ambientLight} />
-      <primitive object={mainLight} />
+      {/* Main Platform */}
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh receiveShadow position={[0, -0.1, 0]} material={platformMaterial}>
+          <boxGeometry args={[40, 0.2, 40]} />
+        </mesh>
+      </RigidBody>
 
-      {/* Environment */}
-      <Environment preset="sunset" />
-
-      {/* Ground plane for better shadows */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, -1.01, 0]}
-        receiveShadow
-      >
-        <planeGeometry args={[100, 100]} />
-        <meshStandardMaterial
-          color={0x808080}
-          metalness={0.1}
-          roughness={0.9}
-        />
-      </mesh>
-
-      {/* Platforms */}
-      {config.platforms.map((platform, index) => (
+      {/* Path */}
+      {path.segments.map((segment, index) => (
         <RigidBody key={index} type="fixed" colliders="cuboid">
           <mesh
-            position={new Vector3(...platform.position)}
-            name="platform"
+            position={segment.position}
+            material={pathMaterial}
             receiveShadow
-            castShadow
-            material={platformMaterial}
           >
-            <boxGeometry args={platform.scale} />
+            <boxGeometry args={segment.scale} />
           </mesh>
         </RigidBody>
       ))}
 
-      {/* Initial Static Boxes */}
-      {config.initialBoxes.map((box, index) => (
-        <StaticBox key={`static-${index}`} position={box.position} dimensions={box.dimensions} rotation={box.rotation} material={staticBoxMaterial} />
+      {/* Decorative Pillars */}
+      {[
+        [-12, 0, -12],
+        [-12, 0, 12],
+        [12, 0, -12],
+        [12, 0, 12]
+      ].map((pos, index) => (
+        <Pillar key={index} position={pos as [number, number, number]} />
       ))}
 
-      {/* Ghost Preview */}
-      {ghostBox}
-
-      {/* Placed Objects */}
-      {placedBoxes.map((box) => {
-        const pos = [box.position.x, box.position.y, box.position.z] as [number, number, number];
-        switch (box.type) {
-          case 'block':
-            return (
-              <StaticBox
-                key={box.id}
-                position={box.position}
-                dimensions={[1, 1, 1]}
-                material={staticBoxMaterial}
-              />
-            );
-          case 'tower':
-            return (
-              <Tower
-                key={box.id}
-                position={box.position}
-                onArrowSpawn={(arrow) => setArrows(prev => [...prev, arrow])}
-              />
-            );
-          case 'arrow':
-            return (
-              <ArrowTower
-                key={box.id}
-                position={box.position}
-              />
-            );
-          case 'cannon':
-            return (
-              <Cannon
-                key={box.id}
-                position={box.position}
-              />
-            );
-          case 'boomerang':
-            return (
-              <BoomerangTower
-                key={box.id}
-                position={box.position}
-              />
-            );
-        }
-      })}
-
-      {/* Arrows rendered at root level */}
-      <ArrowManager arrows={arrows} onArrowComplete={handleArrowComplete} />
-
-      {/* Always render spawner */}
-      <EnemySpawner position={spawnerPosition} />
-
-      {/* Portal */}
-      <mesh position={new Vector3(...config.portalPosition)}>
-        <torusGeometry args={[1, 0.2, 16, 32]} />
-        <meshStandardMaterial
-          color="purple"
-          emissive="purple"
-          emissiveIntensity={0.5}
-        />
-      </mesh>
-
-      {/* Show blocked areas during prep phase */}
-      {phase === 'prep' && <BlockedAreas currentLevel={currentLevel} />}
+      {/* Start and End Crystals */}
+      <Crystal position={[-15, 1.5, -15]} scale={1.5} />
+      <Crystal position={[15, 1.5, 15]} scale={1.5} />
     </group>
   );
 }
