@@ -50,7 +50,7 @@ const creepScales = {
 };
 
 const creepSpeeds = {
-  normal: 0.05,
+  normal: 0.5,
   armored: 0.03,
   fast: 0.08,
   boss: 0.02,
@@ -76,7 +76,7 @@ export function Creep({ position, pathPoints, type, health, id }: CreepProps) {
 
     const currentPoint = pathPoints[pathIndex.current];
     const nextPoint = pathPoints[pathIndex.current + 1];
-    
+
     lerpFactor.current += creepSpeeds[type] * delta;
 
     if (lerpFactor.current >= 1) {
@@ -129,10 +129,10 @@ export function Creep({ position, pathPoints, type, health, id }: CreepProps) {
       if (creepRef.current) {
         // Add money based on enemy type
         const bounty = type === 'boss' ? 100 :
-                      type === 'armored' ? 40 :
-                      type === 'fast' ? 25 : 20;
+          type === 'armored' ? 40 :
+            type === 'fast' ? 25 : 20;
         addMoney(bounty);
-        
+
         // Remove enemy
         removeEnemy(id);
         creepRef.current.parent?.remove(creepRef.current);
@@ -145,7 +145,7 @@ export function Creep({ position, pathPoints, type, health, id }: CreepProps) {
     if (effects.dot > 0) {
       takeDamage(effects.dot * delta, { amplify: 1, armor: 0, slow: 0, dot: 0, splash: 0 });
     }
-    
+
     moveAlongPath(delta * (1 - effects.slow));
   });
 
@@ -159,9 +159,9 @@ export function Creep({ position, pathPoints, type, health, id }: CreepProps) {
 
   return (
     <group ref={creepRef} position={position}>
-      <Float 
-        speed={5} 
-        rotationIntensity={0.1} 
+      <Float
+        speed={5}
+        rotationIntensity={0.1}
         floatIntensity={0.2}
         scale={creepScales[type]}
       >

@@ -292,7 +292,7 @@ export function Level() {
 
   // Handle pointer movement and placement
   const handlePointerMove = (event: any) => {
-    console.log('Pointer move:', { selectedObjectType });
+    // console.log('Pointer move:', { selectedObjectType });
     if (!selectedObjectType) return;
 
     // Update the picking ray with the camera and pointer position
@@ -323,7 +323,7 @@ export function Level() {
 
   const handleClick = (event: any) => {
     event.stopPropagation();
-    console.log('Click event:', { 
+    console.log('Click event:', {
       selectedObjectType,
       placementIndicator: placementIndicator?.toArray(),
       money
@@ -338,14 +338,14 @@ export function Level() {
   return (
     <group>
       {/* Ground plane for pointer events */}
-      <mesh 
-        position={[0, 0, 0]} 
+      <mesh
+        position={[0, 0, 0]}
         rotation={[-Math.PI / 2, 0, 0]}
         onPointerMove={handlePointerMove}
         onClick={handleClick}
       >
         <planeGeometry args={[40, 40]} />
-        <meshBasicMaterial 
+        <meshBasicMaterial
           color="#ff0000"
           opacity={0.1}
           transparent
@@ -355,9 +355,9 @@ export function Level() {
 
       {/* Main Platform */}
       <RigidBody type="fixed" colliders="cuboid">
-        <mesh 
-          receiveShadow 
-          position={[0, -0.1, 0]} 
+        <mesh
+          receiveShadow
+          position={[0, -0.1, 0]}
           material={platformMaterial}
           onClick={handleClick}
         >

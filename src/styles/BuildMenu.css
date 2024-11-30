@@ -1,99 +1,319 @@
+/* Warcraft 3 style UI */
 .build-menu {
   position: fixed;
-  bottom: 2rem;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 1000;
-  pointer-events: auto;
-  user-select: none;
-  background: rgba(0, 0, 0, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 1rem;
+  background: linear-gradient(to bottom, #1e2a3d, #0d1321);
   padding: 1rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
-}
-
-.tower-button {
-  position: relative;
-  width: 4rem;
-  height: 4rem;
-  border-radius: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(0, 0, 0, 0.5);
-  transition: all 0.2s ease;
-  cursor: pointer;
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin: 0;
-  padding: 0;
-}
-
-.tower-button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.tower-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.tower-button.selected {
-  border-color: rgba(255, 255, 255, 0.4);
-  box-shadow: 0 0 12px rgba(255, 255, 255, 0.2);
-}
-
-.tower-button-icon {
-  font-size: 1.5rem;
-  margin-bottom: 0.25rem;
-}
-
-.tower-button-label {
-  font-size: 0.625rem;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.tower-tooltip {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-bottom: 0.5rem;
-  padding: 0.75rem;
-  background: rgba(0, 0, 0, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0.5rem;
-  width: 12rem;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.2s ease;
-  pointer-events: none;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-}
-
-.tower-button:hover .tower-tooltip {
-  opacity: 1;
-  visibility: visible;
-}
-
-.tower-grid {
-  display: flex;
-  gap: 0.75rem;
+  gap: 1rem;
+  z-index: 10000;
+  border: 2px solid #4b6bab;
+  box-shadow: 
+    0 0 0 1px #000,
+    inset 0 0 20px rgba(73, 156, 255, 0.15);
+  color: #bfd4ff;
 }
 
 .money-display {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.5rem;
   color: #ffd700;
-  font-size: 0.875rem;
-  margin-bottom: 0.75rem;
-  padding: 0 0.5rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(to bottom, #2a3b59, #1c2a44);
+  border: 1px solid #4b6bab;
+  border-radius: 4px;
+  justify-content: center;
+  text-shadow: 1px 1px 2px #000;
+  box-shadow: 
+    inset 0 0 10px rgba(0, 0, 0, 0.5),
+    0 0 10px rgba(73, 156, 255, 0.2);
 }
 
-.money-icon {
-  font-size: 0.75rem;
+.tower-groups {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  background: linear-gradient(to bottom, #2a3b59, #1c2a44);
+  padding: 0.75rem;
+  border-radius: 4px;
+  border: 1px solid #4b6bab;
+  box-shadow: 
+    inset 0 0 10px rgba(0, 0, 0, 0.5),
+    0 0 10px rgba(73, 156, 255, 0.2);
+}
+
+.element-preview {
+  width: 64px;
+  height: 64px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #2a3b59, #1c2a44);
+  border: 2px solid #4b6bab;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0.5rem;
+  box-shadow: 
+    inset 0 1px 1px rgba(255, 255, 255, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.element-preview::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(to right, 
+    transparent, 
+    rgba(73, 156, 255, 0.5),
+    transparent
+  );
+}
+
+.element-preview:hover {
+  background: linear-gradient(135deg, #3a4d6e, #2a3b59);
+  border-color: #ffd700;
+  box-shadow: 
+    0 0 10px rgba(255, 215, 0, 0.3),
+    inset 0 0 15px rgba(73, 156, 255, 0.3);
+}
+
+.element-preview:active {
+  transform: translateY(1px);
+  box-shadow: 
+    inset 0 1px 3px rgba(0, 0, 0, 0.5),
+    0 0 10px rgba(255, 215, 0, 0.2);
+}
+
+.element-preview svg {
+  font-size: 2rem;
+  filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.5));
+}
+
+.element-preview svg path {
+  fill: #bfd4ff;
+}
+
+.element-name {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: #bfd4ff;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-shadow: 1px 1px 1px #000;
+}
+
+.tower-expanded {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(to bottom, #2a3b59, #1c2a44);
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+  min-width: 220px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.15s ease;
+  border: 2px solid #4b6bab;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.5),
+    inset 0 0 20px rgba(73, 156, 255, 0.15);
+}
+
+.tower-expanded::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(to right, 
+    transparent, 
+    rgba(73, 156, 255, 0.5),
+    transparent
+  );
+}
+
+.tower-expanded::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid #4b6bab;
+}
+
+.tower-group:hover .tower-expanded {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+.tower-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(52px, 1fr));
+  gap: 0.75rem;
+  justify-items: center;
+  padding: 0.25rem;
+}
+
+.tower-button {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #2a3b59, #1c2a44);
+  border: 2px solid #4b6bab;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: #bfd4ff;
+  padding: 0.4rem;
+  box-shadow: 
+    inset 0 1px 1px rgba(255, 255, 255, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.tower-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(to right, 
+    transparent, 
+    rgba(73, 156, 255, 0.5),
+    transparent
+  );
+}
+
+.tower-button:hover {
+  background: linear-gradient(135deg, #3a4d6e, #2a3b59);
+  border-color: #ffd700;
+  box-shadow: 
+    0 0 10px rgba(255, 215, 0, 0.3),
+    inset 0 0 15px rgba(73, 156, 255, 0.3);
+}
+
+.tower-button:active {
+  transform: translateY(1px);
+  box-shadow: 
+    inset 0 1px 3px rgba(0, 0, 0, 0.5),
+    0 0 10px rgba(255, 215, 0, 0.2);
+}
+
+.tower-button.selected {
+  background: linear-gradient(135deg, #3a4d6e, #2a3b59);
+  border-color: #ffd700;
+  box-shadow: 
+    0 0 15px rgba(255, 215, 0, 0.4),
+    inset 0 0 20px rgba(73, 156, 255, 0.3);
+}
+
+.tower-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  background: linear-gradient(135deg, #1e2a3d, #0d1321);
+  border-color: #2a3b59;
+  box-shadow: none;
+}
+
+.tower-button-icon {
+  font-size: 1.75rem;
+  margin-bottom: 0.2rem;
+  filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.5));
+}
+
+.tower-button-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #bfd4ff;
+  text-shadow: 1px 1px 1px #000;
+  white-space: nowrap;
+}
+
+.tower-tooltip {
+  position: absolute;
+  bottom: 120%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(to bottom, #2a3b59, #1c2a44);
+  padding: 1rem;
+  border-radius: 4px;
+  width: max-content;
+  max-width: 220px;
+  display: none;
+  z-index: 10001;
+  border: 2px solid #4b6bab;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.5),
+    inset 0 0 20px rgba(73, 156, 255, 0.15);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: #bfd4ff;
+  text-shadow: 1px 1px 1px #000;
+}
+
+.tower-tooltip::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(to right, 
+    transparent, 
+    rgba(73, 156, 255, 0.5),
+    transparent
+  );
+}
+
+.tower-button:hover .tower-tooltip {
+  display: block;
+}
+
+/* Scrollbar Styling */
+.menu-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.menu-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.menu-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.menu-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
 }

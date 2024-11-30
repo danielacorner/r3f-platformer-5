@@ -3,74 +3,14 @@ import { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
 import { useGameStore } from '../store/gameStore';
+import type { ElementType } from '../store/gameStore';
+import { TOWER_STATS } from '../store/gameStore';
 import { Arrow } from './Arrow';
 import { Edges, Float } from '@react-three/drei';
 
-export type TowerType = 'light' | 'fire' | 'ice' | 'nature' | 'water' | 'dark';
-
-interface TowerStats {
-  damage: number;
-  range: number;
-  attackSpeed: number;
-  cost: number;
-  color: string;
-  emissive: string;
-}
-
-const TOWER_STATS: Record<TowerType, TowerStats> = {
-  light: {
-    damage: 20,
-    range: 18,
-    attackSpeed: 1.2,
-    cost: 150,
-    color: '#fef3c7',
-    emissive: '#fcd34d'
-  },
-  fire: {
-    damage: 40,
-    range: 12,
-    attackSpeed: 1,
-    cost: 100,
-    color: '#fecaca',
-    emissive: '#ef4444'
-  },
-  ice: {
-    damage: 15,
-    range: 15,
-    attackSpeed: 1.5,
-    cost: 100,
-    color: '#e0f2fe',
-    emissive: '#38bdf8'
-  },
-  nature: {
-    damage: 25,
-    range: 14,
-    attackSpeed: 0.8,
-    cost: 125,
-    color: '#dcfce7',
-    emissive: '#22c55e'
-  },
-  water: {
-    damage: 30,
-    range: 13,
-    attackSpeed: 1.1,
-    cost: 125,
-    color: '#dbeafe',
-    emissive: '#3b82f6'
-  },
-  dark: {
-    damage: 35,
-    range: 16,
-    attackSpeed: 0.9,
-    cost: 150,
-    color: '#f3e8ff',
-    emissive: '#a855f7'
-  }
-};
-
 export interface TowerProps {
   position: Vector3;
-  type: TowerType;
+  type: ElementType;
   level?: number;
   onDamageEnemy?: (enemyId: number, damage: number, effects: any) => void;
 }

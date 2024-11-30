@@ -58,7 +58,7 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
           0,
           rigidBodyRef.current.translation().z
         );
-        
+
         if (currentPos.distanceTo(lastPosition.current) < STUCK_THRESHOLD) {
           setIsStuck(true);
           // Force path recalculation
@@ -67,7 +67,7 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
         } else {
           setIsStuck(false);
         }
-        
+
         lastPosition.current.copy(currentPos);
       }
     };
@@ -87,7 +87,7 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
         new Vector3(currentPos.x, 0, currentPos.z),
         target
       );
-      
+
       if (newPath.length > 0) {
         setCurrentPath(newPath);
         setCurrentWaypoint(newPath[0]);
@@ -129,7 +129,7 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
       console.warn('No valid target for enemy movement');
       return;
     }
-    
+
     const direction = new Vector3(
       moveTarget.x - currentPosition.x,
       0,
@@ -150,7 +150,7 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
     if (direction.length() > 0.1) {
       direction.normalize();
       const velocity = rigidBodyRef.current.linvel();
-      
+
       // Combine portal direction with random walk
       const finalDirection = direction.clone().multiplyScalar(PORTAL_BIAS)
         .add(randomOffset.current)
@@ -171,13 +171,13 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
   const handleDeath = () => {
     if (health <= 0) return;
     setHealth(0);
-    
+
     // Drop money on death
     useGameStore.getState().addMoney(1);
-    
+
     // Update enemy count
     useGameStore.getState().setEnemiesAlive(prev => Math.max(0, prev - 1));
-    
+
     // Check if level is complete
     if (useGameStore.getState().enemiesAlive <= 1) {
       useGameStore.getState().setLevelComplete(true);
