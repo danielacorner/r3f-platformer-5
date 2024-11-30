@@ -42,26 +42,36 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
   const damage = stats.damage * (1 + (level - 1) * 0.3);
 
   const lastAttackTime = useRef(0);
-  const [currentTarget, setCurrentTarget] = useState<{
-    position: [number, number, number];
+  const [projectiles, setProjectiles] = useState<{
+    id: number;
+    startPos: [number, number, number];
+    targetPos: [number, number, number];
     progress: number;
-  } | null>(null);
+  }[]>([]);
 
-  // Single attack beam/projectile
+  // Handle projectile movement
   useFrame((state, delta) => {
     if (phase !== 'combat' || preview) return;
 
-    if (currentTarget) {
-      const newProgress = currentTarget.progress + delta * 10;
-      if (newProgress >= 1) {
-        setCurrentTarget(null);
-      } else {
-        setCurrentTarget({ ...currentTarget, progress: newProgress });
-      }
-    }
+    setProjectiles(current => 
+      current.map(proj => {
+        const newProgress = proj.progress + delta * 5; // Slower speed for better visibility
+        if (newProgress >= 1) return null;
+
+        return {
+          ...proj,
+          progress: newProgress
+        };
+      }).filter(Boolean)
+    );
+  });
+
+  // Handle attacking
+  useFrame((state) => {
+    if (phase !== 'combat' || preview) return;
 
     const currentTime = state.clock.getElapsedTime() * 1000;
-    if (currentTime - lastAttackTime.current < attackCooldown || currentTarget) return;
+    if (currentTime - lastAttackTime.current < attackCooldown) return;
 
     const towerPos = position instanceof Vector3 ? position : new Vector3(...position);
     let closestCreep = null;
@@ -79,10 +89,25 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
     }
 
     if (closestCreep) {
-      setCurrentTarget({
-        position: closestCreep.position,
+      const startPos: [number, number, number] = [
+        towerPos.x,
+        1.5, // Start from tower top
+        towerPos.z
+      ];
+
+      const targetPos: [number, number, number] = [
+        closestCreep.position[0],
+        1.0, // Fixed height for better visibility
+        closestCreep.position[2]
+      ];
+
+      setProjectiles(prev => [...prev, {
+        id: Date.now(),
+        startPos,
+        targetPos,
         progress: 0
-      });
+      }]);
+
       useGameStore.getState().damageCreep(closestCreep.id, stats.damage, type);
       lastAttackTime.current = currentTime;
     }
@@ -251,13 +276,34 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
         </>
       )}
 
-      {/* Simple attack beam */}
-      {currentTarget && (
-        <mesh>
-          <cylinderGeometry args={[0.05, 0.05, 1, 8]} />
-          <meshBasicMaterial color={stats.emissive} transparent opacity={0.8} />
-        </mesh>
-      )}
+      {/* Projectiles */}
+      {projectiles.map(proj => {
+        // Interpolate position
+        const x = proj.startPos[0] + (proj.targetPos[0] - proj.startPos[0]) * proj.progress;
+        const y = proj.startPos[1] + (proj.targetPos[1] - proj.startPos[1]) * proj.progress;
+        const z = proj.startPos[2] + (proj.targetPos[2] - proj.startPos[2]) * proj.progress;
+
+        return (
+          <group key={proj.id}>
+            {/* Main projectile */}
+            <mesh position={[x, y, z]}>
+              <sphereGeometry args={[0.2]} />
+              <meshBasicMaterial 
+                color={stats.emissive} 
+                toneMapped={false}
+              />
+            </mesh>
+            
+            {/* Glow effect */}
+            <pointLight
+              position={[x, y, z]}
+              color={stats.emissive}
+              intensity={2}
+              distance={2}
+            />
+          </group>
+        );
+      })}
 
       {/* Range indicator (only show in preview) */}
       {preview && (
