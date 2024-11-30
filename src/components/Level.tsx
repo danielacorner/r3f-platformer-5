@@ -284,7 +284,7 @@ export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
 
 export function Level() {
   const path = generateElementTDPath();
-  const { selectedObjectType, money, spendMoney, addPlacedTower, placedTowers } = useGameStore();
+  const { selectedObjectType, money, spendMoney, addPlacedTower, placedTowers, setSelectedObjectType } = useGameStore();
   const [placementIndicator, setPlacementIndicator] = useState<Vector3 | null>(null);
   const groundPlane = new Plane(new Vector3(0, 1, 0), 0);
   const { camera } = useThree();
@@ -321,6 +321,32 @@ export function Level() {
     }
   };
 
+  const handlePlaceTower = () => {
+    if (!selectedObjectType || !placementIndicator) return;
+
+    const towerStats = TOWER_STATS[selectedObjectType];
+    if (!towerStats) return;
+
+    if (money < towerStats.cost) {
+      // Not enough money, unselect tower
+      setSelectedObjectType(null);
+      return;
+    }
+
+    // Place tower
+    addPlacedTower(
+      new Vector3(
+        Math.round(placementIndicator.x),
+        0,
+        Math.round(placementIndicator.z)
+      ),
+      selectedObjectType
+    );
+
+    // Spend money
+    spendMoney(towerStats.cost);
+  };
+
   const handleClick = (event: any) => {
     event.stopPropagation();
     console.log('Click event:', {
@@ -330,8 +356,7 @@ export function Level() {
     });
 
     if (selectedObjectType && placementIndicator) {
-      // Add tower through game store
-      addPlacedTower(placementIndicator, selectedObjectType);
+      handlePlaceTower();
     }
   };
 
