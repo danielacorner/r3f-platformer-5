@@ -6,6 +6,7 @@ import { useGameStore } from '../store/gameStore';
 import { TOWER_STATS } from '../store/gameStore';
 import { Edges, Float, Trail } from '@react-three/drei';
 import { Html } from '@react-three/drei';
+import * as THREE from 'three';
 
 interface TowerProps {
   position: Vector3 | [number, number, number];
@@ -47,11 +48,11 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
 
   // Handle projectile movement
   useFrame((state, delta) => {
-    setProjectiles(current => 
+    setProjectiles(current =>
       current.map(proj => {
         // Super fast movement like Element TD
         const newProgress = proj.progress + delta * 15;
-        
+
         if (newProgress >= 1) {
           return null;
         }
@@ -178,11 +179,11 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
 
     if (closestCreep) {
       const startPos: [number, number, number] = [
-        towerPos.x, 
+        towerPos.x,
         0.5, // Fixed low height
         towerPos.z
       ];
-      
+
       const targetPos: [number, number, number] = [
         closestCreep.position[0],
         0.5, // Same height for straight line
@@ -269,9 +270,9 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
           {/* Crystalline ice structure */}
           <mesh position={[0, baseHeight / 2 + 0.2, 0]} castShadow>
             <cylinderGeometry args={[baseWidth * 0.4, baseWidth * 0.5, baseHeight, 6]} />
-            <meshStandardMaterial 
-              color={stats.color} 
-              emissive={stats.emissive} 
+            <meshStandardMaterial
+              color={stats.color}
+              emissive={stats.emissive}
               emissiveIntensity={0.5}
               transparent
               opacity={0.8}
@@ -282,9 +283,9 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
             <group key={i} rotation={[0, (Math.PI * 2 * i) / (tierNum + 2), Math.PI * 0.1]}>
               <mesh position={[0.3, baseHeight * 0.6, 0]} castShadow>
                 <coneGeometry args={[0.1, 0.4, 4]} />
-                <meshStandardMaterial 
-                  color={stats.color} 
-                  transparent 
+                <meshStandardMaterial
+                  color={stats.color}
+                  transparent
                   opacity={0.6}
                 />
               </mesh>
@@ -322,9 +323,9 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
           {/* Flowing water column */}
           <mesh position={[0, baseHeight / 2 + 0.2, 0]} castShadow>
             <cylinderGeometry args={[baseWidth * 0.3, baseWidth * 0.4, baseHeight, 8]} />
-            <meshStandardMaterial 
-              color={stats.color} 
-              emissive={stats.emissive} 
+            <meshStandardMaterial
+              color={stats.color}
+              emissive={stats.emissive}
               emissiveIntensity={0.3}
               transparent
               opacity={0.7}
@@ -335,9 +336,9 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
             <group key={i} position={[0, baseHeight * (0.3 + i * 0.25), 0]}>
               <mesh castShadow>
                 <torusGeometry args={[0.3, 0.1, 8, 16]} />
-                <meshStandardMaterial 
-                  color={stats.color} 
-                  transparent 
+                <meshStandardMaterial
+                  color={stats.color}
+                  transparent
                   opacity={0.6}
                 />
               </mesh>
