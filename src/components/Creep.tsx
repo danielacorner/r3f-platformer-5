@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGameStore } from '../store/gameStore';
 import { Vector3, MeshStandardMaterial, Color } from 'three';
-import { Trail, Float } from '@react-three/drei';
+import { Trail, Float, Billboard } from '@react-three/drei';
 
 interface CreepProps {
   position: [number, number, number];
@@ -10,7 +10,24 @@ interface CreepProps {
   type: 'normal' | 'armored' | 'fast' | 'boss';
   health: number;
   id: number;
+  removeEnemy: (id: number) => void;
 }
+
+interface CreepEffects {
+  slow: number;      // Slow percentage (0-1)
+  amplify: number;   // Damage amplification (1+)
+  dot: number;       // Damage over time
+  armor: number;     // Armor reduction (0-1)
+  splash: number;    // Splash damage multiplier
+}
+
+const defaultEffects: CreepEffects = {
+  slow: 0,
+  amplify: 1,
+  dot: 0,
+  armor: 0,
+  splash: 0
+};
 
 // Shared materials for performance
 const creepMaterials = {
@@ -50,25 +67,36 @@ const creepScales = {
 };
 
 const creepSpeeds = {
-  normal: 0.5,
+  normal: 0.05,
   armored: 0.03,
   fast: 0.08,
   boss: 0.02,
 };
 
-export function Creep({ position, pathPoints, type, health, id }: CreepProps) {
+const creepHealth = {
+  normal: 100,
+  armored: 200,
+  fast: 50,
+  boss: 500,
+};
+
+const creepArmor = {
+  normal: 0,
+  armored: 10,
+  fast: 0,
+  boss: 20,
+};
+
+export function Creep({ position, pathPoints, type, id, removeEnemy }: CreepProps) {
   const creepRef = useRef<THREE.Group>(null);
   const pathIndex = useRef(0);
   const lerpFactor = useRef(0);
-  const currentHealth = useRef(health);
-  const { loseLife, removeEnemy, addMoney } = useGameStore();
-  const [effects, setEffects] = useState({
-    slow: 0,
-    amplify: 1,
-    dot: 0,
-    splash: 0,
-    armor: 0
-  });
+  const [health, setHealth] = useState(creepHealth[type]);
+  const maxHealth = useRef(creepHealth[type]);
+  const [effects, setEffects] = useState<CreepEffects>(defaultEffects);
+  const addMoney = useGameStore(state => state.addMoney);
+  const setEnemiesAlive = useGameStore(state => state.setEnemiesAlive);
+  const setLevelComplete = useGameStore(state => state.setLevelComplete);
 
   // Calculate the next position along the path
   const moveAlongPath = (delta: number) => {
@@ -77,7 +105,7 @@ export function Creep({ position, pathPoints, type, health, id }: CreepProps) {
     const currentPoint = pathPoints[pathIndex.current];
     const nextPoint = pathPoints[pathIndex.current + 1];
 
-    lerpFactor.current += creepSpeeds[type] * delta;
+    lerpFactor.current += creepSpeeds[type] * delta * (1 - effects.slow);
 
     if (lerpFactor.current >= 1) {
       lerpFactor.current = 0;
@@ -85,11 +113,11 @@ export function Creep({ position, pathPoints, type, health, id }: CreepProps) {
 
       // Reached the end of the path
       if (pathIndex.current >= pathPoints.length - 1) {
-        loseLife();
-        // Remove creep
-        if (creepRef.current) {
-          creepRef.current.parent?.remove(creepRef.current);
+        setEnemiesAlive(prev => prev - 1);
+        if (prev - 1 === 0) {
+          setLevelComplete(true);
         }
+        removeEnemy(id);
         return;
       }
     }
@@ -105,57 +133,70 @@ export function Creep({ position, pathPoints, type, health, id }: CreepProps) {
     }
   };
 
-  // Handle damage and effects
-  const takeDamage = (damage: number, newEffects: any) => {
-    // Apply armor and damage amplification
-    const effectiveArmor = Math.max(-10, Math.min(10, effects.armor + newEffects.armor));
-    const damageMultiplier = effects.amplify * newEffects.amplify;
-    const armorMultiplier = 1 - (effectiveArmor > 0 ? effectiveArmor * 0.05 : effectiveArmor * 0.03);
-    const finalDamage = damage * damageMultiplier * armorMultiplier;
+  const takeDamage = (amount: number, newEffects: CreepEffects) => {
+    // Apply damage amplification
+    const amplifiedDamage = amount * (1 + (effects.amplify - 1));
 
-    currentHealth.current -= finalDamage;
+    // Apply armor reduction
+    const armorMultiplier = 1 - Math.max(0, creepArmor[type] - effects.armor) / 100;
+    const finalDamage = amplifiedDamage * armorMultiplier;
 
-    // Update effects
-    setEffects({
-      slow: Math.max(effects.slow, newEffects.slow),
-      amplify: newEffects.amplify > 1 ? newEffects.amplify : effects.amplify,
-      dot: effects.dot + newEffects.dot,
-      splash: Math.max(effects.splash, newEffects.splash),
-      armor: effectiveArmor
-    });
-
-    // Check for death
-    if (currentHealth.current <= 0) {
-      if (creepRef.current) {
+    setHealth(prev => {
+      const newHealth = prev - finalDamage;
+      if (newHealth <= 0) {
         // Add money based on enemy type
         const bounty = type === 'boss' ? 100 :
           type === 'armored' ? 40 :
-            type === 'fast' ? 25 : 20;
+          type === 'fast' ? 25 : 20;
         addMoney(bounty);
-
-        // Remove enemy
         removeEnemy(id);
-        creepRef.current.parent?.remove(creepRef.current);
       }
-    }
+      return Math.max(0, newHealth);
+    });
+
+    // Update effects (take highest value for each effect)
+    setEffects(prev => ({
+      slow: Math.max(prev.slow, newEffects.slow),
+      amplify: Math.max(prev.amplify, newEffects.amplify),
+      dot: Math.max(prev.dot, newEffects.dot),
+      armor: Math.max(prev.armor, newEffects.armor),
+      splash: Math.max(prev.splash, newEffects.splash)
+    }));
   };
 
-  // Apply damage over time effects
   useFrame((state, delta) => {
+    if (health <= 0) return;
+
+    // Apply damage over time
     if (effects.dot > 0) {
-      takeDamage(effects.dot * delta, { amplify: 1, armor: 0, slow: 0, dot: 0, splash: 0 });
+      takeDamage(effects.dot * delta, defaultEffects);
     }
 
-    moveAlongPath(delta * (1 - effects.slow));
+    // Move along path
+    moveAlongPath(delta);
+
+    // Decay effects over time
+    setEffects(prev => ({
+      slow: Math.max(0, prev.slow - 0.1 * delta),
+      amplify: Math.max(1, prev.amplify - 0.2 * delta),
+      dot: Math.max(0, prev.dot - 5 * delta),
+      armor: Math.max(0, prev.armor - 0.1 * delta),
+      splash: Math.max(0, prev.splash - 0.2 * delta)
+    }));
   });
 
   // Add enemy to userData for targeting
   useEffect(() => {
     if (creepRef.current) {
-      creepRef.current.userData.enemyId = id;
-      creepRef.current.userData.takeDamage = takeDamage;
+      creepRef.current.userData = {
+        ...creepRef.current.userData,
+        enemyId: id,
+        takeDamage
+      };
     }
   }, [id]);
+
+  if (health <= 0) return null;
 
   return (
     <group ref={creepRef} position={position}>
@@ -184,6 +225,54 @@ export function Creep({ position, pathPoints, type, health, id }: CreepProps) {
           </mesh>
         </Trail>
       </Float>
+
+      {/* Health Bar */}
+      <Billboard
+        follow={true}
+        lockX={false}
+        lockY={false}
+        lockZ={false}
+      >
+        {/* Background bar */}
+        <mesh position={[0, 2, 0]}>
+          <planeGeometry args={[1, 0.2]} />
+          <meshBasicMaterial color="#ff0000" />
+        </mesh>
+        {/* Health bar */}
+        <mesh position={[(-0.5 + (health / maxHealth.current) * 0.5), 2, 0.01]}>
+          <planeGeometry args={[1 * (health / maxHealth.current), 0.2]} />
+          <meshBasicMaterial color="#00ff00" />
+        </mesh>
+      </Billboard>
+
+      {/* Effect Indicators */}
+      <Billboard
+        follow={true}
+        lockX={false}
+        lockY={false}
+        lockZ={false}
+      >
+        <group position={[0, 1.5, 0]}>
+          {effects.slow > 0 && (
+            <mesh position={[-0.4, 0, 0]}>
+              <sphereGeometry args={[0.1]} />
+              <meshBasicMaterial color="#00ffff" />
+            </mesh>
+          )}
+          {effects.amplify > 1 && (
+            <mesh position={[0, 0, 0]}>
+              <sphereGeometry args={[0.1]} />
+              <meshBasicMaterial color="#ffff00" />
+            </mesh>
+          )}
+          {effects.dot > 0 && (
+            <mesh position={[0.4, 0, 0]}>
+              <sphereGeometry args={[0.1]} />
+              <meshBasicMaterial color="#00ff00" />
+            </mesh>
+          )}
+        </group>
+      </Billboard>
     </group>
   );
 }

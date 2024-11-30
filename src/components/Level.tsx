@@ -423,6 +423,7 @@ export function Level() {
           position={placementIndicator}
           type={selectedObjectType}
           preview={true}
+          canAfford={money >= TOWER_STATS[selectedObjectType].cost}
         />
       )}
 
