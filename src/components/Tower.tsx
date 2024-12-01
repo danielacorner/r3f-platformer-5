@@ -1,4 +1,4 @@
-import { Vector3, Color, Euler } from 'three';
+import { Vector3, Color, Euler, Matrix4 } from 'three';
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
@@ -26,11 +26,10 @@ interface Arrow {
 
 interface Projectile {
   id: number;
-  position: [number, number, number];
-  target: [number, number, number];
-  direction: [number, number, number];
-  speed: number;
-  lifetime: number;
+  position: Vector3;
+  velocity: Vector3;
+  creepId: number;
+  timeAlive: number;
 }
 
 export function Tower({ position, type, level = 1, preview = false, onDamageEnemy, canAfford = true }: TowerProps) {
@@ -42,29 +41,34 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
   const damage = stats.damage * (1 + (level - 1) * 0.3);
 
   const lastAttackTime = useRef(0);
+  const projectileRef = useRef<THREE.InstancedMesh>(null);
   const [projectiles, setProjectiles] = useState<{
     id: number;
-    startPos: [number, number, number];
-    targetPos: [number, number, number];
+    position: Vector3;
+    target: Vector3;
     progress: number;
   }[]>([]);
 
-  // Handle projectile movement
-  useFrame((state, delta) => {
-    if (phase !== 'combat' || preview) return;
+  const MAX_PROJECTILES = 20; // Limit max projectiles for performance
 
-    setProjectiles(current => 
-      current.map(proj => {
-        const newProgress = proj.progress + delta * 5; // Slower speed for better visibility
-        if (newProgress >= 1) return null;
-
-        return {
-          ...proj,
-          progress: newProgress
-        };
-      }).filter(Boolean)
-    );
-  });
+  // Initialize instanced mesh
+  useEffect(() => {
+    if (!projectileRef.current) return;
+    
+    const matrix = new Matrix4();
+    const color = new Color(stats.emissive);
+    
+    for (let i = 0; i < MAX_PROJECTILES; i++) {
+      matrix.makeScale(0, 0, 0); // Hide initially
+      projectileRef.current.setMatrixAt(i, matrix);
+      projectileRef.current.setColorAt(i, color);
+    }
+    
+    projectileRef.current.instanceMatrix.needsUpdate = true;
+    if (projectileRef.current.instanceColor) {
+      projectileRef.current.instanceColor.needsUpdate = true;
+    }
+  }, [stats.emissive]);
 
   // Handle attacking
   useFrame((state) => {
@@ -88,29 +92,71 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
       }
     }
 
-    if (closestCreep) {
-      const startPos: [number, number, number] = [
+    if (closestCreep && projectiles.length < MAX_PROJECTILES) {
+      const towerHeight = 1.2 + (parseInt(type.match(/\d+/)[0]) - 1) * 0.2;
+      const startPos = new Vector3(
         towerPos.x,
-        1.5, // Start from tower top
+        towerPos.y + towerHeight + 0.2,
         towerPos.z
-      ];
+      );
 
-      const targetPos: [number, number, number] = [
+      const targetPos = new Vector3(
         closestCreep.position[0],
-        1.0, // Fixed height for better visibility
+        closestCreep.position[1] + 0.5,
         closestCreep.position[2]
-      ];
+      );
 
       setProjectiles(prev => [...prev, {
         id: Date.now(),
-        startPos,
-        targetPos,
+        position: startPos,
+        target: targetPos,
         progress: 0
       }]);
 
       useGameStore.getState().damageCreep(closestCreep.id, stats.damage, type);
       lastAttackTime.current = currentTime;
     }
+  });
+
+  // Update projectile positions
+  useFrame((state, delta) => {
+    if (phase !== 'combat' || preview || !projectileRef.current) return;
+
+    const matrix = new Matrix4();
+    let needsUpdate = false;
+
+    // Update active projectiles
+    projectiles.forEach((proj, index) => {
+      if (index >= MAX_PROJECTILES) return;
+
+      const newPosition = new Vector3().lerpVectors(proj.position, proj.target, proj.progress);
+      matrix.makeTranslation(newPosition.x, newPosition.y, newPosition.z);
+      matrix.scale(new Vector3(1, 1, 1));
+      projectileRef.current!.setMatrixAt(index, matrix);
+      needsUpdate = true;
+    });
+
+    // Hide unused instances
+    for (let i = projectiles.length; i < MAX_PROJECTILES; i++) {
+      matrix.makeScale(0, 0, 0);
+      projectileRef.current.setMatrixAt(i, matrix);
+      needsUpdate = true;
+    }
+
+    if (needsUpdate) {
+      projectileRef.current.instanceMatrix.needsUpdate = true;
+    }
+
+    // Update projectile progress
+    setProjectiles(current => 
+      current.map(proj => {
+        const newProgress = proj.progress + delta * 4;
+        return newProgress >= 1 ? null : {
+          ...proj,
+          progress: newProgress
+        };
+      }).filter(Boolean)
+    );
   });
 
   const [element, tier] = type.match(/([a-z]+)(\d+)/).slice(1);
@@ -276,36 +322,21 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
         </>
       )}
 
-      {/* Projectiles */}
-      {projectiles.map(proj => {
-        // Interpolate position
-        const x = proj.startPos[0] + (proj.targetPos[0] - proj.startPos[0]) * proj.progress;
-        const y = proj.startPos[1] + (proj.targetPos[1] - proj.startPos[1]) * proj.progress;
-        const z = proj.startPos[2] + (proj.targetPos[2] - proj.startPos[2]) * proj.progress;
+      {/* Instanced projectiles */}
+      <instancedMesh
+        ref={projectileRef}
+        args={[null, null, MAX_PROJECTILES]}
+        castShadow
+      >
+        <sphereGeometry args={[0.15]} />
+        <meshStandardMaterial
+          emissive={stats.emissive}
+          emissiveIntensity={2}
+          toneMapped={false}
+        />
+      </instancedMesh>
 
-        return (
-          <group key={proj.id}>
-            {/* Main projectile */}
-            <mesh position={[x, y, z]}>
-              <sphereGeometry args={[0.2]} />
-              <meshBasicMaterial 
-                color={stats.emissive} 
-                toneMapped={false}
-              />
-            </mesh>
-            
-            {/* Glow effect */}
-            <pointLight
-              position={[x, y, z]}
-              color={stats.emissive}
-              intensity={2}
-              distance={2}
-            />
-          </group>
-        );
-      })}
-
-      {/* Range indicator (only show in preview) */}
+      {/* Range indicator */}
       {preview && (
         <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[0, stats.range, 32]} />
