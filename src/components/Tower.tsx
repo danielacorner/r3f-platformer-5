@@ -41,7 +41,6 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
   const damage = stats.damage * (1 + (level - 1) * 0.3);
 
   const lastAttackTime = useRef(0);
-  const projectileRef = useRef<THREE.InstancedMesh>(null);
   const [projectiles, setProjectiles] = useState<{
     id: number;
     startPos: Vector3;
@@ -50,25 +49,6 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
   }[]>([]);
 
   const MAX_PROJECTILES = 20;
-
-  // Initialize instanced mesh
-  useEffect(() => {
-    if (!projectileRef.current) return;
-    
-    const matrix = new Matrix4();
-    const color = new Color(stats.emissive);
-    
-    for (let i = 0; i < MAX_PROJECTILES; i++) {
-      matrix.makeScale(0, 0, 0);
-      projectileRef.current.setMatrixAt(i, matrix);
-      projectileRef.current.setColorAt(i, color);
-    }
-    
-    projectileRef.current.instanceMatrix.needsUpdate = true;
-    if (projectileRef.current.instanceColor) {
-      projectileRef.current.instanceColor.needsUpdate = true;
-    }
-  }, [stats.emissive]);
 
   // Handle attacking
   useFrame((state) => {
@@ -93,10 +73,9 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
     }
 
     if (closestCreep && projectiles.length < MAX_PROJECTILES) {
-      const towerHeight = 1.2 + (parseInt(type.match(/\d+/)[0]) - 1) * 0.2;
       const startPos = new Vector3(
         towerPos.x,
-        towerPos.y + towerHeight,
+        towerPos.y + 0.5,
         towerPos.z
       );
 
@@ -120,36 +99,7 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
 
   // Update projectile positions
   useFrame((state, delta) => {
-    if (phase !== 'combat' || preview || !projectileRef.current) return;
-
-    const matrix = new Matrix4();
-    const dummy = new Object3D();
-    let needsUpdate = false;
-
-    projectiles.forEach((proj, index) => {
-      if (index >= MAX_PROJECTILES) return;
-
-      const newProgress = proj.progress + delta * 4;
-      const position = new Vector3().lerpVectors(proj.startPos, proj.targetPos, proj.progress);
-      
-      dummy.position.copy(position);
-      dummy.scale.set(1, 1, 1);
-      dummy.updateMatrix();
-      
-      projectileRef.current!.setMatrixAt(index, dummy.matrix);
-      needsUpdate = true;
-    });
-
-    // Hide unused instances
-    for (let i = projectiles.length; i < MAX_PROJECTILES; i++) {
-      matrix.makeScale(0, 0, 0);
-      projectileRef.current.setMatrixAt(i, matrix);
-      needsUpdate = true;
-    }
-
-    if (needsUpdate) {
-      projectileRef.current.instanceMatrix.needsUpdate = true;
-    }
+    if (!projectiles.length) return;
 
     setProjectiles(current => 
       current.map(proj => {
@@ -325,19 +275,21 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
         </>
       )}
 
-      {/* Instanced projectiles */}
-      <instancedMesh
-        ref={projectileRef}
-        args={[null, null, MAX_PROJECTILES]}
-      >
-        <sphereGeometry args={[0.2]} />
-        <meshStandardMaterial
-          color={stats.emissive}
-          emissive={stats.emissive}
-          emissiveIntensity={2}
-          toneMapped={false}
-        />
-      </instancedMesh>
+      {/* Simple projectiles */}
+      {projectiles.map(proj => {
+        const pos = new Vector3().lerpVectors(proj.startPos, proj.targetPos, proj.progress);
+        return (
+          <mesh key={proj.id} position={pos.toArray()}>
+            <sphereGeometry args={[0.3]} />
+            <meshStandardMaterial
+              color={stats.emissive}
+              emissive={stats.emissive}
+              emissiveIntensity={5}
+              toneMapped={false}
+            />
+          </mesh>
+        );
+      })}
 
       {/* Range indicator */}
       {preview && (
