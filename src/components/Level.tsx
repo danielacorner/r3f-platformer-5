@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useMemo, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
-import { Environment, useGLTF, Stars, Cloud, Float, useTexture } from '@react-three/drei';
+import { Environment, useGLTF, Stars, Float, useTexture } from '@react-three/drei';
 import { Vector3, Raycaster, Color, DoubleSide, Plane, Vector2, InstancedMesh, Object3D, Matrix4, BoxGeometry, Mesh, Euler } from 'three';
 import { TOWER_STATS, useGameStore } from '../store/gameStore';
 import { Edges, MeshTransmissionMaterial, Float as FloatDrei } from '@react-three/drei';
@@ -398,14 +398,6 @@ export function Level() {
 
       {/* Sky and Atmosphere */}
       <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-      <Cloud
-        opacity={0.01}
-        speed={0.2}
-        width={10}
-        depth={1.5}
-        segments={32}
-        position={[0, 15, 0]}
-      />
 
       {/* Ground */}
       <RigidBody type="fixed" colliders="cuboid">

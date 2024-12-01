@@ -6,7 +6,8 @@ import {
   OrbitControls,
   BakeShadows,
   Environment,
-  Loader
+  Loader,
+  Cloud,
 } from '@react-three/drei';
 import {
   EffectComposer,
@@ -19,7 +20,8 @@ import { Level } from './components/Level';
 import { BuildMenu } from './components/BuildMenu';
 import { GameUI } from './components/GameUI';
 import { useGameStore } from './store/gameStore';
-import { useEffect, useRef, } from 'react';
+import { useEffect, useRef } from 'react';
+import { useSpring, animated } from '@react-spring/three';
 
 function TDCamera() {
   const { playerRef } = useGameStore();
@@ -118,6 +120,38 @@ function TDCamera() {
   );
 }
 
+function FollowingCloud() {
+  const { playerRef } = useGameStore();
+  const [spring, api] = useSpring(() => ({
+    position: [0, 15, 0],
+    config: {
+      mass: 1,
+      tension: 120,
+      friction: 300
+    }
+  }));
+
+  useFrame(() => {
+    if (!playerRef?.current) return;
+    const playerPos = playerRef.current.translation();
+    api.start({
+      position: [playerPos.x, 15, playerPos.z],
+    });
+  });
+
+  return (
+    <animated.group position={spring.position}>
+      <Cloud
+        opacity={0.01}
+        speed={0.2}
+        width={10}
+        depth={1.5}
+        segments={32}
+      />
+    </animated.group>
+  );
+}
+
 function Effects() {
   return (
     <EffectComposer multisampling={0} disableNormalPass frameBufferType={THREE.HalfFloatType}>
@@ -185,6 +219,7 @@ export default function App() {
             <Level />
           </Physics>
           <TDCamera />
+          <FollowingCloud />
 
           <Effects />
           <BakeShadows />
