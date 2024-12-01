@@ -1,14 +1,14 @@
 import { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { 
-  Sky, 
-  SoftShadows, 
+import {
+  Sky,
+  SoftShadows,
   OrbitControls,
   BakeShadows,
   Environment,
   Loader
 } from '@react-three/drei';
-import { 
+import {
   EffectComposer,
   Bloom,
   SMAA
@@ -54,8 +54,8 @@ export default function App() {
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#000913' }}>
-      <Canvas 
-        shadows="soft" 
+      <Canvas
+        shadows="soft"
         camera={{ position: [30, 30, 30], fov: 50 }}
         dpr={[1, 2]}
         gl={{
@@ -68,15 +68,15 @@ export default function App() {
       >
         <color attach="background" args={['#000913']} />
         <fog attach="fog" args={['#000913', 30, 100]} />
-        
+
         <Suspense fallback={null}>
-          <SoftShadows 
+          <SoftShadows
             size={35}
             samples={16}
             focus={0.5}
             blur={3}
           />
-          
+
           <Environment
             preset="sunset"
             background={false}
@@ -97,12 +97,12 @@ export default function App() {
             shadow-camera-far={200}
             shadow-bias={-0.001}
           />
-          
-          <Physics>
+
+          <Physics debug={true}>
             <Level />
           </Physics>
           <TDCamera />
-          
+
           <Effects />
           <BakeShadows />
         </Suspense>

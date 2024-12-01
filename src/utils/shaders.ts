@@ -6,37 +6,58 @@ export const creepShader = {
     attribute float instanceScale;
     attribute vec3 instanceColor;
     attribute float instanceHealth;
+    
     varying vec3 vColor;
     varying float vHealth;
     varying vec3 vNormal;
     varying vec3 vViewPosition;
-
+    varying vec3 vWorldPosition;
+    
     void main() {
       vColor = instanceColor;
       vHealth = instanceHealth;
-      vec4 mvPosition = modelViewMatrix * vec4(position * instanceScale, 1.0);
+      
+      // Apply instance scale
+      vec3 transformed = position * instanceScale;
+      vec4 mvPosition = modelViewMatrix * instanceMatrix * vec4(transformed, 1.0);
       gl_Position = projectionMatrix * mvPosition;
+      
+      // Pass data to fragment shader
       vNormal = normalMatrix * normal;
       vViewPosition = -mvPosition.xyz;
+      vWorldPosition = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;
     }
   `,
   fragmentShader: `
+    uniform float time;
+    
     varying vec3 vColor;
     varying float vHealth;
     varying vec3 vNormal;
     varying vec3 vViewPosition;
-
+    varying vec3 vWorldPosition;
+    
     void main() {
       vec3 normal = normalize(vNormal);
       vec3 viewDir = normalize(vViewPosition);
+      
+      // Fresnel effect for rim lighting
       float fresnel = pow(1.0 - abs(dot(normal, viewDir)), 3.0);
       
       // Health-based glow
       float healthFactor = vHealth;
       vec3 glowColor = mix(vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), healthFactor);
       
+      // Animated energy effect
+      float energy = sin(vWorldPosition.y * 10.0 + time * 2.0) * 0.5 + 0.5;
+      
       // Final color
-      gl_FragColor = vec4(mix(vColor, glowColor, fresnel * 0.5), 1.0);
+      vec3 baseColor = vColor;
+      vec3 rimColor = mix(glowColor, vec3(1.0), 0.5);
+      vec3 finalColor = mix(baseColor, rimColor, fresnel * 0.5);
+      finalColor += glowColor * energy * 0.2;
+      
+      gl_FragColor = vec4(finalColor, 1.0);
     }
   `
 };

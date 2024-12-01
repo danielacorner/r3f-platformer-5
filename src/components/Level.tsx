@@ -7,9 +7,9 @@ import { TOWER_STATS, useGameStore } from '../store/gameStore';
 import { Edges, MeshTransmissionMaterial, Float } from '@react-three/drei';
 import { WaveManager } from './WaveManager';
 import { Tower } from './Tower';
-import { Creep } from './Creep';
 import { createShaderMaterial } from '../utils/shaders';
 import { ObjectPool } from '../utils/objectPool';
+import { CreepManager } from './Creep';
 
 // Constants and Materials
 const pathColor = new Color('#4338ca').convertSRGBToLinear();
@@ -162,8 +162,8 @@ export function Level() {
       const [sx, sy, sz] = segment.position;
       const [sw, sh, sd] = segment.scale;
       return (
-        x >= sx - sw/2 && x <= sx + sw/2 &&
-        z >= sz - sd/2 && z <= sz + sd/2
+        x >= sx - sw / 2 && x <= sx + sw / 2 &&
+        z >= sz - sd / 2 && z <= sz + sd / 2
       );
     });
 
@@ -179,20 +179,20 @@ export function Level() {
     return segments.map(segment => {
       const matrix = new Matrix4();
       const rotationMatrix = new Matrix4();
-      
+
       // Apply rotation first
       rotationMatrix.makeRotationFromEuler(new Euler(
         segment.rotation[0],
         segment.rotation[1],
         segment.rotation[2]
       ));
-      
+
       // Then position and scale
       matrix
         .multiply(rotationMatrix)
         .setPosition(...segment.position)
         .scale(new Vector3(...segment.scale));
-      
+
       return matrix;
     });
   }, [segments]);
@@ -251,7 +251,7 @@ export function Level() {
       {/* Crystals */}
       <Crystal position={[-20, 1.5, -20]} scale={2} color="#22c55e" />
       <Crystal position={[20, 1.5, 20]} scale={2} color="#ef4444" />
-      
+
       {/* Decorative Crystals */}
       {generatePath().decorations.map((dec, index) => (
         <Crystal
@@ -264,7 +264,7 @@ export function Level() {
 
       {/* Game Elements */}
       <WaveManager pathPoints={pathPoints} />
-      
+
       {/* Towers */}
       {placedTowers.map((tower) => (
         <Tower
@@ -276,14 +276,7 @@ export function Level() {
         />
       ))}
 
-      {/* Creeps */}
-      {creeps.map(creep => (
-        <Creep
-          key={creep.id}
-          id={creep.id}
-          pathPoints={pathPoints}
-        />
-      ))}
+      <CreepManager pathPoints={pathPoints} />
 
       {/* Tower Preview */}
       {showPreview && selectedObjectType && (

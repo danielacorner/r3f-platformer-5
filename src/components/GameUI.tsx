@@ -3,10 +3,11 @@ import { FaPlay, FaPause, FaForward } from 'react-icons/fa';
 import '../styles/GameUI.css';
 
 export function GameUI() {
-  const { phase, setPhase, lives, money, currentLevel } = useGameStore();
+  const { phase, setPhase, lives, money, currentLevel, setIsSpawning } = useGameStore();
 
   const startWave = () => {
     setPhase('combat');
+    setIsSpawning(true);
   };
 
   return (

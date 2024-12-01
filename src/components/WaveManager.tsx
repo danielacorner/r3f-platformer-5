@@ -59,17 +59,39 @@ interface WaveManagerProps {
 }
 
 export function WaveManager({ pathPoints }: WaveManagerProps) {
-  const { phase, currentLevel, setPhase, setEnemiesAlive, addCreep } = useGameStore();
+  const { 
+    phase, 
+    currentLevel, 
+    setPhase, 
+    setEnemiesAlive, 
+    addCreep, 
+    isSpawning,
+    setIsSpawning,
+    creeps,
+    incrementLevel,
+    enemiesAlive 
+  } = useGameStore();
+  
   const waveQueue = useRef<Array<{ type: 'normal' | 'armored' | 'fast' | 'boss'; health: number }>>([]);
   const spawnTimerRef = useRef<number | null>(null);
   const enemyIdCounter = useRef(0);
 
   // Initialize wave
   useEffect(() => {
-    if (phase === 'prep') return;
+    if (!isSpawning || phase !== 'combat') {
+      console.log('Not spawning or not in combat phase');
+      return;
+    }
 
+    console.log(`Starting wave ${currentLevel}`);
     const wave = WAVES[currentLevel - 1];
-    if (!wave) return;
+    
+    if (!wave) {
+      console.log('No more waves available!');
+      setPhase('victory');
+      setIsSpawning(false);
+      return;
+    }
 
     // Build queue of enemies
     waveQueue.current = wave.creeps.flatMap(creep =>
@@ -82,7 +104,9 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
       [waveQueue.current[i], waveQueue.current[j]] = [waveQueue.current[j], waveQueue.current[i]];
     }
 
-    setEnemiesAlive(waveQueue.current.length);
+    const totalEnemies = waveQueue.current.length;
+    console.log(`Wave ${currentLevel} starting with ${totalEnemies} enemies`);
+    setEnemiesAlive(totalEnemies);
 
     // Start spawning
     const spawnEnemy = () => {
@@ -92,7 +116,7 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
 
         // Add enemy to scene
         const startPos = pathPoints[0].clone();
-        startPos.y = 1; // Set exact height instead of adding
+        startPos.y = 1;
 
         // Create new creep
         const newCreep = {
@@ -101,27 +125,29 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
           health: enemy.health,
           maxHealth: enemy.health,
           id: enemyIdCounter.current,
-          effects: {
-            slow: 0,
-            amplify: 0,
-            dot: 0,
-            armor: 0,
-            splash: 0
-          }
+          effects: {}
         };
 
         // Add to game store
         addCreep(newCreep);
-        console.log('Spawned creep:', newCreep);
+        console.log(`Spawned ${enemy.type} creep (ID: ${enemyIdCounter.current}), ${waveQueue.current.length} remaining`);
         return newCreep;
       }
       return null;
     };
 
     const interval = setInterval(() => {
+      if (!isSpawning) {
+        console.log('Spawning stopped, clearing interval');
+        clearInterval(interval);
+        return;
+      }
+
       const spawned = spawnEnemy();
       if (!spawned && waveQueue.current.length === 0) {
+        console.log('Finished spawning all enemies for wave ' + currentLevel);
         clearInterval(interval);
+        setIsSpawning(false);
       }
     }, wave.spawnInterval);
 
@@ -130,11 +156,29 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
     return () => {
       if (spawnTimerRef.current) {
         clearInterval(spawnTimerRef.current);
+        spawnTimerRef.current = null;
       }
     };
-  }, [phase, currentLevel, setPhase, setEnemiesAlive, addCreep, pathPoints]);
+  }, [phase, currentLevel, isSpawning]);
 
-  if (phase !== 'combat') return null;
+  // Check for wave completion
+  useEffect(() => {
+    if (phase === 'combat' && !isSpawning && creeps.length === 0 && enemiesAlive === 0) {
+      console.log(`Wave ${currentLevel} completed! All enemies defeated.`);
+      setPhase('prep');
+      incrementLevel();
+    }
+  }, [phase, isSpawning, creeps.length, enemiesAlive]);
 
-  return null; // Creeps are now managed through the store
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (spawnTimerRef.current) {
+        clearInterval(spawnTimerRef.current);
+        spawnTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  return null;
 }

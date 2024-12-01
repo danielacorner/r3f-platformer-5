@@ -166,34 +166,39 @@ export const useGameStore = create<GameState & {
   updateCreep: (id: number, updates: Partial<CreepState>) => void;
   applyEffectToCreep: (id: number, type: string, value: number, duration: number) => void;
   damageCreep: (id: number, damage: number) => void;
+  incrementLevel: () => void;
 }>((set, get) => ({
   ...initialState,
 
-  setPhase: (phase) => set({ phase }),
+  setPhase: (phase: GameState['phase']) => {
+    console.log('Setting phase to:', phase);
+    set({ phase });
+  },
 
-  setCurrentLevel: (level) => set((state) => ({
+  setCurrentLevel: (level: number) => set((state) => ({
     currentLevel: level,
     money: state.money + (level * 50) // Bonus money each level
   })),
 
-  setTimer: (timer) => set({ timer }),
+  setTimer: (timer: number) => set({ timer }),
 
-  setEnemiesAlive: (count) => set((state) => {
-    if (count === 0 && state.phase === 'combat') {
-      return {
-        enemiesAlive: count,
-        phase: 'prep',
-        levelComplete: true
-      };
-    }
-    return { enemiesAlive: count };
-  }),
+  setEnemiesAlive: (count: number) => {
+    console.log('Setting enemies alive to:', count);
+    set((state) => {
+      // Don't allow negative counts
+      const newCount = Math.max(0, count);
+      return { enemiesAlive: newCount };
+    });
+  },
 
-  setIsSpawning: (isSpawning) => set({ isSpawning }),
+  setIsSpawning: (isSpawning: boolean) => {
+    console.log('Setting isSpawning to:', isSpawning);
+    set({ isSpawning });
+  },
 
-  setLevelComplete: (complete) => set({ levelComplete: complete }),
+  setLevelComplete: (complete: boolean) => set({ levelComplete: complete }),
 
-  addPlacedTower: (position, type) => set((state) => {
+  addPlacedTower: (position: Vector3, type: ElementType) => set((state) => {
     const cost = TOWER_STATS[type].cost; // Get cost from TOWER_STATS
     if (state.money < cost) return state;
 
@@ -213,12 +218,12 @@ export const useGameStore = create<GameState & {
     };
   }),
 
-  removePlacedTower: (id) => set((state) => ({
+  removePlacedTower: (id: number) => set((state) => ({
     placedTowers: state.placedTowers.filter((tower) => tower.id !== id),
     money: state.money + 50 // Refund half the cost
   })),
 
-  upgradeTower: (id) => set((state) => {
+  upgradeTower: (id: number) => set((state) => {
     const tower = state.placedTowers.find((t) => t.id === id);
     if (!tower) return state;
 
@@ -233,45 +238,65 @@ export const useGameStore = create<GameState & {
     };
   }),
 
-  setSelectedObjectType: (type) => set({ selectedObjectType: type }),
+  setSelectedObjectType: (type: PlaceableObjectType | null) => set({ selectedObjectType: type }),
 
-  addMoney: (amount) => set((state) => ({
+  addMoney: (amount: number) => set((state) => ({
     money: state.money + amount
   })),
 
-  spendMoney: (amount) => set((state) => {
+  spendMoney: (amount: number) => set((state) => {
     if (state.money < amount) return state;
     return { money: state.money - amount };
   }),
 
-  addScore: (amount) => set((state) => ({
+  addScore: (amount: number) => set((state) => ({
     score: state.score + amount
   })),
 
-  loseLife: () => set((state) => {
-    const lives = state.lives - 1;
-    if (lives <= 0) {
-      return { ...initialState }; // Game over, reset everything
-    }
-    return { lives };
-  }),
+  loseLife: () => {
+    console.log('Losing a life');
+    set((state) => {
+      const newLives = state.lives - 1;
+      if (newLives <= 0) {
+        console.log('Game Over - No lives remaining');
+        return {
+          lives: 0,
+          phase: 'prep',
+          isSpawning: false,
+          creeps: []
+        };
+      }
+      return { lives: newLives };
+    });
+  },
 
   resetLevel: () => set((state) => ({
     ...initialState,
     currentLevel: state.currentLevel
   })),
 
-  setWave: (wave) => set({ wave }),
+  setWave: (wave: number) => set({ wave }),
 
-  addCreep: (creep) => set((state) => ({ creeps: [...state.creeps, creep] })),
+  addCreep: (creep: CreepState) => {
+    console.log('Adding creep:', creep);
+    set((state) => ({ creeps: [...state.creeps, creep] }));
+  },
 
-  removeCreep: (id) => set((state) => ({ creeps: state.creeps.filter(c => c.id !== id) })),
+  removeCreep: (id: number) => {
+    console.log('Removing creep:', id);
+    set((state) => ({ creeps: state.creeps.filter((c) => c.id !== id) }));
+  },
 
-  updateCreep: (id, updates) => set((state) => ({
-    creeps: state.creeps.map(c => c.id === id ? { ...c, ...updates } : c)
-  })),
+  updateCreep: (id: number, updates: Partial<CreepState>) => {
+    console.log('Updating creep:', id, updates);
+    set((state) => ({
+      creeps: state.creeps.map((c) =>
+        c.id === id ? { ...c, ...updates } : c
+      )
+    }));
+  },
 
-  applyEffectToCreep: (id, type, value, duration) => set((state) => ({
+  applyEffectToCreep: (id: number, type: string, value: number, duration: number) => set((state) => ({
     creeps: state.creeps.map((creep) =>
       creep.id === id
         ? {
@@ -290,7 +315,7 @@ export const useGameStore = create<GameState & {
     )
   })),
 
-  damageCreep: (id, damage) => {
+  damageCreep: (id: number, damage: number) => {
     const state = get();
     const creep = state.creeps.find((c) => c.id === id);
     if (!creep) return;
@@ -319,4 +344,18 @@ export const useGameStore = create<GameState & {
       )
     }));
   },
+
+  incrementLevel: () => {
+    console.log('Incrementing level');
+    set((state) => {
+      const newLevel = state.currentLevel + 1;
+      const bonus = 100 * state.currentLevel;
+      console.log(`Level ${state.currentLevel} complete! Bonus money: ${bonus}`);
+      return { 
+        currentLevel: newLevel,
+        money: state.money + bonus,
+        isSpawning: false
+      };
+    });
+  }
 }));
