@@ -157,6 +157,8 @@ interface GameState {
   creeps: CreepState[];
   projectiles: Projectile[];
   towerStates: TowerState[];
+  playerRef: any | null;
+  setPlayerRef: (ref: any) => void;
 }
 
 const initialState: GameState = {
@@ -174,8 +176,9 @@ const initialState: GameState = {
   wave: 0,
   creeps: [],
   projectiles: [],
-  towerStates: []
-};
+  towerStates: [],
+  playerRef: null,
+}
 
 export const useGameStore = create<GameState>((set, get) => ({
   ...initialState,
@@ -338,8 +341,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   })),
 
   updateTowerState: (id, updates) => set(state => ({
-    towerStates: state.towerStates.map(t =>
-      t.id === id ? { ...t, ...updates } : t
+    towerStates: state.towerStates.map(ts =>
+      ts.id === id ? { ...ts, ...updates } : ts
     )
-  }))
+  })),
+  setPlayerRef: (ref) => set({ playerRef: ref }),
 }));

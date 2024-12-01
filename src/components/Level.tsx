@@ -10,6 +10,7 @@ import { Tower } from './Tower';
 import { createShaderMaterial } from '../utils/shaders';
 import { ObjectPool } from '../utils/objectPool';
 import { CreepManager } from './Creep';
+import { Player } from './Player';
 
 // Constants and Materials
 const pathColor = new Color('#4338ca').convertSRGBToLinear();
@@ -277,6 +278,8 @@ export function Level() {
       ))}
 
       <CreepManager pathPoints={pathPoints} />
+
+      <Player />
 
       {/* Tower Preview */}
       {showPreview && selectedObjectType && (

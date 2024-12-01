@@ -1,39 +1,60 @@
 import { useRef, useState, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
-import { Vector3, Raycaster } from 'three';
+import { Vector3, Raycaster, Matrix4 } from 'three';
 import { Html } from '@react-three/drei';
 import { useKeyboardControls } from '../hooks/useKeyboardControls';
 import { Projectile } from './Projectile';
-import { TargetIndicator } from './TargetIndicator';
 import { useGameStore } from '../store/gameStore';
 import { LEVEL_CONFIGS } from './Level';
+import { useSpring, animated } from '@react-spring/three';
 
-const MOVE_SPEED = 8;
-const JUMP_FORCE = 15;
-const FALL_THRESHOLD = -10;
-const SPAWN_POSITION = [0, 2, 0];
+const MOVE_SPEED = 5;
+const SHOT_COOLDOWN = 0.5;
+const ARROW_DAMAGE = 25;
+
+function TargetIndicator({ position }: { position: Vector3 }) {
+  const { scale, opacity } = useSpring({
+    from: { scale: 0.1, opacity: 0 },
+    to: [
+      { scale: 1.5, opacity: 0.8 },
+      { scale: 1, opacity: 0 }
+    ],
+    config: { tension: 200, friction: 20 }
+  });
+
+  return (
+    <group position={[position.x, 0.1, position.z]}>
+      <animated.mesh rotation={[-Math.PI / 2, 0, 0]} scale={scale.to(s => [s, s, s])}>
+        <ringGeometry args={[0, 0.5, 16]} />
+        <animated.meshBasicMaterial color="#fbbf24" transparent opacity={opacity} />
+      </animated.mesh>
+    </group>
+  );
+}
 
 export function Player() {
   const playerRef = useRef<any>(null);
   const [projectiles, setProjectiles] = useState<any[]>([]);
   const [projectileId, setProjectileId] = useState(0);
-  const [boomerangsLeft, setBoomerangsLeft] = useState(3);
   const [targetPosition, setTargetPosition] = useState<Vector3 | null>(null);
-  const [isGrounded, setIsGrounded] = useState(false);
   const raycaster = useRef(new Raycaster());
   const lastShotTime = useRef(0);
-  const SHOT_COOLDOWN = 0.3;
-  const phase = useGameStore(state => state.phase);
-  const currentLevel = useGameStore(state => state.currentLevel);
-  const { forward, backward, left, right, jump } = useKeyboardControls();
+  const { phase } = useGameStore();
+  const selectedObjectType = useGameStore(state => state.selectedObjectType);
+  const { forward, backward, left, right } = useKeyboardControls();
   const { camera, scene } = useThree();
+  const lastClickTime = useRef(0);
+  const moveTargetRef = useRef<Vector3 | null>(null);
+  const [moveTargets, setMoveTargets] = useState<{ id: number; position: Vector3 }[]>([]);
+  const nextTargetId = useRef(0);
 
   // Store player ref in game store for camera following
   useEffect(() => {
     useGameStore.getState().setPlayerRef(playerRef);
   }, []);
 
+  // Handle mouse movement for aiming
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
       if (phase !== 'combat') return;
@@ -58,150 +79,121 @@ export function Player() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [camera, scene, phase]);
 
-  // Handle projectile shooting
+  // Handle shooting and movement clicks
   useEffect(() => {
     const handleMouseDown = (event: MouseEvent) => {
       if (phase !== 'combat' || !targetPosition) return;
-
-      const currentTime = performance.now() / 1000;
-      if (currentTime - lastShotTime.current < SHOT_COOLDOWN) return;
-      lastShotTime.current = currentTime;
-
+      
+      const currentTime = performance.now();
       const position = playerRef.current?.translation();
       if (!position) return;
 
-      const playerPos = new Vector3(position.x, position.y + 0.5, position.z);
+      // Handle double click for movement
+      if (event.button === 0) { // Left click
+        if (currentTime - lastClickTime.current < 300) { // Double click threshold
+          moveTargetRef.current = targetPosition.clone();
+          // Add move target indicator
+          const newTarget = {
+            id: nextTargetId.current++,
+            position: targetPosition.clone()
+          };
+          setMoveTargets(prev => [...prev, newTarget]);
+          // Remove indicator after animation
+          setTimeout(() => {
+            setMoveTargets(prev => prev.filter(t => t.id !== newTarget.id));
+          }, 1000);
+        } else if (!selectedObjectType) { // Single click - shoot if no tower selected
+          if (currentTime / 1000 - lastShotTime.current < SHOT_COOLDOWN) return;
+          lastShotTime.current = currentTime / 1000;
 
-      if (event.button === 2 && boomerangsLeft > 0) {
-        setBoomerangsLeft(prev => prev - 1);
-        setProjectiles(prev => [...prev, {
-          id: projectileId,
-          position: playerPos,
-          type: 'boomerang',
-          target: targetPosition
-        }]);
-        setProjectileId(prev => prev + 1);
-      } else if (event.button === 0) {
-        setProjectiles(prev => [...prev, {
-          id: projectileId,
-          position: playerPos,
-          type: 'bow',
-          target: targetPosition
-        }]);
-        setProjectileId(prev => prev + 1);
+          const playerPos = new Vector3(position.x, position.y + 0.5, position.z);
+          setProjectiles(prev => [...prev, {
+            id: projectileId,
+            position: playerPos,
+            type: 'arrow',
+            target: targetPosition
+          }]);
+          setProjectileId(prev => prev + 1);
+        }
+        lastClickTime.current = currentTime;
       }
     };
 
     window.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('contextmenu', (e) => e.preventDefault());
-
     return () => {
       window.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('contextmenu', (e) => e.preventDefault());
     };
-  }, [phase, targetPosition, projectileId, boomerangsLeft]);
+  }, [phase, targetPosition, projectileId, selectedObjectType]);
 
-  const handleProjectileComplete = (position: Vector3, type: string, id: number) => {
-    if (type === 'boomerang') {
-      if (playerRef.current) {
-        const playerPos = playerRef.current.translation();
-        const distance = position.distanceTo(new Vector3(playerPos.x, playerPos.y, playerPos.z));
-        if (distance < 2) {
-          setBoomerangsLeft(prev => prev + 1);
-        }
-      }
-    }
-    setProjectiles(prev => prev.filter(p => p.id !== id));
-  };
-
-  const checkAndRespawn = () => {
-    if (!playerRef.current) return;
-
-    const position = playerRef.current.translation();
-    if (position.y < FALL_THRESHOLD) {
-      const levelConfig = LEVEL_CONFIGS[currentLevel as keyof typeof LEVEL_CONFIGS];
-      const spawnPos = levelConfig ? levelConfig.spawnPosition : SPAWN_POSITION;
-
-      playerRef.current.setTranslation({ x: spawnPos[0], y: spawnPos[1], z: spawnPos[2] });
-      playerRef.current.setLinvel({ x: 0, y: 0, z: 0 });
-      playerRef.current.setAngvel({ x: 0, y: 0, z: 0 });
-    }
-  };
-
+  // Handle movement and rotation
   useFrame((_, delta) => {
     if (!playerRef.current) return;
 
-    checkAndRespawn();
-
-    // Check if grounded using a short raycast downward
     const position = playerRef.current.translation();
-    const rayOrigin = new Vector3(position.x, position.y, position.z);
-    const rayDirection = new Vector3(0, -1, 0);
-    raycaster.current.set(rayOrigin, rayDirection);
-    const intersects = raycaster.current.intersectObjects(scene.children, true);
+    let moveX = 0;
+    let moveZ = 0;
 
-    // Find any valid ground object within a small distance
-    const isNowGrounded = intersects.some(hit => {
-      const objectName = hit.object.name.toLowerCase();
-      const parentName = hit.object.parent?.name.toLowerCase() || '';
-      const isValidGround = (
-        objectName.includes('platform') ||
-        objectName.includes('box') ||
-        parentName.includes('platform') ||
-        parentName.includes('box')
-      );
-      return isValidGround && hit.distance < 0.6;
-    });
+    // Get camera direction
+    const cameraDirection = new Vector3();
+    const cameraRight = new Vector3();
+    camera.getWorldDirection(cameraDirection);
+    cameraDirection.y = 0;
+    cameraDirection.normalize();
+    cameraRight.crossVectors(cameraDirection, new Vector3(0, 1, 0)).normalize();
 
-    if (isNowGrounded !== isGrounded) {
-      setIsGrounded(isNowGrounded);
-    }
-
-    // Calculate movement direction in camera space
-    const moveDirection = new Vector3(0, 0, 0);
-
+    // WASD movement relative to camera
     if (forward) {
-      // moveDirection.x -= 1;
-      moveDirection.z -= 1;
+      moveX += cameraDirection.x * MOVE_SPEED * delta;
+      moveZ += cameraDirection.z * MOVE_SPEED * delta;
     }
     if (backward) {
-      // moveDirection.x += 1;
-      moveDirection.z += 1;
+      moveX -= cameraDirection.x * MOVE_SPEED * delta;
+      moveZ -= cameraDirection.z * MOVE_SPEED * delta;
     }
     if (left) {
-      moveDirection.x -= 1;
-      // moveDirection.z += 1;
+      moveX -= cameraRight.x * MOVE_SPEED * delta;
+      moveZ -= cameraRight.z * MOVE_SPEED * delta;
     }
     if (right) {
-      moveDirection.x += 1;
-      // moveDirection.z -= 1;
+      moveX += cameraRight.x * MOVE_SPEED * delta;
+      moveZ += cameraRight.z * MOVE_SPEED * delta;
     }
 
-    const currentVel = playerRef.current.linvel();
+    // Target-based movement
+    if (moveTargetRef.current) {
+      const targetPos = moveTargetRef.current;
+      const directionToTarget = new Vector3(
+        targetPos.x - position.x,
+        0,
+        targetPos.z - position.z
+      ).normalize();
 
-    if (moveDirection.lengthSq() > 0) {
-      moveDirection.normalize();
+      const distanceToTarget = new Vector3(
+        targetPos.x - position.x,
+        0,
+        targetPos.z - position.z
+      ).length();
 
-      playerRef.current.setLinvel({
-        x: moveDirection.x * MOVE_SPEED,
-        y: currentVel.y,
-        z: moveDirection.z * MOVE_SPEED
-      });
-    } else {
-      playerRef.current.setLinvel({
-        x: 0,
-        y: currentVel.y,
-        z: 0
-      });
+      if (distanceToTarget > 0.1) {
+        moveX = directionToTarget.x * MOVE_SPEED * delta;
+        moveZ = directionToTarget.z * MOVE_SPEED * delta;
+      } else {
+        moveTargetRef.current = null;
+      }
     }
 
-    // Only allow jumping when grounded
-    if (jump && isGrounded) {
-      playerRef.current.setLinvel({
-        x: currentVel.x,
-        y: JUMP_FORCE,
-        z: currentVel.z
-      });
+    // Apply movement
+    if (moveX !== 0 || moveZ !== 0) {
+      const newPosition = {
+        x: position.x + moveX,
+        y: 0.5, // Keep fixed height
+        z: position.z + moveZ
+      };
+      playerRef.current.setTranslation(newPosition);
+
+      // Rotate player to face movement direction
+      const angle = Math.atan2(moveX, moveZ);
+      playerRef.current.setRotation({ x: 0, y: angle, z: 0 });
     }
   });
 
@@ -209,41 +201,52 @@ export function Player() {
     <>
       <RigidBody
         ref={playerRef}
-        position={[0, 5, 0]}
-        enabledRotations={[false, false, false]}
+        type="kinematicPosition"
+        position={[0, 0.5, 0]}
+        enabledRotations={[false, true, false]}
         lockRotations
         mass={1}
-        colliders="ball"
-        friction={0.2}
+        friction={0.5}
       >
-        <mesh castShadow>
-          <sphereGeometry args={[0.5]} />
-          <meshStandardMaterial color="blue" />
-        </mesh>
-        <Html position={[0, 1, 0]} center style={{ pointerEvents: 'none', userSelect: 'none' }}>
-          <div style={{
-            color: 'white',
-            fontSize: '24px',
-            fontWeight: 'bold',
-            textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
-            pointerEvents: 'none',
-            userSelect: 'none'
-          }}>
-            {boomerangsLeft}
-          </div>
-        </Html>
+        <CuboidCollider args={[0.3, 0.5, 0.3]} />
+        <group>
+          {/* Player body */}
+          <mesh castShadow>
+            <capsuleGeometry args={[0.3, 1, 8]} />
+            <meshStandardMaterial color="#4a5568" />
+          </mesh>
+
+          {/* Bow */}
+          <group position={[0.4, 0.2, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <mesh>
+              <torusGeometry args={[0.3, 0.03, 16, 32, Math.PI * 1.5]} />
+              <meshStandardMaterial color="#8b4513" />
+            </mesh>
+            {/* Bowstring */}
+            <mesh>
+              <cylinderGeometry args={[0.01, 0.01, 0.6]} />
+              <meshStandardMaterial color="#ffffff" />
+            </mesh>
+          </group>
+        </group>
+
+        {/* Projectiles */}
+        {projectiles.map(({ id, position, target }) => (
+          <Projectile
+            key={id}
+            position={position}
+            target={target}
+            type="bow"
+            onComplete={(pos) => {
+              setProjectiles(prev => prev.filter(p => p.id !== id));
+            }}
+          />
+        ))}
       </RigidBody>
 
-      {targetPosition && <TargetIndicator position={targetPosition} />}
-
-      {projectiles.map(proj => (
-        <Projectile
-          key={proj.id}
-          position={proj.position}
-          type={proj.type}
-          target={proj.target}
-          onComplete={(position) => handleProjectileComplete(position, proj.type, proj.id)}
-        />
+      {/* Move Target Indicators */}
+      {moveTargets.map(target => (
+        <TargetIndicator key={target.id} position={target.position} />
       ))}
     </>
   );
