@@ -1,4 +1,4 @@
-import { Vector3, Color, Euler, Matrix4 } from 'three';
+import { Vector3, Color, Euler, Matrix4, Object3D } from 'three';
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
@@ -44,12 +44,12 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
   const projectileRef = useRef<THREE.InstancedMesh>(null);
   const [projectiles, setProjectiles] = useState<{
     id: number;
-    position: Vector3;
-    target: Vector3;
+    startPos: Vector3;
+    targetPos: Vector3;
     progress: number;
   }[]>([]);
 
-  const MAX_PROJECTILES = 20; // Limit max projectiles for performance
+  const MAX_PROJECTILES = 20;
 
   // Initialize instanced mesh
   useEffect(() => {
@@ -59,7 +59,7 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
     const color = new Color(stats.emissive);
     
     for (let i = 0; i < MAX_PROJECTILES; i++) {
-      matrix.makeScale(0, 0, 0); // Hide initially
+      matrix.makeScale(0, 0, 0);
       projectileRef.current.setMatrixAt(i, matrix);
       projectileRef.current.setColorAt(i, color);
     }
@@ -96,7 +96,7 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
       const towerHeight = 1.2 + (parseInt(type.match(/\d+/)[0]) - 1) * 0.2;
       const startPos = new Vector3(
         towerPos.x,
-        towerPos.y + towerHeight + 0.2,
+        towerPos.y + towerHeight,
         towerPos.z
       );
 
@@ -108,12 +108,12 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
 
       setProjectiles(prev => [...prev, {
         id: Date.now(),
-        position: startPos,
-        target: targetPos,
+        startPos,
+        targetPos,
         progress: 0
       }]);
 
-      useGameStore.getState().damageCreep(closestCreep.id, stats.damage, type);
+      useGameStore.getState().damageCreep(closestCreep.id, damage, type);
       lastAttackTime.current = currentTime;
     }
   });
@@ -123,16 +123,20 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
     if (phase !== 'combat' || preview || !projectileRef.current) return;
 
     const matrix = new Matrix4();
+    const dummy = new Object3D();
     let needsUpdate = false;
 
-    // Update active projectiles
     projectiles.forEach((proj, index) => {
       if (index >= MAX_PROJECTILES) return;
 
-      const newPosition = new Vector3().lerpVectors(proj.position, proj.target, proj.progress);
-      matrix.makeTranslation(newPosition.x, newPosition.y, newPosition.z);
-      matrix.scale(new Vector3(1, 1, 1));
-      projectileRef.current!.setMatrixAt(index, matrix);
+      const newProgress = proj.progress + delta * 4;
+      const position = new Vector3().lerpVectors(proj.startPos, proj.targetPos, proj.progress);
+      
+      dummy.position.copy(position);
+      dummy.scale.set(1, 1, 1);
+      dummy.updateMatrix();
+      
+      projectileRef.current!.setMatrixAt(index, dummy.matrix);
       needsUpdate = true;
     });
 
@@ -147,7 +151,6 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
       projectileRef.current.instanceMatrix.needsUpdate = true;
     }
 
-    // Update projectile progress
     setProjectiles(current => 
       current.map(proj => {
         const newProgress = proj.progress + delta * 4;
@@ -326,10 +329,10 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
       <instancedMesh
         ref={projectileRef}
         args={[null, null, MAX_PROJECTILES]}
-        castShadow
       >
-        <sphereGeometry args={[0.15]} />
+        <sphereGeometry args={[0.2]} />
         <meshStandardMaterial
+          color={stats.emissive}
           emissive={stats.emissive}
           emissiveIntensity={2}
           toneMapped={false}
