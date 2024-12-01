@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import {
   Sky,
   SoftShadows,
@@ -19,19 +19,101 @@ import { Level } from './components/Level';
 import { BuildMenu } from './components/BuildMenu';
 import { GameUI } from './components/GameUI';
 import { useGameStore } from './store/gameStore';
-import { useEffect } from 'react';
+import { useEffect, useRef, } from 'react';
 
 function TDCamera() {
+  const { playerRef } = useGameStore();
+  const controlsRef = useRef();
+  const lastPanPosition = useRef({ x: 0, y: 0 });
+  const isPanning = useRef(false);
+
+  useFrame((state) => {
+    if (!controlsRef.current || !playerRef?.current) return;
+
+    // Get player position
+    const playerPos = playerRef.current.translation();
+
+    // Update camera target to follow player
+    controlsRef.current.target.set(playerPos.x, 0, playerPos.z);
+
+    // Update camera position to maintain relative offset
+    const cameraOffset = new THREE.Vector3();
+    cameraOffset.copy(state.camera.position).sub(controlsRef.current.target);
+    state.camera.position.copy(new THREE.Vector3(playerPos.x, 0, playerPos.z)).add(cameraOffset);
+  });
+
+  const handlePointerDown = (e) => {
+    if (e.button === 2 || e.button === 1) { // Right click or middle click
+      isPanning.current = true;
+      lastPanPosition.current = { x: e.clientX, y: e.clientY };
+    }
+  };
+
+  const handlePointerUp = (e) => {
+    if (e.button === 2 || e.button === 1) {
+      isPanning.current = false;
+    }
+  };
+
+  const handlePointerMove = (e) => {
+    if (!isPanning.current || !playerRef?.current) return;
+
+    const dx = (e.clientX - lastPanPosition.current.x) * 0.1;
+    const dy = (e.clientY - lastPanPosition.current.y) * 0.1;
+
+    // Convert screen movement to world-space direction based on camera angle
+    const forward = new THREE.Vector3();
+    const right = new THREE.Vector3();
+    const camera = controlsRef.current.object;
+
+    forward.set(0, 0, 1)
+      .applyQuaternion(camera.quaternion)
+      .setY(0)
+      .normalize();
+
+    right.set(1, 0, 0)
+      .applyQuaternion(camera.quaternion)
+      .setY(0)
+      .normalize();
+
+    // Move player based on pan direction
+    const movement = new THREE.Vector3()
+      .addScaledVector(forward, -dy)
+      .addScaledVector(right, dx);
+
+    const currentPos = playerRef.current.translation();
+    playerRef.current.setTranslation({
+      x: currentPos.x + movement.x,
+      y: currentPos.y,
+      z: currentPos.z + movement.z
+    });
+
+    lastPanPosition.current = { x: e.clientX, y: e.clientY };
+  };
+
+  useEffect(() => {
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('pointerup', handlePointerUp);
+    document.addEventListener('pointermove', handlePointerMove);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('pointerup', handlePointerUp);
+      document.removeEventListener('pointermove', handlePointerMove);
+    };
+  }, []);
+
   return (
     <OrbitControls
+      ref={controlsRef}
       makeDefault
       maxPolarAngle={Math.PI / 2.5}
       minPolarAngle={Math.PI / 4}
       maxDistance={50}
       minDistance={10}
-      target={[0, 0, 0]}
       enableDamping={true}
       dampingFactor={0.05}
+      enablePan={false}
     />
   );
 }
