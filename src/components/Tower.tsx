@@ -8,6 +8,15 @@ import { Edges, Float, Trail } from '@react-three/drei';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { ProjectileSystem } from './ProjectileSystem';
+import { createShaderMaterial } from '../utils/shaders';
+import { ObjectPool } from '../utils/objectPool';
+
+const TOWER_GEOMETRY = new THREE.BoxGeometry(1, 2, 1);
+const PROJECTILE_GEOMETRY = new THREE.SphereGeometry(0.1, 8, 8);
+
+const tempObject = new Object3D();
+const tempVector = new Vector3();
+const tempMatrix = new Matrix4();
 
 interface TowerProps {
   position: Vector3 | [number, number, number];
@@ -31,6 +40,119 @@ interface Projectile {
   velocity: Vector3;
   creepId: number;
   timeAlive: number;
+}
+
+interface TowerManagerProps {
+  towers: TowerProps[];
+}
+
+export function TowerManager({ towers }: TowerManagerProps) {
+  const towerMeshRef = useRef<THREE.InstancedMesh>();
+  const projectileMeshRef = useRef<THREE.InstancedMesh>();
+  const activeTowers = useRef<Map<string, { props: TowerProps; instanceId: number }>>(new Map());
+  const projectilePool = useRef<ObjectPool<Object3D>>();
+
+  // Create shader materials
+  const towerMaterial = useMemo(() => createShaderMaterial('tower', {
+    time: { value: 0 },
+    powerLevel: { value: 1.0 }
+  }), []);
+
+  const projectileMaterial = useMemo(() => createShaderMaterial('tower', {
+    time: { value: 0 },
+    color: { value: new Vector3(1, 0.5, 0) }
+  }), []);
+
+  // Initialize instance attributes
+  const { levelArray, typeArray, activeArray } = useMemo(() => {
+    const maxInstances = 100;
+    return {
+      levelArray: new Float32Array(maxInstances),
+      typeArray: new Float32Array(maxInstances),
+      activeArray: new Float32Array(maxInstances)
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!towerMeshRef.current) return;
+
+    // Set up instance attributes
+    const geometry = towerMeshRef.current.geometry as THREE.BufferGeometry;
+    geometry.setAttribute('instanceLevel', new THREE.BufferAttribute(levelArray, 1));
+    geometry.setAttribute('instanceType', new THREE.BufferAttribute(typeArray, 1));
+    geometry.setAttribute('instanceActive', new THREE.BufferAttribute(activeArray, 1));
+
+    // Initialize projectile pool
+    projectilePool.current = new ObjectPool(() => new Object3D(), 1000);
+  }, []);
+
+  useFrame((state, delta) => {
+    if (!towerMeshRef.current || !projectileMeshRef.current) return;
+
+    // Update time uniform for shader effects
+    towerMaterial.uniforms.time.value += delta;
+    projectileMaterial.uniforms.time.value += delta;
+
+    // Update towers
+    activeTowers.current.forEach(({ props, instanceId }) => {
+      const { position, type, level, target } = props;
+
+      // Update tower transform
+      tempObject.position.set(...(position instanceof Vector3 ? position.toArray() : position));
+      if (target) {
+        tempVector.set(...target.position).sub(tempObject.position);
+        tempObject.lookAt(tempVector.add(tempObject.position));
+      }
+      tempObject.updateMatrix();
+      towerMeshRef.current?.setMatrixAt(instanceId, tempObject.matrix);
+
+      // Update instance attributes
+      levelArray[instanceId] = level;
+      typeArray[instanceId] = ['basic', 'advanced', 'ultimate'].indexOf(type);
+      activeArray[instanceId] = target ? 1 : 0;
+    });
+
+    // Update instance matrices and attributes
+    towerMeshRef.current.instanceMatrix.needsUpdate = true;
+    towerMeshRef.current.geometry.attributes.instanceLevel.needsUpdate = true;
+    towerMeshRef.current.geometry.attributes.instanceType.needsUpdate = true;
+    towerMeshRef.current.geometry.attributes.instanceActive.needsUpdate = true;
+  });
+
+  // Handle tower lifecycle
+  useEffect(() => {
+    // Add new towers
+    towers.forEach(towerProps => {
+      const key = towerProps.position instanceof Vector3 ? towerProps.position.toArray().join(',') : towerProps.position.join(',');
+      if (!activeTowers.current.has(key)) {
+        const instanceId = activeTowers.current.size;
+        activeTowers.current.set(key, { props: towerProps, instanceId });
+      }
+    });
+
+    // Remove inactive towers
+    activeTowers.current.forEach(({ props }, key) => {
+      if (!towers.find(t => (t.position instanceof Vector3 ? t.position.toArray().join(',') : t.position.join(',')) === key)) {
+        activeTowers.current.delete(key);
+      }
+    });
+  }, [towers]);
+
+  return (
+    <>
+      <instancedMesh
+        ref={towerMeshRef}
+        args={[TOWER_GEOMETRY, towerMaterial, 100]}
+        castShadow
+        receiveShadow
+      />
+      <instancedMesh
+        ref={projectileMeshRef}
+        args={[PROJECTILE_GEOMETRY, projectileMaterial, 1000]}
+        castShadow
+      />
+    </>
+  );
 }
 
 export function Tower({ position, type, level = 1, preview = false, onDamageEnemy, canAfford = true }: TowerProps) {

@@ -1,8 +1,14 @@
-import { useRef, useEffect, useMemo, useState, useCallback } from 'react';
+import { useRef, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { Vector3, InstancedMesh, Object3D, Matrix4, BufferGeometry, BufferAttribute, BoxGeometry } from 'three';
 import { useGameStore } from '../store/gameStore';
-import { Vector3 } from 'three';
-import { Billboard } from '@react-three/drei';
+import { createShaderMaterial } from '../utils/shaders';
+import { InstancedPool } from '../utils/objectPool';
+
+const CREEP_GEOMETRY = new BoxGeometry(0.5, 0.5, 0.5);
+const tempObject = new Object3D();
+const tempVector = new Vector3();
+const tempMatrix = new Matrix4();
 
 interface CreepProps {
   id: number;
@@ -32,7 +38,7 @@ const creepSpeeds = {
   boss: 0.06
 };
 
-const SPEED_MULTIPLIER = 30;
+const SPEED_MULTIPLIER = 1;
 
 const creepSizes = {
   normal: [0.8, 0.8, 0.8],
@@ -70,234 +76,109 @@ const effectColors = {
   mark: '#ff00ff',
 };
 
-export function Creep({ id, pathPoints }: { id: number; pathPoints: Vector3[] }) {
-  const creepData = useGameStore(state => state.creeps.find(c => c.id === id));
-  const updateCreep = useGameStore(state => state.updateCreep);
-  const removeCreep = useGameStore(state => state.removeCreep);
-  const addMoney = useGameStore(state => state.addMoney);
-  const loseLife = useGameStore(state => state.loseLife);
+const creeps: CreepProps[] = [];
 
-  const ref = useRef<THREE.Group>(null);
-  const pathIndex = useRef(1);
-  const lastPosition = useRef<Vector3 | null>(null);
+export const Creep = CreepManager;
 
-  const [effects, setEffects] = useState<{
-    [key: string]: {
-      value: number;
-      duration: number;
-      startTime: number;
-      stacks?: number;
+export function CreepManager({ id, pathPoints }: CreepProps) {
+  const instancedMesh = useRef<InstancedMesh>();
+  const creepPool = useRef<InstancedPool>();
+  const activeCreeps = useRef<Map<number, { props: CreepProps; instanceId: number }>>(new Map());
+
+  // Create instanced mesh with custom shader
+  const material = useMemo(() => createShaderMaterial('creep'), []);
+
+  // Initialize instance attributes
+  const { colorArray, healthArray, scaleArray } = useMemo(() => {
+    const maxInstances = 1000;
+    return {
+      colorArray: new Float32Array(maxInstances * 3),
+      healthArray: new Float32Array(maxInstances),
+      scaleArray: new Float32Array(maxInstances)
     };
-  }>({});
+  }, []);
 
-  const applyEffect = useCallback((type: string, value: number, duration: number) => {
-    setEffects(prev => {
-      const currentTime = Date.now();
-      const existing = prev[type];
+  useEffect(() => {
+    if (!instancedMesh.current) return;
 
-      // Handle stacking effects
-      if (existing) {
-        const newStacks = (existing.stacks || 1) + 1;
-        return {
-          ...prev,
-          [type]: {
-            value: Math.max(existing.value, value),
-            duration,
-            startTime: currentTime,
-            stacks: newStacks
-          }
-        };
+    // Set up instance attributes
+    const geometry = instancedMesh.current.geometry as BufferGeometry;
+    geometry.setAttribute('instanceColor', new BufferAttribute(colorArray, 3));
+    geometry.setAttribute('instanceHealth', new BufferAttribute(healthArray, 1));
+    geometry.setAttribute('instanceScale', new BufferAttribute(scaleArray, 1));
+
+    // Initialize instance pool
+    creepPool.current = new InstancedPool(CREEP_GEOMETRY, material, 1000);
+  }, []);
+
+  useFrame((state, delta) => {
+    if (!instancedMesh.current || !creepPool.current) return;
+
+    // Update existing creeps
+    activeCreeps.current.forEach(({ props, instanceId }, index) => {
+      const { id, pathPoints } = props;
+      const creepData = useGameStore.getState().creeps.find(c => c.id === id);
+
+      if (!creepData) return;
+
+      const { position, type, health } = creepData;
+
+      // Update position along path
+      tempVector.set(...position);
+      const nextPoint = pathPoints[index + 1];
+      if (nextPoint) {
+        tempVector.lerp(nextPoint, (creepSpeeds[type] || 0.1) * SPEED_MULTIPLIER * delta);
+
+        // Update instance transform
+        tempObject.position.copy(tempVector);
+        tempObject.updateMatrix();
+        instancedMesh.current.setMatrixAt(instanceId, tempObject.matrix);
+
+        // Update instance attributes
+        const baseIndex = instanceId * 3;
+        colorArray[baseIndex] = 1 - health / creepData.maxHealth;
+        colorArray[baseIndex + 1] = health / creepData.maxHealth;
+        colorArray[baseIndex + 2] = 0;
+        healthArray[instanceId] = health;
+        scaleArray[instanceId] = 0.5 + health / creepData.maxHealth * 0.5;
       }
+    });
 
-      return {
-        ...prev,
-        [type]: {
-          value,
-          duration,
-          startTime: currentTime,
-          stacks: 1
+    // Update instance matrices and attributes
+    instancedMesh.current.instanceMatrix.needsUpdate = true;
+    instancedMesh.current.geometry.attributes.instanceColor.needsUpdate = true;
+    instancedMesh.current.geometry.attributes.instanceHealth.needsUpdate = true;
+    instancedMesh.current.geometry.attributes.instanceScale.needsUpdate = true;
+  });
+
+  // Handle creep lifecycle
+  useEffect(() => {
+    // Add new creeps
+    useGameStore.getState().creeps.forEach(creepData => {
+      if (!activeCreeps.current.has(creepData.id)) {
+        const instanceId = creepPool.current?.getInstance();
+        if (instanceId !== null && instanceId !== undefined) {
+          activeCreeps.current.set(creepData.id, { props: { id: creepData.id, pathPoints: [] }, instanceId });
         }
-      };
+      }
+    });
+
+    // Remove dead creeps
+    activeCreeps.current.forEach(({ props, instanceId }, index) => {
+      const creepData = useGameStore.getState().creeps.find(c => c.id === index);
+      if (!creepData) {
+        creepPool.current?.releaseInstance(instanceId);
+        activeCreeps.current.delete(index);
+      }
     });
   }, []);
 
-  const getEffectValue = useCallback((type: string) => {
-    const effect = effects[type];
-    if (!effect) return 0;
-
-    const elapsed = (Date.now() - effect.startTime) / 1000;
-    if (elapsed > effect.duration) return 0;
-
-    return effect.value;
-  }, [effects]);
-
-  const hasEffect = useCallback((type: string) => {
-    return !!effects[type];
-  }, [effects]);
-
-  const getEffectStacks = useCallback((type: string) => {
-    return effects[type]?.stacks || 0;
-  }, [effects]);
-
-  if (!creepData) {
-    console.log('No creep data found for id:', id);
-    return null;
-  }
-
-  const { position, type, health, maxHealth } = creepData;
-
-  // Movement
-  useFrame((state, delta) => {
-    if (!ref.current || pathIndex.current >= pathPoints.length) return;
-
-    const currentPos = new Vector3(...position);
-    const targetPos = pathPoints[pathIndex.current];
-    const direction = targetPos.clone().sub(currentPos).normalize();
-
-    // Calculate speed with effects
-    const slowValue = getEffectValue('slow');
-    const baseSpeed = (creepSpeeds[type] || 0.1) * SPEED_MULTIPLIER;
-    const currentSpeed = baseSpeed * (1 - slowValue);
-
-    // Move towards next point
-    const newPos = currentPos.clone().add(direction.multiplyScalar(currentSpeed * delta));
-    newPos.y = 1; // Maintain constant height
-
-    // Check if reached target
-    const distanceToTarget = newPos.distanceTo(targetPos);
-    if (distanceToTarget < 0.5) {
-      pathIndex.current++;
-
-      // Reached end of path
-      if (pathIndex.current >= pathPoints.length) {
-        loseLife();
-        removeCreep(id);
-        return;
-      }
-    }
-
-    // Handle damage over time effects
-    let dotDamage = 0;
-
-    // Poison damage
-    const poisonValue = getEffectValue('poison');
-    if (poisonValue > 0) {
-      dotDamage += poisonValue * delta;
-    }
-
-    // Burn damage
-    const burnValue = getEffectValue('burn');
-    if (burnValue > 0) {
-      dotDamage += burnValue * delta;
-    }
-
-    // Apply total dot damage
-    if (dotDamage > 0) {
-      const amplifyValue = getEffectValue('amplify');
-      const armorReduction = getEffectValue('armor_reduction');
-      const totalDamage = dotDamage * (1 + amplifyValue) * (1 + armorReduction);
-      updateCreep(id, {
-        health: health - totalDamage
-      });
-    }
-
-    // Handle curse effect when nearby enemies die
-    if (hasEffect('curse')) {
-      const nearbyDeaths = 0; // Replace with actual implementation
-      if (nearbyDeaths > 0) {
-        const curseValue = getEffectValue('curse');
-        updateCreep(id, {
-          health: health - nearbyDeaths * curseValue * maxHealth
-        });
-      }
-    }
-
-    // Handle mana burn
-    if (hasEffect('mana_burn')) {
-      const manaValue = getEffectValue('mana_burn');
-      // Replace with actual implementation
-    }
-
-    // Check for death effects
-    if (health <= 0) {
-      if (hasEffect('mark')) {
-        const explosionDamage = getEffectValue('mark');
-        // Replace with actual implementation
-      }
-      removeCreep(id);
-    }
-
-    // Clean up expired effects
-    setEffects(prev => {
-      const currentTime = Date.now();
-      const newEffects = { ...prev };
-
-      Object.entries(prev).forEach(([type, effect]) => {
-        const elapsed = (currentTime - effect.startTime) / 1000;
-        if (elapsed > effect.duration) {
-          delete newEffects[type];
-        }
-      });
-
-      return newEffects;
-    });
-
-    // Update position and decay effects
-    updateCreep(id, {
-      position: [newPos.x, newPos.y, newPos.z],
-      effects: effects
-    });
-
-    // Store last position for rotation
-    lastPosition.current = currentPos;
-  });
-
-  // Handle damage and effects
-  useEffect(() => {
-    if (health <= 0) {
-      addMoney(creepRewards[type]);
-    }
-  }, [health, type, id, addMoney]);
-
-  // Calculate rotation to face movement direction
-  const rotation = useMemo(() => {
-    if (!lastPosition.current) return [0, 0, 0];
-    const currentPos = new Vector3(...position);
-    const direction = currentPos.clone().sub(lastPosition.current).normalize();
-    return [0, Math.atan2(direction.x, direction.z), 0];
-  }, [position]);
-
   return (
-    <group ref={ref} position={position} rotation={rotation}>
-      {/* Creep model based on type */}
-      <mesh castShadow>
-        <boxGeometry args={creepSizes[type]} />
-        <meshStandardMaterial color={creepColors[type]} />
-      </mesh>
-
-      {/* Health bar */}
-      <Billboard position={[0, creepSizes[type][1] + 0.5, 0]}>
-        <mesh>
-          <planeGeometry args={[1, 0.1]} />
-          <meshBasicMaterial color="red" />
-        </mesh>
-        <mesh position={[-(1 - health / maxHealth) / 2, 0, 0.01]} scale={[health / maxHealth, 1, 1]}>
-          <planeGeometry args={[1, 0.1]} />
-          <meshBasicMaterial color="lime" />
-        </mesh>
-      </Billboard>
-
-      {/* Effect indicators */}
-      {Object.entries(effects).map(([effect, value], index) =>
-        value ? (
-          <Billboard key={effect} position={[0, creepSizes[type][1] + 0.7 + index * 0.2, 0]}>
-            <mesh>
-              <circleGeometry args={[0.1]} />
-              <meshBasicMaterial color={effectColors[effect] || 'white'} />
-            </mesh>
-          </Billboard>
-        ) : null
-      )}
-    </group>
+    <instancedMesh
+      ref={instancedMesh}
+      args={[CREEP_GEOMETRY, material, 1000]}
+      castShadow
+      receiveShadow
+    />
   );
 }

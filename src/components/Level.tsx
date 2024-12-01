@@ -1,421 +1,280 @@
-import React, { useRef, useEffect, useState, useMemo } from 'react';
+import React, { useRef, useEffect, useMemo, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { Environment, useGLTF } from '@react-three/drei';
-import { Vector3, Raycaster, AmbientLight, DirectionalLight, MeshStandardMaterial, Color, DoubleSide, Plane, Vector2 } from 'three';
+import { Vector3, Raycaster, Color, DoubleSide, Plane, Vector2, InstancedMesh, Object3D, Matrix4, BoxGeometry, Mesh, Euler } from 'three';
 import { TOWER_STATS, useGameStore } from '../store/gameStore';
 import { Edges, MeshTransmissionMaterial, Float } from '@react-three/drei';
 import { WaveManager } from './WaveManager';
-import { Tower, TowerType } from './Tower';
-import { Creep } from './Creep'; // Assuming Creep component is defined in Creep.tsx
+import { Tower } from './Tower';
+import { Creep } from './Creep';
+import { createShaderMaterial } from '../utils/shaders';
+import { ObjectPool } from '../utils/objectPool';
 
+// Constants and Materials
 const pathColor = new Color('#4338ca').convertSRGBToLinear();
 const platformColor = new Color('#1e293b').convertSRGBToLinear();
 const wallColor = new Color('#334155').convertSRGBToLinear();
-const crystalColor = new Color('#3b82f6').convertSRGBToLinear();
+const glowColor = new Color('#60a5fa').convertSRGBToLinear();
 
-// Create shared materials to improve performance
-const pathMaterial = new MeshStandardMaterial({
-  color: pathColor,
-  roughness: 0.2,
-  metalness: 0.8,
-  envMapIntensity: 1.5,
-  emissive: pathColor,
-  emissiveIntensity: 0.2
+const pathMaterial = createShaderMaterial('path', {
+  color: { value: new Vector3(0.26, 0.22, 0.79) },
+  emissive: { value: new Vector3(0.26, 0.22, 0.79) },
+  emissiveIntensity: { value: 0.5 },
+  roughness: { value: 0.2 },
+  metalness: { value: 0.8 }
 });
 
-const platformMaterial = new MeshStandardMaterial({
-  color: platformColor,
-  roughness: 0.8,
-  metalness: 0.3,
-  envMapIntensity: 1
+const platformMaterial = createShaderMaterial('platform', {
+  color: { value: new Vector3(0.12, 0.16, 0.24) },
+  roughness: { value: 0.7 },
+  metalness: { value: 0.3 }
 });
 
-const wallMaterial = new MeshStandardMaterial({
-  color: wallColor,
-  roughness: 0.3,
-  metalness: 0.7,
-  envMapIntensity: 1.2
-});
+// Path Generation
+function generatePath() {
+  const path = {
+    segments: [
+      { position: [-20, 0.5, -20], scale: [6, 1, 6], rotation: [0, 0, 0] },  // Start platform
+      { position: [-20, 0.5, -10], scale: [3, 1, 16], rotation: [0, 0, 0] }, // First straight
+      { position: [-15, 0.5, -2], scale: [12, 1, 3], rotation: [0, Math.PI * 0.1, 0] }, // First turn
+      { position: [-5, 0.5, 0], scale: [16, 1, 3], rotation: [0, 0, 0] },    // Second straight
+      { position: [5, 0.5, 5], scale: [3, 1, 12], rotation: [0, Math.PI * -0.1, 0] }, // Second turn
+      { position: [10, 0.5, 15], scale: [12, 1, 3], rotation: [0, 0, 0] },   // Third straight
+      { position: [20, 0.5, 20], scale: [6, 1, 6], rotation: [0, 0, 0] }     // End platform
+    ],
+    points: [
+      new Vector3(-20, 1, -20),
+      new Vector3(-20, 1, -10),
+      new Vector3(-15, 1, -2),
+      new Vector3(-5, 1, 0),
+      new Vector3(5, 1, 5),
+      new Vector3(10, 1, 15),
+      new Vector3(20, 1, 20)
+    ],
+    decorations: [
+      { position: [-18, 0.5, -15], scale: 0.8 },
+      { position: [-12, 0.5, -5], scale: 0.8 },
+      { position: [-8, 0.5, 2], scale: 0.8 },
+      { position: [0, 0.5, 0], scale: 0.8 },
+      { position: [8, 0.5, 8], scale: 0.8 },
+      { position: [15, 0.5, 18], scale: 0.8 }
+    ]
+  };
+  return path;
+}
 
-function Crystal({ position, scale = 1 }: { position: [number, number, number], scale?: number }) {
-  const crystalRef = useRef<THREE.Mesh>(null);
+// Crystal Component
+function Crystal({ position, scale = 1, color = '#60a5fa' }: { position: [number, number, number]; scale?: number; color?: string }) {
+  const crystalRef = useRef<Mesh>(null);
+  const crystalColor = new Color(color).convertSRGBToLinear();
 
   useFrame((state) => {
     if (crystalRef.current) {
       crystalRef.current.rotation.y += 0.01;
+      crystalRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 2) * 0.1;
     }
   });
 
   return (
-    <Float
-      speed={2}
-      rotationIntensity={0.2}
-      floatIntensity={0.5}
-      position={position}
-    >
-      <mesh ref={crystalRef} scale={scale} castShadow receiveShadow>
-        <octahedronGeometry args={[1, 0]} />
+    <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
+      <mesh ref={crystalRef} position={position} scale={scale} castShadow>
+        <octahedronGeometry args={[1]} />
         <MeshTransmissionMaterial
           backside
-          samples={4}
+          samples={16}
           thickness={0.5}
-          chromaticAberration={0.5}
-          transmission={1}
-          roughness={0}
-          metalness={0}
+          chromaticAberration={1}
+          anisotropy={1}
+          distortion={0.5}
+          distortionScale={0.1}
+          temporalDistortion={0.2}
+          iridescence={1}
+          iridescenceIOR={1.5}
+          iridescenceThicknessRange={[0, 1400]}
           color={crystalColor}
+          transmission={0.95}
         />
-        <Edges color="#6495ED" />
+        <Edges scale={1.1} threshold={15} color={crystalColor} />
       </mesh>
+      <pointLight intensity={2} distance={5} color={color} />
     </Float>
   );
 }
 
-function Pillar({ position, height = 4 }: { position: [number, number, number], height?: number }) {
-  return (
-    <group position={position}>
-      {/* Base */}
-      <mesh position={[0, height * 0.25, 0]} castShadow receiveShadow material={wallMaterial}>
-        <boxGeometry args={[2, height * 0.5, 2]} />
-        <Edges color="#475569" />
-      </mesh>
-
-      {/* Crystal top */}
-      <Crystal position={[0, height + 0.5, 0]} scale={0.8} />
-    </group>
-  );
-}
-
-function generateElementTDPath() {
-  // Start and end points
-  const startPos = [-15, 0, -15];
-  const endPos = [15, 0, 15];
-
-  // Path points (can be customized for different layouts)
-  const pathPoints = [
-    startPos,
-    [-15, 0, 0],
-    [0, 0, 0],
-    [0, 0, 15],
-    endPos
-  ];
-
-  // Generate path segments
-  const segments = [];
-  for (let i = 0; i < pathPoints.length - 1; i++) {
-    const start = pathPoints[i];
-    const end = pathPoints[i + 1];
-    const length = Math.sqrt(
-      Math.pow(end[0] - start[0], 2) +
-      Math.pow(end[2] - start[2], 2)
-    );
-
-    segments.push({
-      position: [
-        (start[0] + end[0]) / 2,
-        0.1,
-        (start[2] + end[2]) / 2
-      ],
-      scale: [
-        Math.abs(end[0] - start[0]) || 4,
-        0.2,
-        Math.abs(end[2] - start[2]) || 4
-      ]
-    });
-  }
-
-  return {
-    pathPoints: pathPoints.map(p => new Vector3(p[0], p[1], p[2])),
-    segments
-  };
-}
-
-interface LevelConfig {
-  platforms: { position: [number, number, number]; scale: [number, number, number]; material: MeshStandardMaterial }[];
-  decorations: { crystals: { position: [number, number, number]; scale: number; rotation: number }[]; pillars: { position: [number, number, number] }[] };
-  initialBoxes: { position: [number, number, number], dimensions: [number, number, number], rotation: number }[];
-  portalPosition: [number, number, number];
-  spawnerPosition: [number, number, number];
-  spawnPosition: [number, number, number];
-  gridSize: number;
-}
-
-export const LEVEL_CONFIGS: Record<number, LevelConfig> = {
-  1: {
-    platforms: [
-      // Main elevated platform
-      { position: [0, 0, 0], scale: [40, 2, 40], material: platformMaterial },
-
-      // Path depressions (making the path lower than tower areas)
-      // Top path
-      { position: [0, 0.5, -10], scale: [30, 1, 4], material: pathMaterial },
-      // Middle path
-      { position: [0, 0.5, 0], scale: [30, 1, 4], material: pathMaterial },
-      // Bottom path
-      { position: [0, 0.5, 10], scale: [30, 1, 4], material: pathMaterial },
-      // Left vertical path
-      { position: [-14, 0.5, -5], scale: [4, 1, 10], material: pathMaterial },
-      // Right vertical path
-      { position: [14, 0.5, 5], scale: [4, 1, 10], material: pathMaterial },
-
-      // Decorative outer rim
-      { position: [0, 0, -19.5], scale: [40, 3, 1], material: wallMaterial },
-      { position: [0, 0, 19.5], scale: [40, 3, 1], material: wallMaterial },
-      { position: [19.5, 0, 0], scale: [1, 3, 40], material: wallMaterial },
-      { position: [-19.5, 0, 0], scale: [1, 3, 40], material: wallMaterial },
-    ],
-    decorations: {
-      crystals: [
-        { position: [-15, 2, 15], scale: 1, rotation: Math.PI / 4 }, // Spawn crystal
-        { position: [15, 2, -15], scale: 1, rotation: Math.PI / 4 }, // End crystal
-      ],
-      pillars: [
-        // Corner pillars
-        { position: [-19, 1.5, -19] },
-        { position: [19, 1.5, -19] },
-        { position: [-19, 1.5, 19] },
-        { position: [19, 1.5, 19] },
-        // Path intersection pillars
-        { position: [-14, 1.5, -10] },
-        { position: [-14, 1.5, 0] },
-        { position: [14, 1.5, 0] },
-        { position: [14, 1.5, 10] },
-      ],
-    },
-    initialBoxes: generateElementTDPath().segments,
-    portalPosition: [15, 2, -15],
-    spawnerPosition: [-15, 2, 15],
-    spawnPosition: [0, 2, 0],
-    gridSize: 1,
-  },
-  2: {
-    platforms: [
-      // Base platform
-      { position: [0, -1, 0], scale: [45, 1, 45], material: platformMaterial },
-      // Outer elevated ring - North
-      { position: [0, 0, -17.5], scale: [45, 1, 10], material: pathMaterial },
-      // South
-      { position: [0, 0, 17.5], scale: [45, 1, 10], material: pathMaterial },
-      // East
-      { position: [17.5, 0, 0], scale: [10, 1, 25], material: pathMaterial },
-      // West
-      { position: [-17.5, 0, 0], scale: [10, 1, 25], material: pathMaterial },
-    ],
-    decorations: {
-      crystals: [],
-      pillars: [],
-    },
-    initialBoxes: generateElementTDPath().segments,
-    portalPosition: [18, 1, 18],
-    spawnerPosition: [-18, 1, -18],
-    spawnPosition: [0, 1, 0],
-    gridSize: 1,
-  },
-  3: {
-    platforms: [
-      // Base platform
-      { position: [0, -1, 0], scale: [50, 1, 50], material: platformMaterial },
-      // Outer elevated ring - North
-      { position: [0, 0, -20], scale: [50, 1, 10], material: pathMaterial },
-      // South
-      { position: [0, 0, 20], scale: [50, 1, 10], material: pathMaterial },
-      // East
-      { position: [20, 0, 0], scale: [10, 1, 30], material: pathMaterial },
-      // West
-      { position: [-20, 0, 0], scale: [10, 1, 30], material: pathMaterial },
-    ],
-    decorations: {
-      crystals: [],
-      pillars: [],
-    },
-    initialBoxes: generateElementTDPath().segments,
-    portalPosition: [20, 1, 20],
-    spawnerPosition: [-20, 1, -20],
-    spawnPosition: [0, 1, 0],
-    gridSize: 1,
-  },
-  4: {
-    platforms: [
-      // Base platform
-      { position: [0, -1, 0], scale: [55, 1, 55], material: platformMaterial },
-      // Outer elevated ring - North
-      { position: [0, 0, -22.5], scale: [55, 1, 10], material: pathMaterial },
-      // South
-      { position: [0, 0, 22.5], scale: [55, 1, 10], material: pathMaterial },
-      // East
-      { position: [22.5, 0, 0], scale: [10, 1, 35], material: pathMaterial },
-      // West
-      { position: [-22.5, 0, 0], scale: [10, 1, 35], material: pathMaterial },
-    ],
-    decorations: {
-      crystals: [],
-      pillars: [],
-    },
-    initialBoxes: generateElementTDPath().segments,
-    portalPosition: [22, 1, 22],
-    spawnerPosition: [-22, 1, -22],
-    spawnPosition: [0, 1, 0],
-    gridSize: 1,
-  },
-  5: {
-    platforms: [
-      // Base platform
-      { position: [0, -1, 0], scale: [60, 1, 60], material: platformMaterial },
-      // Outer elevated ring - North
-      { position: [0, 0, -25], scale: [60, 1, 10], material: pathMaterial },
-      // South
-      { position: [0, 0, 25], scale: [60, 1, 10], material: pathMaterial },
-      // East
-      { position: [25, 0, 0], scale: [10, 1, 40], material: pathMaterial },
-      // West
-      { position: [-25, 0, 0], scale: [10, 1, 40], material: pathMaterial },
-    ],
-    decorations: {
-      crystals: [],
-      pillars: [],
-    },
-    initialBoxes: generateElementTDPath().segments,
-    portalPosition: [25, 1, 25],
-    spawnerPosition: [-25, 1, -25],
-    spawnPosition: [0, 1, 0],
-    gridSize: 1,
-  },
-};
-
 export function Level() {
-  const path = generateElementTDPath();
-  const pathPoints = useMemo(() => {
-    const points: Vector3[] = [
-      new Vector3(-15, 0, -15),
-      new Vector3(-15, 0, 0),
-      new Vector3(0, 0, 0),
-      new Vector3(0, 0, 15),
-      new Vector3(15, 0, 15),
-    ];
-    return points;
-  }, []);
+  // Game State
+  const {
+    phase,
+    placedTowers,
+    selectedObjectType,
+    money,
+    creeps,
+    addPlacedTower,
+    setSelectedObjectType
+  } = useGameStore();
 
-  const { selectedObjectType, money, spendMoney, addPlacedTower, placedTowers, setSelectedObjectType, creeps } = useGameStore();
-  const [placementIndicator, setPlacementIndicator] = useState<Vector3 | null>(null);
-  const groundPlane = new Plane(new Vector3(0, 1, 0), 0);
-  const { camera } = useThree();
+  // Refs and State
+  const pathRef = useRef<InstancedMesh>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewPosition, setPreviewPosition] = useState<[number, number, number]>([0, 0, 0]);
+  const [canAffordTower, setCanAffordTower] = useState(true);
+
+  // Path Generation
+  const { segments, points: pathPoints } = useMemo(() => generatePath(), []);
+
+  // Raycasting for Tower Placement
+  const plane = new Plane(new Vector3(0, 1, 0), 0);
   const raycaster = new Raycaster();
+  const intersectPoint = new Vector3();
+  const { camera, size } = useThree();
 
-  // Handle pointer movement and placement
+  // Tower Placement Logic
   const handlePointerMove = (event: any) => {
-    // console.log('Pointer move:', { selectedObjectType });
     if (!selectedObjectType) return;
 
-    // Update the picking ray with the camera and pointer position
-    raycaster.setFromCamera(event.pointer, camera);
+    const mouse = new Vector2(
+      (event.offsetX / size.width) * 2 - 1,
+      -(event.offsetY / size.height) * 2 + 1
+    );
 
-    // Calculate intersection with the ground plane
-    const intersection = new Vector3();
-    if (raycaster.ray.intersectPlane(groundPlane, intersection)) {
-      // Snap to grid
-      intersection.x = Math.round(intersection.x);
-      intersection.z = Math.round(intersection.z);
-      intersection.y = 0;
+    raycaster.setFromCamera(mouse, camera);
+    raycaster.ray.intersectPlane(plane, intersectPoint);
 
-      // Check if position is valid (not on path or existing tower)
-      const isOnPath = path.segments.some(segment => {
-        const dx = Math.abs(intersection.x - segment.position[0]);
-        const dz = Math.abs(intersection.z - segment.position[2]);
-        return dx < 2 && dz < 2;
-      });
+    // Snap to grid
+    const snappedPosition: [number, number, number] = [
+      Math.round(intersectPoint.x),
+      0.5,
+      Math.round(intersectPoint.z)
+    ];
 
-      // Check if there's already a tower at this position
-      const hasTower = placedTowers.some(tower =>
-        Math.abs(tower.position.x - intersection.x) < 0.5 &&
-        Math.abs(tower.position.z - intersection.z) < 0.5
-      );
-
-      if (!isOnPath && !hasTower) {
-        setPlacementIndicator(intersection);
-      } else {
-        setPlacementIndicator(null);
-      }
-    }
+    setPreviewPosition(snappedPosition);
+    setShowPreview(true);
+    setCanAffordTower(money >= TOWER_STATS[selectedObjectType].cost);
   };
 
   const handlePlaceTower = () => {
-    if (!selectedObjectType || !placementIndicator) return;
+    if (!selectedObjectType || !canAffordTower) return;
 
-    const towerStats = TOWER_STATS[selectedObjectType];
-    if (!towerStats) return;
-
-    if (money < towerStats.cost) {
-      // Not enough money, unselect tower
-      setSelectedObjectType(null);
-      return;
-    }
-
-    // Place tower
-    addPlacedTower(
-      new Vector3(
-        Math.round(placementIndicator.x),
-        0,
-        Math.round(placementIndicator.z)
-      ),
-      selectedObjectType
-    );
-
-    // Keep tower type selected
-  };
-
-  const handleClick = (event: any) => {
-    event.stopPropagation();
-    console.log('Click event:', {
-      selectedObjectType,
-      placementIndicator: placementIndicator?.toArray(),
-      money
+    // Check if position is valid (not on path, not occupied)
+    const isValidPosition = !segments.some(segment => {
+      const [x, y, z] = previewPosition;
+      const [sx, sy, sz] = segment.position;
+      const [sw, sh, sd] = segment.scale;
+      return (
+        x >= sx - sw/2 && x <= sx + sw/2 &&
+        z >= sz - sd/2 && z <= sz + sd/2
+      );
     });
 
-    if (selectedObjectType && placementIndicator) {
-      handlePlaceTower();
+    if (isValidPosition) {
+      addPlacedTower(new Vector3(...previewPosition), selectedObjectType);
+      setSelectedObjectType(null);
+      setShowPreview(false);
     }
   };
+
+  // Instance Matrices for Path
+  const matrices = useMemo(() => {
+    return segments.map(segment => {
+      const matrix = new Matrix4();
+      const rotationMatrix = new Matrix4();
+      
+      // Apply rotation first
+      rotationMatrix.makeRotationFromEuler(new Euler(
+        segment.rotation[0],
+        segment.rotation[1],
+        segment.rotation[2]
+      ));
+      
+      // Then position and scale
+      matrix
+        .multiply(rotationMatrix)
+        .setPosition(...segment.position)
+        .scale(new Vector3(...segment.scale));
+      
+      return matrix;
+    });
+  }, [segments]);
+
+  // Update Instance Matrices
+  useEffect(() => {
+    if (pathRef.current) {
+      matrices.forEach((matrix, i) => {
+        pathRef.current?.setMatrixAt(i, matrix);
+      });
+      pathRef.current.instanceMatrix.needsUpdate = true;
+    }
+  }, [matrices]);
 
   return (
     <group>
-      {/* Ground plane for pointer events */}
-      <mesh
-        position={[0, 0, 0]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        onPointerMove={handlePointerMove}
-        onClick={handleClick}
-      >
-        <planeGeometry args={[100, 100]} />
-        <meshStandardMaterial color="#1a472a" />
-      </mesh>
+      {/* Environment */}
+      <Environment preset="sunset" />
+      <ambientLight intensity={0.4} />
+      <directionalLight
+        position={[10, 10, 10]}
+        intensity={1.8}
+        castShadow
+        shadow-mapSize={[4096, 4096]}
+        shadow-bias={-0.001}
+      />
+
+      {/* Ground */}
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh position={[0, -0.5, 0]} receiveShadow>
+          <boxGeometry args={[60, 1, 60]} />
+          <meshStandardMaterial color={platformColor} roughness={0.7} metalness={0.3} />
+        </mesh>
+      </RigidBody>
 
       {/* Path */}
-      {path.segments.map((segment, index) => (
-        <RigidBody key={index} type="fixed" colliders="cuboid">
-          <mesh
-            position={segment.position}
-            material={pathMaterial}
-            receiveShadow
-          >
-            <boxGeometry args={segment.scale} />
+      <instancedMesh
+        ref={pathRef}
+        args={[new BoxGeometry(1, 1, 1), pathMaterial, segments.length]}
+        receiveShadow
+        castShadow
+      >
+        <Edges scale={1.1} threshold={15} color={glowColor} />
+      </instancedMesh>
+
+      {/* Path Decorations */}
+      {segments.map((segment, index) => (
+        <group key={`decoration-${index}`} position={segment.position} rotation={segment.rotation}>
+          <mesh position={[0, 0.1, 0]} receiveShadow>
+            <boxGeometry args={[segment.scale[0] * 1.1, 0.1, segment.scale[2] * 1.1]} />
+            <meshStandardMaterial color={glowColor} emissive={glowColor} emissiveIntensity={0.2} transparent opacity={0.3} />
           </mesh>
-        </RigidBody>
+        </group>
       ))}
 
-      {/* Decorative Pillars */}
-      {[
-        [-12, 0, -12],
-        [-12, 0, 12],
-        [12, 0, -12],
-        [12, 0, 12]
-      ].map((pos, index) => (
-        <Pillar key={index} position={pos as [number, number, number]} />
+      {/* Crystals */}
+      <Crystal position={[-20, 1.5, -20]} scale={2} color="#22c55e" />
+      <Crystal position={[20, 1.5, 20]} scale={2} color="#ef4444" />
+      
+      {/* Decorative Crystals */}
+      {generatePath().decorations.map((dec, index) => (
+        <Crystal
+          key={`crystal-${index}`}
+          position={[dec.position[0], dec.position[1] + 1, dec.position[2]]}
+          scale={dec.scale}
+          color="#60a5fa"
+        />
       ))}
 
-      {/* Start and End Crystals */}
-      <Crystal position={[-15, 1.5, -15]} scale={1.5} />
-      <Crystal position={[15, 1.5, 15]} scale={1.5} />
+      {/* Game Elements */}
+      <WaveManager pathPoints={pathPoints} />
+      
+      {/* Towers */}
+      {placedTowers.map((tower) => (
+        <Tower
+          key={tower.id}
+          {...tower}
+          onDamageEnemy={(damage: number) => {
+            // Handle damage
+          }}
+        />
+      ))}
 
       {/* Creeps */}
       {creeps.map(creep => (
@@ -426,43 +285,27 @@ export function Level() {
         />
       ))}
 
-      {/* Placement Preview */}
-      {selectedObjectType && placementIndicator && (
+      {/* Tower Preview */}
+      {showPreview && selectedObjectType && (
         <Tower
-          position={placementIndicator}
+          position={new Vector3(...previewPosition)}
           type={selectedObjectType}
           preview={true}
-          canAfford={money >= TOWER_STATS[selectedObjectType].cost}
+          canAfford={canAffordTower}
         />
       )}
 
-      {/* Placed Towers */}
-      {placedTowers.map((tower, index) => (
-        <Tower
-          key={index}
-          position={tower.position}
-          type={tower.type}
-          onDamageEnemy={(enemyId, damage, effects) => {
-            const enemy = creeps.find(c => c.id === enemyId);
-            if (enemy) {
-              const newHealth = enemy.health - damage;
-              useGameStore.getState().updateCreep(enemyId, {
-                health: newHealth,
-                effects: {
-                  ...enemy.effects,
-                  slow: Math.max(enemy.effects.slow || 0, effects.slow || 0),
-                  amplify: Math.max(enemy.effects.amplify || 0, effects.amplify || 0),
-                  poison: Math.max(enemy.effects.poison || 0, effects.poison || 0),
-                  armor: Math.max(enemy.effects.armor || 0, effects.armor || 0)
-                }
-              });
-            }
-          }}
-        />
-      ))}
-
-      {/* Wave Manager */}
-      <WaveManager pathPoints={pathPoints} />
+      {/* Hit Testing Plane */}
+      <mesh
+        visible={false}
+        position={[0, 0.5, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        onPointerMove={handlePointerMove}
+        onClick={handlePlaceTower}
+      >
+        <planeGeometry args={[50, 50]} />
+        <meshBasicMaterial />
+      </mesh>
     </group>
   );
 }
