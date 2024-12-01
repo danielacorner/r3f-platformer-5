@@ -401,3 +401,27 @@
 .menu-content::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.4);
 }
+
+@media screen and (max-width: 321px) {
+  .element-name {
+    display: none;
+  }
+
+  .element-preview {
+    width: 36px;
+  }
+
+  .tower-groups {
+    padding: 0;
+    border: none;
+  }
+
+  .build-menu {
+    padding: 8px;
+    gap: 8px
+  }
+
+  .money-display {
+    padding: 4px;
+  }
+}
