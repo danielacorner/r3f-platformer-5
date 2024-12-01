@@ -44,13 +44,13 @@ function generatePath() {
       { position: [20, 0.5, 20], scale: [6, 1, 6], rotation: [0, 0, 0] }     // End platform
     ],
     points: [
-      new Vector3(-20, 1, -20),
-      new Vector3(-20, 1, -10),
-      new Vector3(-15, 1, -2),
-      new Vector3(-5, 1, 0),
-      new Vector3(5, 1, 5),
-      new Vector3(10, 1, 15),
-      new Vector3(20, 1, 20)
+      new Vector3(-20, 0.5, -20),  // Start
+      new Vector3(-20, 0.5, -10),  // First straight
+      new Vector3(-15, 0.5, -2),   // First turn
+      new Vector3(-5, 0.5, 0),     // Second straight
+      new Vector3(5, 0.5, 5),      // Second turn
+      new Vector3(10, 0.5, 15),    // Third straight
+      new Vector3(20, 0.5, 20)     // End
     ],
     decorations: [
       { position: [-18, 0.5, -15], scale: 0.8 },

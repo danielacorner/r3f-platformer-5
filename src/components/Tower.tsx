@@ -164,237 +164,101 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
   const damage = stats.damage * (1 + (level - 1) * 0.3);
 
   const lastAttackTime = useRef(0);
-  const [projectiles, setProjectiles] = useState<{
-    id: number;
-    startPos: Vector3;
-    targetPos: Vector3;
-    progress: number;
-  }[]>([]);
+  const [projectiles, setProjectiles] = useState<Projectile[]>([]);
+  const PROJECTILE_SPEED = 15;
+  const MAX_PROJECTILES = 10;
 
-  const MAX_PROJECTILES = 20;
+  const projectilesRef = useRef<Projectile[]>([]);
+  const towerRef = useRef<THREE.Group>(null);
 
-  // Get projectile config based on element type
-  const getProjectileConfig = useCallback(() => {
-    const [element] = type.match(/([a-z]+)(\d+)/).slice(1);
+  useEffect(() => {
+    projectilesRef.current = projectiles;
+  }, [projectiles]);
 
-    switch (element) {
-      case 'fire':
-        return {
-          geometry: (
-            <dodecahedronGeometry args={[0.3]} />
-          ),
-          material: (
-            <meshPhysicalMaterial
-              color="#ff4400"
-              emissive="#ff2200"
-              emissiveIntensity={2}
-              metalness={0.7}
-              roughness={0.3}
-              transparent={true}
-              opacity={0.9}
-              envMapIntensity={2}
-            />
-          ),
-          trailCount: 8,
-          trailSpacing: 0.05,
-          rotationSpeed: 4,
-          lightIntensity: 2,
-          lightDistance: 4
-        };
-
-      case 'ice':
-        return {
-          geometry: (
-            <octahedronGeometry args={[0.25]} />
-          ),
-          material: (
-            <meshPhysicalMaterial
-              color="#aaddff"
-              emissive="#88ccff"
-              emissiveIntensity={1.5}
-              metalness={0.9}
-              roughness={0.1}
-              transparent={true}
-              opacity={0.7}
-              transmission={0.5}
-              thickness={0.5}
-              envMapIntensity={3}
-            />
-          ),
-          trailCount: 6,
-          trailSpacing: 0.06,
-          rotationSpeed: 3,
-          lightIntensity: 1.5,
-          lightDistance: 5
-        };
-
-      case 'lightning':
-        return {
-          geometry: (
-            <tetrahedronGeometry args={[0.3]} />
-          ),
-          material: (
-            <meshPhysicalMaterial
-              color="#ffff00"
-              emissive="#ffffff"
-              emissiveIntensity={3}
-              metalness={1}
-              roughness={0.2}
-              transparent={true}
-              opacity={0.8}
-              envMapIntensity={4}
-            />
-          ),
-          trailCount: 10,
-          trailSpacing: 0.04,
-          rotationSpeed: 5,
-          lightIntensity: 2.5,
-          lightDistance: 6
-        };
-
-      case 'nature':
-        return {
-          geometry: (
-            <torusKnotGeometry args={[0.15, 0.05, 64, 8]} />
-          ),
-          material: (
-            <meshPhysicalMaterial
-              color="#33ff33"
-              emissive="#00ff00"
-              emissiveIntensity={1}
-              metalness={0.6}
-              roughness={0.4}
-              transparent={true}
-              opacity={0.85}
-              envMapIntensity={2}
-            />
-          ),
-          trailCount: 7,
-          trailSpacing: 0.055,
-          rotationSpeed: 3.5,
-          lightIntensity: 1.8,
-          lightDistance: 4.5
-        };
-
-      default:
-        return {
-          geometry: <sphereGeometry args={[0.2]} />,
-          material: <meshStandardMaterial color={stats.emissive} emissive={stats.emissive} />,
-          trailCount: 5,
-          trailSpacing: 0.06,
-          rotationSpeed: 3,
-          lightIntensity: 1,
-          lightDistance: 4
-        };
-    }
-  }, [type, stats.emissive]);
-
-  const projectileConfig = useMemo(() => getProjectileConfig(), [getProjectileConfig]);
-
-  // Store animation state
-  const [projectileAnimations, setProjectileAnimations] = useState<{
-    [key: number]: {
-      rotation: number[];
-      scale: number;
-      lightIntensity: number;
-    };
-  }>({});
-
-  // Update animations
-  useFrame((state) => {
-    setProjectileAnimations(current => {
-      const newAnimations: typeof projectileAnimations = {};
-      projectiles.forEach(proj => {
-        newAnimations[proj.id] = {
-          rotation: [
-            state.clock.getElapsedTime() * projectileConfig.rotationSpeed,
-            state.clock.getElapsedTime() * projectileConfig.rotationSpeed * 0.7,
-            state.clock.getElapsedTime() * projectileConfig.rotationSpeed * 0.5
-          ],
-          scale: 1 + Math.sin(state.clock.getElapsedTime() * 10) * 0.1,
-          lightIntensity: projectileConfig.lightIntensity * (1 + Math.sin(state.clock.getElapsedTime() * 15) * 0.2)
-        };
-      });
-      return newAnimations;
-    });
-  });
-
-  // Handle attacking
-  useFrame((state) => {
-    if (phase !== 'combat' || preview) return;
-
-    const currentTime = state.clock.getElapsedTime() * 1000;
-    if (currentTime - lastAttackTime.current < attackCooldown) return;
-
-    const towerPos = position instanceof Vector3 ? position : new Vector3(...position);
-    let closestCreep = null;
-    let closestDistance = Infinity;
-
-    for (const creep of creeps) {
-      const dx = creep.position[0] - towerPos.x;
-      const dz = creep.position[2] - towerPos.z;
-      const distance = Math.sqrt(dx * dx + dz * dz);
-
-      if (distance <= range && distance < closestDistance) {
-        closestDistance = distance;
-        closestCreep = creep;
-      }
-    }
-
-    if (closestCreep && projectiles.length < MAX_PROJECTILES) {
-      // Get tower height based on tier
-      const tierNum = parseInt(type.match(/\d+/)[0]);
-      const towerHeight = 0.8 + (tierNum - 1) * 0.2; // Base height for tier 1 is 0.8
-
-      // Start position relative to tower base (0,0,0)
-      const startPos = new Vector3(
-        0,              // x relative to group
-        towerHeight,    // y at tower top
-        0               // z relative to group
-      );
-
-      // Target position relative to tower base
-      const targetPos = new Vector3(
-        closestCreep.position[0] - towerPos.x,  // relative x
-        0.2,                                    // slightly above ground
-        closestCreep.position[2] - towerPos.z   // relative z
-      );
-
-      setProjectiles(prev => [...prev, {
-        id: Date.now(),
-        startPos,
-        targetPos,
-        progress: 0
-      }]);
-
-      useGameStore.getState().damageCreep(closestCreep.id, damage, type);
-      lastAttackTime.current = currentTime;
-    }
-  });
-
-  // Update projectile positions with slight arc
   useFrame((state, delta) => {
-    if (!projectiles.length) return;
+    if (!projectilesRef.current.length) return;
 
-    setProjectiles(current =>
-      current.map(proj => {
-        const newProgress = proj.progress + delta * 4;
+    const speed = PROJECTILE_SPEED * delta;
+    setProjectiles(prev =>
+      prev.map(projectile => {
+        const { startPos, targetPos, progress } = projectile;
+        const newProgress = progress + speed;
+
         if (newProgress >= 1) {
           // Handle projectile hit
-          const targetCreep = creeps.find(creep => 
-            new Vector3(...creep.position).distanceTo(proj.targetPos) < 1
-          );
-          if (targetCreep && onDamageEnemy) {
-            onDamageEnemy(targetCreep.id, damage);
+          const targetCreep = creeps.find(c => c.id === projectile.targetCreepId);
+          if (targetCreep) {
+            onDamageEnemy(targetCreep.id, damage, stats.special);
           }
           return null;
         }
+
+        // Calculate arc trajectory
+        const height = 2;
+        const arcY = Math.sin(newProgress * Math.PI) * height;
+
+        // Update position with proper interpolation
+        const currentPos = new Vector3().lerpVectors(startPos, targetPos, newProgress);
+        currentPos.y += arcY;
+
         return {
-          ...proj,
+          ...projectile,
+          currentPos,
           progress: newProgress
         };
       }).filter(Boolean)
     );
+  });
+
+  useFrame(() => {
+    if (preview || !onDamageEnemy || phase !== 'combat') return;
+
+    const now = Date.now();
+    if (now - lastAttackTime.current < attackCooldown) return;
+
+    // Find closest creep in range
+    let closestCreep = null;
+    let closestDistance = Infinity;
+
+    for (const creep of creeps) {
+      if (!creep.position) continue;
+
+      const creepPos = new Vector3(...creep.position);
+      const towerPos = towerRef.current ? towerRef.current.position : (position instanceof Vector3 ? position : new Vector3(...position));
+      const distance = creepPos.distanceTo(towerPos);
+
+      if (distance <= range && distance < closestDistance) {
+        closestCreep = creep;
+        closestDistance = distance;
+      }
+    }
+
+    if (closestCreep) {
+      const towerHeight = 1 + (level - 1) * 0.2;
+      const towerPos = towerRef.current ? towerRef.current.position : (position instanceof Vector3 ? position : new Vector3(...position));
+      const startPos = towerPos.clone();
+      startPos.y += towerHeight;
+
+      const targetPos = new Vector3(...closestCreep.position);
+      targetPos.y += 0.5;
+
+      // Add new projectile
+      if (projectilesRef.current.length < MAX_PROJECTILES) {
+        setProjectiles(prev => [
+          ...prev,
+          {
+            id: Math.random(),
+            startPos,
+            targetPos,
+            currentPos: startPos.clone(),
+            progress: 0,
+            targetCreepId: closestCreep.id
+          }
+        ]);
+      }
+
+      lastAttackTime.current = now;
+    }
   });
 
   const [element, tier] = type.match(/([a-z]+)(\d+)/).slice(1);
@@ -403,7 +267,7 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
   const baseHeight = 1.2 + (tierNum - 1) * 0.2;
 
   return (
-    <group position={position instanceof Vector3 ? position.toArray() : position}>
+    <group ref={towerRef} position={position instanceof Vector3 ? position.toArray() : position}>
       {/* Base platform for all towers */}
       <mesh position={[0, 0.1, 0]} castShadow receiveShadow>
         <cylinderGeometry args={[baseWidth * 0.7, baseWidth * 0.8, 0.2, 8]} />
@@ -560,19 +424,19 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
         </>
       )}
 
-      {/* WebGPU-accelerated projectile system */}
-      <ProjectileSystem
-        projectiles={projectiles}
-        emissiveColor={stats.emissive}
-        geometry={projectileConfig.geometry}
-        material={projectileConfig.material}
-      />
+      {/* Projectiles */}
+      {projectiles.map(({ id, currentPos }) => (
+        <mesh key={id} position={currentPos}>
+          <sphereGeometry args={[0.2, 8, 8]} />
+          <meshBasicMaterial color={stats.emissive} emissive={stats.emissive} emissiveIntensity={2} />
+        </mesh>
+      ))}
 
-      {/* Range indicator */}
+      {/* Range indicator (only in preview) */}
       {preview && (
-        <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <mesh position={[0, 0.1, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[0, stats.range, 32]} />
-          <meshBasicMaterial color={stats.color} transparent opacity={0.2} />
+          <meshBasicMaterial color="rgba(255,255,255,0.2)" transparent opacity={0.2} />
         </mesh>
       )}
     </group>

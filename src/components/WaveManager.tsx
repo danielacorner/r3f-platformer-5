@@ -1,58 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { Vector3 } from 'three';
-
-interface Wave {
-  creeps: {
-    type: 'normal' | 'armored' | 'fast' | 'boss';
-    health: number;
-    count: number;
-  }[];
-  spawnInterval: number;
-}
-
-const WAVES: Wave[] = [
-  // Wave 1: Introduction
-  {
-    creeps: [{ type: 'normal', health: 100, count: 10 }],
-    spawnInterval: 1500,
-  },
-  // Wave 2: Mix of normal and fast
-  {
-    creeps: [
-      { type: 'normal', health: 120, count: 8 },
-      { type: 'fast', health: 80, count: 4 },
-    ],
-    spawnInterval: 1200,
-  },
-  // Wave 3: Introduce armored
-  {
-    creeps: [
-      { type: 'normal', health: 140, count: 8 },
-      { type: 'armored', health: 200, count: 3 },
-    ],
-    spawnInterval: 1000,
-  },
-  // Wave 4: All types
-  {
-    creeps: [
-      { type: 'normal', health: 160, count: 10 },
-      { type: 'fast', health: 100, count: 6 },
-      { type: 'armored', health: 250, count: 4 },
-    ],
-    spawnInterval: 800,
-  },
-  // Wave 5: Boss wave
-  {
-    creeps: [
-      { type: 'normal', health: 180, count: 12 },
-      { type: 'fast', health: 120, count: 8 },
-      { type: 'armored', health: 300, count: 5 },
-      { type: 'boss', health: 1000, count: 1 },
-    ],
-    spawnInterval: 1000,
-  },
-];
+import { generateWaveSet, WaveCreep, Wave as ConfigWave } from '../config/waveConfig';
 
 interface WaveManagerProps {
   pathPoints: Vector3[];
@@ -69,33 +18,54 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
     setIsSpawning,
     creeps,
     incrementLevel,
-    enemiesAlive 
+    enemiesAlive,
+    addMoney,
+    setWave
   } = useGameStore();
   
-  const waveQueue = useRef<Array<{ type: 'normal' | 'armored' | 'fast' | 'boss'; health: number }>>([]);
+  const waveQueue = useRef<Array<WaveCreep & { waveId: number }>>([]);
   const spawnTimerRef = useRef<number | null>(null);
   const enemyIdCounter = useRef(0);
+  const currentWaveRef = useRef<ConfigWave | null>(null);
+
+  // Cleanup function
+  const cleanup = () => {
+    if (spawnTimerRef.current) {
+      clearInterval(spawnTimerRef.current);
+      spawnTimerRef.current = null;
+    }
+    waveQueue.current = [];
+    currentWaveRef.current = null;
+  };
 
   // Initialize wave
   useEffect(() => {
     if (!isSpawning || phase !== 'combat') {
       console.log('Not spawning or not in combat phase');
-      return;
+      return cleanup();
     }
 
-    console.log(`Starting wave ${currentLevel}`);
-    const wave = WAVES[currentLevel - 1];
+    console.log(`Starting level ${currentLevel}`);
+    const waveSet = generateWaveSet(currentLevel);
+    const wave = waveSet.waves[0]; // Start with first wave
+    currentWaveRef.current = wave;
+    setWave(wave.id);
     
     if (!wave) {
       console.log('No more waves available!');
       setPhase('victory');
       setIsSpawning(false);
-      return;
+      return cleanup();
     }
 
-    // Build queue of enemies
-    waveQueue.current = wave.creeps.flatMap(creep =>
-      Array(creep.count).fill({ type: creep.type, health: creep.health })
+    // Build queue of enemies with modifiers applied
+    waveQueue.current = wave.creeps.flatMap(creepGroup => 
+      Array(creepGroup.count).fill(null).map(() => ({
+        ...creepGroup,
+        waveId: wave.id,
+        health: creepGroup.health * (wave.modifiers?.find(m => m.type === 'health')?.value || 1),
+        speed: creepGroup.speed * (wave.modifiers?.find(m => m.type === 'speed')?.value || 1)
+      }))
     );
 
     // Randomize queue for variety
@@ -105,7 +75,7 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
     }
 
     const totalEnemies = waveQueue.current.length;
-    console.log(`Wave ${currentLevel} starting with ${totalEnemies} enemies`);
+    console.log(`Wave ${wave.id} starting with ${totalEnemies} enemies`);
     setEnemiesAlive(totalEnemies);
 
     // Start spawning
@@ -116,16 +86,20 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
 
         // Add enemy to scene
         const startPos = pathPoints[0].clone();
-        startPos.y = 1;
+        startPos.y = 0.5;  // Match the height in Creep component
 
-        // Create new creep
+        // Create new creep with modifiers
         const newCreep = {
           position: [startPos.x, startPos.y, startPos.z] as [number, number, number],
           type: enemy.type,
           health: enemy.health,
           maxHealth: enemy.health,
-          id: enemyIdCounter.current,
-          effects: {}
+          speed: enemy.speed,
+          size: enemy.size,
+          value: enemy.value,
+          id: String(enemyIdCounter.current),  // Convert to string
+          effects: {},
+          waveId: enemy.waveId
         };
 
         // Add to game store
@@ -145,38 +119,48 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
 
       const spawned = spawnEnemy();
       if (!spawned && waveQueue.current.length === 0) {
-        console.log('Finished spawning all enemies for wave ' + currentLevel);
+        console.log('Finished spawning all enemies for wave ' + currentWaveRef.current?.id);
         clearInterval(interval);
         setIsSpawning(false);
+        
+        // Award wave completion bonus
+        if (currentWaveRef.current) {
+          addMoney(currentWaveRef.current.reward);
+        }
       }
-    }, wave.spawnInterval);
+    }, wave.baseDelay);
 
     spawnTimerRef.current = interval;
 
-    return () => {
-      if (spawnTimerRef.current) {
-        clearInterval(spawnTimerRef.current);
-        spawnTimerRef.current = null;
-      }
-    };
+    return cleanup;
   }, [phase, currentLevel, isSpawning]);
 
   // Check for wave completion
   useEffect(() => {
     if (phase === 'combat' && !isSpawning && creeps.length === 0 && enemiesAlive === 0) {
-      console.log(`Wave ${currentLevel} completed! All enemies defeated.`);
-      setPhase('prep');
-      incrementLevel();
+      const waveSet = generateWaveSet(currentLevel);
+      const currentWaveId = currentWaveRef.current?.id || 0;
+      const nextWave = waveSet.waves[currentWaveId];
+
+      if (nextWave) {
+        // More waves in this level
+        console.log(`Wave ${currentWaveId} completed! Starting next wave...`);
+        currentWaveRef.current = nextWave;
+        setWave(nextWave.id);
+        setIsSpawning(true);
+      } else {
+        // Level complete
+        console.log(`Level ${currentLevel} completed! All waves defeated.`);
+        setPhase('prep');
+        incrementLevel();
+      }
     }
   }, [phase, isSpawning, creeps.length, enemiesAlive]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (spawnTimerRef.current) {
-        clearInterval(spawnTimerRef.current);
-        spawnTimerRef.current = null;
-      }
+      cleanup();
     };
   }, []);
 

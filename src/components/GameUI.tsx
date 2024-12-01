@@ -6,6 +6,7 @@ export function GameUI() {
   const { phase, setPhase, lives, money, currentLevel, setIsSpawning } = useGameStore();
 
   const startWave = () => {
+    console.log('Starting wave...');
     setPhase('combat');
     setIsSpawning(true);
   };
@@ -32,6 +33,18 @@ export function GameUI() {
           <button 
             className="control-button start-wave" 
             onClick={startWave}
+            style={{
+              padding: '10px 20px',
+              fontSize: '16px',
+              backgroundColor: '#4CAF50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
           >
             <FaPlay />
             <span>Start Wave</span>

@@ -12,31 +12,36 @@ export const creepShader = {
     varying vec3 vNormal;
     varying vec3 vViewPosition;
     varying vec3 vWorldPosition;
+    varying vec2 vUv;
     
     void main() {
       vColor = instanceColor;
       vHealth = instanceHealth;
+      vUv = uv;
+      vNormal = normalMatrix * normal;
       
       // Apply instance scale
-      vec3 transformed = position;
-      vec4 worldPosition = modelMatrix * instanceMatrix * vec4(transformed * instanceScale, 1.0);
+      vec3 transformed = position * instanceScale;
+      vec4 worldPosition = modelMatrix * instanceMatrix * vec4(transformed, 1.0);
       vec4 mvPosition = viewMatrix * worldPosition;
       gl_Position = projectionMatrix * mvPosition;
       
       // Pass data to fragment shader
-      vNormal = normalMatrix * normal;
       vViewPosition = -mvPosition.xyz;
       vWorldPosition = worldPosition.xyz;
     }
   `,
   fragmentShader: `
     uniform float time;
+    uniform float opacity;
+    uniform vec3 diffuse;
     
     varying vec3 vColor;
     varying float vHealth;
     varying vec3 vNormal;
     varying vec3 vViewPosition;
     varying vec3 vWorldPosition;
+    varying vec2 vUv;
     
     void main() {
       vec3 normal = normalize(vNormal);
@@ -52,13 +57,29 @@ export const creepShader = {
       // Animated energy effect
       float energy = sin(vWorldPosition.y * 10.0 + time * 2.0) * 0.5 + 0.5;
       
+      // Health bar
+      float healthBarWidth = 0.8;
+      float healthBarHeight = 0.1;
+      float healthBarY = 0.9;
+      
+      if (vUv.y > healthBarY && vUv.y < healthBarY + healthBarHeight) {
+        float healthX = (vUv.x - 0.5) * 2.0;
+        if (abs(healthX) < healthBarWidth) {
+          float healthLevel = (healthX + healthBarWidth) / (healthBarWidth * 2.0);
+          if (healthLevel <= vHealth) {
+            gl_FragColor = vec4(mix(vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), vHealth), opacity);
+            return;
+          }
+        }
+      }
+      
       // Final color
       vec3 baseColor = vColor;
       vec3 rimColor = mix(glowColor, vec3(1.0), 0.5);
       vec3 finalColor = mix(baseColor, rimColor, fresnel * 0.5);
       finalColor += glowColor * energy * 0.2;
       
-      gl_FragColor = vec4(finalColor, 1.0);
+      gl_FragColor = vec4(finalColor, opacity);
     }
   `
 };
@@ -162,6 +183,8 @@ export function createShaderMaterial(type: 'creep' | 'tower', params: any = {}) 
     fragmentShader: shader.fragmentShader,
     uniforms: {
       time: { value: 0 },
+      opacity: { value: 1.0 },
+      diffuse: { value: new Vector3(1, 1, 1) },
       color: { value: new Vector3(1, 1, 1) },
       powerLevel: { value: 1.0 },
       ...params

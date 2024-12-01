@@ -86,14 +86,43 @@ export const TOWER_STATS: Record<ElementType, TowerStats> = {
   dark3: { damage: 90, range: 8, attackSpeed: 1.2, cost: 500, special: { type: 'void', value: 0.35, mana_burn: 0.3 }, color: '#f3e8ff', emissive: '#a855f7', description: "Void - Drains special abilities from enemies" },
   dark4: { damage: 140, range: 8.5, attackSpeed: 1.3, cost: 1000, special: { type: 'nightmare', value: 0.45, fear_chance: 0.2 }, color: '#f3e8ff', emissive: '#a855f7', description: "Nightmare - Chance to fear enemies, making them retreat" },
   dark5: { damage: 200, range: 9, attackSpeed: 1.4, cost: 2000, special: { type: 'oblivion', value: 0.60, soul_harvest: true }, color: '#f3e8ff', emissive: '#a855f7', description: "Oblivion - Harvests souls of fallen enemies for bonus effects" }
-};
+}
+
+export interface Projectile {
+  id: number;
+  startPos: Vector3;
+  targetPos: Vector3;
+  currentPos: Vector3;
+  progress: number;
+  targetCreepId: string;
+}
+
+export interface TowerState {
+  id: string;
+  type: string;
+  position: [number, number, number];
+  level: number;
+  damage: number;
+  range: number;
+  attackSpeed: number;
+  special: string;
+  cost: number;
+  sellValue: number;
+  kills: number;
+  damageDealt: number;
+  lastAttackTime?: number;
+}
 
 interface CreepState {
   position: [number, number, number];
   type: string;
   health: number;
   maxHealth: number;
-  id: number;
+  speed: number;
+  size: number;
+  value: number;
+  id: string;
+  waveId: number;
   effects: {
     [key: string]: {
       value: number;
@@ -113,7 +142,7 @@ interface PlacedTower {
 }
 
 interface GameState {
-  phase: 'prep' | 'combat';
+  phase: 'prep' | 'combat' | 'victory';
   currentLevel: number;
   timer: number;
   enemiesAlive: number;
@@ -126,236 +155,191 @@ interface GameState {
   lives: number;
   wave: number;
   creeps: CreepState[];
+  projectiles: Projectile[];
+  towerStates: TowerState[];
 }
 
 const initialState: GameState = {
   phase: 'prep',
   currentLevel: 1,
-  timer: 4,
+  timer: 0,
   enemiesAlive: 0,
   isSpawning: false,
   levelComplete: false,
   placedTowers: [],
   selectedObjectType: null,
-  money: process.env.NODE_ENV === 'development' ? 10000 : 200, // Starting money
+  money: 500,
   score: 0,
   lives: 20,
   wave: 0,
-  creeps: []
+  creeps: [],
+  projectiles: [],
+  towerStates: []
 };
 
-export const useGameStore = create<GameState & {
-  setPhase: (phase: GameState['phase']) => void;
-  setCurrentLevel: (level: number) => void;
-  setTimer: (timer: number) => void;
-  setEnemiesAlive: (count: number) => void;
-  setIsSpawning: (isSpawning: boolean) => void;
-  setLevelComplete: (complete: boolean) => void;
-  addPlacedTower: (position: Vector3, type: ElementType) => void;
-  removePlacedTower: (id: number) => void;
-  upgradeTower: (id: number) => void;
-  setSelectedObjectType: (type: PlaceableObjectType | null) => void;
-  addMoney: (amount: number) => void;
-  spendMoney: (amount: number) => void;
-  addScore: (amount: number) => void;
-  loseLife: () => void;
-  resetLevel: () => void;
-  setWave: (wave: number) => void;
-  addCreep: (creep: CreepState) => void;
-  removeCreep: (id: number) => void;
-  updateCreep: (id: number, updates: Partial<CreepState>) => void;
-  applyEffectToCreep: (id: number, type: string, value: number, duration: number) => void;
-  damageCreep: (id: number, damage: number) => void;
-  incrementLevel: () => void;
-}>((set, get) => ({
+export const useGameStore = create<GameState>((set, get) => ({
   ...initialState,
 
-  setPhase: (phase: GameState['phase']) => {
-    console.log('Setting phase to:', phase);
+  setPhase: (phase) => {
+    console.log(`Setting phase to: ${phase}`);
     set({ phase });
   },
 
-  setCurrentLevel: (level: number) => set((state) => ({
-    currentLevel: level,
-    money: state.money + (level * 50) // Bonus money each level
-  })),
-
-  setTimer: (timer: number) => set({ timer }),
-
-  setEnemiesAlive: (count: number) => {
-    console.log('Setting enemies alive to:', count);
-    set((state) => {
-      // Don't allow negative counts
-      const newCount = Math.max(0, count);
-      return { enemiesAlive: newCount };
-    });
+  setCurrentLevel: (level) => {
+    console.log(`Setting level to: ${level}`);
+    set({ currentLevel: level });
   },
 
-  setIsSpawning: (isSpawning: boolean) => {
-    console.log('Setting isSpawning to:', isSpawning);
+  setTimer: (timer) => set({ timer }),
+
+  setEnemiesAlive: (count) => {
+    console.log(`Setting enemies alive to: ${count}`);
+    set({ enemiesAlive: count });
+  },
+
+  setIsSpawning: (isSpawning) => {
+    console.log(`Setting isSpawning to: ${isSpawning}`);
     set({ isSpawning });
   },
 
-  setLevelComplete: (complete: boolean) => set({ levelComplete: complete }),
+  setLevelComplete: (complete) => set({ levelComplete: complete }),
 
-  addPlacedTower: (position: Vector3, type: ElementType) => set((state) => {
-    const cost = TOWER_STATS[type].cost; // Get cost from TOWER_STATS
-    if (state.money < cost) return state;
+  setWave: (wave) => {
+    console.log(`Setting wave to: ${wave}`);
+    set({ wave });
+  },
 
-    return {
-      placedTowers: [
-        ...state.placedTowers,
-        {
+  addPlacedTower: (position, type) => {
+    const state = get();
+    const cost = TOWER_STATS[type].cost;
+    if (state.money >= cost) {
+      set(state => ({
+        placedTowers: [...state.placedTowers, {
           id: Date.now(),
           position,
           type,
           level: 1,
           kills: 0
-        }
-      ],
-      money: state.money - cost,
-      selectedObjectType: type // Keep the tower type selected
-    };
-  }),
-
-  removePlacedTower: (id: number) => set((state) => ({
-    placedTowers: state.placedTowers.filter((tower) => tower.id !== id),
-    money: state.money + 50 // Refund half the cost
-  })),
-
-  upgradeTower: (id: number) => set((state) => {
-    const tower = state.placedTowers.find((t) => t.id === id);
-    if (!tower) return state;
-
-    const upgradeCost = TOWER_STATS[tower.type].cost * tower.level; // Cost increases with level
-    if (state.money < upgradeCost) return state;
-
-    return {
-      placedTowers: state.placedTowers.map((t) =>
-        t.id === id ? { ...t, level: t.level + 1 } : t
-      ),
-      money: state.money - upgradeCost
-    };
-  }),
-
-  setSelectedObjectType: (type: PlaceableObjectType | null) => set({ selectedObjectType: type }),
-
-  addMoney: (amount: number) => set((state) => ({
-    money: state.money + amount
-  })),
-
-  spendMoney: (amount: number) => set((state) => {
-    if (state.money < amount) return state;
-    return { money: state.money - amount };
-  }),
-
-  addScore: (amount: number) => set((state) => ({
-    score: state.score + amount
-  })),
-
-  loseLife: () => {
-    console.log('Losing a life');
-    set((state) => {
-      const newLives = state.lives - 1;
-      if (newLives <= 0) {
-        console.log('Game Over - No lives remaining');
-        return {
-          lives: 0,
-          phase: 'prep',
-          isSpawning: false,
-          creeps: []
-        };
-      }
-      return { lives: newLives };
-    });
+        }],
+        money: state.money - cost
+      }));
+    }
   },
 
-  resetLevel: () => set((state) => ({
+  removePlacedTower: (id) => set(state => ({
+    placedTowers: state.placedTowers.filter(tower => tower.id !== id)
+  })),
+
+  upgradeTower: (id) => {
+    const state = get();
+    const tower = state.placedTowers.find(t => t.id === id);
+    if (tower) {
+      const upgradeCost = Math.floor(TOWER_STATS[tower.type].cost * Math.pow(2, tower.level));
+      if (state.money >= upgradeCost) {
+        set(state => ({
+          placedTowers: state.placedTowers.map(t =>
+            t.id === id ? { ...t, level: t.level + 1 } : t
+          ),
+          money: state.money - upgradeCost
+        }));
+      }
+    }
+  },
+
+  setSelectedObjectType: (type) => set({ selectedObjectType: type }),
+
+  addMoney: (amount) => set(state => ({ money: state.money + amount })),
+
+  spendMoney: (amount) => set(state => ({ money: state.money - amount })),
+
+  addScore: (amount) => set(state => ({ score: state.score + amount })),
+
+  loseLife: () => set(state => {
+    const newLives = state.lives - 1;
+    if (newLives <= 0) {
+      return {
+        ...initialState,
+        phase: 'prep',
+        currentLevel: 1
+      };
+    }
+    return { lives: newLives };
+  }),
+
+  resetLevel: () => set(state => ({
     ...initialState,
     currentLevel: state.currentLevel
   })),
 
-  setWave: (wave: number) => set({ wave }),
-
-  addCreep: (creep: CreepState) => {
-    console.log('Adding creep:', creep);
-    set((state) => ({ creeps: [...state.creeps, creep] }));
+  addCreep: (creep) => {
+    console.log(`Adding creep: ${creep.id}`);
+    set(state => ({
+      creeps: [...state.creeps, creep],
+      enemiesAlive: state.enemiesAlive + 1
+    }));
   },
 
-  removeCreep: (id: number) => {
-    console.log('Removing creep:', id);
-    set((state) => ({ creeps: state.creeps.filter((c) => c.id !== id) }));
+  removeCreep: (id) => {
+    console.log(`Removing creep: ${id}`);
+    set(state => ({
+      creeps: state.creeps.filter(c => c.id !== id),
+      enemiesAlive: Math.max(0, state.enemiesAlive - 1)
+    }));
   },
 
-  updateCreep: (id: number, updates: Partial<CreepState>) => {
-    console.log('Updating creep:', id, updates);
-    set((state) => ({
-      creeps: state.creeps.map((c) =>
+  updateCreep: (id, updates) => {
+    set(state => ({
+      creeps: state.creeps.map(c =>
         c.id === id ? { ...c, ...updates } : c
       )
     }));
   },
 
-  applyEffectToCreep: (id: number, type: string, value: number, duration: number) => set((state) => ({
-    creeps: state.creeps.map((creep) =>
-      creep.id === id
-        ? {
-          ...creep,
-          effects: {
-            ...creep.effects,
-            [type]: {
-              value,
-              duration,
-              startTime: Date.now(),
-              stacks: (creep.effects[type]?.stacks || 0) + 1
-            }
-          }
-        }
-        : creep
+  damageCreep: (id, damage) => {
+    const state = get();
+    const creep = state.creeps.find(c => c.id === id);
+    if (!creep) return;
+
+    const newHealth = creep.health - damage;
+    if (newHealth <= 0) {
+      state.removeCreep(id);
+      state.addMoney(creep.value);
+      state.addScore(creep.value);
+    } else {
+      state.updateCreep(id, { health: newHealth });
+    }
+  },
+
+  incrementLevel: () => set(state => ({
+    currentLevel: state.currentLevel + 1,
+    wave: 0
+  })),
+
+  addProjectile: (projectile) => set(state => ({
+    projectiles: [...state.projectiles, projectile]
+  })),
+
+  removeProjectile: (id) => set(state => ({
+    projectiles: state.projectiles.filter(p => p.id !== id)
+  })),
+
+  updateProjectile: (id, updates) => set(state => ({
+    projectiles: state.projectiles.map(p =>
+      p.id === id ? { ...p, ...updates } : p
     )
   })),
 
-  damageCreep: (id: number, damage: number) => {
-    const state = get();
-    const creep = state.creeps.find((c) => c.id === id);
-    if (!creep) return;
+  addTowerState: (towerState) => set(state => ({
+    towerStates: [...state.towerStates, towerState]
+  })),
 
-    // Calculate final damage with effects
-    let finalDamage = damage;
+  removeTowerState: (id) => set(state => ({
+    towerStates: state.towerStates.filter(t => t.id !== id)
+  })),
 
-    // Apply amplification effects
-    const amplifyEffect = creep.effects['amplify'];
-    if (amplifyEffect && Date.now() - amplifyEffect.startTime < amplifyEffect.duration * 1000) {
-      finalDamage *= (1 + amplifyEffect.value);
-    }
-
-    // Apply armor reduction
-    const armorEffect = creep.effects['armor_reduction'];
-    if (armorEffect && Date.now() - armorEffect.startTime < armorEffect.duration * 1000) {
-      finalDamage *= (1 + armorEffect.value);
-    }
-
-    // Update creep health
-    set((state) => ({
-      creeps: state.creeps.map((c) =>
-        c.id === id
-          ? { ...c, health: Math.max(0, c.health - finalDamage) }
-          : c
-      )
-    }));
-  },
-
-  incrementLevel: () => {
-    console.log('Incrementing level');
-    set((state) => {
-      const newLevel = state.currentLevel + 1;
-      const bonus = 100 * state.currentLevel;
-      console.log(`Level ${state.currentLevel} complete! Bonus money: ${bonus}`);
-      return { 
-        currentLevel: newLevel,
-        money: state.money + bonus,
-        isSpawning: false
-      };
-    });
-  }
+  updateTowerState: (id, updates) => set(state => ({
+    towerStates: state.towerStates.map(t =>
+      t.id === id ? { ...t, ...updates } : t
+    )
+  }))
 }));

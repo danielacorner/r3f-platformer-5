@@ -19,6 +19,7 @@ import { Level } from './components/Level';
 import { BuildMenu } from './components/BuildMenu';
 import { GameUI } from './components/GameUI';
 import { useGameStore } from './store/gameStore';
+import { useEffect } from 'react';
 
 function TDCamera() {
   return (

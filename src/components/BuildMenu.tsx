@@ -12,7 +12,7 @@ import {
 import { TOWER_STATS, ElementType } from '../store/gameStore';
 import '../styles/BuildMenu.css';
 
-const TOWER_TYPES = {
+export const TOWER_TYPES = {
   // Light Towers
   light1: { type: 'light1' as ElementType, label: 'Light I', icon: <GiSunflower />, description: 'Basic amplification tower', cost: TOWER_STATS.light1.cost },
   light2: { type: 'light2' as ElementType, label: 'Light II', icon: <GiSunflower />, description: 'Enhanced amplification', cost: TOWER_STATS.light2.cost },
