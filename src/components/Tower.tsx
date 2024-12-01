@@ -50,6 +50,114 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
 
   const MAX_PROJECTILES = 20;
 
+  // Get projectile config based on element type
+  const getProjectileConfig = useCallback(() => {
+    const [element] = type.match(/([a-z]+)(\d+)/).slice(1);
+    
+    switch(element) {
+      case 'fire':
+        return {
+          geometry: <sphereGeometry args={[0.2]} />,
+          material: <meshPhysicalMaterial
+            color={stats.emissive}
+            emissive={stats.emissive}
+            emissiveIntensity={3}
+            roughness={0.2}
+            metalness={0.8}
+            toneMapped={false}
+          />,
+          lightIntensity: 2,
+          lightDistance: 3,
+          rotationSpeed: 5,
+          trailCount: 3,
+          trailSpacing: 0.1
+        };
+      case 'ice':
+        return {
+          geometry: <octahedronGeometry args={[0.15]} />,
+          material: <meshPhysicalMaterial
+            color={stats.emissive}
+            emissive={stats.emissive}
+            emissiveIntensity={2}
+            roughness={0}
+            metalness={0.3}
+            transmission={0.9}
+            thickness={0.5}
+            toneMapped={false}
+          />,
+          lightIntensity: 1.5,
+          lightDistance: 2,
+          rotationSpeed: 3,
+          trailCount: 2,
+          trailSpacing: 0.15
+        };
+      case 'lightning':
+        return {
+          geometry: <tetrahedronGeometry args={[0.15]} />,
+          material: <meshPhysicalMaterial
+            color={stats.emissive}
+            emissive={stats.emissive}
+            emissiveIntensity={5}
+            roughness={0.3}
+            metalness={1}
+            toneMapped={false}
+          />,
+          lightIntensity: 3,
+          lightDistance: 4,
+          rotationSpeed: 8,
+          trailCount: 4,
+          trailSpacing: 0.08
+        };
+      default: // nature
+        return {
+          geometry: <dodecahedronGeometry args={[0.15]} />,
+          material: <meshPhysicalMaterial
+            color={stats.emissive}
+            emissive={stats.emissive}
+            emissiveIntensity={2}
+            roughness={0.4}
+            metalness={0.6}
+            toneMapped={false}
+          />,
+          lightIntensity: 1,
+          lightDistance: 2,
+          rotationSpeed: 2,
+          trailCount: 2,
+          trailSpacing: 0.12
+        };
+    }
+  }, [type, stats.emissive]);
+
+  const projectileConfig = useMemo(() => getProjectileConfig(), [getProjectileConfig]);
+
+  // Store animation state
+  const [projectileAnimations, setProjectileAnimations] = useState<{
+    [key: number]: {
+      rotation: number[];
+      scale: number;
+      lightIntensity: number;
+    };
+  }>({});
+
+  // Update animations
+  useFrame((state) => {
+    setProjectileAnimations(current => {
+      const newAnimations: typeof projectileAnimations = {};
+      projectiles.forEach(proj => {
+        newAnimations[proj.id] = {
+          rotation: [
+            state.clock.getElapsedTime() * projectileConfig.rotationSpeed,
+            state.clock.getElapsedTime() * projectileConfig.rotationSpeed * 0.7,
+            state.clock.getElapsedTime() * projectileConfig.rotationSpeed * 0.5
+          ],
+          scale: 1 + Math.sin(state.clock.getElapsedTime() * 10) * 0.1,
+          lightIntensity: projectileConfig.lightIntensity * (1 + Math.sin(state.clock.getElapsedTime() * 15) * 0.2)
+        };
+      });
+      return newAnimations;
+    });
+  });
+
   // Handle attacking
   useFrame((state) => {
     if (phase !== 'combat' || preview) return;
@@ -281,7 +389,7 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
         </>
       )}
 
-      {/* Simple projectiles with arc */}
+      {/* Enhanced projectiles with trails and effects */}
       {projectiles.map(proj => {
         const progress = proj.progress;
         const arcHeight = 0.2;
@@ -291,16 +399,53 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
         const basePos = new Vector3().lerpVectors(proj.startPos, proj.targetPos, progress);
         basePos.y += arcOffset;
 
+        const animation = projectileAnimations[proj.id] || {
+          rotation: [0, 0, 0],
+          scale: 1,
+          lightIntensity: projectileConfig.lightIntensity
+        };
+
         return (
-          <mesh key={proj.id} position={basePos}>
-            <sphereGeometry args={[0.15]} />
-            <meshStandardMaterial
+          <group key={proj.id}>
+            {/* Projectile trails */}
+            {Array.from({ length: projectileConfig.trailCount }).map((_, i) => {
+              const trailProgress = Math.max(0, progress - i * projectileConfig.trailSpacing);
+              if (trailProgress <= 0) return null;
+
+              const trailPos = new Vector3().lerpVectors(proj.startPos, proj.targetPos, trailProgress);
+              trailPos.y += Math.sin(trailProgress * Math.PI) * arcHeight;
+
+              return (
+                <mesh
+                  key={i}
+                  position={trailPos}
+                  rotation={animation.rotation}
+                  scale={animation.scale * (1 - i * 0.2)}
+                >
+                  {projectileConfig.geometry}
+                  {projectileConfig.material}
+                </mesh>
+              );
+            })}
+
+            {/* Main projectile */}
+            <mesh
+              position={basePos}
+              rotation={animation.rotation}
+              scale={animation.scale}
+            >
+              {projectileConfig.geometry}
+              {projectileConfig.material}
+            </mesh>
+
+            {/* Dynamic point light */}
+            <pointLight
+              position={basePos}
               color={stats.emissive}
-              emissive={stats.emissive}
-              emissiveIntensity={5}
-              toneMapped={false}
+              intensity={animation.lightIntensity}
+              distance={projectileConfig.lightDistance}
             />
-          </mesh>
+          </group>
         );
       })}
 
