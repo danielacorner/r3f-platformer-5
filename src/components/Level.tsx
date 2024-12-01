@@ -1,10 +1,10 @@
 import React, { useRef, useEffect, useMemo, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
-import { Environment, useGLTF } from '@react-three/drei';
+import { Environment, useGLTF, Stars, Cloud, Float, useTexture } from '@react-three/drei';
 import { Vector3, Raycaster, Color, DoubleSide, Plane, Vector2, InstancedMesh, Object3D, Matrix4, BoxGeometry, Mesh, Euler } from 'three';
 import { TOWER_STATS, useGameStore } from '../store/gameStore';
-import { Edges, MeshTransmissionMaterial, Float } from '@react-three/drei';
+import { Edges, MeshTransmissionMaterial, Float as FloatDrei } from '@react-three/drei';
 import { WaveManager } from './WaveManager';
 import { Tower } from './Tower';
 import { createShaderMaterial } from '../utils/shaders';
@@ -17,6 +17,7 @@ const pathColor = new Color('#4338ca').convertSRGBToLinear();
 const platformColor = new Color('#1e293b').convertSRGBToLinear();
 const wallColor = new Color('#334155').convertSRGBToLinear();
 const glowColor = new Color('#60a5fa').convertSRGBToLinear();
+const grassColor = new Color('#15803d').convertSRGBToLinear();
 
 const pathMaterial = createShaderMaterial('path', {
   color: { value: new Vector3(0.26, 0.22, 0.79) },
@@ -65,41 +66,147 @@ function generatePath() {
   return path;
 }
 
-// Crystal Component
-function Crystal({ position, scale = 1, color = '#60a5fa' }: { position: [number, number, number]; scale?: number; color?: string }) {
-  const crystalRef = useRef<Mesh>(null);
-  const crystalColor = new Color(color).convertSRGBToLinear();
+// Optimized components using instancing
+function TreeInstances({ count = 15, radius = 25 }) {
+  const meshRef = useRef<InstancedMesh>(null);
+  const tempObject = useMemo(() => new Object3D(), []);
+  const matrix = useMemo(() => new Matrix4(), []);
 
-  useFrame((state) => {
-    if (crystalRef.current) {
-      crystalRef.current.rotation.y += 0.01;
-      crystalRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 2) * 0.1;
+  useEffect(() => {
+    if (!meshRef.current) return;
+
+    // Set positions for all instances
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      const x = Math.sin(angle) * radius + (Math.random() * 5);
+      const z = Math.cos(angle) * radius + (Math.random() * 5);
+      const scale = 0.8 + Math.random() * 0.4;
+
+      tempObject.position.set(x, 0, z);
+      tempObject.scale.set(scale, scale, scale);
+      tempObject.updateMatrix();
+      meshRef.current.setMatrixAt(i, tempObject.matrix);
     }
-  });
+    meshRef.current.instanceMatrix.needsUpdate = true;
+  }, [count, radius]);
 
   return (
-    <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
-      <mesh ref={crystalRef} position={position} scale={scale} castShadow>
-        <octahedronGeometry args={[1]} />
-        <MeshTransmissionMaterial
-          backside
-          samples={16}
-          thickness={0.5}
-          chromaticAberration={1}
-          anisotropy={1}
-          distortion={0.5}
-          distortionScale={0.1}
-          temporalDistortion={0.2}
-          iridescence={1}
-          iridescenceIOR={1.5}
-          iridescenceThicknessRange={[0, 1400]}
-          color={crystalColor}
-          transmission={0.95}
-        />
-        <Edges scale={1.1} threshold={15} color={crystalColor} />
-      </mesh>
-      <pointLight intensity={2} distance={5} color={color} />
-    </Float>
+    <group>
+      {/* Trunk */}
+      <instancedMesh ref={meshRef} args={[undefined, undefined, count]} castShadow>
+        <cylinderGeometry args={[0.2, 0.3, 2]} />
+        <meshStandardMaterial color="#4b3f2f" roughness={0.8} />
+      </instancedMesh>
+      {/* Foliage - using lower poly count */}
+      <instancedMesh ref={meshRef} args={[undefined, undefined, count]} castShadow>
+        <coneGeometry args={[1.5, 3, 6]} />
+        <meshStandardMaterial color={grassColor} roughness={0.8} />
+      </instancedMesh>
+    </group>
+  );
+}
+
+function RockInstances({ count = 30, radius = 20 }) {
+  const meshRef = useRef<InstancedMesh>(null);
+  const tempObject = useMemo(() => new Object3D(), []);
+
+  useEffect(() => {
+    if (!meshRef.current) return;
+
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      const x = Math.sin(angle) * radius + (Math.random() * 10);
+      const z = Math.cos(angle) * radius + (Math.random() * 10);
+      const scale = 0.5 + Math.random() * 1;
+      const rotation = Math.random() * Math.PI * 2;
+
+      tempObject.position.set(x, 0, z);
+      tempObject.scale.set(scale, scale, scale);
+      tempObject.rotation.y = rotation;
+      tempObject.updateMatrix();
+      meshRef.current.setMatrixAt(i, tempObject.matrix);
+    }
+    meshRef.current.instanceMatrix.needsUpdate = true;
+  }, [count, radius]);
+
+  return (
+    <instancedMesh ref={meshRef} args={[undefined, undefined, count]} castShadow>
+      <dodecahedronGeometry args={[0.5, 0]} /> {/* Reduced detail level */}
+      <meshStandardMaterial color="#64748b" roughness={0.6} />
+    </instancedMesh>
+  );
+}
+
+function GrassInstances({ count = 100 }) {
+  const meshRef = useRef<InstancedMesh>(null);
+  const tempObject = useMemo(() => new Object3D(), []);
+
+  useEffect(() => {
+    if (!meshRef.current) return;
+
+    for (let i = 0; i < count; i++) {
+      const x = Math.random() * 50 - 25;
+      const z = Math.random() * 50 - 25;
+      const scale = 0.8 + Math.random() * 0.4;
+      const rotation = Math.random() * Math.PI * 2;
+
+      tempObject.position.set(x, 0, z);
+      tempObject.scale.set(scale, scale, scale);
+      tempObject.rotation.y = rotation;
+      tempObject.updateMatrix();
+      meshRef.current.setMatrixAt(i, tempObject.matrix);
+    }
+    meshRef.current.instanceMatrix.needsUpdate = true;
+  }, [count]);
+
+  return (
+    <instancedMesh ref={meshRef} args={[undefined, undefined, count]}>
+      <planeGeometry args={[0.3, 0.5]} />
+      <meshStandardMaterial
+        color={grassColor}
+        roughness={0.8}
+        transparent
+        opacity={0.9}
+        side={DoubleSide}
+      />
+    </instancedMesh>
+  );
+}
+
+function CrystalInstances({ count = 8, radius = 15 }) {
+  const meshRef = useRef<InstancedMesh>(null);
+  const tempObject = useMemo(() => new Object3D(), []);
+  const colors = useMemo(() => ['#60a5fa', '#34d399', '#fbbf24', '#f87171'], []);
+
+  useEffect(() => {
+    if (!meshRef.current) return;
+
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      const x = Math.sin(angle) * radius;
+      const y = 3 + Math.random() * 2;
+      const z = Math.cos(angle) * radius;
+      const scale = 0.8 + Math.random() * 0.4;
+
+      tempObject.position.set(x, y, z);
+      tempObject.scale.set(scale, scale, scale);
+      tempObject.updateMatrix();
+      meshRef.current.setMatrixAt(i, tempObject.matrix);
+    }
+    meshRef.current.instanceMatrix.needsUpdate = true;
+  }, [count, radius]);
+
+  return (
+    <instancedMesh ref={meshRef} args={[undefined, undefined, count]} castShadow>
+      <octahedronGeometry args={[0.5]} />
+      <meshStandardMaterial
+        color={colors[0]}
+        emissive={colors[0]}
+        emissiveIntensity={0.5}
+        roughness={0.2}
+        metalness={0.8}
+      />
+    </instancedMesh>
   );
 }
 
@@ -221,13 +328,34 @@ export function Level() {
         shadow-bias={-0.001}
       />
 
+      {/* Sky and Atmosphere */}
+      <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
+      <Cloud
+        opacity={0.5}
+        speed={0.4}
+        width={10}
+        depth={1.5}
+        segments={20}
+        position={[0, 15, 0]}
+      />
+
       {/* Ground */}
       <RigidBody type="fixed" colliders="cuboid">
         <mesh position={[0, -0.5, 0]} receiveShadow>
           <boxGeometry args={[60, 1, 60]} />
-          <meshStandardMaterial color={platformColor} roughness={0.7} metalness={0.3} />
+          <meshStandardMaterial
+            color={platformColor}
+            roughness={0.7}
+            metalness={0.3}
+          />
         </mesh>
       </RigidBody>
+
+      {/* Decorative Elements - Using Instanced Meshes */}
+      <TreeInstances count={15} radius={25} />
+      <RockInstances count={30} radius={20} />
+      <GrassInstances count={100} />
+      <CrystalInstances count={8} radius={15} />
 
       {/* Path */}
       <instancedMesh
@@ -247,20 +375,6 @@ export function Level() {
             <meshStandardMaterial color={glowColor} emissive={glowColor} emissiveIntensity={0.2} transparent opacity={0.3} />
           </mesh>
         </group>
-      ))}
-
-      {/* Crystals */}
-      <Crystal position={[-20, 1.5, -20]} scale={2} color="#22c55e" />
-      <Crystal position={[20, 1.5, 20]} scale={2} color="#ef4444" />
-
-      {/* Decorative Crystals */}
-      {generatePath().decorations.map((dec, index) => (
-        <Crystal
-          key={`crystal-${index}`}
-          position={[dec.position[0], dec.position[1] + 1, dec.position[2]]}
-          scale={dec.scale}
-          color="#60a5fa"
-        />
       ))}
 
       {/* Game Elements */}
@@ -290,18 +404,6 @@ export function Level() {
           canAfford={canAffordTower}
         />
       )}
-
-      {/* Hit Testing Plane */}
-      <mesh
-        visible={false}
-        position={[0, 0.5, 0]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        onPointerMove={handlePointerMove}
-        onClick={handlePlaceTower}
-      >
-        <planeGeometry args={[50, 50]} />
-        <meshBasicMaterial />
-      </mesh>
     </group>
   );
 }
