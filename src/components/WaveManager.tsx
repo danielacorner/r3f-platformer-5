@@ -89,7 +89,7 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
       if (waveQueue.current.length > 0) {
         const enemy = waveQueue.current.shift()!;
         enemyIdCounter.current++;
-        
+
         // Add enemy to scene
         const startPos = pathPoints[0].clone();
         startPos.y = 1; // Set exact height instead of adding

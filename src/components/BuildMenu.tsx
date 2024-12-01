@@ -123,7 +123,7 @@ export function BuildMenu() {
               {element === 'dark' && <GiSkullCrossedBones />}
               <span className="element-name">{element}</span>
             </div>
-            
+
             <div className="tower-expanded">
               <div className="tower-buttons">
                 {towers.map((tower) => (

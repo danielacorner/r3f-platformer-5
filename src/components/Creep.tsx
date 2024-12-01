@@ -94,7 +94,7 @@ export function Creep({ id, pathPoints }: { id: number; pathPoints: Vector3[] })
     setEffects(prev => {
       const currentTime = Date.now();
       const existing = prev[type];
-      
+
       // Handle stacking effects
       if (existing) {
         const newStacks = (existing.stacks || 1) + 1;
@@ -153,7 +153,7 @@ export function Creep({ id, pathPoints }: { id: number; pathPoints: Vector3[] })
     const currentPos = new Vector3(...position);
     const targetPos = pathPoints[pathIndex.current];
     const direction = targetPos.clone().sub(currentPos).normalize();
-    
+
     // Calculate speed with effects
     const slowValue = getEffectValue('slow');
     const baseSpeed = (creepSpeeds[type] || 0.1) * SPEED_MULTIPLIER;
@@ -162,12 +162,12 @@ export function Creep({ id, pathPoints }: { id: number; pathPoints: Vector3[] })
     // Move towards next point
     const newPos = currentPos.clone().add(direction.multiplyScalar(currentSpeed * delta));
     newPos.y = 1; // Maintain constant height
-    
+
     // Check if reached target
     const distanceToTarget = newPos.distanceTo(targetPos);
     if (distanceToTarget < 0.5) {
       pathIndex.current++;
-      
+
       // Reached end of path
       if (pathIndex.current >= pathPoints.length) {
         loseLife();
@@ -231,7 +231,7 @@ export function Creep({ id, pathPoints }: { id: number; pathPoints: Vector3[] })
     setEffects(prev => {
       const currentTime = Date.now();
       const newEffects = { ...prev };
-      
+
       Object.entries(prev).forEach(([type, effect]) => {
         const elapsed = (currentTime - effect.startTime) / 1000;
         if (elapsed > effect.duration) {
@@ -243,7 +243,7 @@ export function Creep({ id, pathPoints }: { id: number; pathPoints: Vector3[] })
     });
 
     // Update position and decay effects
-    updateCreep(id, { 
+    updateCreep(id, {
       position: [newPos.x, newPos.y, newPos.z],
       effects: effects
     });
@@ -288,7 +288,7 @@ export function Creep({ id, pathPoints }: { id: number; pathPoints: Vector3[] })
       </Billboard>
 
       {/* Effect indicators */}
-      {Object.entries(effects).map(([effect, value], index) => 
+      {Object.entries(effects).map(([effect, value], index) =>
         value ? (
           <Billboard key={effect} position={[0, creepSizes[type][1] + 0.7 + index * 0.2, 0]}>
             <mesh>

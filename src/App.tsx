@@ -13,6 +13,7 @@ import {
   Bloom,
   SMAA
 } from '@react-three/postprocessing';
+import * as THREE from 'three';
 import { Physics } from '@react-three/rapier';
 import { Level } from './components/Level';
 import { BuildMenu } from './components/BuildMenu';
@@ -36,13 +37,14 @@ function TDCamera() {
 
 function Effects() {
   return (
-    <EffectComposer multisampling={0} disableNormalPass>
+    <EffectComposer multisampling={0} disableNormalPass frameBufferType={THREE.HalfFloatType}>
       <Bloom
         intensity={0.5}
         luminanceThreshold={0.8}
         luminanceSmoothing={0.3}
+        mipmapBlur
       />
-      <SMAA />
+      <SMAA preset={2} />
     </EffectComposer>
   );
 }
@@ -55,7 +57,14 @@ export default function App() {
       <Canvas 
         shadows="soft" 
         camera={{ position: [30, 30, 30], fov: 50 }}
-        dpr={[1, 2]} // Limit max pixel ratio to 2 for performance
+        dpr={[1, 2]}
+        gl={{
+          powerPreference: "high-performance",
+          antialias: true,
+          stencil: false,
+          depth: true,
+          alpha: false
+        }}
       >
         <color attach="background" args={['#000913']} />
         <fog attach="fog" args={['#000913', 30, 100]} />
