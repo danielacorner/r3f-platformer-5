@@ -210,6 +210,74 @@ function CrystalInstances({ count = 8, radius = 15 }) {
   );
 }
 
+// Optimized Crystal Component for special locations
+function OptimizedCrystal({ position, scale = 1, color = '#60a5fa' }: { position: [number, number, number]; scale?: number; color?: string }) {
+  const meshRef = useRef<Mesh>(null);
+  const crystalColor = new Color(color).convertSRGBToLinear();
+
+  useFrame((state) => {
+    if (meshRef.current) {
+      meshRef.current.rotation.y += 0.01;
+      meshRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 2) * 0.1;
+    }
+  });
+
+  return (
+    <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
+      <mesh ref={meshRef} position={position} scale={scale} castShadow>
+        <octahedronGeometry args={[1]} />
+        <meshStandardMaterial
+          color={crystalColor}
+          emissive={crystalColor}
+          emissiveIntensity={0.5}
+          roughness={0.2}
+          metalness={0.8}
+          transparent
+          opacity={0.9}
+        />
+      </mesh>
+      <pointLight intensity={1} distance={5} color={color} />
+    </Float>
+  );
+}
+
+// Optimized Path Decoration Crystals
+function PathDecorations({ pathPoints }: { pathPoints: any[] }) {
+  const decorations = useMemo(() => generatePath().decorations, []);
+  const meshRef = useRef<InstancedMesh>(null);
+  const tempObject = useMemo(() => new Object3D(), []);
+
+  useEffect(() => {
+    if (!meshRef.current) return;
+
+    decorations.forEach((dec, i) => {
+      tempObject.position.set(dec.position[0], dec.position[1] + 1, dec.position[2]);
+      tempObject.scale.set(dec.scale, dec.scale, dec.scale);
+      tempObject.rotation.y = Math.random() * Math.PI * 2;
+      tempObject.updateMatrix();
+      meshRef.current!.setMatrixAt(i, tempObject.matrix);
+    });
+    meshRef.current.instanceMatrix.needsUpdate = true;
+  }, [decorations]);
+
+  return (
+    <instancedMesh
+      ref={meshRef}
+      args={[undefined, undefined, decorations.length]}
+      castShadow
+    >
+      <octahedronGeometry args={[0.5]} />
+      <meshStandardMaterial
+        color="#60a5fa"
+        emissive="#60a5fa"
+        emissiveIntensity={0.5}
+        roughness={0.2}
+        metalness={0.8}
+      />
+    </instancedMesh>
+  );
+}
+
 export function Level() {
   // Game State
   const {
@@ -331,11 +399,11 @@ export function Level() {
       {/* Sky and Atmosphere */}
       <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
       <Cloud
-        opacity={0.5}
-        speed={0.4}
+        opacity={0.01}
+        speed={0.2}
         width={10}
         depth={1.5}
-        segments={20}
+        segments={32}
         position={[0, 15, 0]}
       />
 
@@ -356,6 +424,13 @@ export function Level() {
       <RockInstances count={30} radius={20} />
       <GrassInstances count={100} />
       <CrystalInstances count={8} radius={15} />
+
+      {/* Special Crystals */}
+      <OptimizedCrystal position={[-20, 1.5, -20]} scale={2} color="#22c55e" />
+      <OptimizedCrystal position={[20, 1.5, 20]} scale={2} color="#ef4444" />
+
+      {/* Path Decoration Crystals */}
+      <PathDecorations pathPoints={pathPoints} />
 
       {/* Path */}
       <instancedMesh
