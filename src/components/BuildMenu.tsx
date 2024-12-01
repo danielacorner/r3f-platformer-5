@@ -60,18 +60,20 @@ function TowerButton({
   tower,
   isSelected,
   canAfford,
-  onClick
+  onClick, element
 }: {
   tower: typeof TOWER_TYPES[keyof typeof TOWER_TYPES];
   isSelected: boolean;
   canAfford: boolean;
   onClick: () => void;
+  element: ElementType
 }) {
   return (
     <button
       className={`tower-button ${isSelected ? 'selected' : ''} ${!canAfford ? 'disabled' : ''}`}
       onClick={onClick}
       disabled={!canAfford}
+      data-element={element}
     >
       <div className="tower-button-icon">{tower.icon}</div>
       <div className="tower-button-label">{tower.label}</div>
@@ -130,6 +132,7 @@ export function BuildMenu() {
                   <TowerButton
                     key={tower.type}
                     tower={tower}
+                    element={element}
                     isSelected={selectedObjectType === tower.type}
                     canAfford={money >= tower.cost}
                     onClick={() => {

@@ -102,88 +102,106 @@
 }
 
 /* Element-specific colors - more subtle backgrounds */
-.element-preview[data-element="water"] {
+.element-preview[data-element="water"],
+.tower-buttonw[data-element="water"] {
   background: linear-gradient(135deg, #1e293b, #1e3a5f);
   border-color: #3b82f6;
 }
 
-.element-preview[data-element="fire"] {
+.element-preview[data-element="fire"],
+.tower-buttonw[data-element="fire"] {
   background: linear-gradient(135deg, #27171f, #3d1f2b);
   border-color: #ef4444;
 }
 
-.element-preview[data-element="ice"] {
+.element-preview[data-element="ice"],
+.tower-buttonw[data-element="ice"] {
   background: linear-gradient(135deg, #1e293b, #1e3a5f);
   border-color: #38bdf8;
 }
 
-.element-preview[data-element="nature"] {
+.element-preview[data-element="nature"],
+.tower-buttonw[data-element="nature"] {
   background: linear-gradient(135deg, #1c2a22, #1f3a2c);
   border-color: #22c55e;
 }
 
-.element-preview[data-element="light"] {
+.element-preview[data-element="light"],
+.tower-buttonw[data-element="light"] {
   background: linear-gradient(135deg, #2a2921, #3d3a28);
   border-color: #eab308;
 }
 
-.element-preview[data-element="dark"] {
+.element-preview[data-element="dark"],
+.tower-buttonw[data-element="dark"] {
   background: linear-gradient(135deg, #18181b, #27272a);
   border-color: #71717a;
 }
 
 /* Vibrant hover borders */
-.element-preview[data-element="water"]:hover {
+.element-preview[data-element="water"]:hover,
+.tower-button[data-element="water"]:hover {
   border-color: #60a5fa;
 }
 
-.element-preview[data-element="fire"]:hover {
+.element-preview[data-element="fire"]:hover,
+.tower-button[data-element="fire"]:hover {
   border-color: #f87171;
 }
 
-.element-preview[data-element="ice"]:hover {
+.element-preview[data-element="ice"]:hover,
+.tower-button[data-element="ice"]:hover {
   border-color: #7dd3fc;
 }
 
-.element-preview[data-element="nature"]:hover {
+.element-preview[data-element="nature"]:hover,
+.tower-button[data-element="nature"]:hover {
   border-color: #4ade80;
 }
 
-.element-preview[data-element="light"]:hover {
+.element-preview[data-element="light"]:hover,
+.tower-button[data-element="light"]:hover {
   border-color: #facc15;
 }
 
-.element-preview[data-element="dark"]:hover {
+.element-preview[data-element="dark"]:hover,
+.tower-button[data-element="dark"]:hover {
   border-color: #a1a1aa;
 }
 
 /* Vibrant icon colors and glow effects */
-.element-preview[data-element="water"] svg {
+.element-preview[data-element="water"] svg,
+.tower-button[data-element="water"] svg {
   color: #60a5fa;
   filter: drop-shadow(0 0 4px #3b82f6);
 }
 
-.element-preview[data-element="fire"] svg {
+.element-preview[data-element="fire"] svg,
+.tower-button[data-element="fire"] svg {
   color: #f87171;
   filter: drop-shadow(0 0 4px #ef4444);
 }
 
-.element-preview[data-element="ice"] svg {
+.element-preview[data-element="ice"] svg,
+.tower-button[data-element="ice"] svg {
   color: #7dd3fc;
   filter: drop-shadow(0 0 4px #38bdf8);
 }
 
-.element-preview[data-element="nature"] svg {
+.element-preview[data-element="nature"] svg,
+.tower-button[data-element="nature"] svg {
   color: #4ade80;
   filter: drop-shadow(0 0 4px #22c55e);
 }
 
-.element-preview[data-element="light"] svg {
+.element-preview[data-element="light"] svg,
+.tower-button[data-element="light"] svg {
   color: #facc15;
   filter: drop-shadow(0 0 4px #eab308);
 }
 
-.element-preview[data-element="dark"] svg {
+.element-preview[data-element="dark"] svg,
+.tower-button[data-element="dark"] svg {
   color: #e4e4e7;
   filter: drop-shadow(0 0 4px #a1a1aa);
 }
@@ -381,6 +399,67 @@
 
 .tower-button:hover .tower-tooltip {
   display: block;
+}
+
+/* Tower type colors */
+.tower-button[data-tower-type^="light"] {
+  background-color: #fef3c7;
+  border-color: #fcd34d;
+}
+
+.tower-button[data-tower-type^="fire"] {
+  background-color: #fecaca;
+  border-color: #ef4444;
+}
+
+.tower-button[data-tower-type^="ice"] {
+  background-color: #e0f2fe;
+  border-color: #38bdf8;
+}
+
+.tower-button[data-tower-type^="nature"] {
+  background-color: #dcfce7;
+  border-color: #22c55e;
+}
+
+.tower-button[data-tower-type^="water"] {
+  background-color: #dbeafe;
+  border-color: #3b82f6;
+}
+
+.tower-button[data-tower-type^="dark"] {
+  background-color: #f3e8ff;
+  border-color: #a855f7;
+}
+
+/* Hover effects */
+.tower-button[data-tower-type^="light"]:hover {
+  background-color: #fcd34d;
+}
+
+.tower-button[data-tower-type^="fire"]:hover {
+  background-color: #ef4444;
+}
+
+.tower-button[data-tower-type^="ice"]:hover {
+  background-color: #38bdf8;
+}
+
+.tower-button[data-tower-type^="nature"]:hover {
+  background-color: #22c55e;
+}
+
+.tower-button[data-tower-type^="water"]:hover {
+  background-color: #3b82f6;
+}
+
+.tower-button[data-tower-type^="dark"]:hover {
+  background-color: #a855f7;
+}
+
+/* Text color on hover */
+.tower-button:hover {
+  color: white;
 }
 
 /* Scrollbar Styling */
