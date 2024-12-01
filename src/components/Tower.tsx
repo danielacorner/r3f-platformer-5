@@ -73,16 +73,22 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
     }
 
     if (closestCreep && projectiles.length < MAX_PROJECTILES) {
+      // Get tower height based on tier
+      const tierNum = parseInt(type.match(/\d+/)[0]);
+      const towerHeight = 0.8 + (tierNum - 1) * 0.2; // Base height for tier 1 is 0.8
+
+      // Start position relative to tower base (0,0,0)
       const startPos = new Vector3(
-        towerPos.x,
-        towerPos.y + 0.5,
-        towerPos.z
+        0,              // x relative to group
+        towerHeight,    // y at tower top
+        0               // z relative to group
       );
 
+      // Target position relative to tower base
       const targetPos = new Vector3(
-        closestCreep.position[0],
-        closestCreep.position[1] + 0.5,
-        closestCreep.position[2]
+        closestCreep.position[0] - towerPos.x,  // relative x
+        0.2,                                    // slightly above ground
+        closestCreep.position[2] - towerPos.z   // relative z
       );
 
       setProjectiles(prev => [...prev, {
@@ -97,7 +103,7 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
     }
   });
 
-  // Update projectile positions
+  // Update projectile positions with slight arc
   useFrame((state, delta) => {
     if (!projectiles.length) return;
 
@@ -275,12 +281,19 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
         </>
       )}
 
-      {/* Simple projectiles */}
+      {/* Simple projectiles with arc */}
       {projectiles.map(proj => {
-        const pos = new Vector3().lerpVectors(proj.startPos, proj.targetPos, proj.progress);
+        const progress = proj.progress;
+        const arcHeight = 0.2;
+        const arcOffset = Math.sin(progress * Math.PI) * arcHeight;
+        
+        // Base position with arc
+        const basePos = new Vector3().lerpVectors(proj.startPos, proj.targetPos, progress);
+        basePos.y += arcOffset;
+
         return (
-          <mesh key={proj.id} position={pos.toArray()}>
-            <sphereGeometry args={[0.3]} />
+          <mesh key={proj.id} position={basePos}>
+            <sphereGeometry args={[0.15]} />
             <meshStandardMaterial
               color={stats.emissive}
               emissive={stats.emissive}
