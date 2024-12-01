@@ -1,10 +1,34 @@
 import { useRef, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Vector3, InstancedMesh, Object3D, Matrix4, BufferGeometry, BufferAttribute, BoxGeometry, Color, PlaneGeometry, MeshBasicMaterial } from 'three';
+import { Vector3, InstancedMesh, Object3D, Matrix4, BufferGeometry, BufferAttribute, BoxGeometry, Color, PlaneGeometry, MeshBasicMaterial, SphereGeometry, CylinderGeometry, TorusGeometry, IcosahedronGeometry } from 'three';
 import { useGameStore } from '../store/gameStore';
 import { createShaderMaterial } from '../utils/shaders';
 
-const CREEP_GEOMETRY = new BoxGeometry(0.5, 0.5, 0.5);
+// Enhanced geometries for different creep types
+const CREEP_GEOMETRIES = {
+  normal: new IcosahedronGeometry(0.4, 1), // Spiky crystal-like shape
+  fast: new CylinderGeometry(0.1, 0.3, 0.8, 6), // Sleek arrow-like shape
+  armored: (() => {
+    // Combine geometries for armored unit
+    const base = new BoxGeometry(0.6, 0.6, 0.6);
+    const top = new CylinderGeometry(0.2, 0.3, 0.3, 6);
+    const vertices = [...base.attributes.position.array];
+    const topVertices = [...top.attributes.position.array];
+
+    // Adjust top position
+    for (let i = 0; i < topVertices.length; i += 3) {
+      topVertices[i + 1] += 0.45; // Move up
+    }
+
+    // Combine vertices
+    const positions = new Float32Array([...vertices, ...topVertices]);
+    const geometry = new BufferGeometry();
+    geometry.setAttribute('position', new BufferAttribute(positions, 3));
+    return geometry;
+  })(),
+  boss: new TorusGeometry(0.5, 0.3, 8, 6) // Intimidating ring shape
+};
+
 const tempObject = new Object3D();
 const tempVector = new Vector3();
 const tempMatrix = new Matrix4();
@@ -36,7 +60,7 @@ const creepSpeeds = {
   boss: 0.06
 };
 
-const SPEED_MULTIPLIER = 1;
+const SPEED_MULTIPLIER = 4;
 
 const creepSizes = {
   normal: [0.8, 0.8, 0.8],
@@ -371,23 +395,40 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
         receiveShadow
         position={[0, 0, 0]}
       />
-      {/* Health bars */}
+      {/* Enhanced Health bars */}
       {creeps.map((creep) => {
         const creepData = activeCreeps.current.get(creep.id);
         if (!creepData) return null;
         const position = tempObject.position.clone();
-        position.y += 1.2; // Position above creep
+        position.y += 1.5; // Position higher above creep
+
+        const healthPercent = creep.health / creep.maxHealth;
+        const barWidth = 1.2; // Wider bar
+        const barHeight = 0.15; // Taller bar
+
         return (
           <group key={creep.id} position={position.toArray()}>
-            {/* Health bar background */}
+            {/* Health bar background with border */}
             <mesh position={[0, 0, 0]}>
-              <planeGeometry args={[1, 0.1]} />
+              <planeGeometry args={[barWidth + 0.1, barHeight + 0.1]} />
+              <meshBasicMaterial color="#000000" transparent opacity={0.8} />
+            </mesh>
+            {/* Health bar background */}
+            <mesh position={[0, 0, 0.01]}>
+              <planeGeometry args={[barWidth, barHeight]} />
               <meshBasicMaterial color="#ef4444" transparent opacity={0.5} />
             </mesh>
-            {/* Health bar fill */}
-            <mesh position={[-0.5 + (0.5 * creep.health / creep.maxHealth), 0, 0.01]}>
-              <planeGeometry args={[creep.health / creep.maxHealth, 0.1]} />
-              <meshBasicMaterial color="#22c55e" />
+            {/* Health bar fill with gradient */}
+            <mesh
+              position={[-barWidth / 2 + (barWidth / 2 * healthPercent), 0, 0.02]}
+              scale={[healthPercent, 1, 1]}
+            >
+              <planeGeometry args={[barWidth, barHeight]} />
+              <meshBasicMaterial
+                color={healthPercent > 0.5 ? '#22c55e' : healthPercent > 0.25 ? '#eab308' : '#ef4444'}
+                transparent
+                opacity={0.9}
+              />
             </mesh>
           </group>
         );

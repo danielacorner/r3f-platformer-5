@@ -29,30 +29,29 @@ export interface WaveSet {
   waves: Wave[];
   difficulty: number;
 }
-const MULT = 10
 // Base stats for different creep types
 export const CREEP_BASE_STATS = {
   normal: {
     health: 100,
-    speed: 1 * MULT,
+    speed: 1,
     value: 10,
     size: 0.8
   },
   fast: {
     health: 75,
-    speed: 1.5 * MULT,
+    speed: 1.5,
     value: 15,
     size: 0.6
   },
   armored: {
     health: 200,
-    speed: 0.8 * MULT,
+    speed: 0.8,
     value: 20,
     size: 1
   },
   boss: {
     health: 1000,
-    speed: 0.6 * MULT,
+    speed: 0.6,
     value: 100,
     size: 1.5
   }
