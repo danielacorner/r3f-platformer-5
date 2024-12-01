@@ -103,7 +103,7 @@ function generateElementTDPath() {
 
   // Generate path segments
   const segments = [];
-  for (let i = 0; i <pathPoints.length - 1; i++) {
+  for (let i = 0; i < pathPoints.length - 1; i++) {
     const start = pathPoints[i];
     const end = pathPoints[i + 1];
     const length = Math.sqrt(
@@ -326,8 +326,8 @@ export function Level() {
       });
 
       // Check if there's already a tower at this position
-      const hasTower = placedTowers.some(tower => 
-        Math.abs(tower.position.x - intersection.x) < 0.5 && 
+      const hasTower = placedTowers.some(tower =>
+        Math.abs(tower.position.x - intersection.x) < 0.5 &&
         Math.abs(tower.position.z - intersection.z) < 0.5
       );
 

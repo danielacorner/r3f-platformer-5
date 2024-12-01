@@ -7,6 +7,7 @@ import { TOWER_STATS } from '../store/gameStore';
 import { Edges, Float, Trail } from '@react-three/drei';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
+import { ProjectileSystem } from './ProjectileSystem';
 
 interface TowerProps {
   position: Vector3 | [number, number, number];
@@ -53,77 +54,115 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
   // Get projectile config based on element type
   const getProjectileConfig = useCallback(() => {
     const [element] = type.match(/([a-z]+)(\d+)/).slice(1);
-    
-    switch(element) {
+
+    switch (element) {
       case 'fire':
         return {
-          geometry: <sphereGeometry args={[0.2]} />,
-          material: <meshPhysicalMaterial
-            color={stats.emissive}
-            emissive={stats.emissive}
-            emissiveIntensity={3}
-            roughness={0.2}
-            metalness={0.8}
-            toneMapped={false}
-          />,
+          geometry: (
+            <dodecahedronGeometry args={[0.3]} />
+          ),
+          material: (
+            <meshPhysicalMaterial
+              color="#ff4400"
+              emissive="#ff2200"
+              emissiveIntensity={2}
+              metalness={0.7}
+              roughness={0.3}
+              transparent={true}
+              opacity={0.9}
+              envMapIntensity={2}
+            />
+          ),
+          trailCount: 8,
+          trailSpacing: 0.05,
+          rotationSpeed: 4,
           lightIntensity: 2,
-          lightDistance: 3,
-          rotationSpeed: 5,
-          trailCount: 3,
-          trailSpacing: 0.1
+          lightDistance: 4
         };
+
       case 'ice':
         return {
-          geometry: <octahedronGeometry args={[0.15]} />,
-          material: <meshPhysicalMaterial
-            color={stats.emissive}
-            emissive={stats.emissive}
-            emissiveIntensity={2}
-            roughness={0}
-            metalness={0.3}
-            transmission={0.9}
-            thickness={0.5}
-            toneMapped={false}
-          />,
-          lightIntensity: 1.5,
-          lightDistance: 2,
+          geometry: (
+            <octahedronGeometry args={[0.25]} />
+          ),
+          material: (
+            <meshPhysicalMaterial
+              color="#aaddff"
+              emissive="#88ccff"
+              emissiveIntensity={1.5}
+              metalness={0.9}
+              roughness={0.1}
+              transparent={true}
+              opacity={0.7}
+              transmission={0.5}
+              thickness={0.5}
+              envMapIntensity={3}
+            />
+          ),
+          trailCount: 6,
+          trailSpacing: 0.06,
           rotationSpeed: 3,
-          trailCount: 2,
-          trailSpacing: 0.15
+          lightIntensity: 1.5,
+          lightDistance: 5
         };
+
       case 'lightning':
         return {
-          geometry: <tetrahedronGeometry args={[0.15]} />,
-          material: <meshPhysicalMaterial
-            color={stats.emissive}
-            emissive={stats.emissive}
-            emissiveIntensity={5}
-            roughness={0.3}
-            metalness={1}
-            toneMapped={false}
-          />,
-          lightIntensity: 3,
-          lightDistance: 4,
-          rotationSpeed: 8,
-          trailCount: 4,
-          trailSpacing: 0.08
+          geometry: (
+            <tetrahedronGeometry args={[0.3]} />
+          ),
+          material: (
+            <meshPhysicalMaterial
+              color="#ffff00"
+              emissive="#ffffff"
+              emissiveIntensity={3}
+              metalness={1}
+              roughness={0.2}
+              transparent={true}
+              opacity={0.8}
+              envMapIntensity={4}
+            />
+          ),
+          trailCount: 10,
+          trailSpacing: 0.04,
+          rotationSpeed: 5,
+          lightIntensity: 2.5,
+          lightDistance: 6
         };
-      default: // nature
+
+      case 'nature':
         return {
-          geometry: <dodecahedronGeometry args={[0.15]} />,
-          material: <meshPhysicalMaterial
-            color={stats.emissive}
-            emissive={stats.emissive}
-            emissiveIntensity={2}
-            roughness={0.4}
-            metalness={0.6}
-            toneMapped={false}
-          />,
+          geometry: (
+            <torusKnotGeometry args={[0.15, 0.05, 64, 8]} />
+          ),
+          material: (
+            <meshPhysicalMaterial
+              color="#33ff33"
+              emissive="#00ff00"
+              emissiveIntensity={1}
+              metalness={0.6}
+              roughness={0.4}
+              transparent={true}
+              opacity={0.85}
+              envMapIntensity={2}
+            />
+          ),
+          trailCount: 7,
+          trailSpacing: 0.055,
+          rotationSpeed: 3.5,
+          lightIntensity: 1.8,
+          lightDistance: 4.5
+        };
+
+      default:
+        return {
+          geometry: <sphereGeometry args={[0.2]} />,
+          material: <meshStandardMaterial color={stats.emissive} emissive={stats.emissive} />,
+          trailCount: 5,
+          trailSpacing: 0.06,
+          rotationSpeed: 3,
           lightIntensity: 1,
-          lightDistance: 2,
-          rotationSpeed: 2,
-          trailCount: 2,
-          trailSpacing: 0.12
+          lightDistance: 4
         };
     }
   }, [type, stats.emissive]);
@@ -215,10 +254,20 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
   useFrame((state, delta) => {
     if (!projectiles.length) return;
 
-    setProjectiles(current => 
+    setProjectiles(current =>
       current.map(proj => {
         const newProgress = proj.progress + delta * 4;
-        return newProgress >= 1 ? null : {
+        if (newProgress >= 1) {
+          // Handle projectile hit
+          const targetCreep = creeps.find(creep => 
+            new Vector3(...creep.position).distanceTo(proj.targetPos) < 1
+          );
+          if (targetCreep && onDamageEnemy) {
+            onDamageEnemy(targetCreep.id, damage);
+          }
+          return null;
+        }
+        return {
           ...proj,
           progress: newProgress
         };
@@ -389,65 +438,13 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
         </>
       )}
 
-      {/* Enhanced projectiles with trails and effects */}
-      {projectiles.map(proj => {
-        const progress = proj.progress;
-        const arcHeight = 0.2;
-        const arcOffset = Math.sin(progress * Math.PI) * arcHeight;
-        
-        // Base position with arc
-        const basePos = new Vector3().lerpVectors(proj.startPos, proj.targetPos, progress);
-        basePos.y += arcOffset;
-
-        const animation = projectileAnimations[proj.id] || {
-          rotation: [0, 0, 0],
-          scale: 1,
-          lightIntensity: projectileConfig.lightIntensity
-        };
-
-        return (
-          <group key={proj.id}>
-            {/* Projectile trails */}
-            {Array.from({ length: projectileConfig.trailCount }).map((_, i) => {
-              const trailProgress = Math.max(0, progress - i * projectileConfig.trailSpacing);
-              if (trailProgress <= 0) return null;
-
-              const trailPos = new Vector3().lerpVectors(proj.startPos, proj.targetPos, trailProgress);
-              trailPos.y += Math.sin(trailProgress * Math.PI) * arcHeight;
-
-              return (
-                <mesh
-                  key={i}
-                  position={trailPos}
-                  rotation={animation.rotation}
-                  scale={animation.scale * (1 - i * 0.2)}
-                >
-                  {projectileConfig.geometry}
-                  {projectileConfig.material}
-                </mesh>
-              );
-            })}
-
-            {/* Main projectile */}
-            <mesh
-              position={basePos}
-              rotation={animation.rotation}
-              scale={animation.scale}
-            >
-              {projectileConfig.geometry}
-              {projectileConfig.material}
-            </mesh>
-
-            {/* Dynamic point light */}
-            <pointLight
-              position={basePos}
-              color={stats.emissive}
-              intensity={animation.lightIntensity}
-              distance={projectileConfig.lightDistance}
-            />
-          </group>
-        );
-      })}
+      {/* WebGPU-accelerated projectile system */}
+      <ProjectileSystem
+        projectiles={projectiles}
+        emissiveColor={stats.emissive}
+        geometry={projectileConfig.geometry}
+        material={projectileConfig.material}
+      />
 
       {/* Range indicator */}
       {preview && (
