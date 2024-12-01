@@ -18,14 +18,15 @@ export const creepShader = {
       vHealth = instanceHealth;
       
       // Apply instance scale
-      vec3 transformed = position * instanceScale;
-      vec4 mvPosition = modelViewMatrix * instanceMatrix * vec4(transformed, 1.0);
+      vec3 transformed = position;
+      vec4 worldPosition = modelMatrix * instanceMatrix * vec4(transformed * instanceScale, 1.0);
+      vec4 mvPosition = viewMatrix * worldPosition;
       gl_Position = projectionMatrix * mvPosition;
       
       // Pass data to fragment shader
       vNormal = normalMatrix * normal;
       vViewPosition = -mvPosition.xyz;
-      vWorldPosition = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;
+      vWorldPosition = worldPosition.xyz;
     }
   `,
   fragmentShader: `

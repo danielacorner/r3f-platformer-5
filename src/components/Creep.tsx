@@ -102,11 +102,12 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
     return mat;
   }, []);
 
+  // Create geometry with instance attributes
   const geometry = useMemo(() => {
-    const geo = new BoxGeometry(1, 1, 1);
-    
-    // Create instance attributes
+    const geo = new BoxGeometry(0.8, 0.8, 0.8);
     const maxInstances = 1000;
+
+    // Create instance attributes
     const colors = new Float32Array(maxInstances * 3);
     const healths = new Float32Array(maxInstances);
     const scales = new Float32Array(maxInstances);
@@ -150,6 +151,9 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
       material.uniforms.time.value += delta;
     }
 
+    let needsMatrixUpdate = false;
+    let needsAttributeUpdate = false;
+
     // Update existing creeps
     activeCreeps.current.forEach((creepState, creepId) => {
       const { instanceId, pathIndex, progress } = creepState;
@@ -184,22 +188,26 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
             tempObject.scale.set(0, 0, 0);
             tempObject.updateMatrix();
             instancedMesh.current.setMatrixAt(instanceId, tempObject.matrix);
+            needsMatrixUpdate = true;
             
             // Reset instance attributes
-            const colorAttr = instancedMesh.current.geometry.getAttribute('instanceColor') as BufferAttribute;
-            const healthAttr = instancedMesh.current.geometry.getAttribute('instanceHealth') as BufferAttribute;
-            const scaleAttr = instancedMesh.current.geometry.getAttribute('instanceScale') as BufferAttribute;
+            const colorAttr = instancedMesh.current.geometry.getAttribute('instanceColor');
+            const healthAttr = instancedMesh.current.geometry.getAttribute('instanceHealth');
+            const scaleAttr = instancedMesh.current.geometry.getAttribute('instanceScale');
             
-            const baseIndex = instanceId * 3;
-            colorAttr.array[baseIndex] = 1;
-            colorAttr.array[baseIndex + 1] = 0;
-            colorAttr.array[baseIndex + 2] = 0;
-            healthAttr.array[instanceId] = 1;
-            scaleAttr.array[instanceId] = 0;
-            
-            colorAttr.needsUpdate = true;
-            healthAttr.needsUpdate = true;
-            scaleAttr.needsUpdate = true;
+            if (colorAttr && healthAttr && scaleAttr) {
+              const baseIndex = instanceId * 3;
+              (colorAttr.array as Float32Array)[baseIndex] = 1;
+              (colorAttr.array as Float32Array)[baseIndex + 1] = 0;
+              (colorAttr.array as Float32Array)[baseIndex + 2] = 0;
+              (healthAttr.array as Float32Array)[instanceId] = 1;
+              (scaleAttr.array as Float32Array)[instanceId] = 0;
+              
+              colorAttr.needsUpdate = true;
+              healthAttr.needsUpdate = true;
+              scaleAttr.needsUpdate = true;
+              needsAttributeUpdate = true;
+            }
             
             activeCreeps.current.delete(creepId);
             return;
@@ -223,33 +231,45 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
         
         tempObject.updateMatrix();
         instancedMesh.current.setMatrixAt(instanceId, tempObject.matrix);
+        needsMatrixUpdate = true;
 
         // Update instance attributes
-        const colorAttr = instancedMesh.current.geometry.getAttribute('instanceColor') as BufferAttribute;
-        const healthAttr = instancedMesh.current.geometry.getAttribute('instanceHealth') as BufferAttribute;
-        const scaleAttr = instancedMesh.current.geometry.getAttribute('instanceScale') as BufferAttribute;
+        const colorAttr = instancedMesh.current.geometry.getAttribute('instanceColor');
+        const healthAttr = instancedMesh.current.geometry.getAttribute('instanceHealth');
+        const scaleAttr = instancedMesh.current.geometry.getAttribute('instanceScale');
         
-        const color = new Color(creepColors[type]);
-        const baseIndex = instanceId * 3;
-        colorAttr.array[baseIndex] = color.r;
-        colorAttr.array[baseIndex + 1] = color.g;
-        colorAttr.array[baseIndex + 2] = color.b;
-        healthAttr.array[instanceId] = health / maxHealth;
-        scaleAttr.array[instanceId] = size;
-        
-        colorAttr.needsUpdate = true;
-        healthAttr.needsUpdate = true;
-        scaleAttr.needsUpdate = true;
+        if (colorAttr && healthAttr && scaleAttr) {
+          const color = new Color(creepColors[type]);
+          const baseIndex = instanceId * 3;
+          (colorAttr.array as Float32Array)[baseIndex] = color.r;
+          (colorAttr.array as Float32Array)[baseIndex + 1] = color.g;
+          (colorAttr.array as Float32Array)[baseIndex + 2] = color.b;
+          (healthAttr.array as Float32Array)[instanceId] = health / maxHealth;
+          (scaleAttr.array as Float32Array)[instanceId] = size;
+          
+          colorAttr.needsUpdate = true;
+          healthAttr.needsUpdate = true;
+          scaleAttr.needsUpdate = true;
+          needsAttributeUpdate = true;
+        }
       }
     });
 
-    // Update instance matrices
-    instancedMesh.current.instanceMatrix.needsUpdate = true;
+    // Only update if needed
+    if (needsMatrixUpdate) {
+      instancedMesh.current.instanceMatrix.needsUpdate = true;
+    }
+    if (needsAttributeUpdate) {
+      instancedMesh.current.geometry.attributes.instanceColor.needsUpdate = true;
+      instancedMesh.current.geometry.attributes.instanceHealth.needsUpdate = true;
+      instancedMesh.current.geometry.attributes.instanceScale.needsUpdate = true;
+    }
   });
 
   // Handle creep lifecycle
   useEffect(() => {
     console.log('Creeps updated:', creeps.length);
+    if (!instancedMesh.current) return;
     
     // Add new creeps
     creeps.forEach(creepData => {
@@ -273,7 +293,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
           });
 
           // Set initial position
-          if (instancedMesh.current && pathPoints.length > 0) {
+          if (pathPoints.length > 0) {
             const startPos = pathPoints[0];
             tempObject.position.copy(startPos);
             const size = creepSizes[creepData.type][0];
@@ -283,21 +303,23 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
             instancedMesh.current.instanceMatrix.needsUpdate = true;
 
             // Set initial attributes
-            const colorAttr = instancedMesh.current.geometry.getAttribute('instanceColor') as BufferAttribute;
-            const healthAttr = instancedMesh.current.geometry.getAttribute('instanceHealth') as BufferAttribute;
-            const scaleAttr = instancedMesh.current.geometry.getAttribute('instanceScale') as BufferAttribute;
+            const colorAttr = instancedMesh.current.geometry.getAttribute('instanceColor');
+            const healthAttr = instancedMesh.current.geometry.getAttribute('instanceHealth');
+            const scaleAttr = instancedMesh.current.geometry.getAttribute('instanceScale');
             
-            const color = new Color(creepColors[creepData.type]);
-            const baseIndex = instanceId * 3;
-            colorAttr.array[baseIndex] = color.r;
-            colorAttr.array[baseIndex + 1] = color.g;
-            colorAttr.array[baseIndex + 2] = color.b;
-            healthAttr.array[instanceId] = 1;
-            scaleAttr.array[instanceId] = size;
+            if (colorAttr && healthAttr && scaleAttr) {
+              const color = new Color(creepColors[creepData.type]);
+              const baseIndex = instanceId * 3;
+              (colorAttr.array as Float32Array)[baseIndex] = color.r;
+              (colorAttr.array as Float32Array)[baseIndex + 1] = color.g;
+              (colorAttr.array as Float32Array)[baseIndex + 2] = color.b;
+              (healthAttr.array as Float32Array)[instanceId] = 1;
+              (scaleAttr.array as Float32Array)[instanceId] = size;
 
-            colorAttr.needsUpdate = true;
-            healthAttr.needsUpdate = true;
-            scaleAttr.needsUpdate = true;
+              colorAttr.needsUpdate = true;
+              healthAttr.needsUpdate = true;
+              scaleAttr.needsUpdate = true;
+            }
           }
         } else {
           console.warn('No available instance slots for new creep');
@@ -309,30 +331,32 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
     activeCreeps.current.forEach((creepState, creepId) => {
       if (!creeps.find(c => c.id === creepId)) {
         console.log(`Removing creep ${creepId}`);
-        if (instancedMesh.current) {
-          // Hide the instance
-          tempObject.position.set(0, -1000, 0);
-          tempObject.scale.set(0, 0, 0);
-          tempObject.updateMatrix();
-          instancedMesh.current.setMatrixAt(creepState.instanceId, tempObject.matrix);
-          instancedMesh.current.instanceMatrix.needsUpdate = true;
+        
+        // Hide the instance
+        tempObject.position.set(0, -1000, 0);
+        tempObject.scale.set(0, 0, 0);
+        tempObject.updateMatrix();
+        instancedMesh.current.setMatrixAt(creepState.instanceId, tempObject.matrix);
+        instancedMesh.current.instanceMatrix.needsUpdate = true;
 
-          // Reset attributes
-          const colorAttr = instancedMesh.current.geometry.getAttribute('instanceColor') as BufferAttribute;
-          const healthAttr = instancedMesh.current.geometry.getAttribute('instanceHealth') as BufferAttribute;
-          const scaleAttr = instancedMesh.current.geometry.getAttribute('instanceScale') as BufferAttribute;
-          
+        // Reset attributes
+        const colorAttr = instancedMesh.current.geometry.getAttribute('instanceColor');
+        const healthAttr = instancedMesh.current.geometry.getAttribute('instanceHealth');
+        const scaleAttr = instancedMesh.current.geometry.getAttribute('instanceScale');
+        
+        if (colorAttr && healthAttr && scaleAttr) {
           const baseIndex = creepState.instanceId * 3;
-          colorAttr.array[baseIndex] = 1;
-          colorAttr.array[baseIndex + 1] = 0;
-          colorAttr.array[baseIndex + 2] = 0;
-          healthAttr.array[creepState.instanceId] = 1;
-          scaleAttr.array[creepState.instanceId] = 0;
+          (colorAttr.array as Float32Array)[baseIndex] = 1;
+          (colorAttr.array as Float32Array)[baseIndex + 1] = 0;
+          (colorAttr.array as Float32Array)[baseIndex + 2] = 0;
+          (healthAttr.array as Float32Array)[creepState.instanceId] = 1;
+          (scaleAttr.array as Float32Array)[creepState.instanceId] = 0;
 
           colorAttr.needsUpdate = true;
           healthAttr.needsUpdate = true;
           scaleAttr.needsUpdate = true;
         }
+        
         activeCreeps.current.delete(creepId);
       }
     });
