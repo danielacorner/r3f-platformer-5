@@ -214,7 +214,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   addPlacedTower: (position, type) => {
     const state = get();
-    const cost = TOWER_STATS[type].cost;
+    const cost = TOWER_STATS[type]?.cost ?? 0;
     if (state.money >= cost) {
       set(state => ({
         placedTowers: [...state.placedTowers, {
@@ -237,7 +237,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const state = get();
     const tower = state.placedTowers.find(t => t.id === id);
     if (tower) {
-      const upgradeCost = Math.floor(TOWER_STATS[tower.type].cost * Math.pow(2, tower.level));
+      const upgradeCost = Math.floor((TOWER_STATS[tower.type]?.cost ?? 0) * Math.pow(2, tower.level));
       if (state.money >= upgradeCost) {
         set(state => ({
           placedTowers: state.placedTowers.map(t =>

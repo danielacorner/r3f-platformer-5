@@ -158,7 +158,7 @@ export function TowerManager({ towers }: TowerManagerProps) {
 export function Tower({ position, type, level = 1, preview = false, onDamageEnemy, canAfford = true }: TowerProps) {
   const phase = useGameStore(state => state.phase);
   const creeps = useGameStore(state => state.creeps);
-  const stats = TOWER_STATS[type];
+  const stats = TOWER_STATS[type] ?? TOWER_STATS.dark1;
   const attackCooldown = 1000 / stats.attackSpeed;
   const range = stats.range * (1 + (level - 1) * 0.2);
   const damage = stats.damage * (1 + (level - 1) * 0.3);
@@ -224,8 +224,14 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
     }
   });
 
-  const [element, tier] = type.match(/([a-z]+)(\d+)/).slice(1);
-  const tierNum = parseInt(tier);
+  // Safely parse tower type
+  const [element, tierNum] = useMemo(() => {
+    const match = type?.match(/([a-z]+)(\d+)/);
+    if (!match) return ['dark', 1]; // Default values
+    const [, el, tier] = match;
+    return [el, parseInt(tier)];
+  }, [type]);
+
   const baseWidth = 0.8 + (tierNum - 1) * 0.1;
   const baseHeight = 1.2 + (tierNum - 1) * 0.2;
 

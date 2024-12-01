@@ -299,52 +299,45 @@ export function Level() {
   // Path Generation
   const { segments, points: pathPoints } = useMemo(() => generatePath(), []);
 
-  // Raycasting for Tower Placement
-  const plane = new Plane(new Vector3(0, 1, 0), 0);
-  const raycaster = new Raycaster();
-  const intersectPoint = new Vector3();
-  const { camera, size } = useThree();
-
   // Tower Placement Logic
   const handlePointerMove = (event: any) => {
     if (!selectedObjectType) return;
 
-    const mouse = new Vector2(
-      (event.offsetX / size.width) * 2 - 1,
-      -(event.offsetY / size.height) * 2 + 1
-    );
-
-    raycaster.setFromCamera(mouse, camera);
-    raycaster.ray.intersectPlane(plane, intersectPoint);
-
     // Snap to grid
     const snappedPosition: [number, number, number] = [
-      Math.round(intersectPoint.x),
+      Math.round(event.point.x),
       0.5,
-      Math.round(intersectPoint.z)
+      Math.round(event.point.z)
     ];
 
     setPreviewPosition(snappedPosition);
     setShowPreview(true);
-    setCanAffordTower(money >= TOWER_STATS[selectedObjectType].cost);
+    setCanAffordTower(money >= (TOWER_STATS[selectedObjectType]?.cost ?? 0));
   };
 
-  const handlePlaceTower = () => {
+  const handlePlaceTower = (event: any) => {
     if (!selectedObjectType || !canAffordTower) return;
 
-    // Check if position is valid (not on path, not occupied)
-    const isValidPosition = !segments.some(segment => {
-      const [x, y, z] = previewPosition;
-      const [sx, sy, sz] = segment.position;
-      const [sw, sh, sd] = segment.scale;
-      return (
-        x >= sx - sw / 2 && x <= sx + sw / 2 &&
-        z >= sz - sd / 2 && z <= sz + sd / 2
-      );
+    // Snap to grid
+    const snappedPosition: [number, number, number] = [
+      Math.round(event.point.x),
+      0.5,
+      Math.round(event.point.z)
+    ];
+
+    // Check if position is valid (not on path and not occupied)
+    const isOnPath = pathPoints.some(point => 
+      Math.abs(point.x - snappedPosition[0]) < 3 && 
+      Math.abs(point.z - snappedPosition[2]) < 3
+    );
+
+    const isOccupied = placedTowers.some(tower => {
+      const pos = tower.position instanceof Vector3 ? tower.position.toArray() : tower.position;
+      return pos[0] === snappedPosition[0] && pos[2] === snappedPosition[2];
     });
 
-    if (isValidPosition) {
-      addPlacedTower(new Vector3(...previewPosition), selectedObjectType);
+    if (!isOnPath && !isOccupied) {
+      addPlacedTower(snappedPosition, selectedObjectType);
       setSelectedObjectType(null);
       setShowPreview(false);
     }
@@ -396,12 +389,14 @@ export function Level() {
         shadow-bias={-0.001}
       />
 
-      {/* Sky and Atmosphere */}
-      <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-
-      {/* Ground */}
+      {/* Ground with event handlers */}
       <RigidBody type="fixed" colliders="cuboid">
-        <mesh position={[0, -0.5, 0]} receiveShadow>
+        <mesh 
+          position={[0, -0.5, 0]} 
+          receiveShadow
+          onPointerMove={handlePointerMove}
+          onClick={handlePlaceTower}
+        >
           <boxGeometry args={[60, 1, 60]} />
           <meshStandardMaterial
             color={platformColor}
@@ -410,6 +405,9 @@ export function Level() {
           />
         </mesh>
       </RigidBody>
+
+      {/* Sky and Atmosphere */}
+      <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
 
       {/* Decorative Elements - Using Instanced Meshes */}
       <TreeInstances count={15} radius={25} />

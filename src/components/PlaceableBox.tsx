@@ -1,6 +1,6 @@
 import { RigidBody } from '@react-three/rapier';
 import { useState } from 'react';
-import { useGameStore, ObjectType } from '../store/gameStore';
+import { useGameStore, ElementType } from '../store/gameStore';
 import { Tower } from './Tower';
 import { Cannon } from './Cannon';
 import { BoomerangTower } from './BoomerangTower';
@@ -8,7 +8,7 @@ import { BoomerangTower } from './BoomerangTower';
 interface PlaceableBoxProps {
   position: [number, number, number];
   onRemove: () => void;
-  objectType: ObjectType;
+  objectType: ElementType;
 }
 
 export function PlaceableBox({ position, onRemove, objectType }: PlaceableBoxProps) {
@@ -22,28 +22,8 @@ export function PlaceableBox({ position, onRemove, objectType }: PlaceableBoxPro
   };
 
   const renderObject = () => {
-    switch (objectType) {
-      case 'tower':
-        return <Tower position={position} />;
-      case 'cannon':
-        return <Cannon position={position} />;
-      case 'boomerang':
-        return <BoomerangTower position={position} />;
-      default:
-        return (
-          <mesh
-            name="placed-box"
-            onPointerEnter={() => phase === 'prep' && setIsHovered(true)}
-            onPointerLeave={() => setIsHovered(false)}
-            onClick={handleClick}
-            receiveShadow
-            castShadow
-          >
-            <boxGeometry args={[1, 1, 1]} />
-            <meshStandardMaterial color={isHovered && phase === 'prep' ? "red" : "orange"} />
-          </mesh>
-        );
-    }
+    // All tower types are ElementTypes, so we can pass them directly
+    return <Tower position={position} type={objectType} />;
   };
 
   return (
