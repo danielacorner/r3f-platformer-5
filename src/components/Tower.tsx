@@ -175,41 +175,6 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
     projectilesRef.current = projectiles;
   }, [projectiles]);
 
-  useFrame((state, delta) => {
-    if (!projectilesRef.current.length) return;
-
-    const speed = PROJECTILE_SPEED * delta;
-    setProjectiles(prev =>
-      prev.map(projectile => {
-        const { startPos, targetPos, progress } = projectile;
-        const newProgress = progress + speed;
-
-        if (newProgress >= 1) {
-          // Handle projectile hit
-          const targetCreep = creeps.find(c => c.id === projectile.targetCreepId);
-          if (targetCreep) {
-            onDamageEnemy(targetCreep.id, damage, stats.special);
-          }
-          return null;
-        }
-
-        // Calculate arc trajectory
-        const height = 2;
-        const arcY = Math.sin(newProgress * Math.PI) * height;
-
-        // Update position with proper interpolation
-        const currentPos = new Vector3().lerpVectors(startPos, targetPos, newProgress);
-        currentPos.y += arcY;
-
-        return {
-          ...projectile,
-          currentPos,
-          progress: newProgress
-        };
-      }).filter(Boolean)
-    );
-  });
-
   useFrame(() => {
     if (preview || !onDamageEnemy || phase !== 'combat') return;
 
@@ -234,7 +199,7 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
     }
 
     if (closestCreep) {
-      const towerHeight = 1 + (level - 1) * 0.2;
+      const towerHeight = 1.2 + (level - 1) * 0.2;
       const towerPos = towerRef.current ? towerRef.current.position : (position instanceof Vector3 ? position : new Vector3(...position));
       const startPos = towerPos.clone();
       startPos.y += towerHeight;
@@ -250,8 +215,6 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
             id: Math.random(),
             startPos,
             targetPos,
-            currentPos: startPos.clone(),
-            progress: 0,
             targetCreepId: closestCreep.id
           }
         ]);
@@ -425,18 +388,25 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
       )}
 
       {/* Projectiles */}
-      {projectiles.map(({ id, currentPos }) => (
-        <mesh key={id} position={currentPos}>
-          <sphereGeometry args={[0.2, 8, 8]} />
-          <meshBasicMaterial color={stats.emissive} emissive={stats.emissive} emissiveIntensity={2} />
-        </mesh>
+      {projectiles.map(({ id, startPos, targetPos, targetCreepId }) => (
+        <Projectile
+          key={id}
+          startPos={startPos}
+          targetPos={targetPos}
+          targetId={targetCreepId}
+          color={stats.emissive}
+          onHit={(targetId) => {
+            onDamageEnemy(targetId, damage, stats.special);
+            setProjectiles(prev => prev.filter(p => p.id !== id));
+          }}
+        />
       ))}
 
       {/* Range indicator (only in preview) */}
       {preview && (
         <mesh position={[0, 0.1, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[0, stats.range, 32]} />
-          <meshBasicMaterial color="rgba(255,255,255,0.2)" transparent opacity={0.2} />
+          <ringGeometry args={[0, range, 32]} />
+          <meshBasicMaterial color={canAfford ? "#4ade80" : "#ef4444"} transparent opacity={0.2} />
         </mesh>
       )}
     </group>

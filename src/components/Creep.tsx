@@ -1,6 +1,6 @@
 import { useRef, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Vector3, InstancedMesh, Object3D, Matrix4, BufferGeometry, BufferAttribute, BoxGeometry, Color } from 'three';
+import { Vector3, InstancedMesh, Object3D, Matrix4, BufferGeometry, BufferAttribute, BoxGeometry, Color, PlaneGeometry, MeshBasicMaterial } from 'three';
 import { useGameStore } from '../store/gameStore';
 import { createShaderMaterial } from '../utils/shaders';
 
@@ -78,8 +78,8 @@ const creeps: CreepManagerProps[] = [];
 
 export function CreepManager({ pathPoints }: CreepManagerProps) {
   const instancedMesh = useRef<InstancedMesh>();
-  const activeCreeps = useRef<Map<number, { 
-    props: CreepManagerProps; 
+  const activeCreeps = useRef<Map<number, {
+    props: CreepManagerProps;
     instanceId: number;
     pathIndex: number;
     progress: number;
@@ -111,7 +111,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
     const colors = new Float32Array(maxInstances * 3);
     const healths = new Float32Array(maxInstances);
     const scales = new Float32Array(maxInstances);
-    
+
     // Initialize all instances as hidden
     for (let i = 0; i < maxInstances; i++) {
       colors[i * 3] = 1;     // R
@@ -120,11 +120,11 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
       healths[i] = 1;
       scales[i] = 0; // Hidden by default
     }
-    
+
     geo.setAttribute('instanceColor', new BufferAttribute(colors, 3));
     geo.setAttribute('instanceHealth', new BufferAttribute(healths, 1));
     geo.setAttribute('instanceScale', new BufferAttribute(scales, 1));
-    
+
     return geo;
   }, []);
 
@@ -182,19 +182,19 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
             console.log(`Creep ${creepId} reached the end`);
             loseLife();
             removeCreep(creepId);
-            
+
             // Hide the instance
             tempObject.position.set(0, -1000, 0);
             tempObject.scale.set(0, 0, 0);
             tempObject.updateMatrix();
             instancedMesh.current.setMatrixAt(instanceId, tempObject.matrix);
             needsMatrixUpdate = true;
-            
+
             // Reset instance attributes
             const colorAttr = instancedMesh.current.geometry.getAttribute('instanceColor');
             const healthAttr = instancedMesh.current.geometry.getAttribute('instanceHealth');
             const scaleAttr = instancedMesh.current.geometry.getAttribute('instanceScale');
-            
+
             if (colorAttr && healthAttr && scaleAttr) {
               const baseIndex = instanceId * 3;
               (colorAttr.array as Float32Array)[baseIndex] = 1;
@@ -202,13 +202,13 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
               (colorAttr.array as Float32Array)[baseIndex + 2] = 0;
               (healthAttr.array as Float32Array)[instanceId] = 1;
               (scaleAttr.array as Float32Array)[instanceId] = 0;
-              
+
               colorAttr.needsUpdate = true;
               healthAttr.needsUpdate = true;
               scaleAttr.needsUpdate = true;
               needsAttributeUpdate = true;
             }
-            
+
             activeCreeps.current.delete(creepId);
             return;
           }
@@ -220,15 +220,15 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
 
         // Update instance transform
         tempObject.position.copy(tempVector);
-        
+
         // Calculate rotation to face movement direction
         const direction = nextPoint.clone().sub(currentPoint).normalize();
         tempObject.lookAt(nextPoint);
-        
+
         // Apply size
         const size = creepSizes[type][0];
         tempObject.scale.set(size, size, size);
-        
+
         tempObject.updateMatrix();
         instancedMesh.current.setMatrixAt(instanceId, tempObject.matrix);
         needsMatrixUpdate = true;
@@ -237,7 +237,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
         const colorAttr = instancedMesh.current.geometry.getAttribute('instanceColor');
         const healthAttr = instancedMesh.current.geometry.getAttribute('instanceHealth');
         const scaleAttr = instancedMesh.current.geometry.getAttribute('instanceScale');
-        
+
         if (colorAttr && healthAttr && scaleAttr) {
           const color = new Color(creepColors[type]);
           const baseIndex = instanceId * 3;
@@ -246,7 +246,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
           (colorAttr.array as Float32Array)[baseIndex + 2] = color.b;
           (healthAttr.array as Float32Array)[instanceId] = health / maxHealth;
           (scaleAttr.array as Float32Array)[instanceId] = size;
-          
+
           colorAttr.needsUpdate = true;
           healthAttr.needsUpdate = true;
           scaleAttr.needsUpdate = true;
@@ -270,7 +270,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
   useEffect(() => {
     console.log('Creeps updated:', creeps.length);
     if (!instancedMesh.current) return;
-    
+
     // Add new creeps
     creeps.forEach(creepData => {
       if (!activeCreeps.current.has(creepData.id)) {
@@ -285,8 +285,8 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
 
         if (instanceId < 1000) {
           console.log(`Adding creep ${creepData.id} at instance ${instanceId}`);
-          activeCreeps.current.set(creepData.id, { 
-            props: { pathPoints }, 
+          activeCreeps.current.set(creepData.id, {
+            props: { pathPoints },
             instanceId,
             pathIndex: 0,
             progress: 0
@@ -306,7 +306,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
             const colorAttr = instancedMesh.current.geometry.getAttribute('instanceColor');
             const healthAttr = instancedMesh.current.geometry.getAttribute('instanceHealth');
             const scaleAttr = instancedMesh.current.geometry.getAttribute('instanceScale');
-            
+
             if (colorAttr && healthAttr && scaleAttr) {
               const color = new Color(creepColors[creepData.type]);
               const baseIndex = instanceId * 3;
@@ -331,7 +331,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
     activeCreeps.current.forEach((creepState, creepId) => {
       if (!creeps.find(c => c.id === creepId)) {
         console.log(`Removing creep ${creepId}`);
-        
+
         // Hide the instance
         tempObject.position.set(0, -1000, 0);
         tempObject.scale.set(0, 0, 0);
@@ -343,7 +343,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
         const colorAttr = instancedMesh.current.geometry.getAttribute('instanceColor');
         const healthAttr = instancedMesh.current.geometry.getAttribute('instanceHealth');
         const scaleAttr = instancedMesh.current.geometry.getAttribute('instanceScale');
-        
+
         if (colorAttr && healthAttr && scaleAttr) {
           const baseIndex = creepState.instanceId * 3;
           (colorAttr.array as Float32Array)[baseIndex] = 1;
@@ -356,19 +356,42 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
           healthAttr.needsUpdate = true;
           scaleAttr.needsUpdate = true;
         }
-        
+
         activeCreeps.current.delete(creepId);
       }
     });
   }, [creeps]);
 
   return (
-    <instancedMesh
-      ref={instancedMesh}
-      args={[geometry, material, 1000]}
-      castShadow
-      receiveShadow
-      position={[0, 0, 0]}
-    />
+    <group>
+      <instancedMesh
+        ref={instancedMesh}
+        args={[geometry, material, 1000]}
+        castShadow
+        receiveShadow
+        position={[0, 0, 0]}
+      />
+      {/* Health bars */}
+      {creeps.map((creep) => {
+        const creepData = activeCreeps.current.get(creep.id);
+        if (!creepData) return null;
+        const position = tempObject.position.clone();
+        position.y += 1.2; // Position above creep
+        return (
+          <group key={creep.id} position={position.toArray()}>
+            {/* Health bar background */}
+            <mesh position={[0, 0, 0]}>
+              <planeGeometry args={[1, 0.1]} />
+              <meshBasicMaterial color="#ef4444" transparent opacity={0.5} />
+            </mesh>
+            {/* Health bar fill */}
+            <mesh position={[-0.5 + (0.5 * creep.health / creep.maxHealth), 0, 0.01]}>
+              <planeGeometry args={[creep.health / creep.maxHealth, 0.1]} />
+              <meshBasicMaterial color="#22c55e" />
+            </mesh>
+          </group>
+        );
+      })}
+    </group>
   );
 }

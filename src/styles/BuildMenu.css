@@ -345,6 +345,7 @@
 
 .tower-tooltip {
   position: absolute;
+  pointer-events: none;
   bottom: 120%;
   left: 50%;
   transform: translateX(-50%);

@@ -1,203 +1,502 @@
-import { useRef, useState, } from 'react';
-import { Vector3, } from 'three';
-import { RigidBody, CuboidCollider } from '@react-three/rapier';
+import { Vector3, Color, Euler, Matrix4, Object3D } from 'three';
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useSpring, animated } from '@react-spring/three';
+import { RigidBody } from '@react-three/rapier';
+import { useGameStore } from '../store/gameStore';
+import { TOWER_STATS } from '../store/gameStore';
+import { Edges, Float, Trail } from '@react-three/drei';
+import { Html } from '@react-three/drei';
+import * as THREE from 'three';
+import { ProjectileSystem } from './ProjectileSystem';
+import { createShaderMaterial } from '../utils/shaders';
+import { ObjectPool } from '../utils/objectPool';
 
-function ExplosionEffect({ position }: { position: Vector3 }) {
-  const { scale, opacity } = useSpring({
-    from: { scale: 0.1, opacity: 1 },
-    to: { scale: 2, opacity: 0 },
-    config: { tension: 200, friction: 20 }
-  });
+const TOWER_GEOMETRY = new THREE.BoxGeometry(1, 2, 1);
+const PROJECTILE_GEOMETRY = new THREE.SphereGeometry(0.1, 8, 8);
 
-  return (
-    <group position={[position.x, position.y, position.z]}>
-      {/* Core explosion */}
-      <animated.mesh scale={scale.to(s => [s, s, s])}>
-        <sphereGeometry args={[0.3]} />
-        <animated.meshStandardMaterial
-          color="#ff4400"
-          emissive="#ff8800"
-          emissiveIntensity={2}
-          transparent
-          opacity={opacity}
-        />
-      </animated.mesh>
+const tempObject = new Object3D();
+const tempVector = new Vector3();
+const tempMatrix = new Matrix4();
 
-      {/* Outer glow */}
-      <animated.mesh scale={scale.to(s => [s * 1.2, s * 1.2, s * 1.2])}>
-        <sphereGeometry args={[0.3]} />
-        <animated.meshStandardMaterial
-          color="#ffff00"
-          emissive="#ffaa00"
-          emissiveIntensity={1}
-          transparent
-          opacity={opacity.to(o => o * 0.5)}
-        />
-      </animated.mesh>
-    </group>
-  );
+interface TowerProps {
+  position: Vector3 | [number, number, number];
+  type: string;
+  level?: number;
+  preview?: boolean;
+  onDamageEnemy?: (enemyId: number, damage: number, effects: any) => void;
+  canAfford?: boolean;
 }
 
-interface ProjectileProps {
+interface Arrow {
+  id: number;
+  startPosition: Vector3;
+  direction: Vector3;
+  startTime: number;
+}
+
+interface Projectile {
+  id: number;
   position: Vector3;
-  target: Vector3;
-  type: 'bow' | 'boomerang';
-  onComplete: (position: Vector3) => void;
+  velocity: Vector3;
+  creepId: number;
+  timeAlive: number;
 }
 
-export function Projectile({ position, type, target, onComplete }: ProjectileProps) {
-  const rigidBodyRef = useRef<any>(null);
-  const arrowRef = useRef<any>(null);
-  const startPos = useRef(position.clone());
-  const timeRef = useRef(0);
-  const [showExplosion, setShowExplosion] = useState(false);
-  const [explosionPosition, setExplosionPosition] = useState<Vector3 | null>(null);
-  const [hasLanded, setHasLanded] = useState(false);
-  const [hasHitEnemy, setHasHitEnemy] = useState(false);
-  const currentPos = useRef(position.clone());
-  const AOE_RADIUS = 1.5; // Area of effect radius
+interface TowerManagerProps {
+  towers: TowerProps[];
+}
 
-  const arrowLifetime = 1.5;
-  const ARROW_FLIGHT_TIME = 0.5;
+export function TowerManager({ towers }: TowerManagerProps) {
+  const towerMeshRef = useRef<THREE.InstancedMesh>();
+  const projectileMeshRef = useRef<THREE.InstancedMesh>();
+  const activeTowers = useRef<Map<string, { props: TowerProps; instanceId: number }>>(new Map());
+  const projectilePool = useRef<ObjectPool<Object3D>>();
 
-  useFrame((_, delta) => {
-    if (!rigidBodyRef.current || hasHitEnemy) return;
-    timeRef.current += delta;
+  // Create shader materials
+  const towerMaterial = useMemo(() => createShaderMaterial('tower', {
+    time: { value: 0 },
+    powerLevel: { value: 1.0 }
+  }), []);
 
-    if (type === 'bow') {
-      if (hasLanded) {
-        if (timeRef.current >= arrowLifetime) {
-          onComplete(currentPos.current);
-        }
-        return;
+  const projectileMaterial = useMemo(() => createShaderMaterial('tower', {
+    time: { value: 0 },
+    color: { value: new Vector3(1, 0.5, 0) }
+  }), []);
+
+  // Initialize instance attributes
+  const { levelArray, typeArray, activeArray } = useMemo(() => {
+    const maxInstances = 100;
+    return {
+      levelArray: new Float32Array(maxInstances),
+      typeArray: new Float32Array(maxInstances),
+      activeArray: new Float32Array(maxInstances)
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!towerMeshRef.current) return;
+
+    // Set up instance attributes
+    const geometry = towerMeshRef.current.geometry as THREE.BufferGeometry;
+    geometry.setAttribute('instanceLevel', new THREE.BufferAttribute(levelArray, 1));
+    geometry.setAttribute('instanceType', new THREE.BufferAttribute(typeArray, 1));
+    geometry.setAttribute('instanceActive', new THREE.BufferAttribute(activeArray, 1));
+
+    // Initialize projectile pool
+    projectilePool.current = new ObjectPool(() => new Object3D(), 1000);
+  }, []);
+
+  useFrame((state, delta) => {
+    if (!towerMeshRef.current || !projectileMeshRef.current) return;
+
+    // Update time uniform for shader effects
+    towerMaterial.uniforms.time.value += delta;
+    projectileMaterial.uniforms.time.value += delta;
+
+    // Update towers
+    activeTowers.current.forEach(({ props, instanceId }) => {
+      const { position, type, level, target } = props;
+
+      // Update tower transform
+      tempObject.position.set(...(position instanceof Vector3 ? position.toArray() : position));
+      if (target) {
+        tempVector.set(...target.position).sub(tempObject.position);
+        tempObject.lookAt(tempVector.add(tempObject.position));
       }
+      tempObject.updateMatrix();
+      towerMeshRef.current?.setMatrixAt(instanceId, tempObject.matrix);
 
-      const progress = Math.min(timeRef.current / ARROW_FLIGHT_TIME, 1);
-      const direction = target.clone().sub(startPos.current);
-      const height = Math.max(direction.length() * 0.2, 1);
+      // Update instance attributes
+      levelArray[instanceId] = level;
+      typeArray[instanceId] = ['basic', 'advanced', 'ultimate'].indexOf(type);
+      activeArray[instanceId] = target ? 1 : 0;
+    });
 
-      // Calculate position with arc
-      const currentPoint = startPos.current.clone().lerp(target, progress);
-      currentPoint.y += Math.sin(progress * Math.PI) * height;
-
-      // Update position
-      currentPos.current.copy(currentPoint);
-      rigidBodyRef.current.setTranslation(currentPos.current);
-
-      // Calculate next point for rotation
-      const nextProgress = Math.min(progress + 0.05, 1);
-      const nextPoint = startPos.current.clone().lerp(target, nextProgress);
-      nextPoint.y += Math.sin(nextProgress * Math.PI) * height;
-
-      // Update rotation to match trajectory
-      if (!hasLanded && arrowRef.current) {
-        const velocity = nextPoint.clone().sub(currentPoint);
-        if (velocity.length() > 0) {
-          // Create a target point in the direction of travel
-          const target = currentPoint.clone().add(velocity);
-
-          // Store the current position
-          const position = arrowRef.current.position.clone();
-
-          // Look at the target
-          arrowRef.current.lookAt(target);
-
-          // Rotate 90 degrees around the right vector to align arrow with trajectory
-          arrowRef.current.rotateOnAxis(new Vector3(1, 0, 0), Math.PI / 2);
-
-          // Restore position (lookAt can sometimes affect position)
-          arrowRef.current.position.copy(position);
-        }
-      }
-
-      if (progress >= 1) {
-        setHasLanded(true);
-        // Create explosion effect at landing
-        setShowExplosion(true);
-        setExplosionPosition(currentPos.current.clone());
-      }
-    }
+    // Update instance matrices and attributes
+    towerMeshRef.current.instanceMatrix.needsUpdate = true;
+    towerMeshRef.current.geometry.attributes.instanceLevel.needsUpdate = true;
+    towerMeshRef.current.geometry.attributes.instanceType.needsUpdate = true;
+    towerMeshRef.current.geometry.attributes.instanceActive.needsUpdate = true;
   });
 
-  const handleCollision = (event: any) => {
-    if (!hasHitEnemy && event.other.rigidBodyObject?.name === 'enemy') {
-      setHasHitEnemy(true);
-      const pos = rigidBodyRef.current.translation();
-      setExplosionPosition(new Vector3(pos.x, pos.y, pos.z));
-      setShowExplosion(true);
+  // Handle tower lifecycle
+  useEffect(() => {
+    // Add new towers
+    towers.forEach(towerProps => {
+      const key = towerProps.position instanceof Vector3 ? towerProps.position.toArray().join(',') : towerProps.position.join(',');
+      if (!activeTowers.current.has(key)) {
+        const instanceId = activeTowers.current.size;
+        activeTowers.current.set(key, { props: towerProps, instanceId });
+      }
+    });
 
-      // Find and damage nearby enemies
-      const nearbyEnemies = Object.values(rigidBodyRef.current.world.bodies).filter((body: any) => {
-        if (body.rigidBodyObject?.name !== 'enemy') return false;
-        const enemyPos = body.translation();
-        const distance = new Vector3(enemyPos.x, enemyPos.y, enemyPos.z)
-          .distanceTo(new Vector3(pos.x, pos.y, pos.z));
-        return distance <= AOE_RADIUS;
-      });
-
-      // Apply AOE damage to nearby enemies
-      nearbyEnemies.forEach((enemy: any) => {
-        const enemyPos = enemy.translation();
-        const distance = new Vector3(enemyPos.x, enemyPos.y, enemyPos.z)
-          .distanceTo(new Vector3(pos.x, pos.y, pos.z));
-
-        // Mark hit as AOE for damage calculation
-        enemy.rigidBodyObject.userData.isAOE = distance > 0.5;
-
-        // Trigger collision with each nearby enemy
-        enemy.rigidBodyObject?.onCollisionEnter?.({
-          other: { rigidBodyObject: rigidBodyRef.current.rigidBodyObject, rigidBody: rigidBodyRef.current }
-        });
-      });
-
-      // Remove projectile after effect
-      setTimeout(() => {
-        setShowExplosion(false);
-        onComplete(currentPos.current);
-      }, 500);
-    }
-  };
+    // Remove inactive towers
+    activeTowers.current.forEach(({ props }, key) => {
+      if (!towers.find(t => (t.position instanceof Vector3 ? t.position.toArray().join(',') : t.position.join(',')) === key)) {
+        activeTowers.current.delete(key);
+      }
+    });
+  }, [towers]);
 
   return (
     <>
-      <RigidBody
-        ref={rigidBodyRef}
-        type="kinematicPosition"
-        position={[position.x, position.y, position.z]}
-        name="projectile"
-        userData={{ type: 'projectile', projectileType: type }}
-        onCollisionEnter={handleCollision}
-      >
-        <CuboidCollider args={[0.1, 0.1, 0.25]} sensor />
-        {type === 'bow' ? (
-          <group ref={arrowRef} rotation={[-Math.PI / 2, 0, 0]}>
-            {/* Arrow shaft */}
-            <mesh>
-              <cylinderGeometry args={[0.07, 0.07, 1.2]} />
-              <meshStandardMaterial color="#4a3728" />
-            </mesh>
-            {/* Arrow head */}
-            <mesh position={[0, 0.6, 0]}>
-              <coneGeometry args={[0.16, 0.4]} />
-              <meshStandardMaterial color="#636363" />
-            </mesh>
-          </group>
-        ) : (
-          <group rotation={[Math.PI / 2, 0, 0]}>
-            <mesh>
-              <boxGeometry args={[0.6, 0.1, 0.02]} />
-              <meshStandardMaterial color="#ffd700" metalness={0.6} roughness={0.3} />
-            </mesh>
-          </group>
-        )}
-      </RigidBody>
-
-      {/* Explosion effect */}
-      {showExplosion && explosionPosition && (
-        <ExplosionEffect position={explosionPosition} />
-      )}
+      <instancedMesh
+        ref={towerMeshRef}
+        args={[TOWER_GEOMETRY, towerMaterial, 100]}
+        castShadow
+        receiveShadow
+      />
+      <instancedMesh
+        ref={projectileMeshRef}
+        args={[PROJECTILE_GEOMETRY, projectileMaterial, 1000]}
+        castShadow
+      />
     </>
+  );
+}
+
+import { useRef, useEffect } from 'react';
+import { Vector3 } from 'three';
+import { useFrame } from '@react-three/fiber';
+import { Trail } from '@react-three/drei';
+
+interface ProjectileProps {
+  startPos: Vector3;
+  targetPos: Vector3;
+  targetId: number;
+  color: string;
+  onHit: (targetId: number) => void;
+}
+
+export function Projectile({ startPos, targetPos, targetId, color, onHit }: ProjectileProps) {
+  const projectileRef = useRef<THREE.Mesh>();
+  const progressRef = useRef(0);
+  const SPEED = 2.0;
+  const HEIGHT = 2.0;
+
+  useFrame((state, delta) => {
+    if (!projectileRef.current) return;
+
+    progressRef.current += delta * SPEED;
+    
+    if (progressRef.current >= 1) {
+      onHit(targetId);
+      return;
+    }
+
+    // Calculate arc trajectory
+    const arcY = Math.sin(progressRef.current * Math.PI) * HEIGHT;
+    
+    // Interpolate position
+    const newPos = new Vector3().lerpVectors(startPos, targetPos, progressRef.current);
+    newPos.y += arcY;
+    
+    projectileRef.current.position.copy(newPos);
+  });
+
+  return (
+    <mesh ref={projectileRef} position={startPos.toArray()}>
+      <Trail
+        width={0.2}
+        length={8}
+        color={color}
+        attenuation={(t) => t * t}
+      >
+        <sphereGeometry args={[0.15, 8, 8]} />
+        <meshBasicMaterial color={color} toneMapped={false} />
+      </Trail>
+    </mesh>
+  );
+}
+
+export function Tower({ position, type, level = 1, preview = false, onDamageEnemy, canAfford = true }: TowerProps) {
+  const phase = useGameStore(state => state.phase);
+  const creeps = useGameStore(state => state.creeps);
+  const stats = TOWER_STATS[type];
+  const attackCooldown = 1000 / stats.attackSpeed;
+  const range = stats.range * (1 + (level - 1) * 0.2);
+  const damage = stats.damage * (1 + (level - 1) * 0.3);
+
+  const lastAttackTime = useRef(0);
+  const [projectiles, setProjectiles] = useState<Projectile[]>([]);
+  const PROJECTILE_SPEED = 15;
+  const MAX_PROJECTILES = 10;
+
+  const projectilesRef = useRef<Projectile[]>([]);
+  const towerRef = useRef<THREE.Group>(null);
+
+  useEffect(() => {
+    projectilesRef.current = projectiles;
+  }, [projectiles]);
+
+  useFrame((state, delta) => {
+    if (!projectilesRef.current.length) return;
+
+    const speed = PROJECTILE_SPEED * delta;
+    setProjectiles(prev =>
+      prev.map(projectile => {
+        const { startPos, targetPos, progress } = projectile;
+        const newProgress = progress + speed;
+
+        if (newProgress >= 1) {
+          // Handle projectile hit
+          const targetCreep = creeps.find(c => c.id === projectile.targetCreepId);
+          if (targetCreep) {
+            onDamageEnemy(targetCreep.id, damage, stats.special);
+          }
+          return null;
+        }
+
+        // Calculate arc trajectory
+        const height = 2;
+        const arcY = Math.sin(newProgress * Math.PI) * height;
+
+        // Update position with proper interpolation
+        const currentPos = new Vector3().lerpVectors(startPos, targetPos, newProgress);
+        currentPos.y += arcY;
+
+        return {
+          ...projectile,
+          currentPos,
+          progress: newProgress
+        };
+      }).filter(Boolean)
+    );
+  });
+
+  useFrame(() => {
+    if (preview || !onDamageEnemy || phase !== 'combat') return;
+
+    const now = Date.now();
+    if (now - lastAttackTime.current < attackCooldown) return;
+
+    // Find closest creep in range
+    let closestCreep = null;
+    let closestDistance = Infinity;
+
+    for (const creep of creeps) {
+      if (!creep.position) continue;
+
+      const creepPos = new Vector3(...creep.position);
+      const towerPos = towerRef.current ? towerRef.current.position : (position instanceof Vector3 ? position : new Vector3(...position));
+      const distance = creepPos.distanceTo(towerPos);
+
+      if (distance <= range && distance < closestDistance) {
+        closestCreep = creep;
+        closestDistance = distance;
+      }
+    }
+
+    if (closestCreep) {
+      const towerHeight = 1 + (level - 1) * 0.2;
+      const towerPos = towerRef.current ? towerRef.current.position : (position instanceof Vector3 ? position : new Vector3(...position));
+      const startPos = towerPos.clone();
+      startPos.y += towerHeight;
+
+      const targetPos = new Vector3(...closestCreep.position);
+      targetPos.y += 0.5;
+
+      // Add new projectile
+      if (projectilesRef.current.length < MAX_PROJECTILES) {
+        setProjectiles(prev => [
+          ...prev,
+          {
+            id: Math.random(),
+            startPos,
+            targetPos,
+            currentPos: startPos.clone(),
+            progress: 0,
+            targetCreepId: closestCreep.id
+          }
+        ]);
+      }
+
+      lastAttackTime.current = now;
+    }
+  });
+
+  const [element, tier] = type.match(/([a-z]+)(\d+)/).slice(1);
+  const tierNum = parseInt(tier);
+  const baseWidth = 0.8 + (tierNum - 1) * 0.1;
+  const baseHeight = 1.2 + (tierNum - 1) * 0.2;
+
+  return (
+    <group ref={towerRef} position={position instanceof Vector3 ? position.toArray() : position}>
+      {/* Base platform for all towers */}
+      <mesh position={[0, 0.1, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[baseWidth * 0.7, baseWidth * 0.8, 0.2, 8]} />
+        <meshStandardMaterial color={stats.color} />
+      </mesh>
+
+      {/* Element-specific main structure */}
+      {element === 'light' && (
+        <>
+          {/* Crystal spire design */}
+          <mesh position={[0, baseHeight / 2 + 0.2, 0]} castShadow>
+            <cylinderGeometry args={[0.2, baseWidth * 0.5, baseHeight, 6]} />
+            <meshStandardMaterial color={stats.color} emissive={stats.emissive} emissiveIntensity={1} />
+          </mesh>
+          {/* Floating crystals */}
+          {[...Array(tierNum)].map((_, i) => (
+            <group key={i} rotation={[0, (Math.PI * 2 * i) / tierNum, 0]}>
+              <mesh position={[0.4, baseHeight * 0.7 + i * 0.2, 0]} castShadow>
+                <octahedronGeometry args={[0.15]} />
+                <meshStandardMaterial color={stats.color} emissive={stats.emissive} emissiveIntensity={1} />
+              </mesh>
+            </group>
+          ))}
+        </>
+      )}
+
+      {element === 'fire' && (
+        <>
+          {/* Volcanic tower design */}
+          <mesh position={[0, baseHeight / 2 + 0.2, 0]} castShadow>
+            <cylinderGeometry args={[baseWidth * 0.3, baseWidth * 0.6, baseHeight, 4]} />
+            <meshStandardMaterial color="#8B0000" emissive={stats.emissive} emissiveIntensity={0.5} />
+          </mesh>
+          {/* Lava streams */}
+          {[...Array(4)].map((_, i) => (
+            <group key={i} rotation={[0, (Math.PI * 2 * i) / 4, 0]}>
+              <mesh position={[0.2, baseHeight * 0.6, 0]} castShadow>
+                <sphereGeometry args={[0.1]} />
+                <meshStandardMaterial color={stats.emissive} emissive={stats.emissive} emissiveIntensity={1} />
+              </mesh>
+            </group>
+          ))}
+          {/* Top flame */}
+          <mesh position={[0, baseHeight + 0.2, 0]} castShadow>
+            <coneGeometry args={[0.3, 0.6, 4]} />
+            <meshStandardMaterial color={stats.emissive} emissive={stats.emissive} emissiveIntensity={1} />
+          </mesh>
+        </>
+      )}
+
+      {element === 'ice' && (
+        <>
+          {/* Crystalline ice structure */}
+          <mesh position={[0, baseHeight / 2 + 0.2, 0]} castShadow>
+            <cylinderGeometry args={[baseWidth * 0.4, baseWidth * 0.5, baseHeight, 6]} />
+            <meshStandardMaterial
+              color={stats.color}
+              emissive={stats.emissive}
+              emissiveIntensity={0.5}
+              transparent
+              opacity={0.8}
+            />
+          </mesh>
+          {/* Ice shards */}
+          {[...Array(tierNum + 2)].map((_, i) => (
+            <group key={i} rotation={[0, (Math.PI * 2 * i) / (tierNum + 2), Math.PI * 0.1]}>
+              <mesh position={[0.3, baseHeight * 0.6, 0]} castShadow>
+                <coneGeometry args={[0.1, 0.4, 4]} />
+                <meshStandardMaterial
+                  color={stats.color}
+                  transparent
+                  opacity={0.6}
+                />
+              </mesh>
+            </group>
+          ))}
+        </>
+      )}
+
+      {element === 'nature' && (
+        <>
+          {/* Organic trunk */}
+          <mesh position={[0, baseHeight / 2 + 0.2, 0]} castShadow>
+            <cylinderGeometry args={[baseWidth * 0.3, baseWidth * 0.4, baseHeight, 6]} />
+            <meshStandardMaterial color="#4B3621" />
+          </mesh>
+          {/* Leaves and vines */}
+          {[...Array(tierNum + 1)].map((_, i) => (
+            <group key={i} rotation={[0, (Math.PI * 2 * i) / (tierNum + 1), 0]}>
+              <mesh position={[0.25, baseHeight * (0.4 + i * 0.2), 0]} castShadow>
+                <sphereGeometry args={[0.2]} />
+                <meshStandardMaterial color={stats.color} emissive={stats.emissive} emissiveIntensity={0.3} />
+              </mesh>
+            </group>
+          ))}
+          {/* Top bloom */}
+          <mesh position={[0, baseHeight + 0.2, 0]} castShadow>
+            <dodecahedronGeometry args={[0.3]} />
+            <meshStandardMaterial color={stats.emissive} emissive={stats.emissive} emissiveIntensity={0.5} />
+          </mesh>
+        </>
+      )}
+
+      {element === 'water' && (
+        <>
+          {/* Flowing water column */}
+          <mesh position={[0, baseHeight / 2 + 0.2, 0]} castShadow>
+            <cylinderGeometry args={[baseWidth * 0.3, baseWidth * 0.4, baseHeight, 8]} />
+            <meshStandardMaterial
+              color={stats.color}
+              emissive={stats.emissive}
+              emissiveIntensity={0.3}
+              transparent
+              opacity={0.7}
+            />
+          </mesh>
+          {/* Water rings */}
+          {[...Array(tierNum)].map((_, i) => (
+            <group key={i} position={[0, baseHeight * (0.3 + i * 0.25), 0]}>
+              <mesh castShadow>
+                <torusGeometry args={[0.3, 0.1, 8, 16]} />
+                <meshStandardMaterial
+                  color={stats.color}
+                  transparent
+                  opacity={0.6}
+                />
+              </mesh>
+            </group>
+          ))}
+        </>
+      )}
+
+      {element === 'dark' && (
+        <>
+          {/* Dark obelisk */}
+          <mesh position={[0, baseHeight / 2 + 0.2, 0]} castShadow>
+            <cylinderGeometry args={[baseWidth * 0.2, baseWidth * 0.4, baseHeight, 4]} />
+            <meshStandardMaterial color="#1a1a1a" emissive={stats.emissive} emissiveIntensity={0.7} />
+          </mesh>
+          {/* Floating dark orbs */}
+          {[...Array(tierNum)].map((_, i) => (
+            <group key={i} rotation={[0, (Math.PI * 2 * i) / tierNum, 0]}>
+              <mesh position={[0.3, baseHeight * (0.3 + i * 0.2), 0]} castShadow>
+                <sphereGeometry args={[0.15]} />
+                <meshStandardMaterial color={stats.color} emissive={stats.emissive} emissiveIntensity={1} />
+              </mesh>
+            </group>
+          ))}
+          {/* Top crystal */}
+          <mesh position={[0, baseHeight + 0.2, 0]} castShadow>
+            <octahedronGeometry args={[0.25]} />
+            <meshStandardMaterial color={stats.color} emissive={stats.emissive} emissiveIntensity={1} />
+          </mesh>
+        </>
+      )}
+
+      {/* Projectiles */}
+      {projectiles.map(({ id, startPos, targetPos, progress }) => (
+        <Projectile
+          key={id}
+          startPos={startPos}
+          targetPos={targetPos}
+          targetId={id}
+          color={stats.emissive}
+          onHit={(targetId) => onDamageEnemy(targetId, damage, stats.special)}
+        />
+      ))}
+
+      {/* Range indicator (only in preview) */}
+      {preview && (
+        <mesh position={[0, 0.1, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0, stats.range, 32]} />
+          <meshBasicMaterial color="rgba(255,255,255,0.2)" transparent opacity={0.2} />
+        </mesh>
+      )}
+    </group>
   );
 }
