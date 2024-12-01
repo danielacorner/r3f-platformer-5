@@ -47,7 +47,7 @@ export function GameUI() {
             }}
           >
             <FaPlay />
-            <span>Start Wave</span>
+            <span data-short-text="Start">Start Wave</span>
           </button>
         )}
       </div>

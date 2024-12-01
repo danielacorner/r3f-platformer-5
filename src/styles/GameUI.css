@@ -69,3 +69,93 @@
 .start-wave:hover {
   background: #16a34a;
 }
+
+@media screen and (max-width: 432px) {
+  .game-ui {
+    padding: 12px;
+  }
+
+  .game-stats {
+    padding: 8px 12px;
+    gap: 16px;
+  }
+
+  .control-button {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+  }
+}
+
+@media screen and (max-width: 359px) {
+  .control-button span::after {
+    content: attr(data-short-text, 'Start');
+  }
+
+  .control-button span {
+    font-size: 0;
+  }
+
+  .control-button span::after {
+    font-size: 0.8rem;
+    content: 'Start';
+  }
+}
+
+@media screen and (max-width: 360px) {
+  .game-ui {
+    padding: 8px;
+  }
+
+  .game-stats {
+    padding: 6px 10px;
+    gap: 12px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+  }
+
+  .stat-value {
+    font-size: 14px;
+  }
+
+  .control-button {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .control-button svg {
+    font-size: 1rem;
+  }
+}
+
+@media screen and (max-width: 320px) {
+  .game-ui {
+    padding: 6px;
+  }
+
+  .game-stats {
+    padding: 4px 8px;
+    gap: 10px;
+  }
+
+  .control-button {
+    padding: 2px 8px;
+    font-size: 0.7rem;
+    height: 24px;
+    gap: 4px;
+    line-height: 1;
+  }
+
+  .control-button svg {
+    font-size: 0.8rem;
+  }
+
+  .control-button span::after {
+    font-size: 0.7rem;
+  }
+}
