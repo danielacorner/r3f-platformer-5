@@ -175,7 +175,7 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
 
   // Extract actual level from tower type (e.g., "fire5" -> 5)
   const actualLevel = parseInt(type.slice(-1)) || 1;
-  console.log('Tower type:', type, 'Actual level:', actualLevel);
+  const elementType = type.replace(/[0-9]/g, '');
 
   useEffect(() => {
     projectilesRef.current = projectiles;
@@ -192,106 +192,289 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
       opacity: 0.9
     };
 
-    switch (type) {
-      case 'light1': case 'light2': case 'light3': case 'light4': case 'light5':
+    switch (elementType) {
+      case 'light':
         return { ...baseStyle, emissiveIntensity: 4, opacity: 0.95 };
-      case 'fire1': case 'fire2': case 'fire3': case 'fire4': case 'fire5':
+      case 'fire':
         return { ...baseStyle, emissiveIntensity: 5 };
-      case 'ice1': case 'ice2': case 'ice3': case 'ice4': case 'ice5':
+      case 'ice':
         return { ...baseStyle, opacity: 0.7, emissiveIntensity: 2.5 };
-      case 'nature1': case 'nature2': case 'nature3': case 'nature4': case 'nature5':
+      case 'nature':
         return { ...baseStyle, emissiveIntensity: 2.8 };
-      case 'water1': case 'water2': case 'water3': case 'water4': case 'water5':
+      case 'water':
         return { ...baseStyle, opacity: 0.8, emissiveIntensity: 2.2 };
-      default:
+      case 'dark':
         return { ...baseStyle, emissiveIntensity: 3.5 };
+      default:
+        return baseStyle;
     }
   };
 
-  // Get shape for specific level indicator
-  const LevelShape = ({ index, position, rotation }: { index: number; position: [number, number, number], rotation: number }) => {
+  // Element-specific shape generation
+  const ElementShape = ({ index, position, rotation }: { index: number; position: [number, number, number], rotation: number }) => {
     const orbStyle = getOrbStyle();
     const scale = 0.12;
+    
+    const getElementalEffect = () => {
+      switch(elementType) {
+        case 'fire':
+          // Aggressive, sharp shapes with intense glow
+          return (
+            <group position={position} rotation={[time * 0.8, rotation + time, time * 0.5]}>
+              {index > 0 && ( // Additional effects for higher levels
+                <mesh scale={1 + (index * 0.1)}>
+                  <octahedronGeometry args={[scale * (1 + index * 0.1)]} />
+                  <meshStandardMaterial
+                    color="orange"
+                    emissive="red"
+                    emissiveIntensity={3 + index}
+                    transparent
+                    opacity={0.3}
+                    wireframe
+                  />
+                </mesh>
+              )}
+              <mesh castShadow>
+                <octahedronGeometry args={[scale * (1 + index * 0.1)]} />
+                <meshStandardMaterial
+                  color={stats.color}
+                  emissive={stats.emissive}
+                  emissiveIntensity={orbStyle.emissiveIntensity * (1 + index * 0.5)}
+                  metalness={0.9}
+                  roughness={0.1}
+                />
+              </mesh>
+              {index > 1 && ( // Flame-like effects for level 3+
+                <group rotation={[time, -time, time * 0.5]}>
+                  <mesh scale={1.2 + (index * 0.1)}>
+                    <tetrahedronGeometry args={[scale * 0.8]} />
+                    <meshStandardMaterial
+                      color="yellow"
+                      emissive="orange"
+                      emissiveIntensity={2 + index}
+                      transparent
+                      opacity={0.4}
+                    />
+                  </mesh>
+                </group>
+              )}
+            </group>
+          );
 
-    switch(index) {
-      case 0: // Sphere (Level 1+)
-        return (
-          <mesh position={position} rotation={[0, rotation, 0]} castShadow>
-            <sphereGeometry args={[scale, 16, 16]} />
-            <meshStandardMaterial
-              color={stats.color}
-              emissive={stats.emissive}
-              emissiveIntensity={orbStyle.emissiveIntensity * 2}
-              transparent
-              opacity={orbStyle.opacity}
-              metalness={0.9}
-              roughness={0.1}
-            />
-          </mesh>
-        );
-      case 1: // Octahedron (Level 2+)
-        return (
-          <mesh position={position} rotation={[time, rotation + time, time * 0.5]} castShadow>
-            <octahedronGeometry args={[scale * 1.2]} />
-            <meshStandardMaterial
-              color={stats.color}
-              emissive={stats.emissive}
-              emissiveIntensity={orbStyle.emissiveIntensity * 2}
-              transparent
-              opacity={orbStyle.opacity}
-              metalness={0.9}
-              roughness={0.1}
-            />
-          </mesh>
-        );
-      case 2: // Dodecahedron (Level 3+)
-        return (
-          <mesh position={position} rotation={[time * 0.5, rotation - time, time]} castShadow>
-            <dodecahedronGeometry args={[scale * 1.3]} />
-            <meshStandardMaterial
-              color={stats.color}
-              emissive={stats.emissive}
-              emissiveIntensity={orbStyle.emissiveIntensity * 2}
-              transparent
-              opacity={orbStyle.opacity}
-              metalness={0.9}
-              roughness={0.1}
-            />
-          </mesh>
-        );
-      case 3: // Icosahedron (Level 4+)
-        return (
-          <mesh position={position} rotation={[time * 0.7, rotation + time * 0.5, -time]} castShadow>
-            <icosahedronGeometry args={[scale * 1.4]} />
-            <meshStandardMaterial
-              color={stats.color}
-              emissive={stats.emissive}
-              emissiveIntensity={orbStyle.emissiveIntensity * 2}
-              transparent
-              opacity={orbStyle.opacity}
-              metalness={0.9}
-              roughness={0.1}
-            />
-          </mesh>
-        );
-      case 4: // Torusknot (Level 5)
-        return (
-          <mesh position={position} rotation={[time, rotation + time * 0.8, time * 0.3]} castShadow>
-            <torusKnotGeometry args={[scale * 0.8, scale * 0.3, 64, 8]} />
-            <meshStandardMaterial
-              color={stats.color}
-              emissive={stats.emissive}
-              emissiveIntensity={orbStyle.emissiveIntensity * 2}
-              transparent
-              opacity={orbStyle.opacity}
-              metalness={0.9}
-              roughness={0.1}
-            />
-          </mesh>
-        );
-    }
+        case 'ice':
+          // Crystalline, faceted shapes with transparency
+          return (
+            <group position={position} rotation={[time * 0.2, rotation, time * 0.1]}>
+              <mesh castShadow>
+                <polyhedronGeometry args={[scale * (1 + index * 0.15)]} />
+                <meshPhysicalMaterial
+                  color={stats.color}
+                  emissive={stats.emissive}
+                  emissiveIntensity={orbStyle.emissiveIntensity}
+                  metalness={0.9}
+                  roughness={0.1}
+                  transparent
+                  opacity={0.7}
+                  transmission={0.5}
+                  thickness={1.5}
+                />
+              </mesh>
+              {index > 0 && ( // Crystal formations for higher levels
+                <Edges
+                  scale={1.05}
+                  threshold={15}
+                  color="white"
+                />
+              )}
+              {index > 1 && ( // Frost effect for level 3+
+                <mesh scale={1.2}>
+                  <icosahedronGeometry args={[scale * 1.2]} />
+                  <meshPhysicalMaterial
+                    color="white"
+                    emissive="lightblue"
+                    emissiveIntensity={1}
+                    transparent
+                    opacity={0.2}
+                    roughness={0}
+                    transmission={0.9}
+                  />
+                </mesh>
+              )}
+            </group>
+          );
+
+        case 'nature':
+          // Organic, flowing shapes with leaf-like elements
+          return (
+            <group position={position} rotation={[time * 0.3, rotation + time * 0.2, time * 0.1]}>
+              <mesh castShadow>
+                <torusKnotGeometry args={[scale * 0.8, scale * 0.3, 64, 8]} />
+                <meshStandardMaterial
+                  color={stats.color}
+                  emissive={stats.emissive}
+                  emissiveIntensity={orbStyle.emissiveIntensity}
+                  metalness={0.4}
+                  roughness={0.6}
+                />
+              </mesh>
+              {index > 0 && Array.from({ length: index * 2 }).map((_, i) => (
+                // Leaf-like formations that increase with level
+                <mesh
+                  key={i}
+                  rotation={[
+                    Math.sin(time + i) * 0.5,
+                    (i * Math.PI * 2) / (index * 2) + time * 0.2,
+                    Math.cos(time + i) * 0.5
+                  ]}
+                  position={[0, scale * 0.5, 0]}
+                >
+                  <coneGeometry args={[scale * 0.3, scale * 0.8, 3]} />
+                  <meshStandardMaterial
+                    color="green"
+                    emissive="lightgreen"
+                    emissiveIntensity={1}
+                    transparent
+                    opacity={0.8}
+                  />
+                </mesh>
+              ))}
+            </group>
+          );
+
+        case 'water':
+          // Smooth, flowing shapes with ripple effects
+          return (
+            <group position={position} rotation={[time * 0.2, rotation, time * 0.3]}>
+              <mesh castShadow>
+                <sphereGeometry args={[scale, 32, 32]} />
+                <meshPhysicalMaterial
+                  color={stats.color}
+                  emissive={stats.emissive}
+                  emissiveIntensity={orbStyle.emissiveIntensity}
+                  metalness={0.9}
+                  roughness={0.1}
+                  transparent
+                  opacity={0.6}
+                  transmission={0.5}
+                  thickness={1.5}
+                />
+              </mesh>
+              {index > 0 && Array.from({ length: index }).map((_, i) => (
+                // Ripple effects that increase with level
+                <mesh
+                  key={i}
+                  scale={1 + (i * 0.15) + Math.sin(time * 2 + i) * 0.1}
+                  rotation={[Math.PI / 2, 0, time * (0.1 + i * 0.1)]}
+                >
+                  <torusGeometry args={[scale * 1.2, scale * 0.05, 16, 32]} />
+                  <meshStandardMaterial
+                    color="blue"
+                    emissive="lightblue"
+                    emissiveIntensity={1}
+                    transparent
+                    opacity={0.3 - (i * 0.05)}
+                  />
+                </mesh>
+              ))}
+            </group>
+          );
+
+        case 'light':
+          // Radiant, geometric shapes with intense glow
+          return (
+            <group position={position} rotation={[time * 0.5, rotation + time * 0.3, time * 0.2]}>
+              <mesh castShadow>
+                <dodecahedronGeometry args={[scale]} />
+                <meshStandardMaterial
+                  color={stats.color}
+                  emissive={stats.emissive}
+                  emissiveIntensity={orbStyle.emissiveIntensity * (1 + index * 0.5)}
+                  metalness={0.9}
+                  roughness={0.1}
+                />
+              </mesh>
+              {index > 0 && Array.from({ length: index * 2 }).map((_, i) => (
+                // Light rays that increase with level
+                <mesh
+                  key={i}
+                  rotation={[
+                    0,
+                    (i * Math.PI * 2) / (index * 2),
+                    Math.PI / 4 + Math.sin(time * 2 + i) * 0.2
+                  ]}
+                >
+                  <boxGeometry args={[scale * 0.1, scale * (2 + index * 0.5), scale * 0.1]} />
+                  <meshStandardMaterial
+                    color="white"
+                    emissive="yellow"
+                    emissiveIntensity={2}
+                    transparent
+                    opacity={0.3}
+                  />
+                </mesh>
+              ))}
+            </group>
+          );
+
+        case 'dark':
+          // Void-like, abstract shapes with shadow effects
+          return (
+            <group position={position} rotation={[time * 0.3, rotation - time * 0.2, time * 0.1]}>
+              <mesh castShadow>
+                <icosahedronGeometry args={[scale * (1 + index * 0.1)]} />
+                <meshStandardMaterial
+                  color={stats.color}
+                  emissive={stats.emissive}
+                  emissiveIntensity={orbStyle.emissiveIntensity}
+                  metalness={0.9}
+                  roughness={0.1}
+                />
+              </mesh>
+              {index > 0 && Array.from({ length: index * 3 }).map((_, i) => (
+                // Void tendrils that increase with level
+                <mesh
+                  key={i}
+                  position={[
+                    Math.sin(time + i) * scale * 0.3,
+                    Math.cos(time * 2 + i) * scale * 0.3,
+                    Math.sin(time * 1.5 + i) * scale * 0.3
+                  ]}
+                  rotation={[time + i, time * 0.5 + i, time * 0.3 + i]}
+                >
+                  <octahedronGeometry args={[scale * 0.2]} />
+                  <meshStandardMaterial
+                    color="black"
+                    emissive="purple"
+                    emissiveIntensity={1 + index * 0.5}
+                    transparent
+                    opacity={0.7}
+                  />
+                </mesh>
+              ))}
+            </group>
+          );
+
+        default:
+          return (
+            <mesh position={position} rotation={[0, rotation, 0]} castShadow>
+              <sphereGeometry args={[scale, 16, 16]} />
+              <meshStandardMaterial
+                color={stats.color}
+                emissive={stats.emissive}
+                emissiveIntensity={orbStyle.emissiveIntensity}
+                transparent
+                opacity={orbStyle.opacity}
+                metalness={0.9}
+                roughness={0.1}
+              />
+            </mesh>
+          );
+      }
+    };
+
+    return getElementalEffect();
   };
-
+  
   const orbStyle = getOrbStyle();
 
   useFrame(() => {
@@ -344,15 +527,8 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
   });
 
   // Safely parse tower type
-  const [element, tierNum] = useMemo(() => {
-    const match = type?.match(/([a-z]+)(\d+)/);
-    if (!match) return ['dark', 1]; // Default values
-    const [, el, tier] = match;
-    return [el, parseInt(tier)];
-  }, [type]);
-
-  const baseWidth = 0.8 + (tierNum - 1) * 0.1;
-  const baseHeight = 1.2 + (tierNum - 1) * 0.2;
+  const baseWidth = 0.8 + (level - 1) * 0.1;
+  const baseHeight = 1.2 + (level - 1) * 0.2;
 
   return (
     <group ref={towerRef} position={position instanceof Vector3 ? position.toArray() : position}>
@@ -363,7 +539,7 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
       </mesh>
 
       {/* Element-specific main structure */}
-      {element === 'light' && (
+      {elementType === 'light' && (
         <>
           {/* Crystal spire design */}
           <mesh position={[0, baseHeight / 2 + 0.2, 0]} castShadow>
@@ -371,8 +547,8 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
             <meshStandardMaterial color={stats.color} emissive={stats.emissive} emissiveIntensity={1} />
           </mesh>
           {/* Floating crystals */}
-          {[...Array(tierNum)].map((_, i) => (
-            <group key={i} rotation={[0, (Math.PI * 2 * i) / tierNum, 0]}>
+          {[...Array(level)].map((_, i) => (
+            <group key={i} rotation={[0, (Math.PI * 2 * i) / level, 0]}>
               <mesh position={[0.4, baseHeight * 0.7 + i * 0.2, 0]} castShadow>
                 <octahedronGeometry args={[0.15]} />
                 <meshStandardMaterial color={stats.color} emissive={stats.emissive} emissiveIntensity={1} />
@@ -382,7 +558,7 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
         </>
       )}
 
-      {element === 'fire' && (
+      {elementType === 'fire' && (
         <>
           {/* Volcanic tower design */}
           <mesh position={[0, baseHeight / 2 + 0.2, 0]} castShadow>
@@ -406,7 +582,7 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
         </>
       )}
 
-      {element === 'ice' && (
+      {elementType === 'ice' && (
         <>
           {/* Crystalline ice structure */}
           <mesh position={[0, baseHeight / 2 + 0.2, 0]} castShadow>
@@ -420,8 +596,8 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
             />
           </mesh>
           {/* Ice shards */}
-          {[...Array(tierNum + 2)].map((_, i) => (
-            <group key={i} rotation={[0, (Math.PI * 2 * i) / (tierNum + 2), Math.PI * 0.1]}>
+          {[...Array(level + 2)].map((_, i) => (
+            <group key={i} rotation={[0, (Math.PI * 2 * i) / (level + 2), Math.PI * 0.1]}>
               <mesh position={[0.3, baseHeight * 0.6, 0]} castShadow>
                 <coneGeometry args={[0.1, 0.4, 4]} />
                 <meshStandardMaterial
@@ -435,7 +611,7 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
         </>
       )}
 
-      {element === 'nature' && (
+      {elementType === 'nature' && (
         <>
           {/* Organic trunk */}
           <mesh position={[0, baseHeight / 2 + 0.2, 0]} castShadow>
@@ -443,8 +619,8 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
             <meshStandardMaterial color="#4B3621" />
           </mesh>
           {/* Leaves and vines */}
-          {[...Array(tierNum + 1)].map((_, i) => (
-            <group key={i} rotation={[0, (Math.PI * 2 * i) / (tierNum + 1), 0]}>
+          {[...Array(level + 1)].map((_, i) => (
+            <group key={i} rotation={[0, (Math.PI * 2 * i) / (level + 1), 0]}>
               <mesh position={[0.25, baseHeight * (0.4 + i * 0.2), 0]} castShadow>
                 <sphereGeometry args={[0.2]} />
                 <meshStandardMaterial color={stats.color} emissive={stats.emissive} emissiveIntensity={0.3} />
@@ -459,7 +635,7 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
         </>
       )}
 
-      {element === 'water' && (
+      {elementType === 'water' && (
         <>
           {/* Flowing water column */}
           <mesh position={[0, baseHeight / 2 + 0.2, 0]} castShadow>
@@ -473,7 +649,7 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
             />
           </mesh>
           {/* Water rings */}
-          {[...Array(tierNum)].map((_, i) => (
+          {[...Array(level)].map((_, i) => (
             <group key={i} position={[0, baseHeight * (0.3 + i * 0.25), 0]}>
               <mesh castShadow>
                 <torusGeometry args={[0.3, 0.1, 8, 16]} />
@@ -488,7 +664,7 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
         </>
       )}
 
-      {element === 'dark' && (
+      {elementType === 'dark' && (
         <>
           {/* Dark obelisk */}
           <mesh position={[0, baseHeight / 2 + 0.2, 0]} castShadow>
@@ -496,8 +672,8 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
             <meshStandardMaterial color="#1a1a1a" emissive={stats.emissive} emissiveIntensity={0.7} />
           </mesh>
           {/* Floating dark orbs */}
-          {[...Array(tierNum)].map((_, i) => (
-            <group key={i} rotation={[0, (Math.PI * 2 * i) / tierNum, 0]}>
+          {[...Array(level)].map((_, i) => (
+            <group key={i} rotation={[0, (Math.PI * 2 * i) / level, 0]}>
               <mesh position={[0.3, baseHeight * (0.3 + i * 0.2), 0]} castShadow>
                 <sphereGeometry args={[0.15]} />
                 <meshStandardMaterial color={stats.color} emissive={stats.emissive} emissiveIntensity={1} />
@@ -520,11 +696,9 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
           const x = radius * Math.cos(angle);
           const z = radius * Math.sin(angle);
           const y = Math.sin(time * 2 + index * (Math.PI / actualLevel)) * 0.1;
-
-          console.log(`Rendering shape ${index} for level ${actualLevel}`);
           
           return (
-            <LevelShape
+            <ElementShape
               key={`shape-${index}`}
               index={index}
               position={[x, y, z]}
