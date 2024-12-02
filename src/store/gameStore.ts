@@ -150,6 +150,7 @@ interface GameState {
   levelComplete: boolean;
   placedTowers: PlacedTower[];
   selectedObjectType: PlaceableObjectType | null;
+  selectedObjectLevel: number | null;
   money: number;
   score: number;
   lives: number;
@@ -170,6 +171,7 @@ const initialState: GameState = {
   levelComplete: false,
   placedTowers: [],
   selectedObjectType: null,
+  selectedObjectLevel: null,
   money: process.env.NODE_ENV === 'development' ? 10000 : 500,
   score: 0,
   lives: 20,
@@ -178,6 +180,7 @@ const initialState: GameState = {
   projectiles: [],
   towerStates: [],
   playerRef: null,
+  setPlayerRef: () => { }
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -212,7 +215,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ wave });
   },
 
-  addPlacedTower: (position, type) => {
+  addPlacedTower: (position, type, level) => {
     const state = get();
     const cost = TOWER_STATS[type]?.cost ?? 0;
     if (state.money >= cost) {
@@ -221,7 +224,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           id: Date.now(),
           position,
           type,
-          level: 1,
+          level,
           kills: 0
         }],
         money: state.money - cost
@@ -249,7 +252,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
   },
 
-  setSelectedObjectType: (type) => set({ selectedObjectType: type }),
+  setSelectedObjectType: (type, level = null) => set({ selectedObjectType: type, selectedObjectLevel: level }),
 
   addMoney: (amount) => set(state => ({ money: state.money + amount })),
 

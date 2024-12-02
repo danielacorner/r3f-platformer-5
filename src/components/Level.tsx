@@ -356,11 +356,10 @@ export function Level() {
   const {
     phase,
     placedTowers,
-    selectedObjectType,
     money,
     creeps,
     addPlacedTower,
-    setSelectedObjectType
+    setSelectedObjectType, selectedObjectType, selectedObjectLevel
   } = useGameStore();
 
   // Refs and State
@@ -410,7 +409,7 @@ export function Level() {
     });
 
     if (!isOnPath && !isOccupied) {
-      addPlacedTower(snappedPosition, selectedObjectType);
+      addPlacedTower(snappedPosition, selectedObjectType, selectedObjectLevel);
       setSelectedObjectType(null);
       setShowPreview(false);
     }
@@ -540,6 +539,7 @@ export function Level() {
           type={selectedObjectType}
           preview={true}
           canAfford={canAffordTower}
+          level={selectedObjectLevel}
         />
       )}
     </group>
