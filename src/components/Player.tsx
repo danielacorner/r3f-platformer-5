@@ -96,22 +96,24 @@ export function Player({ moveTargetRef }: PlayerProps) {
     if (velocity.x !== 0 || velocity.z !== 0) {
       playerRef.current.setLinvel({
         x: velocity.x,
-        y: playerRef.current.linvel().y, // Preserve vertical velocity
+        y: 0, // Lock vertical velocity
         z: velocity.z
       });
-
-      // Apply a small upward force to prevent sticking
-      if (Math.abs(playerRef.current.linvel().y) < 0.1) {
-        playerRef.current.applyImpulse({ x: 0, y: 0.01, z: 0 });
-      }
     } else {
-      // Preserve vertical velocity when stopping
+      // Stop horizontal movement but maintain vertical position
       playerRef.current.setLinvel({
         x: 0,
-        y: playerRef.current.linvel().y,
+        y: 0,
         z: 0
       });
     }
+
+    // Keep player at float height
+    playerRef.current.setTranslation({
+      x: playerRef.current.translation().x,
+      y: FLOAT_HEIGHT + Math.sin(state.clock.elapsedTime * FLOAT_SPEED) * 0.1,
+      z: playerRef.current.translation().z
+    });
 
     // Get current position
     const position = playerRef.current.translation();
@@ -121,14 +123,6 @@ export function Player({ moveTargetRef }: PlayerProps) {
     if (!isNaN(position.x) && !isNaN(position.y) && !isNaN(position.z)) {
       lastValidPosition.current.copy(currentPos);
     }
-
-    // Make character float with a sine wave
-    const floatOffset = Math.sin(state.clock.elapsedTime * FLOAT_SPEED) * 0.1;
-    playerRef.current.setTranslation({
-      x: position.x,
-      y: FLOAT_HEIGHT + floatOffset,
-      z: position.z
-    });
 
     // Rotate visual group based on movement direction
     if (velocity.x !== 0 || velocity.z !== 0) {
