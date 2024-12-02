@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import { memo, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import {
   Sky,
@@ -120,7 +120,7 @@ function TDCamera() {
   );
 }
 
-function FollowingCloud() {
+const FollowingCloud = memo(function () {
   const { playerRef } = useGameStore();
   const [spring, api] = useSpring(() => ({
     position: [0, 15, 0],
@@ -141,16 +141,22 @@ function FollowingCloud() {
 
   return (
     <animated.group position={spring.position}>
-      <Cloud
-        opacity={0.01}
-        speed={0.2}
-        width={10}
-        depth={1.5}
-        segments={32}
-      />
+      <MyCloud />
     </animated.group>
   );
-}
+})
+
+const MyCloud = memo(function () {
+  return (
+    <Cloud
+      opacity={0.005}
+      speed={0.2}
+      width={10}
+      depth={1.5}
+      segments={28}
+    />
+  );
+})
 
 function Effects() {
   return (
@@ -167,7 +173,6 @@ function Effects() {
 }
 
 export default function App() {
-  const { currentLevel } = useGameStore();
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#000913' }}>
