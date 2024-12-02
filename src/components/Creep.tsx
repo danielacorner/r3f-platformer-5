@@ -3,7 +3,8 @@ import { useFrame } from '@react-three/fiber';
 import { Vector3, InstancedMesh, Object3D, Matrix4, BufferGeometry, BufferAttribute, BoxGeometry, Color, PlaneGeometry, MeshBasicMaterial, SphereGeometry, CylinderGeometry, TorusGeometry, IcosahedronGeometry, ConeGeometry, MeshStandardMaterial, DoubleSide } from 'three';
 import { useGameStore } from '../store/gameStore';
 import { createShaderMaterial } from '../utils/shaders';
-
+import { Billboard } from '@react-three/drei';
+import * as THREE from 'three'
 // Realistic geometries for different creep types
 const CREEP_GEOMETRIES = {
   normal: (() => {
@@ -560,6 +561,33 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
     });
   }, [creeps]);
 
+  const healthBarRefs = useRef<{ [key: string]: THREE.Group }>({});
+  const healthBarMatrices = useRef<{ [key: string]: THREE.Matrix4 }>({});
+
+  useFrame(() => {
+    if (!instancedMesh.current) return;
+
+    creeps.forEach(creep => {
+      const creepState = activeCreeps.current.get(creep.id);
+      if (!creepState) return;
+
+      // Get creep position from instance matrix
+      const matrix = new THREE.Matrix4();
+      instancedMesh.current!.getMatrixAt(creepState.instanceId, matrix);
+      const position = new THREE.Vector3();
+      position.setFromMatrixPosition(matrix);
+      position.y += 2; // Offset above creep
+
+      // Update health bar position
+      if (healthBarRefs.current[creep.id]) {
+        healthBarRefs.current[creep.id].position.copy(position);
+      }
+
+      // Store matrix for new health bars
+      healthBarMatrices.current[creep.id] = matrix;
+    });
+  });
+
   return (
     <group>
       <instancedMesh
@@ -567,43 +595,46 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
         args={[geometry, material, 1000]}
         castShadow
         receiveShadow
-        position={[0, 0, 0]}
       />
-      {/* Enhanced Health bars */}
-      {creeps.map((creep) => {
-        const creepData = activeCreeps.current.get(creep.id);
-        if (!creepData) return null;
-        const position = tempObject.position.clone();
-        position.y += 1.5; // Position higher above creep
 
+      {/* Health Bars */}
+      {creeps.map(creep => {
         const healthPercent = creep.health / creep.maxHealth;
-        const barWidth = 1.2; // Wider bar
-        const barHeight = 0.15; // Taller bar
+        const healthColor = healthPercent > 0.5 ? '#22c55e' : healthPercent > 0.25 ? '#eab308' : '#ef4444';
+        const barWidth = 1.3;
+        const barHeight = 0.2;
 
         return (
-          <group key={creep.id} position={position.toArray()}>
-            {/* Health bar background with border */}
-            <mesh position={[0, 0, 0]}>
-              <planeGeometry args={[barWidth + 0.1, barHeight + 0.1]} />
-              <meshBasicMaterial color="#000000" transparent opacity={0.8} />
-            </mesh>
-            {/* Health bar background */}
-            <mesh position={[0, 0, 0.01]}>
-              <planeGeometry args={[barWidth, barHeight]} />
-              <meshBasicMaterial color="#ef4444" transparent opacity={0.5} />
-            </mesh>
-            {/* Health bar fill with gradient */}
-            <mesh
-              position={[-barWidth / 2 + (barWidth / 2 * healthPercent), 0, 0.02]}
-              scale={[healthPercent, 1, 1]}
-            >
-              <planeGeometry args={[barWidth, barHeight]} />
-              <meshBasicMaterial
-                color={healthPercent > 0.5 ? '#22c55e' : healthPercent > 0.25 ? '#eab308' : '#ef4444'}
-                transparent
-                opacity={0.9}
-              />
-            </mesh>
+          <group
+            key={creep.id}
+            ref={ref => {
+              if (ref) healthBarRefs.current[creep.id] = ref;
+            }}
+          >
+            <Billboard follow={true} lockX={false} lockY={false} lockZ={false}>
+              {/* Black outline */}
+              <mesh position={[0, 0, -0.01]} renderOrder={1}>
+                <planeGeometry args={[barWidth + 0.1, barHeight + 0.1]} />
+                <meshBasicMaterial color="black" transparent opacity={0.8} depthWrite={false} />
+              </mesh>
+
+              {/* Background */}
+              <mesh position={[0, 0, 0]} renderOrder={2}>
+                <planeGeometry args={[barWidth, barHeight]} />
+                <meshBasicMaterial color="#1a1a1a" transparent opacity={0.8} depthWrite={false} />
+              </mesh>
+
+              {/* Health bar */}
+              <mesh position={[(-barWidth * (1 - healthPercent)) / 2, 0, 0.01]} renderOrder={3}>
+                <planeGeometry args={[barWidth * healthPercent, barHeight]} />
+                <meshBasicMaterial
+                  color={healthColor}
+                  transparent
+                  opacity={0.9}
+                  depthWrite={false}
+                />
+              </mesh>
+            </Billboard>
           </group>
         );
       })}
