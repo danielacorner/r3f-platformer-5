@@ -9,7 +9,7 @@ import { OrbEffects } from './OrbEffects';
 const ORB_RADIUS = 1.5; // Orbit radius
 const ORB_SPEED = 2; // Orbit speed
 const ATTACK_RANGE = 10; // Range to detect enemies
-const ATTACK_DAMAGE = 10;
+const ATTACK_DAMAGE = 25;
 const DAMAGE_RADIUS = 1; // Radius for area damage
 const TRAIL_UPDATE_FREQUENCY = 2; // Update trail every N frames
 

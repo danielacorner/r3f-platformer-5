@@ -1,10 +1,11 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { RigidBody, CuboidCollider } from "@react-three/rapier";
 import { Vector3, Group } from "three";
 import { useGameStore } from "../store/gameStore";
 import { useKeyboardControls } from '../hooks/useKeyboardControls';
 import { MagicOrb } from './MagicOrb';
+import { LevelUpEffect } from './LevelUpEffect';
 
 interface PlayerProps {
   moveTargetRef: React.MutableRefObject<{
@@ -25,7 +26,10 @@ export function Player({ moveTargetRef }: PlayerProps) {
   const visualRef = useRef<Group>(null);
   const lastValidPosition = useRef(new Vector3());
   const cameraOffset = useRef<Vector3 | null>(null);
-  const { camera } = useThree()
+  const { camera } = useThree();
+  const [showLevelUpEffect, setShowLevelUpEffect] = useState(false);
+  const prevLevel = useRef(1);
+  const level = useGameStore(state => state.level);
 
   // Store initial camera offset
   useEffect(() => {
@@ -34,6 +38,14 @@ export function Player({ moveTargetRef }: PlayerProps) {
     const playerPos = new Vector3(position.x, position.y, position.z);
     cameraOffset.current = new Vector3().subVectors(camera.position, playerPos);
   }, []);
+
+  // Check for level up
+  useEffect(() => {
+    if (level > prevLevel.current) {
+      setShowLevelUpEffect(true);
+      prevLevel.current = level;
+    }
+  }, [level]);
 
   // Handle movement and rotation
   useFrame((state, delta) => {
@@ -222,6 +234,11 @@ export function Player({ moveTargetRef }: PlayerProps) {
               </mesh>
             ))}
           </group>
+
+          {/* Level up effect */}
+          {showLevelUpEffect && (
+            <LevelUpEffect onComplete={() => setShowLevelUpEffect(false)} />
+          )}
         </group>
       </RigidBody>
       <MagicOrb playerRef={playerRef} />
