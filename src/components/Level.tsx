@@ -387,6 +387,9 @@ export function Level() {
 
   // Handle click events
   const handleClick = (event: any) => {
+    // Only handle clicks if not placing towers
+    if (selectedObjectType) return;
+
     // Convert mouse position to normalized device coordinates
     const mouse = new Vector2(
       (event.clientX / window.innerWidth) * 2 - 1,
@@ -413,9 +416,10 @@ export function Level() {
 
   // Add click event listener
   useEffect(() => {
-    window.addEventListener('click', handleClick);
-    return () => window.removeEventListener('click', handleClick);
-  }, []);
+    const clickHandler = (e: MouseEvent) => handleClick(e);
+    window.addEventListener('click', clickHandler);
+    return () => window.removeEventListener('click', clickHandler);
+  }, [selectedObjectType]); // Re-add listener when selectedObjectType changes
 
   // Path Generation
   const { segments, points: pathPoints } = useMemo(() => generatePath(), []);

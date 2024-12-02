@@ -79,15 +79,12 @@ export function Player({ moveTargetRef }: PlayerProps) {
         moveTargetRef.current.x - position.x,
         0,
         moveTargetRef.current.z - position.z
-      ).normalize();
+      );
 
-      const distanceToTarget = new Vector3(
-        moveTargetRef.current.x - position.x,
-        0,
-        moveTargetRef.current.z - position.z
-      ).length();
+      const distanceToTarget = directionToTarget.length();
 
       if (distanceToTarget > 0.1) {
+        directionToTarget.normalize();
         velocity.x = directionToTarget.x * MOVE_SPEED;
         velocity.z = directionToTarget.z * MOVE_SPEED;
       } else {
@@ -97,9 +94,23 @@ export function Player({ moveTargetRef }: PlayerProps) {
 
     // Apply movement
     if (velocity.x !== 0 || velocity.z !== 0) {
-      playerRef.current.setLinvel(velocity);
+      playerRef.current.setLinvel({
+        x: velocity.x,
+        y: playerRef.current.linvel().y, // Preserve vertical velocity
+        z: velocity.z
+      });
+
+      // Apply a small upward force to prevent sticking
+      if (Math.abs(playerRef.current.linvel().y) < 0.1) {
+        playerRef.current.applyImpulse({ x: 0, y: 0.01, z: 0 });
+      }
     } else {
-      playerRef.current.setLinvel({ x: 0, y: 0, z: 0 }); // Stop when no movement
+      // Preserve vertical velocity when stopping
+      playerRef.current.setLinvel({
+        x: 0,
+        y: playerRef.current.linvel().y,
+        z: 0
+      });
     }
 
     // Get current position
