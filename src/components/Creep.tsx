@@ -339,9 +339,9 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
     const matrix = new Matrix4();
     for (let i = 0; i < 1000; i++) {
       matrix.makeTranslation(0, -1000, 0); // Move unused instances far away
-      instancedMesh.current.setMatrixAt(i, matrix);
+      instancedMesh.current!.setMatrixAt(i, matrix);
     }
-    instancedMesh.current.instanceMatrix.needsUpdate = true;
+    instancedMesh.current!.instanceMatrix.needsUpdate = true;
   }, []);
 
   // Update creep positions and attributes
@@ -369,6 +369,17 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
         // Update progress along current path segment
         creepState.progress += speed * delta;
 
+        // Interpolate position between current and next points
+        const position = currentPoint.clone().lerp(nextPoint, creepState.progress);
+        
+        // Update instance matrix
+        tempMatrix.makeTranslation(position.x, position.y + 0.5, position.z);
+        instancedMesh.current.setMatrixAt(instanceId, tempMatrix);
+        needsMatrixUpdate = true;
+
+        // Update creep's stored position
+        creepData.position = [position.x, position.y + 0.5, position.z];
+
         // Move to next segment if we've completed this one
         if (creepState.progress >= 1) {
           creepState.pathIndex++;
@@ -376,92 +387,17 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
 
           // Check if we've reached the end
           if (creepState.pathIndex >= pathPoints.length - 1) {
-            console.log(`Creep ${creepId} reached the end`);
             loseLife();
             removeCreep(creepId);
-
-            // Hide the instance
-            tempObject.position.set(0, -1000, 0);
-            tempObject.scale.set(0, 0, 0);
-            tempObject.updateMatrix();
-            instancedMesh.current.setMatrixAt(instanceId, tempObject.matrix);
-            needsMatrixUpdate = true;
-
-            // Reset instance attributes
-            const colorAttr = instancedMesh.current.geometry.getAttribute('instanceColor');
-            const healthAttr = instancedMesh.current.geometry.getAttribute('instanceHealth');
-            const scaleAttr = instancedMesh.current.geometry.getAttribute('instanceScale');
-
-            if (colorAttr && healthAttr && scaleAttr) {
-              const baseIndex = instanceId * 3;
-              (colorAttr.array as Float32Array)[baseIndex] = 1;
-              (colorAttr.array as Float32Array)[baseIndex + 1] = 0;
-              (colorAttr.array as Float32Array)[baseIndex + 2] = 0;
-              (healthAttr.array as Float32Array)[instanceId] = 1;
-              (scaleAttr.array as Float32Array)[instanceId] = 0;
-
-              colorAttr.needsUpdate = true;
-              healthAttr.needsUpdate = true;
-              scaleAttr.needsUpdate = true;
-              needsAttributeUpdate = true;
-            }
-
             activeCreeps.current.delete(creepId);
-            return;
+            needsMatrixUpdate = true;
           }
-        }
-
-        // Interpolate position
-        tempVector.lerpVectors(currentPoint, nextPoint, creepState.progress);
-        tempVector.y = 1;
-
-        // Update instance transform
-        tempObject.position.copy(tempVector);
-
-        // Calculate rotation to face movement direction
-        const direction = nextPoint.clone().sub(currentPoint).normalize();
-        tempObject.lookAt(nextPoint);
-
-        // Apply size
-        const size = creepSizes[type][0];
-        tempObject.scale.set(size, size, size);
-
-        tempObject.position.y += Math.sin(Date.now() * 0.003) * 0.05;
-
-        tempObject.updateMatrix();
-        instancedMesh.current.setMatrixAt(instanceId, tempObject.matrix);
-        needsMatrixUpdate = true;
-
-        // Update instance attributes
-        const colorAttr = instancedMesh.current.geometry.getAttribute('instanceColor');
-        const healthAttr = instancedMesh.current.geometry.getAttribute('instanceHealth');
-        const scaleAttr = instancedMesh.current.geometry.getAttribute('instanceScale');
-
-        if (colorAttr && healthAttr && scaleAttr) {
-          const color = new Color(creepColors[type]);
-          const baseIndex = instanceId * 3;
-          (colorAttr.array as Float32Array)[baseIndex] = color.r;
-          (colorAttr.array as Float32Array)[baseIndex + 1] = color.g;
-          (colorAttr.array as Float32Array)[baseIndex + 2] = color.b;
-          (healthAttr.array as Float32Array)[instanceId] = health / maxHealth;
-          (scaleAttr.array as Float32Array)[instanceId] = size;
-
-          colorAttr.needsUpdate = true;
-          healthAttr.needsUpdate = true;
-          scaleAttr.needsUpdate = true;
-          needsAttributeUpdate = true;
         }
       }
     });
 
-    // Only update if needed
     if (needsMatrixUpdate) {
       instancedMesh.current.instanceMatrix.needsUpdate = true;
-    }
-    if (needsAttributeUpdate) {
-      instancedMesh.current.geometry.attributes.instanceColor.needsUpdate = true;
-      instancedMesh.current.geometry.attributes.instanceHealth.needsUpdate = true;
-      instancedMesh.current.geometry.attributes.instanceScale.needsUpdate = true;
     }
   });
 

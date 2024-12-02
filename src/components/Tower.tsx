@@ -479,33 +479,32 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
   const orbStyle = getOrbStyle();
 
   useFrame(() => {
-    if (preview || !onDamageEnemy || phase !== 'combat') return;
+    if (preview || !onDamageEnemy || phase !== 'game') return;
 
     const now = Date.now();
     if (now - lastAttackTime.current < attackCooldown) return;
 
-    // Find closest creep in range
+    // Find closest creep
     let closestCreep = null;
-    let closestDistance = Infinity;
+    let closestDistance = range;
 
-    for (const creep of creeps) {
-      if (!creep.position) continue;
+    creeps.forEach(creep => {
+      if (!creep.position || creep.health <= 0) return;
 
       const creepPos = new Vector3(...creep.position);
-      const towerPos = towerRef.current ? towerRef.current.position : (position instanceof Vector3 ? position : new Vector3(...position));
-      const distance = creepPos.distanceTo(towerPos);
+      const towerPos = position instanceof Vector3 ? position : new Vector3(...position);
+      const distance = towerPos.distanceTo(creepPos);
 
-      if (distance <= range && distance < closestDistance) {
-        closestCreep = creep;
+      if (distance < closestDistance) {
         closestDistance = distance;
+        closestCreep = creep;
       }
-    }
+    });
 
     if (closestCreep) {
       const towerHeight = 1.2 + (level - 1) * 0.2;
-      const towerPos = towerRef.current ? towerRef.current.position : (position instanceof Vector3 ? position : new Vector3(...position));
-      const startPos = towerPos.clone();
-      startPos.y += towerHeight;
+      const towerPos = position instanceof Vector3 ? position : new Vector3(...position);
+      towerPos.y += towerHeight;
 
       const targetPos = new Vector3(...closestCreep.position);
       targetPos.y += 0.5;
@@ -516,9 +515,10 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
           ...prev,
           {
             id: Math.random(),
-            startPos,
-            targetPos,
-            targetCreepId: closestCreep.id
+            position: towerPos.clone(),
+            velocity: targetPos.clone().sub(towerPos).normalize().multiplyScalar(PROJECTILE_SPEED),
+            creepId: closestCreep.id,
+            timeAlive: 0
           }
         ]);
       }
@@ -557,14 +557,22 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
           {/* Crystal spire design */}
           <mesh position={[0, scaledHeight / 2 + 0.2, 0]} castShadow>
             <cylinderGeometry args={[0.2, scaledWidth * 0.5, scaledHeight, 6]} />
-            <meshStandardMaterial color={stats.color} emissive={stats.emissive} emissiveIntensity={1} />
+            <meshStandardMaterial
+              color={stats.color}
+              emissive={stats.emissive}
+              emissiveIntensity={1}
+            />
           </mesh>
           {/* Floating crystals */}
           {[...Array(level)].map((_, i) => (
             <group key={i} rotation={[0, (Math.PI * 2 * i) / level, 0]}>
               <mesh position={[0.4, scaledHeight * 0.7 + i * 0.2, 0]} castShadow>
                 <octahedronGeometry args={[0.15]} />
-                <meshStandardMaterial color={stats.color} emissive={stats.emissive} emissiveIntensity={1} />
+                <meshStandardMaterial
+                  color={stats.color}
+                  emissive={stats.emissive}
+                  emissiveIntensity={1}
+                />
               </mesh>
             </group>
           ))}
@@ -576,21 +584,33 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
           {/* Volcanic tower design */}
           <mesh position={[0, scaledHeight / 2 + 0.2, 0]} castShadow>
             <cylinderGeometry args={[scaledWidth * 0.3, scaledWidth * 0.6, scaledHeight, 4]} />
-            <meshStandardMaterial color="#8B0000" emissive={stats.emissive} emissiveIntensity={0.5} />
+            <meshStandardMaterial
+              color="#8B0000"
+              emissive={stats.emissive}
+              emissiveIntensity={0.5}
+            />
           </mesh>
           {/* Lava streams */}
           {[...Array(4)].map((_, i) => (
             <group key={i} rotation={[0, (Math.PI * 2 * i) / 4, 0]}>
               <mesh position={[0.2, scaledHeight * 0.6, 0]} castShadow>
                 <sphereGeometry args={[0.1]} />
-                <meshStandardMaterial color={stats.emissive} emissive={stats.emissive} emissiveIntensity={1} />
+                <meshStandardMaterial
+                  color={stats.emissive}
+                  emissive={stats.emissive}
+                  emissiveIntensity={1}
+                />
               </mesh>
             </group>
           ))}
           {/* Top flame */}
           <mesh position={[0, scaledHeight + 0.2, 0]} castShadow>
             <coneGeometry args={[0.3, 0.6, 4]} />
-            <meshStandardMaterial color={stats.emissive} emissive={stats.emissive} emissiveIntensity={1} />
+            <meshStandardMaterial
+              color={stats.emissive}
+              emissive={stats.emissive}
+              emissiveIntensity={1}
+            />
           </mesh>
         </>
       )}
@@ -636,14 +656,22 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
             <group key={i} rotation={[0, (Math.PI * 2 * i) / (level + 1), 0]}>
               <mesh position={[0.25, scaledHeight * (0.4 + i * 0.2), 0]} castShadow>
                 <sphereGeometry args={[0.2]} />
-                <meshStandardMaterial color={stats.color} emissive={stats.emissive} emissiveIntensity={0.3} />
+                <meshStandardMaterial
+                  color={stats.color}
+                  emissive={stats.emissive}
+                  emissiveIntensity={0.3}
+                />
               </mesh>
             </group>
           ))}
           {/* Top bloom */}
           <mesh position={[0, scaledHeight + 0.2, 0]} castShadow>
             <dodecahedronGeometry args={[0.3]} />
-            <meshStandardMaterial color={stats.emissive} emissive={stats.emissive} emissiveIntensity={0.5} />
+            <meshStandardMaterial
+              color={stats.emissive}
+              emissive={stats.emissive}
+              emissiveIntensity={0.5}
+            />
           </mesh>
         </>
       )}
@@ -682,21 +710,33 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
           {/* Dark obelisk */}
           <mesh position={[0, scaledHeight / 2 + 0.2, 0]} castShadow>
             <cylinderGeometry args={[scaledWidth * 0.2, scaledWidth * 0.4, scaledHeight, 4]} />
-            <meshStandardMaterial color="#1a1a1a" emissive={stats.emissive} emissiveIntensity={0.7} />
+            <meshStandardMaterial
+              color="#1a1a1a"
+              emissive={stats.emissive}
+              emissiveIntensity={0.7}
+            />
           </mesh>
           {/* Floating dark orbs */}
           {[...Array(level)].map((_, i) => (
             <group key={i} rotation={[0, (Math.PI * 2 * i) / level, 0]}>
               <mesh position={[0.3, scaledHeight * (0.3 + i * 0.2), 0]} castShadow>
                 <sphereGeometry args={[0.15]} />
-                <meshStandardMaterial color={stats.color} emissive={stats.emissive} emissiveIntensity={1} />
+                <meshStandardMaterial
+                  color={stats.color}
+                  emissive={stats.emissive}
+                  emissiveIntensity={1}
+                />
               </mesh>
             </group>
           ))}
           {/* Top crystal */}
           <mesh position={[0, scaledHeight + 0.2, 0]} castShadow>
             <octahedronGeometry args={[0.25]} />
-            <meshStandardMaterial color={stats.color} emissive={stats.emissive} emissiveIntensity={1} />
+            <meshStandardMaterial
+              color={stats.color}
+              emissive={stats.emissive}
+              emissiveIntensity={1}
+            />
           </mesh>
         </>
       )}
