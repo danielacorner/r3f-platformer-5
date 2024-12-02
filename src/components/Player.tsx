@@ -129,76 +129,78 @@ export function Player() {
   });
 
   return (
-    <RigidBody
-      ref={playerRef}
-      colliders={false}
-      mass={1}
-      type="dynamic"
-      position={[0, 0.5, 0]}
-      enabledRotations={[false, false, false]}
-    >
-      <CuboidCollider args={[0.3, 0.4, 0.3]} position={[0, FLOAT_HEIGHT, 0]} />
-      <group ref={visualRef}>
-        {/* Cloak - Main body */}
-        <mesh position={[0, 0.4, 0]}>
-          <cylinderGeometry args={[0.3, 0.5, 1.2, 8]} />
-          <meshStandardMaterial color="#1a237e" />
-        </mesh>
-
-        {/* Dark face */}
-        <mesh position={[0, 0.8, 0]}>
-          <sphereGeometry args={[0.2, 16, 16]} />
-          <meshStandardMaterial color="#000000" />
-        </mesh>
-
-        {/* Yellow straw hat */}
-        <mesh position={[0, 1.1, 0]} rotation={[0.2, 0, 0]}>
-          <cylinderGeometry args={[0.4, 0.3, 0.15, 8]} />
-          <meshStandardMaterial color="#fdd835" />
-        </mesh>
-        <mesh position={[0, 1.0, 0]}>
-          <cylinderGeometry args={[0.5, 0.5, 0.05, 8]} />
-          <meshStandardMaterial color="#fdd835" />
-        </mesh>
-
-        {/* Wand */}
-        <group position={[0.4, 0.4, -0.2]} rotation={[0, 0, -Math.PI / 4]}>
-          {/* Wand stick */}
-          <mesh>
-            <cylinderGeometry args={[0.02, 0.02, 0.6, 8]} />
-            <meshStandardMaterial color="#4a148c" />
+    <>
+      <RigidBody
+        ref={playerRef}
+        colliders={false}
+        mass={1}
+        type="dynamic"
+        position={[0, 0.5, 0]}
+        enabledRotations={[false, false, false]}
+      >
+        <CuboidCollider args={[0.3, 0.4, 0.3]} position={[0, FLOAT_HEIGHT, 0]} />
+        <group ref={visualRef}>
+          {/* Cloak - Main body */}
+          <mesh position={[0, 0.4, 0]}>
+            <cylinderGeometry args={[0.3, 0.5, 1.2, 8]} />
+            <meshStandardMaterial color="#1a237e" />
           </mesh>
-          {/* Wand tip */}
-          <mesh position={[0, 0.35, 0]}>
-            <sphereGeometry args={[0.04, 8, 8]} />
-            <meshStandardMaterial color="#7e57c2" emissive="#7e57c2" emissiveIntensity={0.5} />
-          </mesh>
-        </group>
 
-        {/* Floating effect particles */}
-        <group position={[0, 0, 0]}>
-          {[...Array(5)].map((_, i) => (
-            <mesh
-              key={i}
-              position={[
-                Math.sin((i / 5) * Math.PI * 2) * 0.3,
-                -0.2 + Math.sin(i * 1.5) * 0.1,
-                Math.cos((i / 5) * Math.PI * 2) * 0.3
-              ]}
-            >
-              <sphereGeometry args={[0.03, 8, 8]} />
-              <meshStandardMaterial
-                color="#4a148c"
-                emissive="#7e57c2"
-                emissiveIntensity={0.5}
-                transparent
-                opacity={0.6}
-              />
+          {/* Dark face */}
+          <mesh position={[0, 0.8, 0]}>
+            <sphereGeometry args={[0.2, 16, 16]} />
+            <meshStandardMaterial color="#000000" />
+          </mesh>
+
+          {/* Yellow straw hat */}
+          <mesh position={[0, 1.1, 0]} rotation={[0.2, 0, 0]}>
+            <cylinderGeometry args={[0.4, 0.3, 0.15, 8]} />
+            <meshStandardMaterial color="#fdd835" />
+          </mesh>
+          <mesh position={[0, 1.0, 0]}>
+            <cylinderGeometry args={[0.5, 0.5, 0.05, 8]} />
+            <meshStandardMaterial color="#fdd835" />
+          </mesh>
+
+          {/* Wand */}
+          <group position={[0.4, 0.4, -0.2]} rotation={[0, 0, -Math.PI / 4]}>
+            {/* Wand stick */}
+            <mesh>
+              <cylinderGeometry args={[0.02, 0.02, 0.6, 8]} />
+              <meshStandardMaterial color="#4a148c" />
             </mesh>
-          ))}
+            {/* Wand tip */}
+            <mesh position={[0, 0.35, 0]}>
+              <sphereGeometry args={[0.04, 8, 8]} />
+              <meshStandardMaterial color="#7e57c2" emissive="#7e57c2" emissiveIntensity={0.5} />
+            </mesh>
+          </group>
+
+          {/* Floating effect particles */}
+          <group position={[0, 0, 0]}>
+            {[...Array(5)].map((_, i) => (
+              <mesh
+                key={i}
+                position={[
+                  Math.sin((i / 5) * Math.PI * 2) * 0.3,
+                  -0.2 + Math.sin(i * 1.5) * 0.1,
+                  Math.cos((i / 5) * Math.PI * 2) * 0.3
+                ]}
+              >
+                <sphereGeometry args={[0.03, 8, 8]} />
+                <meshStandardMaterial
+                  color="#4a148c"
+                  emissive="#7e57c2"
+                  emissiveIntensity={0.5}
+                  transparent
+                  opacity={0.6}
+                />
+              </mesh>
+            ))}
+          </group>
         </group>
-      </group>
+      </RigidBody>
       <MagicOrb playerRef={playerRef} />
-    </RigidBody>
+    </>
   );
 }

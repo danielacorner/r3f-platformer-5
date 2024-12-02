@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Vector3, Group } from 'three';
 import { useGameStore } from '../store/gameStore';
@@ -8,7 +8,6 @@ const ORB_RADIUS = 1.5; // Orbit radius
 const ORB_SPEED = 2; // Orbit speed
 const ATTACK_RANGE = 10; // Range to detect enemies
 const ATTACK_DAMAGE = 35;
-const RETURN_SPEED = 15;
 
 interface MagicOrbProps {
   playerRef: React.RefObject<RigidBody>;
@@ -20,22 +19,10 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   const [targetEnemy, setTargetEnemy] = useState<any>(null);
   const [returnPoint, setReturnPoint] = useState<Vector3 | null>(null);
   const [attackProgress, setAttackProgress] = useState(0);
-  const orbPosition = useRef(new Vector3());
   const startPosition = useRef(new Vector3());
   const midPoint = useRef(new Vector3());
   const creeps = useGameStore(state => state.creeps);
   const damageCreep = useGameStore(state => state.damageCreep);
-
-  useEffect(() => {
-    if (!isAttacking && orbRef.current && playerRef.current) {
-      const position = playerRef.current.translation();
-      orbPosition.current.set(
-        position.x + ORB_RADIUS,
-        position.y + 1,
-        position.z
-      );
-    }
-  }, [isAttacking]);
 
   const findNearestEnemy = () => {
     if (!playerRef.current || isAttacking || !creeps) return null;
@@ -77,23 +64,26 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
     const playerPos = new Vector3(position.x, position.y, position.z);
 
     if (!isAttacking) {
-      // Orbit around player
+      // Calculate orbit position
       const angle = Date.now() * 0.002 * ORB_SPEED;
-      orbPosition.current.set(
-        playerPos.x + Math.cos(angle) * ORB_RADIUS,
+      const orbitX = Math.cos(angle) * ORB_RADIUS;
+      const orbitZ = Math.sin(angle) * ORB_RADIUS;
+
+      // Update orb position relative to player
+      orbRef.current.position.set(
+        playerPos.x + orbitX,
         playerPos.y + 1,
-        playerPos.z + Math.sin(angle) * ORB_RADIUS
+        playerPos.z + orbitZ
       );
-      orbRef.current.position.copy(orbPosition.current);
 
       // Check for enemies
       const enemy = findNearestEnemy();
       if (enemy) {
         setIsAttacking(true);
         setTargetEnemy(enemy);
-        startPosition.current.copy(orbPosition.current);
+        startPosition.current.copy(orbRef.current.position);
         const targetPos = new Vector3(enemy.position[0], enemy.position[1] + 1, enemy.position[2]);
-        midPoint.current = calculateArcPoint(orbPosition.current, targetPos, 3);
+        midPoint.current = calculateArcPoint(orbRef.current.position, targetPos, 3);
         setAttackProgress(0);
       }
     } else if (targetEnemy) {
