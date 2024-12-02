@@ -4,6 +4,7 @@ import { RigidBody, CuboidCollider } from "@react-three/rapier";
 import { Vector3, Group } from "three";
 import { useGameStore } from "../store/gameStore";
 import { useKeyboardControls } from '../hooks/useKeyboardControls';
+import { MagicOrb } from './MagicOrb';
 
 const MOVE_SPEED = 5;
 const FLOAT_HEIGHT = 0.5;
@@ -197,6 +198,7 @@ export function Player() {
           ))}
         </group>
       </group>
+      <MagicOrb playerRef={playerRef} />
     </RigidBody>
   );
 }
