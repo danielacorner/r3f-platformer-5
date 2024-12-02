@@ -1,6 +1,6 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { Vector3, Color, AdditiveBlending, Group } from 'three'
+import { Vector3, Color, AdditiveBlending } from 'three'
 import { Trail, MeshDistortMaterial } from '@react-three/drei'
 
 interface OrbEffectsProps {
@@ -10,14 +10,13 @@ interface OrbEffectsProps {
 export function OrbEffects({ isAttacking }: OrbEffectsProps) {
   const orbRef = useRef<any>()
   const distortRef = useRef<any>()
-  const [trailVisible, setTrailVisible] = useState(true)
+  const [trailVisible] = useState(true)
 
   useFrame((state) => {
     if (!distortRef.current) return;
 
     // Update distortion during attack
     const speed = isAttacking ? 4 : 1;
-    const distortStrength = isAttacking ? 0.6 : 0.3;
     distortRef.current.distort = 0.3 + Math.sin(state.clock.elapsedTime * speed) * 0.1;
     distortRef.current.speed = 2 + Math.sin(state.clock.elapsedTime * 2) * 0.5;
 
@@ -99,29 +98,19 @@ export function OrbEffects({ isAttacking }: OrbEffectsProps) {
         distance={3}
         color="#7e57c2"
       />
-      <pointLight
-        intensity={isAttacking ? 0.8 : 0.4}
-        distance={5}
-        color="#4a148c"
-      />
 
-      {/* Glowing trail */}
+      {/* Trail */}
       {trailVisible && (
         <Trail
           width={isAttacking ? 0.4 : 0.15}
           length={isAttacking ? 8 : 6}
-          decay={isAttacking ? 0.5 : 0.1}
-          local={false}
-          stride={10}
-          interval={1}
           color={new Color("#7e57c2")}
-          attenuation={(t) => {
-            return isAttacking ? Math.pow(t, 2.5) : t * t;
-          }}
+          attenuation={(t) => t * t}
           opacity={isAttacking ? 0.6 : 0.3}
         >
-          <mesh visible={false}>
-            <sphereGeometry args={[0.1]} />
+          <mesh>
+            <sphereGeometry args={[0.05]} />
+            <meshBasicMaterial color="#7e57c2" transparent opacity={0} />
           </mesh>
         </Trail>
       )}

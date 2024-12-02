@@ -371,7 +371,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
 
         // Interpolate position between current and next points
         const position = currentPoint.clone().lerp(nextPoint, creepState.progress);
-        
+
         // Update instance matrix
         tempMatrix.makeTranslation(position.x, position.y + 0.5, position.z);
         instancedMesh.current.setMatrixAt(instanceId, tempMatrix);
@@ -403,7 +403,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
 
   // Handle creep lifecycle
   useEffect(() => {
-    console.log('Creeps updated:', creeps.length);
+    // console.log('Creeps updated:', creeps.length);
     if (!instancedMesh.current) return;
 
     // Add new creeps
