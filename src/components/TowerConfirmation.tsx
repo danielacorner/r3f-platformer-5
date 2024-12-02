@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import { useRef } from 'react';
 import { Billboard, Html } from '@react-three/drei';
 import { FaCheck, FaTimes } from 'react-icons/fa';
 import '../styles/TowerConfirmation.css';
