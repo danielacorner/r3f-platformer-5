@@ -473,7 +473,7 @@ export function Level() {
 
   const handleCancelTower = () => {
     setPendingTowerPosition(null);
-    setSelectedObjectType(null);
+    // setSelectedObjectType(null);
   };
 
   // Instance Matrices for Path
@@ -604,8 +604,8 @@ export function Level() {
 
       {/* Tower preview and confirmation */}
       {showPreview && selectedObjectType && (
-        <Tower 
-          position={previewPosition} 
+        <Tower
+          position={previewPosition}
           type={selectedObjectType}
           level={selectedObjectLevel}
           preview={true}
@@ -617,6 +617,7 @@ export function Level() {
           position={pendingTowerPosition}
           onConfirm={handleConfirmTower}
           onCancel={handleCancelTower}
+          camera={camera}
         />
       )}
     </group>
