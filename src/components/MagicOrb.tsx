@@ -209,7 +209,14 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
   return (
     <group ref={orbRef}>
-      <OrbEffects isAttacking={isAttacking} />
+      <OrbEffects 
+        isAttacking={isAttacking} 
+      />
+      {/* Debug sphere to show orb position */}
+      <mesh visible={false}>
+        <sphereGeometry args={[0.1, 8, 8]} />
+        <meshBasicMaterial color="red" wireframe />
+      </mesh>
     </group>
   );
 }
