@@ -37,30 +37,60 @@ const platformMaterial = createShaderMaterial('platform', {
 function generatePath() {
   const path = {
     segments: [
-      { position: [-20, 0.5, -20], scale: [6, 1, 6], rotation: [0, 0, 0] },  // Start platform
-      { position: [-20, 0.5, -10], scale: [3, 1, 16], rotation: [0, 0, 0] }, // First straight
-      { position: [-15, 0.5, -2], scale: [12, 1, 3], rotation: [0, Math.PI * 0.1, 0] }, // First turn
-      { position: [-5, 0.5, 0], scale: [16, 1, 3], rotation: [0, 0, 0] },    // Second straight
-      { position: [5, 0.5, 5], scale: [3, 1, 12], rotation: [0, Math.PI * -0.1, 0] }, // Second turn
-      { position: [10, 0.5, 15], scale: [12, 1, 3], rotation: [0, 0, 0] },   // Third straight
-      { position: [20, 0.5, 20], scale: [6, 1, 6], rotation: [0, 0, 0] }     // End platform
+      // Start area
+      { position: [-20, 0.5, -20], scale: [6, 1, 6], rotation: [0, 0, 0] },
+      
+      // First curve - gradual turn from start
+      { position: [-20, 0.5, -15], scale: [3, 1, 10], rotation: [0, 0, 0] },
+      { position: [-19, 0.5, -10], scale: [3, 1, 6], rotation: [0, Math.PI * 0.05, 0] },
+      { position: [-17, 0.5, -7], scale: [3, 1, 6], rotation: [0, Math.PI * 0.1, 0] },
+      { position: [-15, 0.5, -4], scale: [3, 1, 6], rotation: [0, Math.PI * 0.15, 0] },
+      
+      // Middle section - smooth S-curve
+      { position: [-12, 0.5, -2], scale: [8, 1, 3], rotation: [0, Math.PI * 0.2, 0] },
+      { position: [-8, 0.5, -1], scale: [8, 1, 3], rotation: [0, Math.PI * 0.1, 0] },
+      { position: [-4, 0.5, 0], scale: [8, 1, 3], rotation: [0, 0, 0] },
+      { position: [0, 0.5, 1], scale: [8, 1, 3], rotation: [0, Math.PI * -0.1, 0] },
+      { position: [4, 0.5, 3], scale: [8, 1, 3], rotation: [0, Math.PI * -0.2, 0] },
+      
+      // Final approach - gradual curve to end
+      { position: [8, 0.5, 6], scale: [3, 1, 6], rotation: [0, Math.PI * -0.15, 0] },
+      { position: [10, 0.5, 10], scale: [3, 1, 6], rotation: [0, Math.PI * -0.1, 0] },
+      { position: [12, 0.5, 14], scale: [3, 1, 6], rotation: [0, Math.PI * -0.05, 0] },
+      { position: [15, 0.5, 18], scale: [3, 1, 6], rotation: [0, 0, 0] },
+      
+      // End platform
+      { position: [20, 0.5, 20], scale: [6, 1, 6], rotation: [0, 0, 0] }
     ],
     points: [
       new Vector3(-20, 0.5, -20),  // Start
-      new Vector3(-20, 0.5, -10),  // First straight
-      new Vector3(-15, 0.5, -2),   // First turn
-      new Vector3(-5, 0.5, 0),     // Second straight
-      new Vector3(5, 0.5, 5),      // Second turn
-      new Vector3(10, 0.5, 15),    // Third straight
+      new Vector3(-20, 0.5, -15),  // First straight
+      new Vector3(-19, 0.5, -10),  // Begin curve
+      new Vector3(-17, 0.5, -7),   // First curve
+      new Vector3(-15, 0.5, -4),   // Continue curve
+      new Vector3(-12, 0.5, -2),   // S-curve start
+      new Vector3(-8, 0.5, -1),    // S-curve middle
+      new Vector3(-4, 0.5, 0),     // S-curve center
+      new Vector3(0, 0.5, 1),      // S-curve continue
+      new Vector3(4, 0.5, 3),      // S-curve end
+      new Vector3(8, 0.5, 6),      // Final approach
+      new Vector3(10, 0.5, 10),    // Continue approach
+      new Vector3(12, 0.5, 14),    // Near end
+      new Vector3(15, 0.5, 18),    // Final straight
       new Vector3(20, 0.5, 20)     // End
     ],
     decorations: [
-      { position: [-18, 0.5, -15], scale: 0.8 },
-      { position: [-12, 0.5, -5], scale: 0.8 },
-      { position: [-8, 0.5, 2], scale: 0.8 },
-      { position: [0, 0.5, 0], scale: 0.8 },
-      { position: [8, 0.5, 8], scale: 0.8 },
-      { position: [15, 0.5, 18], scale: 0.8 }
+      { position: [-20, 0.5, -17], scale: 0.7 },
+      { position: [-18, 0.5, -12], scale: 0.7 },
+      { position: [-16, 0.5, -8], scale: 0.7 },
+      { position: [-12, 0.5, -4], scale: 0.7 },
+      { position: [-8, 0.5, -1], scale: 0.7 },
+      { position: [-4, 0.5, 0], scale: 0.7 },
+      { position: [0, 0.5, 1], scale: 0.7 },
+      { position: [4, 0.5, 3], scale: 0.7 },
+      { position: [8, 0.5, 6], scale: 0.7 },
+      { position: [12, 0.5, 14], scale: 0.7 },
+      { position: [16, 0.5, 18], scale: 0.7 }
     ]
   };
   return path;
