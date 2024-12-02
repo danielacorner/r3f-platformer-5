@@ -154,6 +154,8 @@ interface GameState {
   money: number;
   score: number;
   lives: number;
+  experience: number;
+  level: number;
   wave: number;
   creeps: CreepState[];
   projectiles: Projectile[];
@@ -175,6 +177,8 @@ const initialState: GameState = {
   money: process.env.NODE_ENV === 'development' ? 10000 : 500,
   score: 0,
   lives: 20,
+  experience: 0,
+  level: 1,
   wave: 0,
   creeps: [],
   projectiles: [],
@@ -308,12 +312,30 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const newHealth = creep.health - damage;
     if (newHealth <= 0) {
-      state.removeCreep(id);
+      state.addExperience(10 + creep.waveId * 2); // Base XP + bonus for higher waves
       state.addMoney(creep.value);
       state.addScore(creep.value);
+      state.removeCreep(id);
     } else {
       state.updateCreep(id, { health: newHealth });
     }
+  },
+
+  addExperience: (amount) => {
+    set(state => {
+      const newExperience = state.experience + amount;
+      const expForNextLevel = state.level * 100; // Each level requires level * 100 XP
+
+      if (newExperience >= expForNextLevel) {
+        // Level up
+        return {
+          experience: newExperience - expForNextLevel,
+          level: state.level + 1
+        };
+      }
+
+      return { experience: newExperience };
+    });
   },
 
   incrementLevel: () => set(state => ({

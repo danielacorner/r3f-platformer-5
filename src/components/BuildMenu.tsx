@@ -193,9 +193,11 @@ function TowerButton({
 
 export function BuildMenu() {
 
-  const { selectedObjectType, setSelectedObjectType, money } = useGameStore();
+  const { selectedObjectType, setSelectedObjectType, money, experience, level } = useGameStore();
 
-
+  // Calculate XP progress
+  const expForNextLevel = level * 100;
+  const progress = (experience / expForNextLevel) * 100;
 
   // Group towers by element
 
@@ -217,15 +219,22 @@ export function BuildMenu() {
 
     <div className="build-menu" onClick={e => e.stopPropagation()}>
 
-      <div className="money-display">
-
-        <FaCoins className="text-yellow-400" />
-
-        <span>{money}</span>
-
+      <div className="stats-display">
+        <div className="money-display">
+          <FaCoins className="text-yellow-400" />
+          <span>{money}</span>
+        </div>
+        <div className="xp-display">
+          <div className="xp-level">Lvl {level}</div>
+          <div className="xp-bar-container">
+            <div 
+              className="xp-bar-fill" 
+              style={{ width: `${progress}%` }} 
+            />
+          </div>
+          <div className="xp-text">{experience}/{expForNextLevel}</div>
+        </div>
       </div>
-
-
 
       <div className="tower-groups">
 
@@ -305,4 +314,3 @@ export function BuildMenu() {
   );
 
 }
-
