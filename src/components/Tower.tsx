@@ -1,4 +1,4 @@
-import { Vector3, Color, Euler, Matrix4, Object3D } from 'three';
+import { Vector3, Color, Euler, Matrix4, Object3D, InstancedMesh, Group } from 'three';
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
@@ -47,8 +47,8 @@ interface TowerManagerProps {
 }
 
 export function TowerManager({ towers }: TowerManagerProps) {
-  const towerMeshRef = useRef<THREE.InstancedMesh>();
-  const projectileMeshRef = useRef<THREE.InstancedMesh>();
+  const towerMeshRef = useRef<InstancedMesh>();
+  const projectileMeshRef = useRef<InstancedMesh>();
   const activeTowers = useRef<Map<string, { props: TowerProps; instanceId: number }>>(new Map());
   const projectilePool = useRef<ObjectPool<Object3D>>();
 
@@ -168,9 +168,14 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
   const PROJECTILE_SPEED = 15;
   const MAX_PROJECTILES = 10;
   const [time, setTime] = useState(0);
+  const [orbs, setOrbs] = useState<Array<{ angle: number }>>([]);
 
   const projectilesRef = useRef<Projectile[]>([]);
   const towerRef = useRef<THREE.Group>(null);
+
+  // Extract actual level from tower type (e.g., "fire5" -> 5)
+  const actualLevel = parseInt(type.slice(-1)) || 1;
+  console.log('Tower type:', type, 'Actual level:', actualLevel);
 
   useEffect(() => {
     projectilesRef.current = projectiles;
@@ -180,36 +185,10 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
     setTime(t => t + delta);
   });
 
-  // Create array of orbs based on level
-  const createOrbs = (level: number) => {
-    const orbs = [];
-    // Create level * level orbs
-    const totalOrbs = level * level;
-    const orbsPerRing = Math.ceil(Math.sqrt(totalOrbs));
-    const numRings = Math.ceil(totalOrbs / orbsPerRing);
-
-    for (let ring = 0; ring < numRings; ring++) {
-      const ringRadius = 0.4 + ring * 0.2; // Larger spacing between rings
-      const orbsInThisRing = Math.min(orbsPerRing, totalOrbs - ring * orbsPerRing);
-      
-      for (let i = 0; i < orbsInThisRing; i++) {
-        orbs.push({
-          id: orbs.length, // Unique ID for each orb
-          ring,
-          angle: (2 * Math.PI * i) / orbsInThisRing,
-          radius: ringRadius
-        });
-      }
-    }
-    console.log(`Created ${orbs.length} orbs for level ${level}`); // Debug log
-    return orbs;
-  };
-
-  // Get orb style based on element type
   const getOrbStyle = () => {
     const baseStyle = {
-      size: 0.08, // Much larger orbs
-      emissiveIntensity: 3, // More glow
+      size: 0.12,
+      emissiveIntensity: 3,
       opacity: 0.9
     };
 
@@ -228,6 +207,92 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
         return { ...baseStyle, emissiveIntensity: 3.5 };
     }
   };
+
+  // Get shape for specific level indicator
+  const LevelShape = ({ index, position, rotation }: { index: number; position: [number, number, number], rotation: number }) => {
+    const orbStyle = getOrbStyle();
+    const scale = 0.12;
+
+    switch(index) {
+      case 0: // Sphere (Level 1+)
+        return (
+          <mesh position={position} rotation={[0, rotation, 0]} castShadow>
+            <sphereGeometry args={[scale, 16, 16]} />
+            <meshStandardMaterial
+              color={stats.color}
+              emissive={stats.emissive}
+              emissiveIntensity={orbStyle.emissiveIntensity * 2}
+              transparent
+              opacity={orbStyle.opacity}
+              metalness={0.9}
+              roughness={0.1}
+            />
+          </mesh>
+        );
+      case 1: // Octahedron (Level 2+)
+        return (
+          <mesh position={position} rotation={[time, rotation + time, time * 0.5]} castShadow>
+            <octahedronGeometry args={[scale * 1.2]} />
+            <meshStandardMaterial
+              color={stats.color}
+              emissive={stats.emissive}
+              emissiveIntensity={orbStyle.emissiveIntensity * 2}
+              transparent
+              opacity={orbStyle.opacity}
+              metalness={0.9}
+              roughness={0.1}
+            />
+          </mesh>
+        );
+      case 2: // Dodecahedron (Level 3+)
+        return (
+          <mesh position={position} rotation={[time * 0.5, rotation - time, time]} castShadow>
+            <dodecahedronGeometry args={[scale * 1.3]} />
+            <meshStandardMaterial
+              color={stats.color}
+              emissive={stats.emissive}
+              emissiveIntensity={orbStyle.emissiveIntensity * 2}
+              transparent
+              opacity={orbStyle.opacity}
+              metalness={0.9}
+              roughness={0.1}
+            />
+          </mesh>
+        );
+      case 3: // Icosahedron (Level 4+)
+        return (
+          <mesh position={position} rotation={[time * 0.7, rotation + time * 0.5, -time]} castShadow>
+            <icosahedronGeometry args={[scale * 1.4]} />
+            <meshStandardMaterial
+              color={stats.color}
+              emissive={stats.emissive}
+              emissiveIntensity={orbStyle.emissiveIntensity * 2}
+              transparent
+              opacity={orbStyle.opacity}
+              metalness={0.9}
+              roughness={0.1}
+            />
+          </mesh>
+        );
+      case 4: // Torusknot (Level 5)
+        return (
+          <mesh position={position} rotation={[time, rotation + time * 0.8, time * 0.3]} castShadow>
+            <torusKnotGeometry args={[scale * 0.8, scale * 0.3, 64, 8]} />
+            <meshStandardMaterial
+              color={stats.color}
+              emissive={stats.emissive}
+              emissiveIntensity={orbStyle.emissiveIntensity * 2}
+              transparent
+              opacity={orbStyle.opacity}
+              metalness={0.9}
+              roughness={0.1}
+            />
+          </mesh>
+        );
+    }
+  };
+
+  const orbStyle = getOrbStyle();
 
   useFrame(() => {
     if (preview || !onDamageEnemy || phase !== 'combat') return;
@@ -448,34 +513,23 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
       )}
 
       {/* Orbiting Indicator Orbs */}
-      <group position={[0, baseHeight + 0.3, 0]}>
-        {createOrbs(level).map((orb, index) => {
-          const orbStyle = getOrbStyle();
-          const speed = 1 - (orb.ring * 0.15); // Outer rings move slower
-          const angle = orb.angle + time * speed;
-          const verticalOffset = Math.sin(time * 2 + orb.angle) * 0.1;
+      <group position={[0, baseHeight + 0.5, 0]}>
+        {Array.from({ length: actualLevel }).map((_, index) => {
+          const angle = (time * 0.8) + (index * (2 * Math.PI / actualLevel));
+          const radius = 0.5;
+          const x = radius * Math.cos(angle);
+          const z = radius * Math.sin(angle);
+          const y = Math.sin(time * 2 + index * (Math.PI / actualLevel)) * 0.1;
+
+          console.log(`Rendering shape ${index} for level ${actualLevel}`);
           
           return (
-            <mesh 
-              key={orb.id}
-              position={[
-                orb.radius * Math.cos(angle),
-                verticalOffset + (orb.ring * 0.1),
-                orb.radius * Math.sin(angle)
-              ]} 
-              castShadow
-            >
-              <sphereGeometry args={[orbStyle.size, 12, 12]} />
-              <meshStandardMaterial
-                color={stats.color}
-                emissive={stats.emissive}
-                emissiveIntensity={orbStyle.emissiveIntensity}
-                transparent
-                opacity={orbStyle.opacity}
-                metalness={0.8}
-                roughness={0.1}
-              />
-            </mesh>
+            <LevelShape
+              key={`shape-${index}`}
+              index={index}
+              position={[x, y, z]}
+              rotation={angle}
+            />
           );
         })}
       </group>
