@@ -40,51 +40,51 @@ function generatePath() {
     segments: [
       // Start area - natural clearing
       { position: [-20, baseHeight, -20], scale: [7, 0.2, 7], rotation: [0, Math.PI * 0.03, 0] },
-      
+
       // Initial winding approach
       { position: [-20, baseHeight + 0.01, -15], scale: [4, 0.2, 8], rotation: [0, Math.PI * 0.05, 0] },
       { position: [-19, baseHeight + 0.02, -10], scale: [3.5, 0.2, 6], rotation: [0, Math.PI * 0.08, 0] },
       { position: [-18, baseHeight + 0.03, -8], scale: [3.8, 0.2, 5], rotation: [0, Math.PI * 0.12, 0] },
-      
+
       // Meandering right turn
       { position: [-15, baseHeight + 0.02, -7.5], scale: [5, 0.2, 3.5], rotation: [0, Math.PI * 0.15, 0] },
       { position: [-12, baseHeight + 0.01, -7], scale: [4.5, 0.2, 3.8], rotation: [0, Math.PI * 0.1, 0] },
-      
+
       // Wavy descent
       { position: [-11.5, baseHeight + 0.03, -10], scale: [3.2, 0.2, 6], rotation: [0, -Math.PI * 0.08, 0] },
       { position: [-11, baseHeight + 0.02, -13], scale: [3.5, 0.2, 5], rotation: [0, Math.PI * 0.06, 0] },
       { position: [-10.5, baseHeight + 0.01, -15], scale: [3.8, 0.2, 4.5], rotation: [0, -Math.PI * 0.04, 0] },
-      
+
       // Curved horizontal traverse
       { position: [-7, baseHeight + 0.03, -15.8], scale: [7, 0.2, 3.2], rotation: [0, Math.PI * 0.03, 0] },
       { position: [0, baseHeight + 0.02, -15.2], scale: [8, 0.2, 3.5], rotation: [0, -Math.PI * 0.04, 0] },
       { position: [7, baseHeight + 0.01, -15.5], scale: [7, 0.2, 3.8], rotation: [0, Math.PI * 0.05, 0] },
-      
+
       // Organic ascent
       { position: [11, baseHeight + 0.03, -12], scale: [3.5, 0.2, 7], rotation: [0, -Math.PI * 0.12, 0] },
       { position: [11.2, baseHeight + 0.02, -8], scale: [3.2, 0.2, 6], rotation: [0, Math.PI * 0.08, 0] },
       { position: [11.5, baseHeight + 0.01, -5], scale: [3.8, 0.2, 5], rotation: [0, -Math.PI * 0.06, 0] },
-      
+
       // Winding middle path
       { position: [8, baseHeight + 0.03, -3.8], scale: [7, 0.2, 3.5], rotation: [0, Math.PI * 0.04, 0] },
       { position: [0, baseHeight + 0.02, -3.2], scale: [8, 0.2, 3.8], rotation: [0, -Math.PI * 0.05, 0] },
       { position: [-7, baseHeight + 0.01, -3.5], scale: [7, 0.2, 3.2], rotation: [0, Math.PI * 0.06, 0] },
-      
+
       // Natural descent
       { position: [-11, baseHeight + 0.03, 0], scale: [3.5, 0.2, 7], rotation: [0, Math.PI * 0.1, 0] },
       { position: [-11.2, baseHeight + 0.02, 4], scale: [3.8, 0.2, 6], rotation: [0, -Math.PI * 0.08, 0] },
       { position: [-11.5, baseHeight + 0.01, 7], scale: [3.2, 0.2, 5], rotation: [0, Math.PI * 0.06, 0] },
-      
+
       // Meandering bottom path
       { position: [-8, baseHeight + 0.03, 8.2], scale: [7, 0.2, 3.5], rotation: [0, -Math.PI * 0.05, 0] },
       { position: [0, baseHeight + 0.02, 8.8], scale: [8, 0.2, 3.2], rotation: [0, Math.PI * 0.04, 0] },
       { position: [7, baseHeight + 0.01, 8.5], scale: [7, 0.2, 3.8], rotation: [0, -Math.PI * 0.03, 0] },
-      
+
       // Final winding ascent
       { position: [11, baseHeight + 0.03, 12], scale: [3.5, 0.2, 7], rotation: [0, -Math.PI * 0.15, 0] },
       { position: [13, baseHeight + 0.02, 15], scale: [3.8, 0.2, 6], rotation: [0, -Math.PI * 0.12, 0] },
       { position: [15, baseHeight + 0.01, 18], scale: [3.2, 0.2, 5], rotation: [0, -Math.PI * 0.08, 0] },
-      
+
       // End area - natural clearing
       { position: [20, baseHeight, 20], scale: [7, 0.2, 7], rotation: [0, -Math.PI * 0.03, 0] }
     ],
@@ -399,8 +399,8 @@ export function Level() {
     ];
 
     // Check if position is valid (not on path and not occupied)
-    const isOnPath = pathPoints.some(point => 
-      Math.abs(point.x - snappedPosition[0]) < 3 && 
+    const isOnPath = pathPoints.some(point =>
+      Math.abs(point.x - snappedPosition[0]) < 3 &&
       Math.abs(point.z - snappedPosition[2]) < 3
     );
 
@@ -464,8 +464,8 @@ export function Level() {
 
       {/* Ground with event handlers */}
       <RigidBody type="fixed" colliders="cuboid">
-        <mesh 
-          position={[0, -0.5, 0]} 
+        <mesh
+          position={[0, -0.5, 0]}
           receiveShadow
           onPointerMove={handlePointerMove}
           onClick={handlePlaceTower}

@@ -167,6 +167,7 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
   const [projectiles, setProjectiles] = useState<Projectile[]>([]);
   const PROJECTILE_SPEED = 15;
   const MAX_PROJECTILES = 10;
+  const [time, setTime] = useState(0);
 
   const projectilesRef = useRef<Projectile[]>([]);
   const towerRef = useRef<THREE.Group>(null);
@@ -174,6 +175,48 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
   useEffect(() => {
     projectilesRef.current = projectiles;
   }, [projectiles]);
+
+  useFrame((_, delta) => {
+    setTime(t => t + delta);
+  });
+
+  // Parametric equations for interesting orbit patterns
+  const getOrbPosition = (t: number, level: number) => {
+    const baseRadius = 0.4;
+    const verticalOffset = 0.2;
+    const speed = 1.5;
+    
+    // Different patterns based on tower level
+    const x = baseRadius * Math.cos(speed * t + level * Math.PI / 3);
+    const z = baseRadius * Math.sin(speed * t * 0.8);
+    const y = verticalOffset * Math.sin(speed * t * 1.2 + level * Math.PI / 2);
+    
+    return [x, y, z];
+  };
+
+  // Get orb style based on element type
+  const getOrbStyle = () => {
+    const baseStyle = {
+      size: 0.1,
+      emissiveIntensity: 2,
+      opacity: 0.8
+    };
+
+    switch (type) {
+      case 'light1': case 'light2': case 'light3': case 'light4': case 'light5':
+        return { ...baseStyle, emissiveIntensity: 3, opacity: 0.9 };
+      case 'fire1': case 'fire2': case 'fire3': case 'fire4': case 'fire5':
+        return { ...baseStyle, size: 0.08, emissiveIntensity: 4 };
+      case 'ice1': case 'ice2': case 'ice3': case 'ice4': case 'ice5':
+        return { ...baseStyle, opacity: 0.6, emissiveIntensity: 1.5 };
+      case 'nature1': case 'nature2': case 'nature3': case 'nature4': case 'nature5':
+        return { ...baseStyle, size: 0.09, emissiveIntensity: 1.8 };
+      case 'water1': case 'water2': case 'water3': case 'water4': case 'water5':
+        return { ...baseStyle, opacity: 0.7, emissiveIntensity: 1.2 };
+      default:
+        return { ...baseStyle, emissiveIntensity: 2.5 };
+    }
+  };
 
   useFrame(() => {
     if (preview || !onDamageEnemy || phase !== 'combat') return;
@@ -392,6 +435,28 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
           </mesh>
         </>
       )}
+
+      {/* Orbiting Indicator Orbs */}
+      <group position={[0, baseHeight + 0.2, 0]}>
+        {[...Array(level)].map((_, i) => {
+          const orbStyle = getOrbStyle();
+          const [x, y, z] = getOrbPosition(time, i + 1);
+          return (
+            <mesh key={i} position={[x, y, z]} castShadow>
+              <sphereGeometry args={[orbStyle.size, 16, 16]} />
+              <meshStandardMaterial
+                color={stats.color}
+                emissive={stats.emissive}
+                emissiveIntensity={orbStyle.emissiveIntensity}
+                transparent
+                opacity={orbStyle.opacity}
+                metalness={0.6}
+                roughness={0.2}
+              />
+            </mesh>
+          );
+        })}
+      </group>
 
       {/* Projectiles */}
       {projectiles.map(({ id, startPos, targetPos, targetCreepId }) => (

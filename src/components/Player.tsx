@@ -83,7 +83,7 @@ export function Player() {
   useEffect(() => {
     const handleMouseDown = (event: MouseEvent) => {
       if (phase !== 'combat' || !targetPosition) return;
-      
+
       const currentTime = performance.now();
       const position = playerRef.current?.translation();
       if (!position) return;

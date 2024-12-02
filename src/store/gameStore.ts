@@ -170,7 +170,7 @@ const initialState: GameState = {
   levelComplete: false,
   placedTowers: [],
   selectedObjectType: null,
-  money: 500,
+  money: process.env.NODE_ENV === 'development' ? 10000 : 500,
   score: 0,
   lives: 20,
   wave: 0,
