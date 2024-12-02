@@ -12,6 +12,7 @@ import { ObjectPool } from '../utils/objectPool';
 import { CreepManager } from './Creep';
 import { Player } from './Player';
 import { ClickIndicator } from './ClickIndicator';
+import { TowerConfirmation } from './TowerConfirmation';
 
 // Constants and Materials
 const pathColor = new Color('#4338ca').convertSRGBToLinear();
@@ -375,6 +376,7 @@ export function Level() {
   const pathRef = useRef<InstancedMesh>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [previewPosition, setPreviewPosition] = useState<[number, number, number]>([0, 0, 0]);
+  const [pendingTowerPosition, setPendingTowerPosition] = useState<[number, number, number] | null>(null);
   const [canAffordTower, setCanAffordTower] = useState(true);
   const groundRef = useRef(null);
   const [clickPosition, setClickPosition] = useState<Vector3 | null>(null);
@@ -450,22 +452,28 @@ export function Level() {
       Math.round(event.point.z)
     ];
 
-    // Check if position is valid (not on path and not occupied)
-    const isOnPath = pathPoints.some(point =>
-      Math.abs(point.x - snappedPosition[0]) < 3 &&
-      Math.abs(point.z - snappedPosition[2]) < 3
-    );
-
-    const isOccupied = placedTowers.some(tower => {
-      const pos = tower.position instanceof Vector3 ? tower.position.toArray() : tower.position;
-      return pos[0] === snappedPosition[0] && pos[2] === snappedPosition[2];
-    });
-
-    if (!isOnPath && !isOccupied) {
-      addPlacedTower(snappedPosition, selectedObjectType, selectedObjectLevel);
-      setSelectedObjectType(null);
-      setShowPreview(false);
+    // On mobile, show confirmation UI
+    if (window.innerWidth <= 768) {
+      setPendingTowerPosition(snappedPosition);
+      return;
     }
+
+    // On desktop, place tower immediately
+    addPlacedTower(snappedPosition, selectedObjectType, selectedObjectLevel);
+    setSelectedObjectType(null);
+  };
+
+  const handleConfirmTower = () => {
+    if (pendingTowerPosition && selectedObjectType) {
+      addPlacedTower(pendingTowerPosition, selectedObjectType, selectedObjectLevel);
+      setSelectedObjectType(null);
+      setPendingTowerPosition(null);
+    }
+  };
+
+  const handleCancelTower = () => {
+    setPendingTowerPosition(null);
+    setSelectedObjectType(null);
   };
 
   // Instance Matrices for Path
@@ -594,14 +602,21 @@ export function Level() {
         />
       )}
 
-      {/* Tower Preview */}
+      {/* Tower preview and confirmation */}
       {showPreview && selectedObjectType && (
-        <Tower
-          position={new Vector3(...previewPosition)}
+        <Tower 
+          position={previewPosition} 
           type={selectedObjectType}
+          level={selectedObjectLevel}
           preview={true}
           canAfford={canAffordTower}
-          level={selectedObjectLevel}
+        />
+      )}
+      {pendingTowerPosition && (
+        <TowerConfirmation
+          position={pendingTowerPosition}
+          onConfirm={handleConfirmTower}
+          onCancel={handleCancelTower}
         />
       )}
     </group>

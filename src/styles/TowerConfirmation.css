@@ -1,0 +1,101 @@
+.tower-confirmation-container {
+  pointer-events: none;
+  transform: translateY(-100px);
+}
+
+.tower-confirmation {
+  display: none; /* Hidden by default on desktop */
+  gap: 8px;
+  pointer-events: auto;
+  background: linear-gradient(to bottom, #1e2837, #0d1321);
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 2px solid #3b5998;
+  box-shadow:
+    0 0 0 1px #000,
+    0 0 20px rgba(0, 0, 0, 0.5),
+    inset 0 0 20px rgba(73, 156, 255, 0.15);
+}
+
+/* Show on mobile */
+@media (max-width: 768px) {
+  .tower-confirmation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.tower-confirmation button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #3b5998;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #bfd4ff;
+  background: linear-gradient(to bottom, #1e293b, #1e2837);
+  box-shadow:
+    inset 0 0 10px rgba(0, 0, 0, 0.3),
+    0 0 10px rgba(73, 156, 255, 0.2);
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+}
+
+.tower-confirmation button:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 15px rgba(255, 255, 255, 0.1),
+    inset 0 0 20px rgba(255, 255, 255, 0.05);
+}
+
+.tower-confirmation button:active {
+  transform: translateY(1px);
+}
+
+.confirm-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.confirm-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, #22c55e20, #15803d40);
+  pointer-events: none;
+}
+
+.confirm-btn svg {
+  color: #22c55e;
+  filter: drop-shadow(0 0 3px rgba(34, 197, 94, 0.5));
+}
+
+.cancel-btn {
+  position: relative;
+  overflow: hidden;
+  padding: 8px !important;
+  aspect-ratio: 1;
+}
+
+.cancel-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, #ef444420, #b9181840);
+  pointer-events: none;
+}
+
+.cancel-btn svg {
+  color: #ef4444;
+  filter: drop-shadow(0 0 3px rgba(239, 68, 68, 0.5));
+}
