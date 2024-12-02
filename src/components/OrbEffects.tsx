@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Vector3, Color, AdditiveBlending } from 'three'
 import { Trail, MeshDistortMaterial } from '@react-three/drei'
@@ -10,7 +10,16 @@ interface OrbEffectsProps {
 export function OrbEffects({ isAttacking }: OrbEffectsProps) {
   const orbRef = useRef<any>()
   const distortRef = useRef<any>()
-  const [trailVisible] = useState(true)
+  const [trailVisible, setTrailVisible] = useState(true)
+
+  // Reset trail when attack state changes
+  // useEffect(() => {
+  //   if (isAttacking) {
+  //     setTrailVisible(false)
+  //     const timer = setTimeout(() => setTrailVisible(true), 50)
+  //     return () => clearTimeout(timer)
+  //   }
+  // }, [isAttacking])
 
   useFrame((state) => {
     if (!distortRef.current) return;
@@ -36,21 +45,21 @@ export function OrbEffects({ isAttacking }: OrbEffectsProps) {
           ref={distortRef}
           color="#4a148c"
           emissive="#7e57c2"
-          emissiveIntensity={isAttacking ? 2 : 1}
+          emissiveIntensity={10 * (isAttacking ? 2 : 1)}
           distort={0.4}
           speed={2}
           roughness={0.1}
-          metalness={0.8}
+          metalness={isAttacking ? 18 : 0.8}
           transparent
           opacity={0.9}
         />
       </mesh>
 
       {/* Inner energy core */}
-      <mesh scale={0.8}>
+      <mesh scale={isAttacking ? 3.2 : 2.4}>
         <sphereGeometry args={[0.15, 16, 16]} />
         <meshBasicMaterial
-          color="#7e57c2"
+          color={isAttacking ? ATTACK_COLOR : "#7e57c2"}
           transparent
           opacity={0.6}
           blending={AdditiveBlending}
@@ -58,12 +67,12 @@ export function OrbEffects({ isAttacking }: OrbEffectsProps) {
       </mesh>
 
       {/* Outer energy field */}
-      <mesh scale={1.2}>
+      <mesh scale={4.2}>
         <sphereGeometry args={[0.15, 32, 32]} />
         <meshPhongMaterial
           color="#4a148c"
           emissive="#7e57c2"
-          emissiveIntensity={isAttacking ? 1.5 : 0.5}
+          emissiveIntensity={isAttacking ? 2.5 : 0.5}
           transparent
           opacity={0.2}
           depthWrite={false}
@@ -74,6 +83,7 @@ export function OrbEffects({ isAttacking }: OrbEffectsProps) {
       {/* Energy rings */}
       {[...Array(3)].map((_, i) => (
         <mesh
+          scale={isAttacking ? 3.4 : 2.4}
           key={i}
           rotation={[
             Math.PI * 2 * i / 3,
@@ -83,7 +93,7 @@ export function OrbEffects({ isAttacking }: OrbEffectsProps) {
         >
           <ringGeometry args={[0.2, 0.22, 32]} />
           <meshBasicMaterial
-            color="#7e57c2"
+            color={"#7e57c2"}
             transparent
             opacity={0.3}
             blending={AdditiveBlending}
@@ -102,18 +112,23 @@ export function OrbEffects({ isAttacking }: OrbEffectsProps) {
       {/* Trail */}
       {trailVisible && (
         <Trail
-          width={isAttacking ? 0.4 : 0.15}
-          length={isAttacking ? 8 : 6}
-          color={new Color("#7e57c2")}
-          attenuation={(t) => t * t}
-          opacity={isAttacking ? 0.6 : 0.3}
+          width={isAttacking ? 2.4 : 0.8}
+          length={3.4}
+          color={isAttacking ? ATTACK_COLOR : PASSIVE_COLOR}
+          // attenuation={() => 0.5}
+          // opacity={1}
+          decay={isAttacking ? 4.8 : 0.2}
+          local={false}
         >
           <mesh>
             <sphereGeometry args={[0.05]} />
-            <meshBasicMaterial color="#7e57c2" transparent opacity={0} />
+            <meshBasicMaterial color="#b388ff" transparent opacity={0} />
           </mesh>
         </Trail>
       )}
     </group>
   )
 }
+const ATTACK_COLOR = new Color("#1dd0fd")
+const PASSIVE_COLOR = new Color("#b388ff")
+const PASSIVE_COLOR_DARK = new Color("#7e57c2")
