@@ -215,7 +215,7 @@ export default function App() {
             shadow-bias={-0.001}
           />
 
-          <Physics debug={true}>
+          <Physics debug={false}>
             <Level />
           </Physics>
           <TDCamera />
