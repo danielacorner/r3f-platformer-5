@@ -119,10 +119,14 @@ export function Player({ moveTargetRef }: PlayerProps) {
     const position = playerRef.current.translation();
     const currentPos = new Vector3(position.x, position.y, position.z);
 
-    // Update last valid position
-    if (!isNaN(position.x) && !isNaN(position.y) && !isNaN(position.z)) {
-      lastValidPosition.current.copy(currentPos);
+    // Handle invalid positions by resetting to last valid position
+    if (isNaN(position.x) || isNaN(position.y) || isNaN(position.z)) {
+      playerRef.current.setTranslation(lastValidPosition.current);
+      return;
     }
+
+    // Update last valid position
+    lastValidPosition.current.copy(currentPos);
 
     // Rotate visual group based on movement direction
     if (velocity.x !== 0 || velocity.z !== 0) {

@@ -215,7 +215,7 @@ export function BuildMenu() {
 
   return (
 
-    <div className="build-menu">
+    <div className="build-menu" onClick={e => e.stopPropagation()}>
 
       <div className="money-display">
 
@@ -271,7 +271,8 @@ export function BuildMenu() {
 
                     canAfford={money >= tower.cost}
 
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
 
                       if (money >= tower.cost && selectedObjectType !== tower.type) {
 
