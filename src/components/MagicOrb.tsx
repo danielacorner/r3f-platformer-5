@@ -1,13 +1,16 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Vector3, Group } from 'three';
+import { Vector3, Group, BufferGeometry, Line } from 'three';
 import { useGameStore } from '../store/gameStore';
 import { RigidBody } from '@react-three/rapier';
+import { OrbTrail } from './OrbTrail';
 
 const ORB_RADIUS = 1.5; // Orbit radius
 const ORB_SPEED = 2; // Orbit speed
 const ATTACK_RANGE = 10; // Range to detect enemies
 const ATTACK_DAMAGE = 35;
+const DAMAGE_RADIUS = 1; // Radius for area damage
+const TRAIL_UPDATE_FREQUENCY = 2; // Update trail every N frames
 
 interface MagicOrbProps {
   playerRef: React.RefObject<RigidBody>;
@@ -21,8 +24,19 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   const [attackProgress, setAttackProgress] = useState(0);
   const startPosition = useRef(new Vector3());
   const midPoint = useRef(new Vector3());
+  const lastPosition = useRef(new Vector3());
+  const frameCount = useRef(0);
+  const trailPoints = useRef<Vector3[]>([]);
+  const trailGeometry = useRef<BufferGeometry>();
   const creeps = useGameStore(state => state.creeps);
   const damageCreep = useGameStore(state => state.damageCreep);
+
+  // Reset trail when attack starts
+  useEffect(() => {
+    if (isAttacking) {
+      trailPoints.current = [];
+    }
+  }, [isAttacking]);
 
   const findNearestEnemy = () => {
     if (!playerRef.current || isAttacking || !creeps) return null;
@@ -57,6 +71,41 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
     return mid;
   };
 
+  const checkAreaDamage = (position: Vector3) => {
+    if (!creeps) return;
+    
+    creeps.forEach(creep => {
+      if (creep.health > 0) {
+        const creepPos = new Vector3(
+          creep.position[0],
+          creep.position[1],
+          creep.position[2]
+        );
+        
+        if (creepPos.distanceTo(position) <= DAMAGE_RADIUS) {
+          damageCreep(creep.id, ATTACK_DAMAGE / 2); // Half damage for area effect
+        }
+      }
+    });
+  };
+
+  const updateTrail = (currentPos: Vector3) => {
+    frameCount.current++;
+    
+    if (frameCount.current % TRAIL_UPDATE_FREQUENCY === 0) {
+      trailPoints.current.push(currentPos.clone());
+      
+      // Keep trail length manageable
+      if (trailPoints.current.length > 20) {
+        trailPoints.current.shift();
+      }
+
+      if (trailGeometry.current) {
+        trailGeometry.current.setFromPoints(trailPoints.current);
+      }
+    }
+  };
+
   useFrame((_, delta) => {
     if (!orbRef.current || !playerRef.current) return;
 
@@ -85,6 +134,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
         const targetPos = new Vector3(enemy.position[0], enemy.position[1] + 1, enemy.position[2]);
         midPoint.current = calculateArcPoint(orbRef.current.position, targetPos, 3);
         setAttackProgress(0);
+        trailPoints.current = [orbRef.current.position.clone()];
       }
     } else if (targetEnemy) {
       setAttackProgress(prev => Math.min(prev + delta * 2, 1));
@@ -97,15 +147,22 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
         const p2 = targetPos;
         const t = attackProgress * 2;
         
-        // Quadratic Bezier curve
-        orbRef.current.position.set(
+        // Calculate new position using Bezier curve
+        const newPos = new Vector3(
           Math.pow(1 - t, 2) * p0.x + 2 * (1 - t) * t * p1.x + Math.pow(t, 2) * p2.x,
           Math.pow(1 - t, 2) * p0.y + 2 * (1 - t) * t * p1.y + Math.pow(t, 2) * p2.y,
           Math.pow(1 - t, 2) * p0.z + 2 * (1 - t) * t * p1.z + Math.pow(t, 2) * p2.z
         );
 
+        // Update orb position
+        orbRef.current.position.copy(newPos);
+        
+        // Update trail and check for area damage
+        updateTrail(newPos);
+        checkAreaDamage(newPos);
+
         if (attackProgress >= 0.45) {
-          // Deal damage
+          // Deal direct damage to target
           damageCreep(targetEnemy.id, ATTACK_DAMAGE);
           setReturnPoint(new Vector3(playerPos.x, playerPos.y + 1, playerPos.z));
           midPoint.current = calculateArcPoint(
@@ -121,20 +178,32 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
         const p2 = returnPoint as Vector3;
         const t = (attackProgress - 0.5) * 2;
         
-        orbRef.current.position.set(
+        // Calculate new position
+        const newPos = new Vector3(
           Math.pow(1 - t, 2) * p0.x + 2 * (1 - t) * t * p1.x + Math.pow(t, 2) * p2.x,
           Math.pow(1 - t, 2) * p0.y + 2 * (1 - t) * t * p1.y + Math.pow(t, 2) * p2.y,
           Math.pow(1 - t, 2) * p0.z + 2 * (1 - t) * t * p1.z + Math.pow(t, 2) * p2.z
         );
+
+        // Update orb position
+        orbRef.current.position.copy(newPos);
+        
+        // Update trail and check for area damage
+        updateTrail(newPos);
+        checkAreaDamage(newPos);
 
         if (attackProgress === 1) {
           setIsAttacking(false);
           setTargetEnemy(null);
           setReturnPoint(null);
           setAttackProgress(0);
+          trailPoints.current = [];
         }
       }
     }
+
+    // Store last position for next frame
+    lastPosition.current.copy(orbRef.current.position);
   });
 
   return (
@@ -161,6 +230,17 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
           opacity={0.3}
         />
       </mesh>
+
+      {/* Trail effect */}
+      <line>
+        <bufferGeometry ref={trailGeometry} />
+        <lineBasicMaterial
+          color="#7e57c2"
+          transparent
+          opacity={0.6}
+          linewidth={2}
+        />
+      </line>
 
       {/* Particle effect */}
       {[...Array(8)].map((_, i) => (
