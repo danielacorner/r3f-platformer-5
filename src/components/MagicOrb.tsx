@@ -8,7 +8,7 @@ import { OrbTrail } from './OrbTrail';
 const ORB_RADIUS = 1.5; // Orbit radius
 const ORB_SPEED = 2; // Orbit speed
 const ATTACK_RANGE = 10; // Range to detect enemies
-const ATTACK_DAMAGE = 35;
+const ATTACK_DAMAGE = 10;
 const DAMAGE_RADIUS = 1; // Radius for area damage
 const TRAIL_UPDATE_FREQUENCY = 2; // Update trail every N frames
 
@@ -40,13 +40,13 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
   const findNearestEnemy = () => {
     if (!playerRef.current || isAttacking || !creeps) return null;
-    
+
     const position = playerRef.current.translation();
     const playerPos = new Vector3(position.x, position.y, position.z);
-    
+
     let nearest = null;
     let minDistance = ATTACK_RANGE;
-    
+
     creeps.forEach(creep => {
       if (creep.health > 0) {
         const distance = new Vector3(
@@ -54,14 +54,14 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
           creep.position[1],
           creep.position[2]
         ).distanceTo(playerPos);
-        
+
         if (distance < minDistance) {
           minDistance = distance;
           nearest = creep;
         }
       }
     });
-    
+
     return nearest;
   };
 
@@ -73,7 +73,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
   const checkAreaDamage = (position: Vector3) => {
     if (!creeps) return;
-    
+
     creeps.forEach(creep => {
       if (creep.health > 0) {
         const creepPos = new Vector3(
@@ -81,7 +81,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
           creep.position[1],
           creep.position[2]
         );
-        
+
         if (creepPos.distanceTo(position) <= DAMAGE_RADIUS) {
           damageCreep(creep.id, ATTACK_DAMAGE / 2); // Half damage for area effect
         }
@@ -91,10 +91,10 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
   const updateTrail = (currentPos: Vector3) => {
     frameCount.current++;
-    
+
     if (frameCount.current % TRAIL_UPDATE_FREQUENCY === 0) {
       trailPoints.current.push(currentPos.clone());
-      
+
       // Keep trail length manageable
       if (trailPoints.current.length > 20) {
         trailPoints.current.shift();
@@ -138,7 +138,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
       }
     } else if (targetEnemy) {
       setAttackProgress(prev => Math.min(prev + delta * 2, 1));
-      
+
       if (attackProgress < 0.5) {
         // Moving to enemy
         const targetPos = new Vector3(targetEnemy.position[0], targetEnemy.position[1] + 1, targetEnemy.position[2]);
@@ -146,7 +146,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
         const p1 = midPoint.current;
         const p2 = targetPos;
         const t = attackProgress * 2;
-        
+
         // Calculate new position using Bezier curve
         const newPos = new Vector3(
           Math.pow(1 - t, 2) * p0.x + 2 * (1 - t) * t * p1.x + Math.pow(t, 2) * p2.x,
@@ -156,7 +156,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
         // Update orb position
         orbRef.current.position.copy(newPos);
-        
+
         // Update trail and check for area damage
         updateTrail(newPos);
         checkAreaDamage(newPos);
@@ -177,7 +177,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
         const p1 = midPoint.current;
         const p2 = returnPoint as Vector3;
         const t = (attackProgress - 0.5) * 2;
-        
+
         // Calculate new position
         const newPos = new Vector3(
           Math.pow(1 - t, 2) * p0.x + 2 * (1 - t) * t * p1.x + Math.pow(t, 2) * p2.x,
@@ -187,7 +187,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
         // Update orb position
         orbRef.current.position.copy(newPos);
-        
+
         // Update trail and check for area damage
         updateTrail(newPos);
         checkAreaDamage(newPos);
@@ -218,7 +218,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
           toneMapped={false}
         />
       </mesh>
-      
+
       {/* Outer glow */}
       <mesh scale={1.2}>
         <sphereGeometry args={[0.15, 16, 16]} />
