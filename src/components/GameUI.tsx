@@ -5,7 +5,8 @@ import '../styles/GameUI.css';
 export function GameUI() {
   const { phase, setPhase, lives, money, currentLevel, setIsSpawning } = useGameStore();
 
-  const startWave = () => {
+  const startWave = (e) => {
+    e.stopPropagation();
     console.log('Starting wave...');
     setPhase('combat');
     setIsSpawning(true);
@@ -30,8 +31,8 @@ export function GameUI() {
 
       <div className="game-controls">
         {phase === 'prep' && (
-          <button 
-            className="control-button start-wave" 
+          <button
+            className="control-button start-wave"
             onClick={startWave}
             style={{
               padding: '10px 20px',

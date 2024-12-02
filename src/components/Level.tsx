@@ -378,6 +378,7 @@ export function Level() {
   const [canAffordTower, setCanAffordTower] = useState(true);
   const groundRef = useRef(null);
   const [clickPosition, setClickPosition] = useState<Vector3 | null>(null);
+  const [clickCounter, setClickCounter] = useState(0); // Add counter for key prop
   const { camera, scene } = useThree();
   const raycaster = useMemo(() => new Raycaster(), []);
   const groundPlane = useMemo(() => new Plane(new Vector3(0, 1, 0), 0), []);
@@ -399,6 +400,7 @@ export function Level() {
     if (raycaster.ray.intersectPlane(groundPlane, planeIntersectPoint)) {
       // Update click position for visual indicator
       setClickPosition(planeIntersectPoint.clone());
+      setClickCounter(prev => prev + 1); // Increment counter on each click
 
       // Update move target
       moveTargetRef.current = {
@@ -582,6 +584,7 @@ export function Level() {
       {/* Click indicator */}
       {clickPosition && (
         <ClickIndicator
+          key={clickCounter} // Add key prop to force remount
           position={clickPosition}
           onComplete={() => setClickPosition(null)}
         />
