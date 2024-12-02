@@ -4,6 +4,7 @@ import { Vector3, Group, BufferGeometry, Line } from 'three';
 import { useGameStore } from '../store/gameStore';
 import { RigidBody } from '@react-three/rapier';
 import { OrbTrail } from './OrbTrail';
+import { OrbEffects } from './OrbEffects';
 
 const ORB_RADIUS = 1.5; // Orbit radius
 const ORB_SPEED = 2; // Orbit speed
@@ -208,60 +209,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
   return (
     <group ref={orbRef}>
-      {/* Glowing orb core */}
-      <mesh>
-        <sphereGeometry args={[0.15, 16, 16]} />
-        <meshStandardMaterial
-          color="#4a148c"
-          emissive="#7e57c2"
-          emissiveIntensity={2}
-          toneMapped={false}
-        />
-      </mesh>
-
-      {/* Outer glow */}
-      <mesh scale={1.2}>
-        <sphereGeometry args={[0.15, 16, 16]} />
-        <meshStandardMaterial
-          color="#7e57c2"
-          emissive="#7e57c2"
-          emissiveIntensity={1}
-          transparent
-          opacity={0.3}
-        />
-      </mesh>
-
-      {/* Trail effect */}
-      <line>
-        <bufferGeometry ref={trailGeometry} />
-        <lineBasicMaterial
-          color="#7e57c2"
-          transparent
-          opacity={0.6}
-          linewidth={2}
-        />
-      </line>
-
-      {/* Particle effect */}
-      {[...Array(8)].map((_, i) => (
-        <mesh
-          key={i}
-          position={[
-            Math.sin((i / 8) * Math.PI * 2) * 0.2,
-            Math.cos((i / 8) * Math.PI * 2) * 0.2,
-            0
-          ]}
-        >
-          <sphereGeometry args={[0.03, 8, 8]} />
-          <meshStandardMaterial
-            color="#4a148c"
-            emissive="#7e57c2"
-            emissiveIntensity={1.5}
-            transparent
-            opacity={0.6}
-          />
-        </mesh>
-      ))}
+      <OrbEffects isAttacking={isAttacking} />
     </group>
   );
 }

@@ -10,18 +10,7 @@ interface OrbEffectsProps {
 export function OrbEffects({ isAttacking }: OrbEffectsProps) {
   const orbRef = useRef<any>()
   const distortRef = useRef<any>()
-  const trailRef = useRef<Group>(null)
   const [trailVisible, setTrailVisible] = useState(true)
-
-  // Reset trail visibility when attack state changes
-  useEffect(() => {
-    if (isAttacking) {
-      // Briefly hide and show trail to reset it
-      setTrailVisible(false)
-      const timer = setTimeout(() => setTrailVisible(true), 50)
-      return () => clearTimeout(timer)
-    }
-  }, [isAttacking])
 
   useFrame((state) => {
     if (!distortRef.current) return;
@@ -31,10 +20,16 @@ export function OrbEffects({ isAttacking }: OrbEffectsProps) {
     const distortStrength = isAttacking ? 0.6 : 0.3;
     distortRef.current.distort = 0.3 + Math.sin(state.clock.elapsedTime * speed) * 0.1;
     distortRef.current.speed = 2 + Math.sin(state.clock.elapsedTime * 2) * 0.5;
+
+    // Animate energy rings
+    if (orbRef.current) {
+      orbRef.current.rotation.x += 0.01;
+      orbRef.current.rotation.y += 0.015;
+    }
   });
 
   return (
-    <>
+    <group>
       {/* Main orb with distortion effect */}
       <mesh ref={orbRef}>
         <sphereGeometry args={[0.15, 32, 32]} />
@@ -81,7 +76,11 @@ export function OrbEffects({ isAttacking }: OrbEffectsProps) {
       {[...Array(3)].map((_, i) => (
         <mesh
           key={i}
-          rotation={[Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI]}
+          rotation={[
+            Math.PI * 2 * i / 3,
+            Math.PI / 4,
+            Math.PI / 3
+          ]}
         >
           <ringGeometry args={[0.2, 0.22, 32]} />
           <meshBasicMaterial
@@ -94,30 +93,6 @@ export function OrbEffects({ isAttacking }: OrbEffectsProps) {
         </mesh>
       ))}
 
-      {/* Glowing trail */}
-      {trailVisible && (
-        <group ref={trailRef}>
-          <Trail
-            width={isAttacking ? 0.4 : 0.15}
-            length={isAttacking ? 8 : 6}
-            decay={isAttacking ? 0.5 : 0.1}
-            local={false}
-            stride={100}
-            interval={1}
-            color={new Color("#7e57c2")}
-            attenuation={(t) => {
-              // Sharper falloff during attack
-              return isAttacking ? Math.pow(t, 2.5) : t * t;
-            }}
-            opacity={isAttacking ? 0.9 : 0.4}
-          >
-            <mesh visible={false}>
-              <sphereGeometry args={[0.1]} />
-            </mesh>
-          </Trail>
-        </group>
-      )}
-
       {/* Point lights for glow */}
       <pointLight
         intensity={isAttacking ? 1.5 : 0.8}
@@ -129,6 +104,27 @@ export function OrbEffects({ isAttacking }: OrbEffectsProps) {
         distance={5}
         color="#4a148c"
       />
-    </>
+
+      {/* Glowing trail */}
+      {trailVisible && (
+        <Trail
+          width={isAttacking ? 0.4 : 0.15}
+          length={isAttacking ? 8 : 6}
+          decay={isAttacking ? 0.5 : 0.1}
+          local={false}
+          stride={10}
+          interval={1}
+          color={new Color("#7e57c2")}
+          attenuation={(t) => {
+            return isAttacking ? Math.pow(t, 2.5) : t * t;
+          }}
+          opacity={isAttacking ? 0.6 : 0.3}
+        >
+          <mesh visible={false}>
+            <sphereGeometry args={[0.1]} />
+          </mesh>
+        </Trail>
+      )}
+    </group>
   )
 }
