@@ -11,6 +11,7 @@ import { createShaderMaterial } from '../utils/shaders';
 import { ObjectPool } from '../utils/objectPool';
 import { CreepManager } from './Creep';
 import { Player } from './Player';
+import { ClickIndicator } from './ClickIndicator';
 
 // Constants and Materials
 const pathColor = new Color('#4338ca').convertSRGBToLinear();
@@ -375,6 +376,44 @@ export function Level() {
   const [showPreview, setShowPreview] = useState(false);
   const [previewPosition, setPreviewPosition] = useState<[number, number, number]>([0, 0, 0]);
   const [canAffordTower, setCanAffordTower] = useState(true);
+  const groundRef = useRef(null);
+  const [clickPosition, setClickPosition] = useState<Vector3 | null>(null);
+  const { camera, scene } = useThree();
+  const raycaster = useMemo(() => new Raycaster(), []);
+  const groundPlane = useMemo(() => new Plane(new Vector3(0, 1, 0), 0), []);
+  const planeIntersectPoint = useMemo(() => new Vector3(), []);
+  const moveTargetRef = useRef({ x: 0, z: 0, active: false });
+
+  // Handle click events
+  const handleClick = (event: any) => {
+    // Convert mouse position to normalized device coordinates
+    const mouse = new Vector2(
+      (event.clientX / window.innerWidth) * 2 - 1,
+      -(event.clientY / window.innerHeight) * 2 + 1
+    );
+
+    // Update raycaster
+    raycaster.setFromCamera(mouse, camera);
+
+    // Calculate intersection with ground plane
+    if (raycaster.ray.intersectPlane(groundPlane, planeIntersectPoint)) {
+      // Update click position for visual indicator
+      setClickPosition(planeIntersectPoint.clone());
+
+      // Update move target
+      moveTargetRef.current = {
+        x: planeIntersectPoint.x,
+        z: planeIntersectPoint.z,
+        active: true
+      };
+    }
+  };
+
+  // Add click event listener
+  useEffect(() => {
+    window.addEventListener('click', handleClick);
+    return () => window.removeEventListener('click', handleClick);
+  }, []);
 
   // Path Generation
   const { segments, points: pathPoints } = useMemo(() => generatePath(), []);
@@ -538,7 +577,15 @@ export function Level() {
 
       <CreepManager pathPoints={pathPoints} />
 
-      <Player />
+      <Player moveTargetRef={moveTargetRef} />
+
+      {/* Click indicator */}
+      {clickPosition && (
+        <ClickIndicator
+          position={clickPosition}
+          onComplete={() => setClickPosition(null)}
+        />
+      )}
 
       {/* Tower Preview */}
       {showPreview && selectedObjectType && (

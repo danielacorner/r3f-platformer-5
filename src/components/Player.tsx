@@ -6,19 +6,27 @@ import { useGameStore } from "../store/gameStore";
 import { useKeyboardControls } from '../hooks/useKeyboardControls';
 import { MagicOrb } from './MagicOrb';
 
+interface PlayerProps {
+  moveTargetRef: React.MutableRefObject<{
+    x: number;
+    z: number;
+    active: boolean;
+  }>;
+}
+
 const MOVE_SPEED = 5;
 const FLOAT_HEIGHT = 0.5;
 const FLOAT_SPEED = 2;
 const CAMERA_LERP = 0.1;
 
-export function Player() {
+export function Player({ moveTargetRef }: PlayerProps) {
   const playerRef = useRef<Group>(null);
-  const moveTargetRef = useRef(null);
   const { forward, backward, left, right } = useKeyboardControls();
   const visualRef = useRef<Group>(null);
   const lastValidPosition = useRef(new Vector3());
   const cameraOffset = useRef<Vector3 | null>(null);
   const { camera } = useThree()
+
   // Store initial camera offset
   useEffect(() => {
     if (!playerRef.current) return;
@@ -34,7 +42,7 @@ export function Player() {
     // Get movement input
     const velocity = { x: 0, y: 0, z: 0 };
 
-    // Get camera direction
+    // Get camera direction for WASD movement
     const cameraDirection = new Vector3();
     const cameraRight = new Vector3();
     state.camera.getWorldDirection(cameraDirection);
@@ -42,50 +50,57 @@ export function Player() {
     cameraDirection.normalize();
     cameraRight.crossVectors(cameraDirection, new Vector3(0, 1, 0)).normalize();
 
-    // Calculate movement relative to camera
+    // Handle keyboard movement
     if (forward) {
       velocity.x += cameraDirection.x * MOVE_SPEED;
       velocity.z += cameraDirection.z * MOVE_SPEED;
+      moveTargetRef.current.active = false; // Disable click-to-move when using keyboard
     }
     if (backward) {
       velocity.x -= cameraDirection.x * MOVE_SPEED;
       velocity.z -= cameraDirection.z * MOVE_SPEED;
+      moveTargetRef.current.active = false;
     }
     if (left) {
       velocity.x -= cameraRight.x * MOVE_SPEED;
       velocity.z -= cameraRight.z * MOVE_SPEED;
+      moveTargetRef.current.active = false;
     }
     if (right) {
       velocity.x += cameraRight.x * MOVE_SPEED;
       velocity.z += cameraRight.z * MOVE_SPEED;
+      moveTargetRef.current.active = false;
     }
 
-    // Target-based movement
-    if (moveTargetRef.current) {
-      const targetPos = moveTargetRef.current;
+    // Handle click-to-move
+    if (moveTargetRef.current.active) {
       const position = playerRef.current.translation();
       const directionToTarget = new Vector3(
-        targetPos.x - position.x,
+        moveTargetRef.current.x - position.x,
         0,
-        targetPos.z - position.z
+        moveTargetRef.current.z - position.z
       ).normalize();
 
       const distanceToTarget = new Vector3(
-        targetPos.x - position.x,
+        moveTargetRef.current.x - position.x,
         0,
-        targetPos.z - position.z
+        moveTargetRef.current.z - position.z
       ).length();
 
       if (distanceToTarget > 0.1) {
         velocity.x = directionToTarget.x * MOVE_SPEED;
         velocity.z = directionToTarget.z * MOVE_SPEED;
       } else {
-        moveTargetRef.current = null;
+        moveTargetRef.current.active = false; // Reached target
       }
     }
 
     // Apply movement
-    playerRef.current.setLinvel(velocity);
+    if (velocity.x !== 0 || velocity.z !== 0) {
+      playerRef.current.setLinvel(velocity);
+    } else {
+      playerRef.current.setLinvel({ x: 0, y: 0, z: 0 }); // Stop when no movement
+    }
 
     // Get current position
     const position = playerRef.current.translation();
