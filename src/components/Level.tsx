@@ -495,14 +495,14 @@ export function Level() {
       <PathDecorations pathPoints={pathPoints} />
 
       {/* Path */}
-      <instancedMesh
+      {/* <instancedMesh
         ref={pathRef}
         args={[new BoxGeometry(1, 1, 1), pathMaterial, segments.length]}
         receiveShadow
         castShadow
       >
         <Edges scale={1.1} threshold={15} color={glowColor} />
-      </instancedMesh>
+      </instancedMesh> */}
 
       {/* Path Decorations */}
       {segments.map((segment, index) => (

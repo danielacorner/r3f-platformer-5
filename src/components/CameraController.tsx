@@ -10,7 +10,7 @@ export function CameraController() {
   useEffect(() => {
     // Set initial camera position and rotation
     camera.position.set(0, 15, 10);
-    camera.rotation.set(-0.9, 0, 0);
+    // camera.rotation.set(-0.9, 0, 0);
   }, [camera]);
 
   useFrame(() => {
