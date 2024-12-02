@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Html } from '@react-three/drei';
+import { Billboard, Html } from '@react-three/drei';
 import { FaCheck, FaTimes } from 'react-icons/fa';
 import '../styles/TowerConfirmation.css';
 
@@ -14,18 +14,21 @@ export function TowerConfirmation({ position, onConfirm, onCancel }: TowerConfir
 
   return (
     <group position={position}>
-      <Html center transform position={[0, 2, 0]}>
-        <div ref={containerRef} className="tower-confirmation-container">
-          <div className="tower-confirmation">
-            <button onClick={onConfirm} className="confirm-btn">
-              <FaCheck /> Place
-            </button>
-            <button onClick={onCancel} className="cancel-btn">
-              <FaTimes />
-            </button>
+      <Billboard>
+
+        <Html center transform position={[0, 2, 0]}>
+          <div ref={containerRef} className="tower-confirmation-container">
+            <div className="tower-confirmation">
+              <button onClick={onConfirm} className="confirm-btn">
+                <FaCheck /> Place
+              </button>
+              <button onClick={onCancel} className="cancel-btn">
+                <FaTimes />
+              </button>
+            </div>
           </div>
-        </div>
-      </Html>
+        </Html>
+      </Billboard>
     </group>
   );
 }
