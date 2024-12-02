@@ -1,32 +1,211 @@
 import { useRef, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Vector3, InstancedMesh, Object3D, Matrix4, BufferGeometry, BufferAttribute, BoxGeometry, Color, PlaneGeometry, MeshBasicMaterial, SphereGeometry, CylinderGeometry, TorusGeometry, IcosahedronGeometry } from 'three';
+import { Vector3, InstancedMesh, Object3D, Matrix4, BufferGeometry, BufferAttribute, BoxGeometry, Color, PlaneGeometry, MeshBasicMaterial, SphereGeometry, CylinderGeometry, TorusGeometry, IcosahedronGeometry, ConeGeometry, MeshStandardMaterial, DoubleSide } from 'three';
 import { useGameStore } from '../store/gameStore';
 import { createShaderMaterial } from '../utils/shaders';
 
-// Enhanced geometries for different creep types
+// Realistic geometries for different creep types
 const CREEP_GEOMETRIES = {
-  normal: new IcosahedronGeometry(0.4, 1), // Spiky crystal-like shape
-  fast: new CylinderGeometry(0.1, 0.3, 0.8, 6), // Sleek arrow-like shape
-  armored: (() => {
-    // Combine geometries for armored unit
-    const base = new BoxGeometry(0.6, 0.6, 0.6);
-    const top = new CylinderGeometry(0.2, 0.3, 0.3, 6);
-    const vertices = [...base.attributes.position.array];
-    const topVertices = [...top.attributes.position.array];
+  normal: (() => {
+    // Infantry mech unit
+    const torso = new BoxGeometry(0.4, 0.3, 0.3);        // Main body
+    const waist = new CylinderGeometry(0.15, 0.2, 0.15, 8); // Connection piece
+    const legs = new CylinderGeometry(0.1, 0.15, 0.4, 8);   // Leg structure
+    const head = new BoxGeometry(0.2, 0.2, 0.2);         // Head unit
+    const shoulder = new BoxGeometry(0.5, 0.15, 0.2);    // Shoulder piece
 
-    // Adjust top position
-    for (let i = 0; i < topVertices.length; i += 3) {
-      topVertices[i + 1] += 0.45; // Move up
+    const vertices = [...torso.attributes.position.array];
+    const waistVertices = [...waist.attributes.position.array];
+    const legVertices = [...legs.attributes.position.array];
+    const headVertices = [...head.attributes.position.array];
+    const shoulderVertices = [...shoulder.attributes.position.array];
+
+    // Position components
+    for (let i = 0; i < waistVertices.length; i += 3) {
+      waistVertices[i + 1] -= 0.2;  // Lower waist
+    }
+    for (let i = 0; i < legVertices.length; i += 3) {
+      legVertices[i + 1] -= 0.4;  // Position legs
+    }
+    for (let i = 0; i < headVertices.length; i += 3) {
+      headVertices[i + 1] += 0.25;  // Raise head
+    }
+    for (let i = 0; i < shoulderVertices.length; i += 3) {
+      shoulderVertices[i + 1] += 0.1;  // Position shoulders
     }
 
-    // Combine vertices
-    const positions = new Float32Array([...vertices, ...topVertices]);
+    const positions = new Float32Array([
+      ...vertices,
+      ...waistVertices,
+      ...legVertices,
+      ...headVertices,
+      ...shoulderVertices
+    ]);
     const geometry = new BufferGeometry();
     geometry.setAttribute('position', new BufferAttribute(positions, 3));
     return geometry;
   })(),
-  boss: new TorusGeometry(0.5, 0.3, 8, 6) // Intimidating ring shape
+
+  fast: (() => {
+    // Stealth drone unit
+    const body = new CylinderGeometry(0.2, 0.4, 0.15, 8);     // Low-profile body
+    const wings = new BoxGeometry(1.0, 0.05, 0.4);           // Swept wings
+    const engines = new CylinderGeometry(0.08, 0.1, 0.3, 8);  // Engine nacelles
+    const nose = new ConeGeometry(0.15, 0.3, 8);             // Pointed nose
+
+    const vertices = [...body.attributes.position.array];
+    const wingsVertices = [...wings.attributes.position.array];
+    const engineVertices = [...engines.attributes.position.array];
+    const noseVertices = [...nose.attributes.position.array];
+
+    // Position wings at angle
+    for (let i = 0; i < wingsVertices.length; i += 3) {
+      wingsVertices[i + 2] -= 0.2;  // Sweep back
+      wingsVertices[i + 1] *= 0.8;  // Angle down slightly
+    }
+
+    // Add engines under wings
+    let allEngineVertices = [];
+    for (let side = -1; side <= 1; side += 2) {
+      const enginePos = [...engineVertices];
+      for (let i = 0; i < enginePos.length; i += 3) {
+        enginePos[i] += side * 0.3;     // Position on wing
+        enginePos[i + 1] -= 0.1;        // Lower slightly
+        enginePos[i + 2] -= 0.1;        // Move back
+      }
+      allEngineVertices.push(...enginePos);
+    }
+
+    // Position nose
+    for (let i = 0; i < noseVertices.length; i += 3) {
+      noseVertices[i + 2] += 0.2;  // Extend forward
+    }
+
+    const positions = new Float32Array([
+      ...vertices,
+      ...wingsVertices,
+      ...allEngineVertices,
+      ...noseVertices
+    ]);
+    const geometry = new BufferGeometry();
+    geometry.setAttribute('position', new BufferAttribute(positions, 3));
+    return geometry;
+  })(),
+
+  armored: (() => {
+    // Heavy battle tank
+    const hull = new BoxGeometry(0.9, 0.3, 1.2);          // Main hull
+    const turret = new CylinderGeometry(0.35, 0.4, 0.25, 8); // Rotating turret
+    const barrel = new CylinderGeometry(0.08, 0.1, 0.6, 8);  // Main gun
+    const tracks = new BoxGeometry(0.2, 0.15, 1.3);        // Tank tracks
+    const armor = new BoxGeometry(1.0, 0.35, 0.15);        // Front armor plate
+
+    const vertices = [...hull.attributes.position.array];
+    const turretVertices = [...turret.attributes.position.array];
+    const barrelVertices = [...barrel.attributes.position.array];
+    const trackVertices = [...tracks.attributes.position.array];
+    const armorVertices = [...armor.attributes.position.array];
+
+    // Position components
+    for (let i = 0; i < turretVertices.length; i += 3) {
+      turretVertices[i + 1] += 0.3;   // Place turret on hull
+    }
+    for (let i = 0; i < barrelVertices.length; i += 3) {
+      barrelVertices[i + 1] += 0.3;   // Align with turret
+      barrelVertices[i + 2] += 0.4;   // Extend forward
+    }
+
+    // Add tracks on both sides
+    let allTrackVertices = [];
+    for (let side = -1; side <= 1; side += 2) {
+      const trackPos = [...trackVertices];
+      for (let i = 0; i < trackPos.length; i += 3) {
+        trackPos[i] += side * 0.35;    // Position on sides
+        trackPos[i + 1] -= 0.1;        // Lower slightly
+      }
+      allTrackVertices.push(...trackPos);
+    }
+
+    // Position front armor
+    for (let i = 0; i < armorVertices.length; i += 3) {
+      armorVertices[i + 2] += 0.6;     // Move to front
+      armorVertices[i + 1] += 0.1;     // Raise slightly
+    }
+
+    const positions = new Float32Array([
+      ...vertices,
+      ...turretVertices,
+      ...barrelVertices,
+      ...allTrackVertices,
+      ...armorVertices
+    ]);
+    const geometry = new BufferGeometry();
+    geometry.setAttribute('position', new BufferAttribute(positions, 3));
+    return geometry;
+  })(),
+
+  boss: (() => {
+    // Heavy assault walker
+    const body = new BoxGeometry(1.2, 0.6, 1.0);           // Main body
+    const cockpit = new BoxGeometry(0.6, 0.4, 0.5);        // Cockpit section
+    const legs = new CylinderGeometry(0.15, 0.2, 0.8, 8);  // Walker legs
+    const weapons = new BoxGeometry(0.3, 0.2, 0.7);        // Weapon pods
+    const armor = new BoxGeometry(1.4, 0.7, 0.2);          // Heavy armor plates
+
+    const vertices = [...body.attributes.position.array];
+    const cockpitVertices = [...cockpit.attributes.position.array];
+    const legVertices = [...legs.attributes.position.array];
+    const weaponVertices = [...weapons.attributes.position.array];
+    const armorVertices = [...armor.attributes.position.array];
+
+    // Position cockpit
+    for (let i = 0; i < cockpitVertices.length; i += 3) {
+      cockpitVertices[i + 1] += 0.5;   // Raise up
+      cockpitVertices[i + 2] += 0.2;   // Move forward
+    }
+
+    // Add four legs
+    let allLegVertices = [];
+    for (let x = -1; x <= 1; x += 2) {
+      for (let z = -1; z <= 1; z += 2) {
+        const legPos = [...legVertices];
+        for (let i = 0; i < legPos.length; i += 3) {
+          legPos[i] += x * 0.4;      // X position
+          legPos[i + 1] -= 0.4;      // Lower
+          legPos[i + 2] += z * 0.3;  // Z position
+        }
+        allLegVertices.push(...legPos);
+      }
+    }
+
+    // Add weapon pods on sides
+    let allWeaponVertices = [];
+    for (let side = -1; side <= 1; side += 2) {
+      const weaponPos = [...weaponVertices];
+      for (let i = 0; i < weaponPos.length; i += 3) {
+        weaponPos[i] += side * 0.6;   // Position on sides
+        weaponPos[i + 1] += 0.2;      // Raise slightly
+      }
+      allWeaponVertices.push(...weaponPos);
+    }
+
+    // Position armor plates
+    for (let i = 0; i < armorVertices.length; i += 3) {
+      armorVertices[i + 2] += 0.5;    // Move to front
+      armorVertices[i + 1] += 0.1;    // Raise slightly
+    }
+
+    const positions = new Float32Array([
+      ...vertices,
+      ...cockpitVertices,
+      ...allLegVertices,
+      ...allWeaponVertices,
+      ...armorVertices
+    ]);
+    const geometry = new BufferGeometry();
+    geometry.setAttribute('position', new BufferAttribute(positions, 3));
+    return geometry;
+  })()
 };
 
 const tempObject = new Object3D();
@@ -63,17 +242,17 @@ const creepSpeeds = {
 const SPEED_MULTIPLIER = 4;
 
 const creepSizes = {
-  normal: [0.8, 0.8, 0.8],
-  armored: [1, 1, 1],
-  fast: [0.6, 0.6, 0.6],
-  boss: [1.5, 1.5, 1.5],
+  normal: [1.0, 1.0, 1.0],    // Infantry mech
+  fast: [0.8, 0.8, 0.8],      // Stealth drone
+  armored: [1.2, 1.2, 1.2],   // Battle tank
+  boss: [1.8, 1.8, 1.8],      // Assault walker
 };
 
 const creepColors = {
-  normal: '#ef4444',
-  armored: '#6b7280',
-  fast: '#22c55e',
-  boss: '#8b5cf6',
+  normal: '#6366f1',    // Bright indigo - highly visible
+  armored: '#94a3b8',   // Bright steel - stands out well
+  fast: '#2dd4bf',      // Bright teal - distinctive
+  boss: '#f43f5e',      // Bright rose - imposing
 };
 
 const creepRewards = {
@@ -113,16 +292,14 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
 
   // Create material with custom shader
   const material = useMemo(() => {
-    const mat = createShaderMaterial('creep', {
-      time: { value: 0 },
-      color: { value: new Vector3(1, 0, 0) },
-      emissive: { value: new Vector3(0.2, 0, 0) },
-      roughness: { value: 0.4 },
-      metalness: { value: 0.6 }
+    const mat = new MeshStandardMaterial({
+      roughness: 0.4,
+      metalness: 0.6,
+      side: DoubleSide,     // Render both sides of faces
+      flatShading: true,    // Creates more defined edges
+      emissive: '#000000',  // Slight glow for better visibility
+      emissiveIntensity: 0.1,
     });
-    mat.defines = {
-      USE_INSTANCING: ''
-    };
     return mat;
   }, []);
 
@@ -169,11 +346,6 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
   // Update creep positions and attributes
   useFrame((state, delta) => {
     if (!instancedMesh.current) return;
-
-    // Update shader time
-    if (material.uniforms) {
-      material.uniforms.time.value += delta;
-    }
 
     let needsMatrixUpdate = false;
     let needsAttributeUpdate = false;
@@ -252,6 +424,8 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
         // Apply size
         const size = creepSizes[type][0];
         tempObject.scale.set(size, size, size);
+
+        tempObject.position.y += Math.sin(Date.now() * 0.003) * 0.05;
 
         tempObject.updateMatrix();
         instancedMesh.current.setMatrixAt(instanceId, tempObject.matrix);
