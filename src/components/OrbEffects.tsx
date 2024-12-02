@@ -45,11 +45,11 @@ export function OrbEffects({ isAttacking }: OrbEffectsProps) {
           ref={distortRef}
           color="#4a148c"
           emissive="#7e57c2"
-          emissiveIntensity={10 * (isAttacking ? 2 : 1)}
+          emissiveIntensity={5 * (isAttacking ? 2 : 1)}
           distort={0.4}
           speed={2}
           roughness={0.1}
-          metalness={isAttacking ? 18 : 0.8}
+          metalness={isAttacking ? 22 : 0.8}
           transparent
           opacity={0.9}
         />
@@ -70,8 +70,8 @@ export function OrbEffects({ isAttacking }: OrbEffectsProps) {
       <mesh scale={4.2}>
         <sphereGeometry args={[0.15, 32, 32]} />
         <meshPhongMaterial
-          color="#4a148c"
-          emissive="#7e57c2"
+          color={isAttacking ? ATTACK_COLOR : "#4a148c"}
+          emissive={isAttacking ? ATTACK_COLOR : "#7e57c2"}
           emissiveIntensity={isAttacking ? 2.5 : 0.5}
           transparent
           opacity={0.2}
@@ -83,7 +83,7 @@ export function OrbEffects({ isAttacking }: OrbEffectsProps) {
       {/* Energy rings */}
       {[...Array(3)].map((_, i) => (
         <mesh
-          scale={isAttacking ? 3.4 : 2.4}
+          scale={isAttacking ? 3.4 : 5.4}
           key={i}
           rotation={[
             Math.PI * 2 * i / 3,
@@ -93,9 +93,9 @@ export function OrbEffects({ isAttacking }: OrbEffectsProps) {
         >
           <ringGeometry args={[0.2, 0.22, 32]} />
           <meshBasicMaterial
-            color={"#7e57c2"}
+            color={isAttacking ? ATTACK_COLOR : "#7e57c2"}
             transparent
-            opacity={0.3}
+            opacity={0.1}
             blending={AdditiveBlending}
             side={2}
           />
@@ -122,7 +122,7 @@ export function OrbEffects({ isAttacking }: OrbEffectsProps) {
         >
           <mesh>
             <sphereGeometry args={[0.05]} />
-            <meshBasicMaterial color="#b388ff" transparent opacity={0} />
+            <meshBasicMaterial color={isAttacking ? ATTACK_COLOR : PASSIVE_COLOR} transparent opacity={0} />
           </mesh>
         </Trail>
       )}
