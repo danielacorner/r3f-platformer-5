@@ -168,7 +168,6 @@ interface GameState {
   projectiles: Projectile[];
   towerStates: TowerState[];
   playerRef: any | null;
-  setPlayerRef: (ref: any) => void;
 }
 
 const initialState: GameState = {
@@ -198,7 +197,6 @@ const initialState: GameState = {
   projectiles: [],
   towerStates: [],
   playerRef: null,
-  setPlayerRef: () => { }
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -412,5 +410,12 @@ export const useGameStore = create<GameState>((set, get) => ({
       ts.id === id ? { ...ts, ...updates } : ts
     )
   })),
-  setPlayerRef: (ref) => set({ playerRef: ref }),
+
+  setPlayerRef: (ref) => set(state => {
+    // Only update if the ref has actually changed
+    if (state.playerRef !== ref) {
+      return { playerRef: ref };
+    }
+    return state;
+  }),
 }));
