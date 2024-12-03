@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 
-import { FaCoins, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaCoins, FaChevronLeft, FaChevronRight, FaUser } from 'react-icons/fa';
 
 import {
 
@@ -22,6 +22,8 @@ import {
 import { TOWER_STATS, ElementType } from '../store/gameStore';
 
 import '../styles/BuildMenu.css';
+
+import { SkillsMenu } from './SkillsMenu';
 
 
 
@@ -193,10 +195,14 @@ function TowerButton({
 
 export function BuildMenu() {
 
-  const { selectedObjectType, setSelectedObjectType, money, experience, level } = useGameStore();
+  const { selectedObjectType, setSelectedObjectType, money, experience, level, skillPoints } = useGameStore();
+
+  const [showSkillsMenu, setShowSkillsMenu] = useState(false);
 
   // Calculate XP progress
+
   const expForNextLevel = level * 100;
+
   const progress = (experience / expForNextLevel) * 100;
 
   // Group towers by element
@@ -213,27 +219,66 @@ export function BuildMenu() {
 
   }, {} as Record<string, typeof TOWER_TYPES[keyof typeof TOWER_TYPES][]>);
 
-
-
   return (
 
     <div className="build-menu" onClick={e => e.stopPropagation()}>
 
       <div className="stats-display">
-        <div className="money-display">
-          <FaCoins className="text-yellow-400" />
-          <span>{money}</span>
-        </div>
-        <div className="xp-display">
-          <div className="xp-level">Lvl {level}</div>
-          <div className="xp-bar-container">
-            <div 
-              className="xp-bar-fill" 
-              style={{ width: `${progress}%` }} 
-            />
+
+        <div className="player-stats">
+
+          <button 
+
+            className="player-icon" 
+
+            onClick={() => setShowSkillsMenu(true)}
+
+          >
+
+            <FaUser />
+
+            {skillPoints > 0 && (
+
+              <div className="skill-points-badge">
+
+                {skillPoints}
+
+              </div>
+
+            )}
+
+          </button>
+
+          <div className="xp-display">
+
+            <div className="xp-level">Lvl {level}</div>
+
+            <div className="xp-bar-container">
+
+              <div 
+
+                className="xp-bar-fill" 
+
+                style={{ width: `${progress}%` }} 
+
+              />
+
+            </div>
+
+            <div className="xp-text">{experience}/{expForNextLevel}</div>
+
           </div>
-          <div className="xp-text">{experience}/{expForNextLevel}</div>
+
         </div>
+
+        <div className="money-display">
+
+          <FaCoins className="text-yellow-400" />
+
+          <span>{money}</span>
+
+        </div>
+
       </div>
 
       <div className="tower-groups">
@@ -281,6 +326,7 @@ export function BuildMenu() {
                     canAfford={money >= tower.cost}
 
                     onClick={(e) => {
+
                       e.stopPropagation();
 
                       if (money >= tower.cost && selectedObjectType !== tower.type) {
@@ -308,6 +354,18 @@ export function BuildMenu() {
         ))}
 
       </div>
+
+      {showSkillsMenu && (
+
+        <SkillsMenu 
+
+          isOpen={showSkillsMenu} 
+
+          onClose={() => setShowSkillsMenu(false)} 
+
+        />
+
+      )}
 
     </div>
 

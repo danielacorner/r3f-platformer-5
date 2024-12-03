@@ -156,6 +156,13 @@ interface GameState {
   lives: number;
   experience: number;
   level: number;
+  skillPoints: number;
+  upgrades: {
+    damage: number;
+    speed: number;
+    range: number;
+    defense: number;
+  };
   wave: number;
   creeps: CreepState[];
   projectiles: Projectile[];
@@ -179,6 +186,13 @@ const initialState: GameState = {
   lives: 20,
   experience: 0,
   level: 1,
+  skillPoints: 0,
+  upgrades: {
+    damage: 0,
+    speed: 0,
+    range: 0,
+    defense: 0
+  },
   wave: 0,
   creeps: [],
   projectiles: [],
@@ -327,14 +341,29 @@ export const useGameStore = create<GameState>((set, get) => ({
       const expForNextLevel = state.level * 100; // Each level requires level * 100 XP
 
       if (newExperience >= expForNextLevel) {
-        // Level up
+        // Level up and grant skill point
         return {
           experience: newExperience - expForNextLevel,
-          level: state.level + 1
+          level: state.level + 1,
+          skillPoints: state.skillPoints + 1
         };
       }
 
       return { experience: newExperience };
+    });
+  },
+
+  upgradeSkill: (skill) => {
+    set(state => {
+      if (state.skillPoints <= 0) return state;
+
+      return {
+        skillPoints: state.skillPoints - 1,
+        upgrades: {
+          ...state.upgrades,
+          [skill]: state.upgrades[skill] + 1
+        }
+      };
     });
   },
 
