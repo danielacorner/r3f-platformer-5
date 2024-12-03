@@ -428,7 +428,7 @@ export function Level() {
 
   // Tower Placement Logic
   const handlePointerMove = (event: any) => {
-    if (!selectedObjectType) return;
+    if (!selectedObjectType || pendingTowerPosition) return;  // Don't update position if there's a pending tower
 
     // Snap to grid
     const snappedPosition: [number, number, number] = [
@@ -455,6 +455,7 @@ export function Level() {
     // On mobile, show confirmation UI
     if (window.innerWidth <= 768) {
       setPendingTowerPosition(snappedPosition);
+      setPreviewPosition(snappedPosition); // Keep preview at the same position
       return;
     }
 
