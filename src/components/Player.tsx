@@ -1,7 +1,7 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { RigidBody, CuboidCollider } from "@react-three/rapier";
-import { Vector3, Group } from "three";
+import { Vector3, Group, CircleGeometry, DoubleSide, LineBasicMaterial, Line, BufferGeometry, Float32BufferAttribute } from "three";
 import { useGameStore } from "../store/gameStore";
 import { useKeyboardControls } from '../hooks/useKeyboardControls';
 import { MagicOrb } from './MagicOrb';
@@ -30,6 +30,7 @@ export function Player({ moveTargetRef }: PlayerProps) {
   const [showLevelUpEffect, setShowLevelUpEffect] = useState(false);
   const prevLevel = useRef(1);
   const level = useGameStore(state => state.level);
+  const range = useGameStore(state => state.upgrades.range);
 
   // Store initial camera offset
   useEffect(() => {
@@ -46,6 +47,29 @@ export function Player({ moveTargetRef }: PlayerProps) {
       prevLevel.current = level;
     }
   }, [level]);
+
+  // Create range indicator geometry
+  const rangeIndicator = useMemo(() => {
+    const baseRange = 5; // Base attack range
+    const rangeBonus = range * 0.12; // 12% increase per level
+    const totalRange = baseRange * (1 + rangeBonus);
+    const circleGeometry = new CircleGeometry(totalRange, 64);
+    const points = circleGeometry.attributes.position;
+    const positions = [];
+    
+    // Extract only the outer edge vertices
+    for (let i = 1; i <= 64; i++) {
+      positions.push(points.getX(i), points.getY(i), points.getZ(i));
+    }
+    // Close the circle
+    positions.push(points.getX(1), points.getY(1), points.getZ(1));
+    
+    const geometry = new Float32Array(positions);
+    const lineGeometry = new BufferGeometry();
+    lineGeometry.setAttribute('position', new Float32BufferAttribute(geometry, 3));
+    
+    return lineGeometry;
+  }, [range]);
 
   // Handle movement and rotation
   useFrame((state, delta) => {
@@ -176,6 +200,12 @@ export function Player({ moveTargetRef }: PlayerProps) {
       >
         <CuboidCollider args={[0.3, 0.4, 0.3]} position={[0, FLOAT_HEIGHT, 0]} />
         <group ref={visualRef}>
+          {/* Range Indicator */}
+          <line rotation-x={-Math.PI / 2} position={[0, 0.1, 0]}>
+            <primitive object={rangeIndicator} />
+            <lineBasicMaterial color="#4c99f7" linewidth={1}  />
+          </line>
+
           {/* Cloak - Main body */}
           <mesh position={[0, 0.4, 0]}>
             <cylinderGeometry args={[0.3, 0.5, 1.2, 8]} />
