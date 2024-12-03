@@ -6,12 +6,12 @@ import { RigidBody } from '@react-three/rapier';
 import { OrbTrail } from './OrbTrail';
 import { OrbEffects } from './OrbEffects';
 
-const ORB_RADIUS = 1.5; // Orbit radius
-const ORB_SPEED = 2; // Orbit speed
-const ATTACK_RANGE = 10; // Range to detect enemies
-const ATTACK_DAMAGE = 25;
+const BASE_ORB_RADIUS = 1.5; // Base orbit radius
+const BASE_ORB_SPEED = 2; // Base orbit speed
+const BASE_ATTACK_RANGE = 5; // Base range to detect enemies
+const BASE_ATTACK_DAMAGE = 25; // Base damage
+const BASE_ATTACK_COOLDOWN = 1.5; // Base time between attacks in seconds
 const DAMAGE_RADIUS = 1; // Radius for area damage
-const TRAIL_UPDATE_FREQUENCY = 2; // Update trail every N frames
 
 interface MagicOrbProps {
   playerRef: React.RefObject<RigidBody>;
@@ -23,30 +23,47 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   const [targetEnemy, setTargetEnemy] = useState<any>(null);
   const [returnPoint, setReturnPoint] = useState<Vector3 | null>(null);
   const [attackProgress, setAttackProgress] = useState(0);
+  const [canAttack, setCanAttack] = useState(true);
+  const lastAttackTime = useRef(0);
   const startPosition = useRef(new Vector3());
   const midPoint = useRef(new Vector3());
   const lastPosition = useRef(new Vector3());
   const frameCount = useRef(0);
   const trailPoints = useRef<Vector3[]>([]);
   const trailGeometry = useRef<BufferGeometry>();
+  
+  // Get all relevant stats from game store
   const creeps = useGameStore(state => state.creeps);
   const damageCreep = useGameStore(state => state.damageCreep);
+  const damage = useGameStore(state => state.upgrades.damage);
+  const speed = useGameStore(state => state.upgrades.speed);
+  const range = useGameStore(state => state.upgrades.range);
+  const multishot = useGameStore(state => state.upgrades.multishot);
 
-  // Reset trail when attack starts
+  // Calculate actual values based on upgrades
+  const actualDamage = BASE_ATTACK_DAMAGE * (1 + (damage * 0.15)); // 15% increase per level
+  const actualCooldown = BASE_ATTACK_COOLDOWN * (1 - (speed * 0.12)); // 12% decrease per level
+  const actualRange = BASE_ATTACK_RANGE * (1 + (range * 0.12)); // 12% increase per level
+  const multishotChance = multishot * 0.15; // 15% chance per level
+
+  // Handle attack cooldown
   useEffect(() => {
-    if (isAttacking) {
-      trailPoints.current = [];
+    if (!canAttack) {
+      const timer = setTimeout(() => {
+        setCanAttack(true);
+      }, actualCooldown * 1000);
+      return () => clearTimeout(timer);
     }
-  }, [isAttacking]);
+  }, [canAttack, actualCooldown]);
 
   const findNearestEnemy = () => {
-    if (!playerRef.current || isAttacking || !creeps) return null;
+    if (!playerRef.current || isAttacking || !creeps || !canAttack) return null;
 
     const position = playerRef.current.translation();
     const playerPos = new Vector3(position.x, position.y, position.z);
 
     let nearest = null;
-    let minDistance = ATTACK_RANGE;
+    let minDistance = actualRange;
 
     creeps.forEach(creep => {
       if (creep.health > 0) {
@@ -84,7 +101,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
         );
 
         if (creepPos.distanceTo(position) <= DAMAGE_RADIUS) {
-          damageCreep(creep.id, ATTACK_DAMAGE / 2); // Half damage for area effect
+          damageCreep(creep.id, actualDamage / 2); // Half damage for area effect
         }
       }
     });
@@ -93,7 +110,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   const updateTrail = (currentPos: Vector3) => {
     frameCount.current++;
 
-    if (frameCount.current % TRAIL_UPDATE_FREQUENCY === 0) {
+    if (frameCount.current % 2 === 0) {
       trailPoints.current.push(currentPos.clone());
 
       // Keep trail length manageable
@@ -115,9 +132,9 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
     if (!isAttacking) {
       // Calculate orbit position
-      const angle = Date.now() * 0.002 * ORB_SPEED;
-      const orbitX = Math.cos(angle) * ORB_RADIUS;
-      const orbitZ = Math.sin(angle) * ORB_RADIUS;
+      const angle = Date.now() * 0.002 * BASE_ORB_SPEED;
+      const orbitX = Math.cos(angle) * BASE_ORB_RADIUS;
+      const orbitZ = Math.sin(angle) * BASE_ORB_RADIUS;
 
       // Update orb position relative to player
       orbRef.current.position.set(
@@ -131,11 +148,28 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
       if (enemy) {
         setIsAttacking(true);
         setTargetEnemy(enemy);
+        setCanAttack(false);
+        lastAttackTime.current = Date.now();
         startPosition.current.copy(orbRef.current.position);
         const targetPos = new Vector3(enemy.position[0], enemy.position[1] + 1, enemy.position[2]);
         midPoint.current = calculateArcPoint(orbRef.current.position, targetPos, 3);
         setAttackProgress(0);
         trailPoints.current = [orbRef.current.position.clone()];
+
+        // Handle multishot
+        if (Math.random() < multishotChance) {
+          // Find another nearby enemy for the extra orb
+          const otherEnemies = creeps.filter(c => 
+            c.id !== enemy.id && 
+            c.health > 0 && 
+            new Vector3(c.position[0], c.position[1], c.position[2]).distanceTo(playerPos) <= actualRange
+          );
+          
+          if (otherEnemies.length > 0) {
+            const randomEnemy = otherEnemies[Math.floor(Math.random() * otherEnemies.length)];
+            damageCreep(randomEnemy.id, actualDamage);
+          }
+        }
       }
     } else if (targetEnemy) {
       setAttackProgress(prev => Math.min(prev + delta * 2, 1));
@@ -164,7 +198,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
         if (attackProgress >= 0.45) {
           // Deal direct damage to target
-          damageCreep(targetEnemy.id, ATTACK_DAMAGE);
+          damageCreep(targetEnemy.id, actualDamage);
           setReturnPoint(new Vector3(playerPos.x, playerPos.y + 1, playerPos.z));
           midPoint.current = calculateArcPoint(
             new Vector3(targetEnemy.position[0], targetEnemy.position[1], targetEnemy.position[2]),
