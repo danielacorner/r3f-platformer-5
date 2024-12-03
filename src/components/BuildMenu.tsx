@@ -250,20 +250,15 @@ export function BuildMenu() {
             <div className="xp-bar">
 
               <div
-
                 className="xp-fill"
-
                 style={{
-
                   width: `${progress}%`,
-
                 }}
-
               />
 
-            </div>
+              <div className="xp-text">Level {level} • {experience}/{expForNextLevel} XP</div>
 
-            <div className="xp-text">{`${experience}/${expForNextLevel}`}</div>
+            </div>
 
           </div>
 

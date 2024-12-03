@@ -1,5 +1,5 @@
 import { useGameStore } from '../store/gameStore';
-import { FaPlay, FaForward } from 'react-icons/fa';
+import { FaPlay } from 'react-icons/fa';
 import '../styles/GameUI.css';
 
 export function GameUI() {
@@ -7,7 +7,7 @@ export function GameUI() {
     phase, 
     setPhase, 
     lives, 
-    currentLevel, 
+    currentLevel,
     setIsSpawning,
   } = useGameStore();
 
@@ -40,17 +40,6 @@ export function GameUI() {
             <FaPlay />
             <span>Next Wave</span>
           </button>
-          {/* <button
-            className="start-wave-button"
-            onClick={(e) => {
-              e.stopPropagation();
-              startWave(e);
-              // TODO: implement fast forward
-            }}
-          >
-            <FaForward />
-            <span>Fast Forward</span>
-          </button> */}
         </div>
       )}
     </div>

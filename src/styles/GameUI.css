@@ -109,6 +109,37 @@
   filter: drop-shadow(0 0 4px rgba(96, 165, 250, 0.5));
 }
 
+.experience-bar {
+  width: 100%;
+  min-width: 200px;
+  height: 0.5rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 2px;
+  overflow: hidden;
+  border: 1px solid #3b5998;
+  position: relative;
+}
+
+.experience-fill {
+  height: 100%;
+  background: linear-gradient(to right, #3b82f6, #60a5fa);
+  transition: width 0.3s ease;
+  box-shadow: 0 0 10px rgba(96, 165, 250, 0.3);
+}
+
+.experience-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 @media screen and (max-width: 432px) {
   .game-ui {
     padding: 12px;
