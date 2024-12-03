@@ -161,7 +161,7 @@ interface GameState {
     damage: number;
     speed: number;
     range: number;
-    defense: number;
+    multishot: number;
   };
   wave: number;
   creeps: CreepState[];
@@ -191,7 +191,7 @@ const initialState: GameState = {
     damage: 0,
     speed: 0,
     range: 0,
-    defense: 0
+    multishot: 0
   },
   wave: 0,
   creeps: [],
@@ -357,12 +357,25 @@ export const useGameStore = create<GameState>((set, get) => ({
     set(state => {
       if (state.skillPoints <= 0) return state;
 
+      const newUpgrades = {
+        ...state.upgrades,
+        [skill]: state.upgrades[skill] + 1
+      };
+
+      // Calculate derived stats
+      const damageMultiplier = 1 + (newUpgrades.damage * 0.15); // 15% per level
+      const cooldownReduction = 1 - (newUpgrades.speed * 0.12); // 12% per level
+      const rangeMultiplier = 1 + (newUpgrades.range * 0.12); // 12% per level
+      const multishotChance = newUpgrades.multishot * 0.15; // 15% chance per level
+
       return {
         skillPoints: state.skillPoints - 1,
-        upgrades: {
-          ...state.upgrades,
-          [skill]: state.upgrades[skill] + 1
-        }
+        upgrades: newUpgrades,
+        // Update derived stats
+        damage: damageMultiplier,
+        attackSpeed: cooldownReduction,
+        range: rangeMultiplier,
+        multishot: multishotChance
       };
     });
   },

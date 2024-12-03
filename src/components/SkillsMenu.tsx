@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { FaStar, FaBolt, FaRunning, FaBullseye, FaShieldAlt, FaTimes } from 'react-icons/fa';
+import { FaStar, FaBolt, FaRunning, FaBullseye, FaShieldAlt, FaTimes, FaMagic, FaHourglassHalf } from 'react-icons/fa';
 import { useGameStore } from '../store/gameStore';
 
 interface SkillsMenuProps {
@@ -11,27 +11,27 @@ interface SkillsMenuProps {
 const UPGRADE_DETAILS = {
   damage: {
     icon: FaBolt,
-    name: 'Damage',
-    description: 'Increase magic orb damage by 10%',
-    color: '#ef4444'
+    name: 'Arcane Power',
+    description: 'Increase magic orb damage by 15%',
+    color: '#9333ea'
   },
   speed: {
-    icon: FaRunning,
-    name: 'Speed',
-    description: 'Increase movement speed by 8%',
-    color: '#22c55e'
+    icon: FaHourglassHalf,
+    name: 'Swift Cast',
+    description: 'Decrease magic orb cooldown by 12%',
+    color: '#22d3ee'
   },
   range: {
     icon: FaBullseye,
-    name: 'Range',
-    description: 'Increase attack range by 12%',
+    name: 'Mystic Reach',
+    description: 'Increase spell range by 12%',
     color: '#3b82f6'
   },
-  defense: {
-    icon: FaShieldAlt,
-    name: 'Defense',
-    description: 'Reduce damage taken by 8%',
-    color: '#a855f7'
+  multishot: {
+    icon: FaMagic,
+    name: 'Multi Orb',
+    description: 'Chance to cast an additional magic orb',
+    color: '#f97316'
   }
 };
 
