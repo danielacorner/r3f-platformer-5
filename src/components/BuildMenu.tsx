@@ -239,11 +239,7 @@ export function BuildMenu() {
 
             {skillPoints > 0 && (
 
-              <div className="skill-points-badge">
-
-                {skillPoints}
-
-              </div>
+              <div className="skill-points-indicator">{skillPoints}</div>
 
             )}
 
@@ -251,31 +247,33 @@ export function BuildMenu() {
 
           <div className="xp-display">
 
-            <div className="xp-level">Lvl {level}</div>
+            <div className="xp-bar">
 
-            <div className="xp-bar-container">
+              <div
 
-              <div 
+                className="xp-fill"
 
-                className="xp-bar-fill" 
+                style={{
 
-                style={{ width: `${progress}%` }} 
+                  width: `${progress}%`,
+
+                }}
 
               />
 
             </div>
 
-            <div className="xp-text">{experience}/{expForNextLevel}</div>
+            <div className="xp-text">{`${experience}/${expForNextLevel}`}</div>
 
           </div>
 
-        </div>
+          <div className="money-display">
 
-        <div className="money-display">
+            <span>{money}</span>
 
-          <FaCoins className="text-yellow-400" />
+            <span>🪙</span>
 
-          <span>{money}</span>
+          </div>
 
         </div>
 
