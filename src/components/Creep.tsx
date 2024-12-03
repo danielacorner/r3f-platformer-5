@@ -242,8 +242,11 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
   }, [creeps]);
 
   // Update creep instances and health bars
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     if (!meshRef.current || !healthBarBackgroundRef.current || !healthBarForegroundRef.current) return;
+
+    // Get camera quaternion for billboard effect
+    const cameraQuaternion = state.camera.quaternion;
 
     // Create a map to track used indices per type
     const usedIndices: { [key: string]: number } = {};
@@ -307,7 +310,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
 
         // Update background bar
         tempObject.position.set(position.x, position.y + 1.5, position.z);
-        tempObject.rotation.set(0, 0, 0);
+        tempObject.quaternion.copy(cameraQuaternion);
         tempObject.scale.set(barWidth, barHeight, 1);
         tempObject.updateMatrix();
         healthBarBackgroundRef.current.setMatrixAt(index, tempObject.matrix);
@@ -316,6 +319,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
         const healthBarWidth = barWidth * healthPercent;
         const healthBarX = position.x + (-barWidth * (1 - healthPercent)) / 2;
         tempObject.position.set(healthBarX, position.y + 1.5, position.z + 0.01);
+        tempObject.quaternion.copy(cameraQuaternion);
         tempObject.scale.set(healthBarWidth, barHeight, 1);
         tempObject.updateMatrix();
         healthBarForegroundRef.current.setMatrixAt(index, tempObject.matrix);
