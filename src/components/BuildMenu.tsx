@@ -280,25 +280,22 @@ export function BuildMenu() {
 
           <div key={element} className="tower-group">
 
-            <div className="element-preview" data-element={element}>
-
+            <button 
+              className="element-preview" 
+              data-element={element}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                e.currentTarget.click();
+              }}
+            >
               {element === 'water' && <GiWaterDrop />}
-
               {element === 'fire' && <GiFireBowl />}
-
               {element === 'ice' && <GiSnowflake1 />}
-
               {element === 'nature' && <GiLeafSwirl />}
-
               {element === 'light' && <GiSunflower />}
-
               {element === 'dark' && <GiSkullCrossedBones />}
-
               <span className="element-name">{element}</span>
-
-            </div>
-
-
+            </button>
 
             <div className="tower-expanded">
 

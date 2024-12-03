@@ -167,6 +167,10 @@
   padding: 0.4rem;
   position: relative;
   overflow: hidden;
+  background: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
 }
 
 .element-preview:hover {
@@ -177,7 +181,7 @@
 }
 
 .element-preview:active {
-  transform: translateY(1px);
+  transform: scale(0.95);
 }
 
 .element-preview svg {
