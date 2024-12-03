@@ -41,10 +41,10 @@ const CREEP_GEOMETRIES = {
 
 // Speed multipliers for different creep types
 const creepSpeeds = {
-  normal: 0.8,
-  fast: 1.2,
-  armored: 0.6,
-  boss: 0.4,
+  normal: 0.2,
+  fast: 0.3,
+  armored: 0.15,
+  boss: 0.1,
 };
 
 // Materials for different creep types
@@ -101,7 +101,7 @@ interface CreepManagerProps {
   pathPoints: Vector3[];
 }
 
-const SPEED_MULTIPLIER = 4;
+const SPEED_MULTIPLIER = 1;
 
 const creepSizes = {
   normal: [1.0, 1.0, 1.0],    // Infantry mech
@@ -143,6 +143,7 @@ const creeps: CreepManagerProps[] = [];
 
 export function CreepManager({ pathPoints }: CreepManagerProps) {
   const meshRef = useRef<InstancedMesh>(null);
+  const healthBarsRef = useRef<Group>(null);
   const creepMeshes = useRef<{ [key: string]: InstancedMesh }>({});
   const creepPaths = useRef<Map<number, { pathIndex: number; progress: number }>>(new Map());
   const creeps = useGameStore(state => state.creeps);
@@ -183,7 +184,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
       });
       creepMeshes.current = {};
     };
-  }, [creepMaterials]);
+  }, []);
 
   // Initialize new creeps
   useEffect(() => {
@@ -198,9 +199,9 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
     });
   }, [creeps]);
 
-  // Update creep instances
+  // Update creep instances and health bars
   useFrame((_, delta) => {
-    if (!meshRef.current) return;
+    if (!meshRef.current || !healthBarsRef.current) return;
 
     // Create a map to track used indices per type
     const usedIndices: { [key: string]: number } = {};
@@ -231,7 +232,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
 
       if (currentPoint && nextPoint) {
         // Update progress along current path segment
-        const speed = creepSpeeds[creep.type] || 0.1;
+        const speed = creepSpeeds[creep.type] * SPEED_MULTIPLIER || 0.1;
         pathState.progress += speed * delta;
 
         // Calculate position along path
@@ -245,19 +246,33 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
         const direction = nextPoint.clone().sub(currentPoint).normalize();
         const angle = Math.atan2(direction.x, direction.z);
 
-        // Update instance
+        // Update instance matrix
         tempObject.position.copy(position);
         tempObject.position.y += 0.5; // Lift slightly above ground
         tempObject.rotation.y = angle;
-        tempObject.scale.set(1, 1, 1); // Ensure proper scale
         tempObject.updateMatrix();
-
-        // Set the matrix for this instance
         mesh.setMatrixAt(instanceIndex, tempObject.matrix);
         mesh.instanceMatrix.needsUpdate = true;
 
         // Update creep position in store
         creep.position = [position.x, position.y, position.z];
+
+        // Update health bar position and scale
+        const healthPercent = creep.health / creep.maxHealth;
+        const barWidth = 1.3;
+        const barHeight = 0.2;
+        
+        // Background bar
+        tempObject.position.set(position.x, position.y + 1.5, position.z);
+        tempObject.scale.set(barWidth, barHeight, 1);
+        tempObject.updateMatrix();
+
+        // Health bar
+        const healthBarWidth = barWidth * healthPercent;
+        const healthBarX = position.x + (-barWidth * (1 - healthPercent)) / 2;
+        tempObject.position.set(healthBarX, position.y + 1.5, position.z + 0.01);
+        tempObject.scale.set(healthBarWidth, barHeight, 1);
+        tempObject.updateMatrix();
 
         // Move to next path segment if needed
         if (pathState.progress >= 1) {
@@ -279,8 +294,8 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
     Object.entries(creepMeshes.current).forEach(([type, mesh]) => {
       const usedCount = usedIndices[type] || 0;
       for (let i = usedCount; i < mesh.count; i++) {
-        tempObject.position.set(0, -1000, 0); // Move unused instances far away
-        tempObject.scale.set(0, 0, 0); // Scale to 0 to ensure they're not visible
+        tempObject.position.set(0, -1000, 0);
+        tempObject.scale.set(0, 0, 0);
         tempObject.updateMatrix();
         mesh.setMatrixAt(i, tempObject.matrix);
       }
@@ -289,51 +304,54 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
   });
 
   return (
-    <group ref={meshRef}>
-      {creeps.map(creep => {
-        const healthPercent = creep.health / creep.maxHealth;
-        const healthColor = healthPercent > 0.5 ? '#22c55e' : healthPercent > 0.25 ? '#eab308' : '#ef4444';
-        const barWidth = 1.3;
-        const barHeight = 0.2;
+    <group>
+      <group ref={meshRef} />
+      <group ref={healthBarsRef}>
+        {creeps.map(creep => {
+          const healthPercent = creep.health / creep.maxHealth;
+          const healthColor = healthPercent > 0.5 ? '#22c55e' : healthPercent > 0.25 ? '#eab308' : '#ef4444';
+          const barWidth = 1.3;
+          const barHeight = 0.2;
 
-        return (
-          <Billboard
-            key={creep.id}
-            position={[creep.position[0], creep.position[1] + 1.5, creep.position[2]]}
-            follow={true}
-            renderOrder={2}
-          >
-            {/* Background */}
-            <mesh position={[0, 0, 0]} renderOrder={10}>
-              <planeGeometry args={[barWidth, barHeight]} />
-              <meshBasicMaterial 
-                color="#1a1a1a" 
-                transparent 
-                opacity={0.8} 
-                depthTest={false}
-                depthWrite={false}
-                side={DoubleSide}
-              />
-            </mesh>
-
-            {/* Health bar */}
-            <mesh 
-              position={[(-barWidth * (1 - healthPercent)) / 2, 0, 0.01]} 
-              renderOrder={11}
+          return (
+            <Billboard
+              key={creep.id}
+              position={[creep.position[0], creep.position[1] + 1.5, creep.position[2]]}
+              follow={true}
+              renderOrder={2}
             >
-              <planeGeometry args={[barWidth * healthPercent, barHeight]} />
-              <meshBasicMaterial 
-                color={healthColor} 
-                transparent 
-                opacity={0.9} 
-                depthTest={false}
-                depthWrite={false}
-                side={DoubleSide}
-              />
-            </mesh>
-          </Billboard>
-        );
-      })}
+              {/* Background */}
+              <mesh renderOrder={10}>
+                <planeGeometry args={[barWidth, barHeight]} />
+                <meshBasicMaterial 
+                  color="#1a1a1a" 
+                  transparent 
+                  opacity={0.8} 
+                  depthTest={false}
+                  depthWrite={false}
+                  side={DoubleSide}
+                />
+              </mesh>
+
+              {/* Health bar */}
+              <mesh 
+                position={[(-barWidth * (1 - healthPercent)) / 2, 0, 0.01]}
+                renderOrder={11}
+              >
+                <planeGeometry args={[barWidth * healthPercent, barHeight]} />
+                <meshBasicMaterial 
+                  color={healthColor} 
+                  transparent 
+                  opacity={0.9} 
+                  depthTest={false}
+                  depthWrite={false}
+                  side={DoubleSide}
+                />
+              </mesh>
+            </Billboard>
+          );
+        })}
+      </group>
     </group>
   );
 }
