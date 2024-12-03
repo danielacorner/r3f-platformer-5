@@ -6,7 +6,7 @@ import { Trail } from '@react-three/drei';
 interface LevelUpEffectProps {
   onComplete: () => void;
 }
-
+const SCALE=2
 export function LevelUpEffect({ onComplete }: LevelUpEffectProps) {
   const groupRef = useRef<Group>(null);
   const ringsRef = useRef<Mesh[]>([]);
@@ -30,7 +30,7 @@ export function LevelUpEffect({ onComplete }: LevelUpEffectProps) {
     // Rotate and scale the entire effect
     groupRef.current.rotation.y += 0.05;
     const scale = 1 + Math.sin(progress * Math.PI) * 0.5;
-    groupRef.current.scale.setScalar(scale);
+    groupRef.current.scale.setScalar(scale*SCALE);
 
     // Update each ring
     ringsRef.current.forEach((ring, i) => {
@@ -51,7 +51,7 @@ export function LevelUpEffect({ onComplete }: LevelUpEffectProps) {
   });
 
   return (
-    <group ref={groupRef} scale={2}>
+    <group ref={groupRef} >
       {/* Rising rings */}
       {[...Array(5)].map((_, i) => (
         <mesh

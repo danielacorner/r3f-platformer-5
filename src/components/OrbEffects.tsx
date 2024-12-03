@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Vector3, Color, AdditiveBlending } from 'three'
 import { Trail, MeshDistortMaterial } from '@react-three/drei'
+import { useGameStore } from '../store/gameStore'
 
 interface OrbEffectsProps {
   isAttacking: boolean
@@ -12,6 +13,10 @@ export function OrbEffects({ isAttacking }: OrbEffectsProps) {
   const distortRef = useRef<any>()
 
   const energyRingRefs = Array.from({ length: 3 }, () => useRef<any>());
+  const damage = useGameStore(state => state.upgrades.damage);
+  const baseEmissive = 5;
+  const damageEmissive = baseEmissive * Math.pow(2, damage); // x2 for each level
+
   useFrame((state) => {
     if (distortRef.current) {
       // Update distortion during attack
@@ -42,7 +47,7 @@ export function OrbEffects({ isAttacking }: OrbEffectsProps) {
           ref={distortRef}
           color="#4a148c"
           emissive="#7e57c2"
-          emissiveIntensity={5 * (isAttacking ? 1.5 : 1)}
+          emissiveIntensity={damageEmissive * (isAttacking ? 1.5 : 1)}
           distort={0.4}
           speed={2}
           roughness={0.1}
