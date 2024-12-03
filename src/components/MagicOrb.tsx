@@ -19,6 +19,7 @@ interface MagicOrbProps {
 
 export function MagicOrb({ playerRef }: MagicOrbProps) {
   const orbRef = useRef<Group>(null);
+  const additionalOrbRefs = useRef<Group[]>([]);
   const [isAttacking, setIsAttacking] = useState(false);
   const [targetEnemy, setTargetEnemy] = useState<any>(null);
   const [returnPoint, setReturnPoint] = useState<Vector3 | null>(null);
@@ -31,7 +32,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   const frameCount = useRef(0);
   const trailPoints = useRef<Vector3[]>([]);
   const trailGeometry = useRef<BufferGeometry>();
-  
+
   // Get all relevant stats from game store
   const creeps = useGameStore(state => state.creeps);
   const damageCreep = useGameStore(state => state.damageCreep);
@@ -45,6 +46,34 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   const actualCooldown = BASE_ATTACK_COOLDOWN * (1 - (speed * 0.12)); // 12% decrease per level
   const actualRange = BASE_ATTACK_RANGE * (1 + (range * 0.12)); // 12% increase per level
   const multishotChance = multishot * 0.15; // 15% chance per level
+
+  // Get multishot level and calculate number of orbs
+  const numAdditionalOrbs = Math.floor(multishotChance); // Full orbs
+  const partialOrbOpacity = (multishotChance % 1); // Opacity for the partial orb
+  const totalOrbs = numAdditionalOrbs + (partialOrbOpacity > 0 ? 1 : 0);
+
+  // Update refs array when number of orbs changes
+  useEffect(() => {
+    additionalOrbRefs.current = Array(totalOrbs).fill(null).map((_, i) => additionalOrbRefs.current[i] || new Group());
+  }, [totalOrbs]);
+
+  // Function to create an orb group with proper orbit
+  const createOrbGroup = (angleOffset: number, opacity: number = 1) => {
+    return (
+      <group>
+        <group 
+          position={[
+            Math.cos(Date.now() * 0.002 * BASE_ORB_SPEED + angleOffset) * BASE_ORB_RADIUS,
+            1,
+            Math.sin(Date.now() * 0.002 * BASE_ORB_SPEED + angleOffset) * BASE_ORB_RADIUS
+          ]}
+        >
+          <OrbEffects isAttacking={isAttacking} opacity={opacity} />
+          <OrbTrail />
+        </group>
+      </group>
+    );
+  };
 
   // Handle attack cooldown
   useEffect(() => {
@@ -125,23 +154,41 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   };
 
   useFrame((_, delta) => {
-    if (!orbRef.current || !playerRef.current) return;
+    if (!playerRef.current) return;
 
     const position = playerRef.current.translation();
     const playerPos = new Vector3(position.x, position.y, position.z);
+    const time = Date.now() * 0.002 * BASE_ORB_SPEED;
 
     if (!isAttacking) {
-      // Calculate orbit position
-      const angle = Date.now() * 0.002 * BASE_ORB_SPEED;
-      const orbitX = Math.cos(angle) * BASE_ORB_RADIUS;
-      const orbitZ = Math.sin(angle) * BASE_ORB_RADIUS;
+      // Update main orb
+      if (orbRef.current) {
+        const angle = time;
+        const orbitX = Math.cos(angle) * BASE_ORB_RADIUS;
+        const orbitZ = Math.sin(angle) * BASE_ORB_RADIUS;
 
-      // Update orb position relative to player
-      orbRef.current.position.set(
-        playerPos.x + orbitX,
-        playerPos.y + 1,
-        playerPos.z + orbitZ
-      );
+        orbRef.current.position.set(
+          playerPos.x + orbitX,
+          playerPos.y + 1,
+          playerPos.z + orbitZ
+        );
+      }
+
+      // Update additional orbs
+      additionalOrbRefs.current.forEach((orbGroup, index) => {
+        if (orbGroup) {
+          const angleOffset = (Math.PI * 2 * (index + 1)) / (totalOrbs + 1);
+          const angle = time + angleOffset;
+          const orbitX = Math.cos(angle) * BASE_ORB_RADIUS;
+          const orbitZ = Math.sin(angle) * BASE_ORB_RADIUS;
+
+          orbGroup.position.set(
+            playerPos.x + orbitX,
+            playerPos.y + 1,
+            playerPos.z + orbitZ
+          );
+        }
+      });
 
       // Check for enemies
       const enemy = findNearestEnemy();
@@ -242,15 +289,29 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   });
 
   return (
-    <group ref={orbRef}>
-      <OrbEffects 
-        isAttacking={isAttacking} 
-      />
-      {/* Debug sphere to show orb position */}
-      <mesh visible={false}>
-        <sphereGeometry args={[0.1, 8, 8]} />
-        <meshBasicMaterial color="red" wireframe />
-      </mesh>
+    <group>
+      {/* Main orb */}
+      <group ref={orbRef}>
+        <OrbEffects isAttacking={isAttacking} />
+        <OrbTrail />
+      </group>
+
+      {/* Additional orbs */}
+      {additionalOrbRefs.current.map((_, index) => {
+        const opacity = index < numAdditionalOrbs ? 1 : partialOrbOpacity;
+        
+        return (
+          <group 
+            key={index}
+            ref={el => {
+              if (el) additionalOrbRefs.current[index] = el;
+            }}
+          >
+            <OrbEffects isAttacking={isAttacking} opacity={opacity} />
+            <OrbTrail />
+          </group>
+        );
+      })}
     </group>
   );
 }

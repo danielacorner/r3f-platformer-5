@@ -6,9 +6,10 @@ import { useGameStore } from '../store/gameStore'
 
 interface OrbEffectsProps {
   isAttacking: boolean
+  opacity?: number
 }
 
-export function OrbEffects({ isAttacking }: OrbEffectsProps) {
+export function OrbEffects({ isAttacking, opacity = 1 }: OrbEffectsProps) {
   const orbRef = useRef<any>()
   const distortRef = useRef<any>()
 
@@ -53,7 +54,7 @@ export function OrbEffects({ isAttacking }: OrbEffectsProps) {
           roughness={0.1}
           metalness={isAttacking ? 22 : 0.8}
           transparent
-          opacity={0.9}
+          opacity={opacity}
         />
       </mesh>
 
@@ -63,7 +64,7 @@ export function OrbEffects({ isAttacking }: OrbEffectsProps) {
         <meshBasicMaterial
           color={isAttacking ? ATTACK_COLOR : "#7e57c2"}
           transparent
-          opacity={0.6}
+          opacity={opacity * 0.6}
           blending={AdditiveBlending}
         />
       </mesh>
@@ -76,7 +77,7 @@ export function OrbEffects({ isAttacking }: OrbEffectsProps) {
           emissive={isAttacking ? ATTACK_COLOR : "#7e57c2"}
           emissiveIntensity={isAttacking ? 1.0 : 0.5}
           transparent
-          opacity={0.2}
+          opacity={opacity * 0.2}
           depthWrite={false}
           blending={AdditiveBlending}
         />
@@ -98,7 +99,7 @@ export function OrbEffects({ isAttacking }: OrbEffectsProps) {
           <meshBasicMaterial
             color={isAttacking ? ATTACK_COLOR : RING_COLORS[i]}
             transparent
-            opacity={isAttacking ? 0.3 : 0.05}
+            opacity={opacity * (isAttacking ? 0.3 : 0.05)}
             blending={AdditiveBlending}
             side={2}
           />
@@ -117,14 +118,12 @@ export function OrbEffects({ isAttacking }: OrbEffectsProps) {
         width={isAttacking ? 2.4 : 0.8}
         length={3.4}
         color={isAttacking ? ATTACK_COLOR : PASSIVE_COLOR}
-        // attenuation={() => 0.5}
-        // opacity={1}
         decay={isAttacking ? 4.8 : 0.2}
         local={false}
       >
         <mesh>
           <sphereGeometry args={[0.05]} />
-          <meshBasicMaterial color={isAttacking ? ATTACK_COLOR : PASSIVE_COLOR} transparent opacity={0} />
+          <meshBasicMaterial color={isAttacking ? ATTACK_COLOR : PASSIVE_COLOR} transparent opacity={opacity * 0} />
         </mesh>
       </Trail>
     </group>
