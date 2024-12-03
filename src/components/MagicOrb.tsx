@@ -18,98 +18,60 @@ interface MagicOrbProps {
 }
 
 export function MagicOrb({ playerRef }: MagicOrbProps) {
-  const orbRef = useRef<Group>(null);
-  const additionalOrbRefs = useRef<Group[]>([]);
+  // Refs for all orbs
+  const orbsRef = useRef<Group[]>([]);
   const [isAttacking, setIsAttacking] = useState(false);
-  const [targetEnemy, setTargetEnemy] = useState<any>(null);
-  const [returnPoint, setReturnPoint] = useState<Vector3 | null>(null);
+  const [attackingOrbs, setAttackingOrbs] = useState<{ [key: number]: any }>({});
   const [attackProgress, setAttackProgress] = useState(0);
   const [canAttack, setCanAttack] = useState(true);
+  
+  // Refs for tracking positions and timing
   const lastAttackTime = useRef(0);
-  const startPosition = useRef(new Vector3());
-  const midPoint = useRef(new Vector3());
-  const lastPosition = useRef(new Vector3());
+  const startPositions = useRef<{ [key: number]: Vector3 }>({});
+  const midPoints = useRef<{ [key: number]: Vector3 }>({});
   const frameCount = useRef(0);
   const trailPoints = useRef<Vector3[]>([]);
-  const trailGeometry = useRef<BufferGeometry>();
 
   // Get all relevant stats from game store
   const creeps = useGameStore(state => state.creeps);
   const damageCreep = useGameStore(state => state.damageCreep);
   const damage = useGameStore(state => state.upgrades.damage);
-  const speed = useGameStore(state => state.upgrades.speed);
   const range = useGameStore(state => state.upgrades.range);
+  const cooldown = useGameStore(state => state.upgrades.cooldown);
   const multishot = useGameStore(state => state.upgrades.multishot);
 
   // Calculate actual values based on upgrades
-  const actualDamage = BASE_ATTACK_DAMAGE * (1 + (damage * 0.15)); // 15% increase per level
-  const actualCooldown = BASE_ATTACK_COOLDOWN * (1 - (speed * 0.12)); // 12% decrease per level
-  const actualRange = BASE_ATTACK_RANGE * (1 + (range * 0.12)); // 12% increase per level
+  const actualDamage = BASE_ATTACK_DAMAGE * (1 + damage * 0.1);
+  const actualRange = BASE_ATTACK_RANGE * (1 + range * 0.1);
+  const actualCooldown = BASE_ATTACK_COOLDOWN * (1 - cooldown * 0.1);
   const multishotChance = multishot * 0.15; // 15% chance per level
 
   // Get multishot level and calculate number of orbs
   const numAdditionalOrbs = Math.floor(multishotChance); // Full orbs
   const partialOrbOpacity = (multishotChance % 1); // Opacity for the partial orb
-  const totalOrbs = numAdditionalOrbs + (partialOrbOpacity > 0 ? 1 : 0);
+  const totalOrbs = numAdditionalOrbs + (partialOrbOpacity > 0 ? 1 : 0) + 1; // +1 for main orb
 
-  // Update refs array when number of orbs changes
-  useEffect(() => {
-    additionalOrbRefs.current = Array(totalOrbs).fill(null).map((_, i) => additionalOrbRefs.current[i] || new Group());
-  }, [totalOrbs]);
+  const findNearestEnemies = () => {
+    if (!orbsRef.current[0] || !playerRef.current || !canAttack) return [];
 
-  // Function to create an orb group with proper orbit
-  const createOrbGroup = (angleOffset: number, opacity: number = 1) => {
-    return (
-      <group>
-        <group 
-          position={[
-            Math.cos(Date.now() * 0.002 * BASE_ORB_SPEED + angleOffset) * BASE_ORB_RADIUS,
-            1,
-            Math.sin(Date.now() * 0.002 * BASE_ORB_SPEED + angleOffset) * BASE_ORB_RADIUS
-          ]}
-        >
-          <OrbEffects isAttacking={isAttacking} opacity={opacity} />
-          <OrbTrail />
-        </group>
-      </group>
-    );
-  };
-
-  // Handle attack cooldown
-  useEffect(() => {
-    if (!canAttack) {
-      const timer = setTimeout(() => {
-        setCanAttack(true);
-      }, actualCooldown * 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [canAttack, actualCooldown]);
-
-  const findNearestEnemy = () => {
-    if (!playerRef.current || isAttacking || !creeps || !canAttack) return null;
-
-    const position = playerRef.current.translation();
-    const playerPos = new Vector3(position.x, position.y, position.z);
-
-    let nearest = null;
-    let minDistance = actualRange;
-
-    creeps.forEach(creep => {
-      if (creep.health > 0) {
-        const distance = new Vector3(
-          creep.position[0],
-          creep.position[1],
-          creep.position[2]
-        ).distanceTo(playerPos);
-
-        if (distance < minDistance) {
-          minDistance = distance;
-          nearest = creep;
-        }
-      }
-    });
-
-    return nearest;
+    return creeps
+      .filter(enemy => {
+        if (!enemy || enemy.health <= 0) return false;
+        const enemyPos = new Vector3(
+          enemy.position[0],
+          enemy.position[1],
+          enemy.position[2]
+        );
+        const dist = enemyPos.distanceTo(orbsRef.current[0].position);
+        return dist <= actualRange;
+      })
+      .sort((a, b) => {
+        const aPos = new Vector3(a.position[0], a.position[1], a.position[2]);
+        const bPos = new Vector3(b.position[0], b.position[1], b.position[2]);
+        const distA = aPos.distanceTo(orbsRef.current[0].position);
+        const distB = bPos.distanceTo(orbsRef.current[0].position);
+        return distA - distB;
+      });
   };
 
   const calculateArcPoint = (start: Vector3, end: Vector3, height: number) => {
@@ -118,39 +80,64 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
     return mid;
   };
 
-  const checkAreaDamage = (position: Vector3) => {
-    if (!creeps) return;
-
-    creeps.forEach(creep => {
-      if (creep.health > 0) {
-        const creepPos = new Vector3(
-          creep.position[0],
-          creep.position[1],
-          creep.position[2]
-        );
-
-        if (creepPos.distanceTo(position) <= DAMAGE_RADIUS) {
-          damageCreep(creep.id, actualDamage / 2); // Half damage for area effect
-        }
-      }
-    });
-  };
-
   const updateTrail = (currentPos: Vector3) => {
     frameCount.current++;
-
     if (frameCount.current % 2 === 0) {
       trailPoints.current.push(currentPos.clone());
-
-      // Keep trail length manageable
       if (trailPoints.current.length > 20) {
         trailPoints.current.shift();
       }
+    }
+  };
 
-      if (trailGeometry.current) {
-        trailGeometry.current.setFromPoints(trailPoints.current);
+  const startAttack = () => {
+    if (!canAttack) return;
+
+    const nearbyEnemies = findNearestEnemies();
+    if (nearbyEnemies.length === 0) return;
+
+    const now = Date.now();
+    if (now - lastAttackTime.current < actualCooldown * 1000) return;
+    lastAttackTime.current = now;
+
+    // Calculate number of orbs to attack
+    const guaranteedOrbs = Math.floor(multishotChance) + 1; // +1 for main orb
+    const extraOrbChance = multishotChance % 1;
+    let totalAttackingOrbs = guaranteedOrbs;
+    
+    if (Math.random() < extraOrbChance) {
+      totalAttackingOrbs++;
+    }
+
+    // Initialize attack states for all attacking orbs
+    const newAttackingOrbs: { [key: number]: any } = {};
+    startPositions.current = {};
+    midPoints.current = {};
+
+    // Setup attacks for all participating orbs
+    for (let i = 0; i < totalAttackingOrbs; i++) {
+      const orb = orbsRef.current[i];
+      if (orb) {
+        const targetEnemy = nearbyEnemies[Math.min(i, nearbyEnemies.length - 1)];
+        newAttackingOrbs[i] = targetEnemy;
+        startPositions.current[i] = orb.position.clone();
+        const targetPos = new Vector3(
+          targetEnemy.position[0],
+          targetEnemy.position[1] + 1,
+          targetEnemy.position[2]
+        );
+        midPoints.current[i] = calculateArcPoint(startPositions.current[i], targetPos, 3);
       }
     }
+
+    setAttackingOrbs(newAttackingOrbs);
+    setIsAttacking(true);
+    setAttackProgress(0);
+    setCanAttack(false);
+
+    setTimeout(() => {
+      setCanAttack(true);
+    }, actualCooldown * 1000);
   };
 
   useFrame((_, delta) => {
@@ -161,28 +148,13 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
     const time = Date.now() * 0.002 * BASE_ORB_SPEED;
 
     if (!isAttacking) {
-      // Update main orb
-      if (orbRef.current) {
-        const angle = time;
-        const orbitX = Math.cos(angle) * BASE_ORB_RADIUS;
-        const orbitZ = Math.sin(angle) * BASE_ORB_RADIUS;
-
-        orbRef.current.position.set(
-          playerPos.x + orbitX,
-          playerPos.y + 1,
-          playerPos.z + orbitZ
-        );
-      }
-
-      // Update additional orbs
-      additionalOrbRefs.current.forEach((orbGroup, index) => {
-        if (orbGroup) {
-          const angleOffset = (Math.PI * 2 * (index + 1)) / (totalOrbs + 1);
-          const angle = time + angleOffset;
+      // Normal orbit for all orbs
+      orbsRef.current.forEach((orb, index) => {
+        if (orb) {
+          const angle = time + (Math.PI * 2 * index) / orbsRef.current.length;
           const orbitX = Math.cos(angle) * BASE_ORB_RADIUS;
           const orbitZ = Math.sin(angle) * BASE_ORB_RADIUS;
-
-          orbGroup.position.set(
+          orb.position.set(
             playerPos.x + orbitX,
             playerPos.y + 1,
             playerPos.z + orbitZ
@@ -190,124 +162,79 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
         }
       });
 
-      // Check for enemies
-      const enemy = findNearestEnemy();
-      if (enemy) {
-        setIsAttacking(true);
-        setTargetEnemy(enemy);
-        setCanAttack(false);
-        lastAttackTime.current = Date.now();
-        startPosition.current.copy(orbRef.current.position);
-        const targetPos = new Vector3(enemy.position[0], enemy.position[1] + 1, enemy.position[2]);
-        midPoint.current = calculateArcPoint(orbRef.current.position, targetPos, 3);
-        setAttackProgress(0);
-        trailPoints.current = [orbRef.current.position.clone()];
-
-        // Handle multishot
-        if (Math.random() < multishotChance) {
-          // Find another nearby enemy for the extra orb
-          const otherEnemies = creeps.filter(c => 
-            c.id !== enemy.id && 
-            c.health > 0 && 
-            new Vector3(c.position[0], c.position[1], c.position[2]).distanceTo(playerPos) <= actualRange
-          );
-          
-          if (otherEnemies.length > 0) {
-            const randomEnemy = otherEnemies[Math.floor(Math.random() * otherEnemies.length)];
-            damageCreep(randomEnemy.id, actualDamage);
-          }
+      // Check for new attacks
+      if (canAttack) {
+        const enemies = findNearestEnemies();
+        if (enemies.length > 0) {
+          startAttack();
         }
       }
-    } else if (targetEnemy) {
-      setAttackProgress(prev => Math.min(prev + delta * 2, 1));
+    } else {
+      // Update attack progress
+      const newProgress = Math.min(attackProgress + delta * 2, 1);
+      setAttackProgress(newProgress);
 
-      if (attackProgress < 0.5) {
-        // Moving to enemy
-        const targetPos = new Vector3(targetEnemy.position[0], targetEnemy.position[1] + 1, targetEnemy.position[2]);
-        const p0 = startPosition.current;
-        const p1 = midPoint.current;
-        const p2 = targetPos;
-        const t = attackProgress * 2;
+      // Update all attacking orbs
+      Object.entries(attackingOrbs).forEach(([orbIndex, target]) => {
+        const orb = orbsRef.current[parseInt(orbIndex)];
+        if (!orb || !target || target.health <= 0) return;
 
-        // Calculate new position using Bezier curve
-        const newPos = new Vector3(
-          Math.pow(1 - t, 2) * p0.x + 2 * (1 - t) * t * p1.x + Math.pow(t, 2) * p2.x,
-          Math.pow(1 - t, 2) * p0.y + 2 * (1 - t) * t * p1.y + Math.pow(t, 2) * p2.y,
-          Math.pow(1 - t, 2) * p0.z + 2 * (1 - t) * t * p1.z + Math.pow(t, 2) * p2.z
-        );
+        const startPos = startPositions.current[orbIndex];
+        const midPoint = midPoints.current[orbIndex];
+        const targetPos = new Vector3(target.position[0], target.position[1] + 1, target.position[2]);
 
-        // Update orb position
-        orbRef.current.position.copy(newPos);
+        if (newProgress < 0.5) {
+          // Moving to enemy
+          const t = newProgress * 2;
+          const p1 = new Vector3().lerpVectors(startPos, midPoint, t);
+          const p2 = new Vector3().lerpVectors(midPoint, targetPos, t);
+          const pos = new Vector3().lerpVectors(p1, p2, t);
+          orb.position.copy(pos);
 
-        // Update trail and check for area damage
-        updateTrail(newPos);
-        checkAreaDamage(newPos);
-
-        if (attackProgress >= 0.45) {
-          // Deal direct damage to target
-          damageCreep(targetEnemy.id, actualDamage);
-          setReturnPoint(new Vector3(playerPos.x, playerPos.y + 1, playerPos.z));
-          midPoint.current = calculateArcPoint(
-            new Vector3(targetEnemy.position[0], targetEnemy.position[1], targetEnemy.position[2]),
-            playerPos,
-            3
+          if (newProgress >= 0.45) {
+            damageCreep(target.id, actualDamage);
+          }
+        } else {
+          // Returning to orbit
+          const t = (newProgress - 0.5) * 2;
+          const returnTarget = new Vector3(
+            playerPos.x + Math.cos(time + (Math.PI * 2 * parseInt(orbIndex)) / Object.keys(attackingOrbs).length) * BASE_ORB_RADIUS,
+            playerPos.y + 1,
+            playerPos.z + Math.sin(time + (Math.PI * 2 * parseInt(orbIndex)) / Object.keys(attackingOrbs).length) * BASE_ORB_RADIUS
           );
+          orb.position.lerp(returnTarget, t);
         }
-      } else {
-        // Returning to player
-        const p0 = new Vector3(targetEnemy.position[0], targetEnemy.position[1] + 1, targetEnemy.position[2]);
-        const p1 = midPoint.current;
-        const p2 = returnPoint as Vector3;
-        const t = (attackProgress - 0.5) * 2;
 
-        // Calculate new position
-        const newPos = new Vector3(
-          Math.pow(1 - t, 2) * p0.x + 2 * (1 - t) * t * p1.x + Math.pow(t, 2) * p2.x,
-          Math.pow(1 - t, 2) * p0.y + 2 * (1 - t) * t * p1.y + Math.pow(t, 2) * p2.y,
-          Math.pow(1 - t, 2) * p0.z + 2 * (1 - t) * t * p1.z + Math.pow(t, 2) * p2.z
-        );
+        updateTrail(orb.position);
+      });
 
-        // Update orb position
-        orbRef.current.position.copy(newPos);
-
-        // Update trail and check for area damage
-        updateTrail(newPos);
-        checkAreaDamage(newPos);
-
-        if (attackProgress === 1) {
-          setIsAttacking(false);
-          setTargetEnemy(null);
-          setReturnPoint(null);
-          setAttackProgress(0);
-          trailPoints.current = [];
-        }
+      // Reset attack state when complete
+      if (newProgress >= 1) {
+        setIsAttacking(false);
+        setAttackingOrbs({});
+        setAttackProgress(0);
+        trailPoints.current = [];
       }
     }
-
-    // Store last position for next frame
-    lastPosition.current.copy(orbRef.current.position);
   });
 
   return (
     <group>
-      {/* Main orb */}
-      <group ref={orbRef}>
-        <OrbEffects isAttacking={isAttacking} />
-        <OrbTrail />
-      </group>
-
-      {/* Additional orbs */}
-      {additionalOrbRefs.current.map((_, index) => {
-        const opacity = index < numAdditionalOrbs ? 1 : partialOrbOpacity;
-        
+      {Array(totalOrbs).fill(null).map((_, index) => {
+        const opacity = index === 0 ? 1 : index <= numAdditionalOrbs ? 1 : partialOrbOpacity;
         return (
           <group 
             key={index}
             ref={el => {
-              if (el) additionalOrbRefs.current[index] = el;
+              if (el) {
+                orbsRef.current[index] = el;
+              }
             }}
           >
-            <OrbEffects isAttacking={isAttacking} opacity={opacity} />
+            <OrbEffects 
+              isAttacking={isAttacking && attackingOrbs[index] !== undefined} 
+              opacity={opacity} 
+            />
             <OrbTrail />
           </group>
         );
