@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { FaStar, FaBolt, FaRunning, FaBullseye, FaShieldAlt, FaTimes } from 'react-icons/fa';
 import { useGameStore } from '../store/gameStore';
 
@@ -39,10 +40,19 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
 
   if (!isOpen) return null;
 
-  return (
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onClose();
+  };
+
+  const handleMenuClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
+  const menuContent = (
     <>
-      <div className="skills-menu-overlay" onClick={onClose} />
-      <div className="skills-menu">
+      <div className="skills-menu-overlay" onClick={handleBackdropClick} />
+      <div className="skills-menu" onClick={handleMenuClick}>
         <div className="skills-header">
           <h2>Skills</h2>
           <div className="header-right">
@@ -50,7 +60,10 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
               <FaStar className="text-yellow-400" />
               <span>{skillPoints} points</span>
             </div>
-            <button className="close-icon-button" onClick={onClose}>
+            <button className="close-icon-button" onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}>
               <FaTimes />
             </button>
           </div>
@@ -71,7 +84,10 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
               </div>
               <button
                 className="upgrade-button"
-                onClick={() => upgradeSkill(key as keyof typeof upgrades)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  upgradeSkill(key as keyof typeof upgrades);
+                }}
                 disabled={skillPoints === 0}
               >
                 +
@@ -82,4 +98,6 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
       </div>
     </>
   );
+
+  return createPortal(menuContent, document.body);
 }

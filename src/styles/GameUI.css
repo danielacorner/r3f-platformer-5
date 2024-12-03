@@ -101,7 +101,7 @@
   }
 }
 
-@media screen and (max-width: 360px) {
+@media screen and (max-width: 420px) {
   .game-ui {
     padding: 8px;
   }
