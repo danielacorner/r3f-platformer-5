@@ -301,17 +301,35 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
             key={creep.id}
             position={[creep.position[0], creep.position[1] + 1.5, creep.position[2]]}
             follow={true}
+            renderOrder={2}
           >
             {/* Background */}
-            <mesh position={[0, 0, 0]} renderOrder={1}>
+            <mesh position={[0, 0, 0]} renderOrder={10}>
               <planeGeometry args={[barWidth, barHeight]} />
-              <meshBasicMaterial color="#1a1a1a" transparent opacity={0.8} depthWrite={false} />
+              <meshBasicMaterial 
+                color="#1a1a1a" 
+                transparent 
+                opacity={0.8} 
+                depthTest={false}
+                depthWrite={false}
+                side={DoubleSide}
+              />
             </mesh>
 
             {/* Health bar */}
-            <mesh position={[(-barWidth * (1 - healthPercent)) / 2, 0, 0.01]} renderOrder={2}>
+            <mesh 
+              position={[(-barWidth * (1 - healthPercent)) / 2, 0, 0.01]} 
+              renderOrder={11}
+            >
               <planeGeometry args={[barWidth * healthPercent, barHeight]} />
-              <meshBasicMaterial color={healthColor} transparent opacity={0.9} depthWrite={false} />
+              <meshBasicMaterial 
+                color={healthColor} 
+                transparent 
+                opacity={0.9} 
+                depthTest={false}
+                depthWrite={false}
+                side={DoubleSide}
+              />
             </mesh>
           </Billboard>
         );
