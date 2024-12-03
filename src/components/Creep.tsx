@@ -143,7 +143,8 @@ const creeps: CreepManagerProps[] = [];
 
 export function CreepManager({ pathPoints }: CreepManagerProps) {
   const meshRef = useRef<InstancedMesh>(null);
-  const healthBarsRef = useRef<Group>(null);
+  const healthBarBackgroundRef = useRef<InstancedMesh>(null);
+  const healthBarForegroundRef = useRef<InstancedMesh>(null);
   const creepMeshes = useRef<{ [key: string]: InstancedMesh }>({});
   const creepPaths = useRef<Map<number, { pathIndex: number; progress: number }>>(new Map());
   const creeps = useGameStore(state => state.creeps);
@@ -186,6 +187,47 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
     };
   }, []);
 
+  // Set up health bar meshes
+  useEffect(() => {
+    // Create health bar geometries
+    const barGeometry = new PlaneGeometry(1, 1);
+
+    // Create background bar mesh
+    const backgroundMesh = new InstancedMesh(
+      barGeometry,
+      new MeshBasicMaterial({
+        color: "#1a1a1a",
+        transparent: true,
+        opacity: 0.8,
+        depthTest: false,
+        depthWrite: false,
+        side: DoubleSide,
+      }),
+      100
+    );
+    backgroundMesh.renderOrder = 10;
+    healthBarBackgroundRef.current = backgroundMesh;
+
+    // Create foreground bar mesh
+    const foregroundMesh = new InstancedMesh(
+      barGeometry,
+      new MeshBasicMaterial({
+        transparent: true,
+        opacity: 0.9,
+        depthTest: false,
+        depthWrite: false,
+        side: DoubleSide,
+      }),
+      100
+    );
+    foregroundMesh.renderOrder = 11;
+    healthBarForegroundRef.current = foregroundMesh;
+
+    return () => {
+      barGeometry.dispose();
+    };
+  }, []);
+
   // Initialize new creeps
   useEffect(() => {
     creeps.forEach(creep => {
@@ -201,13 +243,13 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
 
   // Update creep instances and health bars
   useFrame((_, delta) => {
-    if (!meshRef.current || !healthBarsRef.current) return;
+    if (!meshRef.current || !healthBarBackgroundRef.current || !healthBarForegroundRef.current) return;
 
     // Create a map to track used indices per type
     const usedIndices: { [key: string]: number } = {};
 
     // Update visible creeps
-    creeps.forEach((creep) => {
+    creeps.forEach((creep, index) => {
       const mesh = creepMeshes.current[creep.type];
       if (!mesh) {
         console.warn(`No mesh found for creep type: ${creep.type}`);
@@ -246,9 +288,9 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
         const direction = nextPoint.clone().sub(currentPoint).normalize();
         const angle = Math.atan2(direction.x, direction.z);
 
-        // Update instance matrix
+        // Update creep instance
         tempObject.position.copy(position);
-        tempObject.position.y += 0.5; // Lift slightly above ground
+        tempObject.position.y += 0.5;
         tempObject.rotation.y = angle;
         tempObject.updateMatrix();
         mesh.setMatrixAt(instanceIndex, tempObject.matrix);
@@ -257,29 +299,33 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
         // Update creep position in store
         creep.position = [position.x, position.y, position.z];
 
-        // Update health bar position and scale
+        // Update health bars
         const healthPercent = creep.health / creep.maxHealth;
         const barWidth = 1.3;
         const barHeight = 0.2;
-        
-        // Background bar
+        const healthColor = healthPercent > 0.5 ? '#22c55e' : healthPercent > 0.25 ? '#eab308' : '#ef4444';
+
+        // Update background bar
         tempObject.position.set(position.x, position.y + 1.5, position.z);
+        tempObject.rotation.set(0, 0, 0);
         tempObject.scale.set(barWidth, barHeight, 1);
         tempObject.updateMatrix();
+        healthBarBackgroundRef.current.setMatrixAt(index, tempObject.matrix);
 
-        // Health bar
+        // Update foreground (health) bar
         const healthBarWidth = barWidth * healthPercent;
         const healthBarX = position.x + (-barWidth * (1 - healthPercent)) / 2;
         tempObject.position.set(healthBarX, position.y + 1.5, position.z + 0.01);
         tempObject.scale.set(healthBarWidth, barHeight, 1);
         tempObject.updateMatrix();
+        healthBarForegroundRef.current.setMatrixAt(index, tempObject.matrix);
+        (healthBarForegroundRef.current.material as MeshBasicMaterial).color.set(healthColor);
 
         // Move to next path segment if needed
         if (pathState.progress >= 1) {
           pathState.pathIndex++;
           pathState.progress = 0;
 
-          // Check if reached end of path
           if (pathState.pathIndex >= pathPoints.length - 1) {
             console.log(`Creep ${creep.id} reached end of path`);
             loseLife();
@@ -290,7 +336,20 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
       }
     });
 
-    // Hide unused instances for each type
+    // Update instance matrices
+    healthBarBackgroundRef.current.instanceMatrix.needsUpdate = true;
+    healthBarForegroundRef.current.instanceMatrix.needsUpdate = true;
+
+    // Hide unused instances
+    for (let i = creeps.length; i < 100; i++) {
+      tempObject.position.set(0, -1000, 0);
+      tempObject.scale.set(0, 0, 0);
+      tempObject.updateMatrix();
+      healthBarBackgroundRef.current.setMatrixAt(i, tempObject.matrix);
+      healthBarForegroundRef.current.setMatrixAt(i, tempObject.matrix);
+    }
+
+    // Hide unused creep instances
     Object.entries(creepMeshes.current).forEach(([type, mesh]) => {
       const usedCount = usedIndices[type] || 0;
       for (let i = usedCount; i < mesh.count; i++) {
@@ -306,52 +365,30 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
   return (
     <group>
       <group ref={meshRef} />
-      <group ref={healthBarsRef}>
-        {creeps.map(creep => {
-          const healthPercent = creep.health / creep.maxHealth;
-          const healthColor = healthPercent > 0.5 ? '#22c55e' : healthPercent > 0.25 ? '#eab308' : '#ef4444';
-          const barWidth = 1.3;
-          const barHeight = 0.2;
-
-          return (
-            <Billboard
-              key={creep.id}
-              position={[creep.position[0], creep.position[1] + 1.5, creep.position[2]]}
-              follow={true}
-              renderOrder={2}
-            >
-              {/* Background */}
-              <mesh renderOrder={10}>
-                <planeGeometry args={[barWidth, barHeight]} />
-                <meshBasicMaterial 
-                  color="#1a1a1a" 
-                  transparent 
-                  opacity={0.8} 
-                  depthTest={false}
-                  depthWrite={false}
-                  side={DoubleSide}
-                />
-              </mesh>
-
-              {/* Health bar */}
-              <mesh 
-                position={[(-barWidth * (1 - healthPercent)) / 2, 0, 0.01]}
-                renderOrder={11}
-              >
-                <planeGeometry args={[barWidth * healthPercent, barHeight]} />
-                <meshBasicMaterial 
-                  color={healthColor} 
-                  transparent 
-                  opacity={0.9} 
-                  depthTest={false}
-                  depthWrite={false}
-                  side={DoubleSide}
-                />
-              </mesh>
-            </Billboard>
-          );
-        })}
-      </group>
+      <instancedMesh 
+        ref={healthBarBackgroundRef}
+        args={[new PlaneGeometry(1, 1), new MeshBasicMaterial({
+          color: "#1a1a1a",
+          transparent: true,
+          opacity: 0.8,
+          depthTest: false,
+          depthWrite: false,
+          side: DoubleSide,
+        }), 100]}
+        renderOrder={10}
+        />
+      <instancedMesh
+        ref={healthBarForegroundRef}
+        args={[new PlaneGeometry(1, 1), new MeshBasicMaterial({
+          color: "#22c55e",
+          transparent: true,
+          opacity: 0.9,
+          depthTest: false,
+          depthWrite: false,
+          side: DoubleSide,
+        }), 100]}
+        renderOrder={11}
+        />
     </group>
   );
 }
