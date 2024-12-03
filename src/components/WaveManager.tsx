@@ -47,9 +47,11 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
 
     console.log(`Starting level ${currentLevel}`);
     const waveSet = generateWaveSet(currentLevel);
-    const wave = waveSet.waves[0]; // Start with first wave
+    const wave = waveSet.waves.find(w => w.id === currentWaveRef.current?.id) || waveSet.waves[0];
     currentWaveRef.current = wave;
     setWave(wave.id);
+    
+    console.log('Current wave set:', { wave, currentWaveRef: currentWaveRef.current });
     
     if (!wave) {
       console.log('No more waves available!');
@@ -59,6 +61,10 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
     }
 
     // Build queue of enemies with modifiers applied
+    const totalEnemies = wave.creeps.reduce((total, group) => total + group.count, 0);
+    console.log(`Wave ${wave.id} will have ${totalEnemies} total enemies`);
+    setEnemiesAlive(totalEnemies);
+    
     waveQueue.current = wave.creeps.flatMap(creepGroup => 
       Array(creepGroup.count).fill(null).map(() => ({
         ...creepGroup,
@@ -74,9 +80,7 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
       [waveQueue.current[i], waveQueue.current[j]] = [waveQueue.current[j], waveQueue.current[i]];
     }
 
-    const totalEnemies = waveQueue.current.length;
-    console.log(`Wave ${wave.id} starting with ${totalEnemies} enemies`);
-    setEnemiesAlive(totalEnemies);
+    console.log(`Wave ${wave.id} queue prepared with ${waveQueue.current.length} enemies`);
 
     // Start spawning
     const spawnEnemy = () => {
@@ -137,25 +141,49 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
 
   // Check for wave completion
   useEffect(() => {
-    if (phase === 'combat' && !isSpawning && creeps.length === 0 && enemiesAlive === 0) {
+    const checkWaveCompletion = () => {
+      console.log('Wave completion check:', {
+        phase,
+        isSpawning,
+        enemiesAlive,
+        creepsLength: creeps.length,
+        currentWaveId: currentWaveRef.current?.id,
+        currentLevel
+      });
+
+      if (phase !== 'combat' || isSpawning || enemiesAlive > 0) {
+        return;
+      }
+
       const waveSet = generateWaveSet(currentLevel);
       const currentWaveId = currentWaveRef.current?.id || 0;
-      const nextWave = waveSet.waves[currentWaveId];
+      console.log('Wave state:', {
+        currentWaveId,
+        availableWaves: waveSet.waves.map(w => w.id),
+        currentLevel
+      });
+      
+      const nextWave = waveSet.waves.find(w => w.id === (currentWaveId + 1));
+      console.log('Next wave found:', nextWave);
 
       if (nextWave) {
         // More waves in this level
-        console.log(`Wave ${currentWaveId} completed! Starting next wave...`);
+        console.log(`Wave ${currentWaveId} completed! Next wave will be ${nextWave.id}`);
+        setPhase('prep');
         currentWaveRef.current = nextWave;
         setWave(nextWave.id);
-        setIsSpawning(true);
       } else {
         // Level complete
         console.log(`Level ${currentLevel} completed! All waves defeated.`);
         setPhase('prep');
         incrementLevel();
       }
-    }
-  }, [phase, isSpawning, creeps.length, enemiesAlive]);
+    };
+
+    // Add a small delay to ensure all state updates are processed
+    const timer = setTimeout(checkWaveCompletion, 100);
+    return () => clearTimeout(timer);
+  }, [phase, isSpawning, enemiesAlive, currentLevel]);
 
   // Cleanup on unmount
   useEffect(() => {

@@ -216,7 +216,9 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   setEnemiesAlive: (count) => {
     console.log(`Setting enemies alive to: ${count}`);
+    console.log(`Enemies alive before: ${get().enemiesAlive}`);
     set({ enemiesAlive: count });
+    console.log(`Enemies alive after: ${count}`);
   },
 
   setIsSpawning: (isSpawning) => {
@@ -303,10 +305,16 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   removeCreep: (id) => {
     console.log(`Removing creep: ${id}`);
-    set(state => ({
-      creeps: state.creeps.filter(c => c.id !== id),
-      enemiesAlive: Math.max(0, state.enemiesAlive - 1)
-    }));
+    set(state => {
+      const remainingCreeps = state.creeps.filter(c => c.id !== id);
+      const newEnemiesAlive = remainingCreeps.length;
+      console.log(`Enemies alive after removal: ${newEnemiesAlive} (based on ${remainingCreeps.length} remaining creeps)`);
+      
+      return {
+        creeps: remainingCreeps,
+        enemiesAlive: newEnemiesAlive
+      };
+    });
   },
 
   updateCreep: (id, updates) => {
@@ -323,8 +331,11 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!creep) return;
 
     const newHealth = creep.health - damage;
+    console.log(`Creep ${id} damaged. Health: ${creep.health} -> ${newHealth}. Enemies alive: ${state.enemiesAlive}`);
+    
     if (newHealth <= 0) {
-      state.addExperience(10 + creep.waveId * 2); // Base XP + bonus for higher waves
+      console.log(`Creep ${id} died. Enemies alive before: ${state.enemiesAlive}`);
+      state.addExperience(10 + creep.waveId * 2);
       state.addMoney(creep.value);
       state.addScore(creep.value);
       state.removeCreep(id);

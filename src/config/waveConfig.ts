@@ -94,7 +94,7 @@ export const generateWaveSet = (level: number): WaveSet => {
       const bossStats = scaleStats(CREEP_BASE_STATS.boss, difficulty);
       wave.creeps.push({
         type: 'boss',
-        count: 1,
+        count: process.env.NODE_ENV === 'development' ? 1 : 1,
         delay: 0,
         ...bossStats
       });
@@ -113,7 +113,7 @@ export const generateWaveSet = (level: number): WaveSet => {
 
         wave.creeps.push({
           type,
-          count: Math.round(5 * Math.pow(DIFFICULTY_SCALING.count, difficulty)),
+          count: process.env.NODE_ENV === 'development' ? 2 : Math.round(5 * Math.pow(DIFFICULTY_SCALING.count, difficulty)),
           delay: 500,
           ...stats
         });

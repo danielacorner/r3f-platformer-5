@@ -9,6 +9,7 @@ export function GameUI() {
     lives, 
     currentLevel,
     setIsSpawning,
+    wave,
   } = useGameStore();
 
   const startWave = (e) => {
@@ -22,8 +23,12 @@ export function GameUI() {
     <div className="game-ui">
       <div className="game-stats">
         <div className="stat-item">
-          <span className="stat-label">Wave:</span>
+          <span className="stat-label">Level:</span>
           <span className="stat-value">{currentLevel}</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-label">Wave:</span>
+          <span className="stat-value">{wave}</span>
         </div>
         <div className="stat-item">
           <span className="stat-label">Lives:</span>
