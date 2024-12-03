@@ -369,7 +369,11 @@ export function Level() {
     money,
     creeps,
     addPlacedTower,
-    setSelectedObjectType, selectedObjectType, selectedObjectLevel
+    setSelectedObjectType, 
+    selectedObjectType, 
+    selectedObjectLevel,
+    updateCreep,
+    damageCreep,
   } = useGameStore();
 
   // Refs and State
@@ -584,8 +588,22 @@ export function Level() {
         <Tower
           key={tower.id}
           {...tower}
-          onDamageEnemy={(damage: number) => {
-            // Handle damage
+          onDamageEnemy={(creepId: number, damage: number, effects: any) => {
+            // Apply damage to the creep
+            damageCreep(creepId, damage);
+
+            // Find the creep and apply effects
+            const creep = creeps.find(c => c.id === creepId);
+            if (creep && creep.health > 0) {
+              const updatedCreep = {
+                ...creep,
+                effects: {
+                  ...creep.effects,
+                  ...effects
+                }
+              };
+              updateCreep(updatedCreep);
+            }
           }}
         />
       ))}
