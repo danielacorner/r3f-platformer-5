@@ -183,7 +183,7 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
           ),
           timeAlive: projectile.timeAlive + delta
         }))
-        .filter(projectile => projectile.timeAlive < 1) // Increased lifetime
+        .filter(projectile => projectile.timeAlive < 1)
     );
 
     // Check if we can fire
@@ -201,10 +201,10 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
     if (target) {
       // Fire projectile
       const firePos = towerPos.clone();
-      firePos.y += 0.5; // Spawn at middle of tower
+      firePos.y += 0.8; // Adjusted firing height to match tower's mid-section
 
       const targetPos = new Vector3(...target.position);
-      targetPos.y += 0.5; // Aim at middle of target
+      targetPos.y += 0.3; // Aim slightly above enemy's base
 
       const direction = targetPos.clone().sub(firePos).normalize();
 
@@ -444,13 +444,50 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
         </>
       )}
 
+      {/* Range indicator */}
+      {(preview || phase === 'prep') && (
+        <group>
+          {/* Base ring */}
+          <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[range-0.1, range, 32]} />
+            <meshBasicMaterial 
+              color={preview ? (canAfford ? "#44ff88" : "#ff4444") : "#ffffff"} 
+              transparent 
+              opacity={preview ? 0.3 : 0.1} 
+            />
+          </mesh>
+          
+          {/* Outer glow for preview */}
+          {preview && (
+            <>
+              <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <ringGeometry args={[range - 0.1, range, 32]} />
+                <meshBasicMaterial 
+                  color={canAfford ? "#44ff88" : "#ff4444"}
+                  transparent 
+                  opacity={0.4} 
+                />
+              </mesh>
+              <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <ringGeometry args={[range - 0.2, range + 0.2, 32]} />
+                <meshBasicMaterial 
+                  color={canAfford ? "#ffffff" : "#ff6666"}
+                  transparent 
+                  opacity={0.2} 
+                />
+              </mesh>
+            </>
+          )}
+        </group>
+      )}
+
       {/* Projectiles */}
       {projectiles.map(projectile => {
         // Update target position for active projectiles
         const target = creeps.find(c => c.id === projectile.creepId);
         if (target?.position) {
           const targetPos = new Vector3(...target.position);
-          targetPos.y += 0.5;
+          targetPos.y += 0.3; // Match the target height used in firing
           const newDir = targetPos.clone().sub(projectile.position).normalize();
           projectile.velocity = newDir.multiplyScalar(PROJECTILE_SPEED);
         }
@@ -459,7 +496,7 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
           <mesh
             key={projectile.id}
             position={projectile.position}
-            scale={0.2}
+            scale={0.15} // Slightly smaller projectiles
           >
             <sphereGeometry />
             <meshStandardMaterial 
@@ -469,8 +506,8 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
               toneMapped={false}
             />
             <Trail
-              width={0.1}
-              length={8}
+              width={0.08} // Thinner trail
+              length={6}
               decay={1}
               local={false}
               stride={0}
@@ -482,23 +519,13 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
               <meshBasicMaterial 
                 color={stats.emissive || "#ffff00"} 
                 toneMapped={false}
+                transparent
+                opacity={0.8}
               />
             </Trail>
           </mesh>
         );
       })}
-
-      {/* Range indicator */}
-      {(preview || phase === 'prep') && (
-        <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[0, range, 32]} />
-          <meshBasicMaterial 
-            color={preview ? (canAfford ? "#44ff88" : "#ff4444") : "#ffffff"} 
-            transparent 
-            opacity={0.2} 
-          />
-        </mesh>
-      )}
     </group>
   );
 }
