@@ -18,7 +18,7 @@ interface PlayerProps {
 const MOVE_SPEED = 5;
 const FLOAT_HEIGHT = 0.5;
 const FLOAT_SPEED = 2;
-const CAMERA_LERP = 0.1;
+const CAMERA_LERP = 0.01;
 
 export function Player({ moveTargetRef }: PlayerProps) {
   const playerRef = useRef<Group>(null);
@@ -208,7 +208,7 @@ export function Player({ moveTargetRef }: PlayerProps) {
     // Update camera position while maintaining offset
     const targetCameraPos = new Vector3(
       lastValidPosition.current.x + cameraOffset.current.x,
-      state.camera.position.y,
+      state.camera.position.y + 20,
       lastValidPosition.current.z + cameraOffset.current.z
     );
 
@@ -296,7 +296,7 @@ export function Player({ moveTargetRef }: PlayerProps) {
               />
             </mesh>
             {/* Inner brim (transition to cone) */}
-            <mesh position={[0, 0.04, 0]}>
+            <mesh position={[0, 0.04, 0]} >
               <cylinderGeometry args={[0.4, 0.4, 0.1, 32]} />
               <meshStandardMaterial 
                 color="#fbc02d"

@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas,  } from '@react-three/fiber';
 import {
   SoftShadows,
   OrbitControls,
@@ -26,21 +26,7 @@ function TDCamera() {
   const controlsRef = useRef();
   const lastPanPosition = useRef({ x: 0, y: 0 });
   const isPanning = useRef(false);
-
-  useFrame((state) => {
-    if (!controlsRef.current || !playerRef?.current) return;
-
-    // Get player position
-    const playerPos = playerRef.current.translation();
-
-    // Update camera target to follow player
-    controlsRef.current.target.set(playerPos.x, 0, playerPos.z);
-
-    // Update camera position to maintain relative offset
-    const cameraOffset = new THREE.Vector3();
-    cameraOffset.copy(state.camera.position).sub(controlsRef.current.target);
-    state.camera.position.copy(new THREE.Vector3(playerPos.x, 0, playerPos.z)).add(cameraOffset);
-  });
+  
 
   const handlePointerDown = (e) => {
     if (e.button === 2 || e.button === 1) { // Right click or middle click
@@ -109,11 +95,12 @@ function TDCamera() {
       makeDefault
       maxPolarAngle={Math.PI / 2.5}
       minPolarAngle={Math.PI / 4}
-      maxDistance={50}
-      minDistance={10}
+      maxDistance={70}
+      minDistance={20}
       enableDamping={true}
-      dampingFactor={0.05}
+      dampingFactor={0.01}
       enablePan={false}
+      zoomSpeed={0.3}
     />
   );
 }
@@ -140,7 +127,7 @@ export default function App() {
     <div style={{ width: '100vw', height: '100vh', background: '#000913' }}>
       <Canvas
         shadows="soft"
-        camera={{ position: [30, 30, 30], fov: 50 }}
+        camera={{ fov: 50 }}
         dpr={[1, 2]}
         gl={{
           powerPreference: "high-performance",
