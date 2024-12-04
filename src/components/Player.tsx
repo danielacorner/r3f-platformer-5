@@ -344,6 +344,70 @@ export function Player({ moveTargetRef }: PlayerProps) {
             </mesh>
           </group>
 
+          {/* Wizard Cape */}
+          <group position={[0, 0.8, -0.2]}>
+            {/* Cape top (shoulders) */}
+            <mesh position={[0, 0, 0]} rotation-x={0.2}>
+              <cylinderGeometry args={[0.4, 0.5, 0.3, 8, 1, true, Math.PI * 0.25, Math.PI * 1.5]} />
+              <meshStandardMaterial 
+                color="#1565c0"
+                roughness={0.6}
+                metalness={0.1}
+                side={2}
+              />
+            </mesh>
+            
+            {/* Cape segments with wind animation */}
+            {[0, 1, 2, 3].map((i) => (
+              <mesh 
+                key={i} 
+                position={[0, -0.15 - i * 0.3, -0.1 - i * 0.1]} 
+                rotation-x={0.2 + Math.sin(Date.now() * 0.001 + i * 0.5) * 0.1}
+                rotation-z={Math.sin(Date.now() * 0.002 + i * 0.3) * 0.15}
+              >
+                <cylinderGeometry 
+                  args={[
+                    0.5 - i * 0.05, // top radius gets slightly smaller
+                    0.5 - (i + 1) * 0.05, // bottom radius
+                    0.35, // height
+                    8, // segments
+                    1,
+                    true,
+                    Math.PI * (0.25 + i * 0.02), // adjust arc start
+                    Math.PI * (1.5 - i * 0.04) // adjust arc length
+                  ]} 
+                />
+                <meshStandardMaterial 
+                  color="#1565c0"
+                  roughness={0.6}
+                  metalness={0.1}
+                  side={2}
+                  emissive="#1565c0"
+                  emissiveIntensity={0.05}
+                />
+              </mesh>
+            ))}
+
+            {/* Cape bottom with extra movement */}
+            <mesh 
+              position={[0, -1.35, -0.5]} 
+              rotation-x={0.3 + Math.sin(Date.now() * 0.001) * 0.2}
+              rotation-z={Math.sin(Date.now() * 0.002) * 0.25}
+            >
+              <cylinderGeometry 
+                args={[0.3, 0.2, 0.4, 8, 1, true, Math.PI * 0.35, Math.PI * 1.3]} 
+              />
+              <meshStandardMaterial 
+                color="#1565c0"
+                roughness={0.6}
+                metalness={0.1}
+                side={2}
+                emissive="#1565c0"
+                emissiveIntensity={0.05}
+              />
+            </mesh>
+          </group>
+
           {/* Magic Staff */}
           <group 
             position={[0.5, 0.2, 0]} 
