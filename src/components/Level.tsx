@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useMemo, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { Environment, useGLTF, Stars, Float, useTexture } from '@react-three/drei';
-import { Vector3, Raycaster, Color, DoubleSide, Plane, Vector2, InstancedMesh, Object3D, Matrix4, BoxGeometry, Mesh, Euler } from 'three';
+import { Vector3, Raycaster, Color, DoubleSide, Plane, Vector2, InstancedMesh, Object3D, Matrix4, BoxGeometry, Mesh, Euler, Float32BufferAttribute } from 'three';
 import { TOWER_STATS, useGameStore } from '../store/gameStore';
 import { Edges, MeshTransmissionMaterial, Float as FloatDrei } from '@react-three/drei';
 import { WaveManager } from './WaveManager';
@@ -293,6 +293,92 @@ function CrystalInstances({ count = 8, radius = 15 }) {
   );
 }
 
+function MushroomInstances({ count = 25, radius = 22 }) {
+  const capsRef = useRef<InstancedMesh>(null);
+  const stemsRef = useRef<InstancedMesh>(null);
+  const tempObject = useMemo(() => new Object3D(), []);
+
+  // Simple mushroom colors
+  const colors = useMemo(() => [
+    { cap: '#8B4513', stem: '#F5DEB3' }, // Brown/Wheat
+    { cap: '#DEB887', stem: '#FAEBD7' }, // Burlywood/White
+    { cap: '#D2691E', stem: '#FFF8DC' }, // Chocolate/Cornsilk
+    { cap: '#8B0000', stem: '#FFF5EE' }, // Dark red/Shell
+    { cap: '#CD853F', stem: '#FAF0E6' }, // Peru/Linen
+  ], []);
+
+  useEffect(() => {
+    if (!capsRef.current || !stemsRef.current) return;
+
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2 + Math.random() * 0.5;
+      const r = radius * (0.5 + Math.random() * 0.5);
+      const x = Math.sin(angle) * r + (Math.random() * 6 - 3);
+      const z = Math.cos(angle) * r + (Math.random() * 6 - 3);
+      const scale = 0.2 + Math.random() * 0.15;
+      const rotation = Math.random() * Math.PI * 2;
+
+      // Cap
+      tempObject.position.set(x, scale * 0.7, z);
+      tempObject.scale.set(
+        scale * (0.9 + Math.random() * 0.2),
+        scale * 0.3,
+        scale * (0.9 + Math.random() * 0.2)
+      );
+      tempObject.rotation.y = rotation;
+      tempObject.updateMatrix();
+      capsRef.current.setMatrixAt(i, tempObject.matrix);
+
+      // Stem
+      tempObject.position.set(x, scale * 0.35, z);
+      tempObject.scale.set(
+        scale * 0.2,
+        scale * 0.7,
+        scale * 0.2
+      );
+      tempObject.rotation.y = rotation;
+      tempObject.updateMatrix();
+      stemsRef.current.setMatrixAt(i, tempObject.matrix);
+    }
+
+    capsRef.current.instanceMatrix.needsUpdate = true;
+    stemsRef.current.instanceMatrix.needsUpdate = true;
+  }, [count, radius, colors]);
+
+  return (
+    <group>
+      {/* Mushroom caps */}
+      <instancedMesh 
+        ref={capsRef} 
+        args={[undefined, undefined, count]} 
+        castShadow 
+        receiveShadow
+      >
+        <sphereGeometry args={[1, 16, 16]} />
+        <meshStandardMaterial 
+          color="#8B4513"
+          roughness={0.8}
+          metalness={0.1}
+        />
+      </instancedMesh>
+      {/* Mushroom stems */}
+      <instancedMesh 
+        ref={stemsRef} 
+        args={[undefined, undefined, count]} 
+        castShadow 
+        receiveShadow
+      >
+        <cylinderGeometry args={[0.5, 0.7, 1, 8]} />
+        <meshStandardMaterial 
+          color="#F5DEB3"
+          roughness={0.6}
+          metalness={0.1}
+        />
+      </instancedMesh>
+    </group>
+  );
+}
+
 // Optimized Crystal Component for special locations
 function OptimizedCrystal({ position, scale = 1, color = '#60a5fa' }: { position: [number, number, number]; scale?: number; color?: string }) {
   const meshRef = useRef<Mesh>(null);
@@ -550,8 +636,9 @@ export function Level() {
       {/* Decorative Elements - Using Instanced Meshes */}
       <TreeInstances count={15} radius={25} />
       <RockInstances count={30} radius={20} />
-      <GrassInstances count={100} />
       <CrystalInstances count={8} radius={15} />
+      <MushroomInstances count={40} radius={18} />
+      <GrassInstances count={100} />
 
       {/* Special Crystals */}
       <OptimizedCrystal position={[-20, 1.5, -20]} scale={2} color="#22c55e" />
