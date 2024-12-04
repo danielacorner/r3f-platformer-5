@@ -251,7 +251,11 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
       {/* Base platform for all towers */}
       <mesh position={[0, 0.1, 0]} castShadow receiveShadow>
         <cylinderGeometry args={[scaledWidth * 0.7, scaledWidth * 0.8, 0.2, 8]} />
-        <meshStandardMaterial color={stats.color} />
+        <meshStandardMaterial 
+          color={stats.color} 
+          transparent={preview}
+          opacity={preview ? 0.5 : 1}
+        />
       </mesh>
 
       {/* Element-specific main structure */}
@@ -264,6 +268,8 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
               color={stats.color}
               emissive={stats.emissive}
               emissiveIntensity={1}
+              transparent={preview}
+              opacity={preview ? 0.5 : 1}
             />
           </mesh>
           {/* Floating crystals */}
@@ -275,6 +281,8 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
                   color={stats.color}
                   emissive={stats.emissive}
                   emissiveIntensity={1}
+                  transparent={preview}
+                  opacity={preview ? 0.5 : 1}
                 />
               </mesh>
             </group>
@@ -291,6 +299,8 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
               color="#8B0000"
               emissive={stats.emissive}
               emissiveIntensity={0.5}
+              transparent={preview}
+              opacity={preview ? 0.5 : 1}
             />
           </mesh>
           {/* Lava streams */}
@@ -302,6 +312,8 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
                   color={stats.emissive}
                   emissive={stats.emissive}
                   emissiveIntensity={1}
+                  transparent={preview}
+                  opacity={preview ? 0.5 : 1}
                 />
               </mesh>
             </group>
@@ -313,6 +325,8 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
               color={stats.emissive}
               emissive={stats.emissive}
               emissiveIntensity={1}
+              transparent={preview}
+              opacity={preview ? 0.5 : 1}
             />
           </mesh>
         </>
@@ -327,8 +341,8 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
               color={stats.color}
               emissive={stats.emissive}
               emissiveIntensity={0.5}
-              transparent
-              opacity={0.8}
+              transparent={preview}
+              opacity={preview ? 0.5 : 1}
             />
           </mesh>
           {/* Ice shards */}
@@ -338,8 +352,8 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
                 <coneGeometry args={[0.1, 0.4, 4]} />
                 <meshStandardMaterial
                   color={stats.color}
-                  transparent
-                  opacity={0.6}
+                  transparent={preview}
+                  opacity={preview ? 0.5 : 1}
                 />
               </mesh>
             </group>
@@ -352,7 +366,11 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
           {/* Organic trunk */}
           <mesh position={[0, scaledHeight / 2 + 0.2, 0]} castShadow>
             <cylinderGeometry args={[scaledWidth * 0.3, scaledWidth * 0.4, scaledHeight, 6]} />
-            <meshStandardMaterial color="#4B3621" />
+            <meshStandardMaterial
+              color="#4B3621"
+              transparent={preview}
+              opacity={preview ? 0.5 : 1}
+            />
           </mesh>
           {/* Leaves and vines */}
           {[...Array(level + 1)].map((_, i) => (
@@ -363,6 +381,8 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
                   color={stats.color}
                   emissive={stats.emissive}
                   emissiveIntensity={0.3}
+                  transparent={preview}
+                  opacity={preview ? 0.5 : 1}
                 />
               </mesh>
             </group>
@@ -374,6 +394,8 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
               color={stats.emissive}
               emissive={stats.emissive}
               emissiveIntensity={0.5}
+              transparent={preview}
+              opacity={preview ? 0.5 : 1}
             />
           </mesh>
         </>
@@ -388,7 +410,7 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
               color={stats.color}
               emissive={stats.emissive}
               emissiveIntensity={0.3}
-              transparent
+              transparent={true}
               opacity={0.7}
             />
           </mesh>
@@ -399,7 +421,7 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
                 <torusGeometry args={[0.3, 0.1, 8, 16]} />
                 <meshBasicMaterial
                   color={stats.color}
-                  transparent
+                  transparent={true}
                   opacity={0.6}
                 />
               </mesh>
@@ -417,6 +439,8 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
               color="#1a1a1a"
               emissive={stats.emissive}
               emissiveIntensity={0.7}
+              transparent={preview}
+              opacity={preview ? 0.5 : 1}
             />
           </mesh>
           {/* Floating dark orbs */}
@@ -428,6 +452,8 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
                   color={stats.color}
                   emissive={stats.emissive}
                   emissiveIntensity={1}
+                  transparent={preview}
+                  opacity={preview ? 0.5 : 1}
                 />
               </mesh>
             </group>
@@ -439,6 +465,8 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
               color={stats.color}
               emissive={stats.emissive}
               emissiveIntensity={1}
+              transparent={preview}
+              opacity={preview ? 0.1 : 1}
             />
           </mesh>
         </>
