@@ -311,8 +311,8 @@ export function Player({ moveTargetRef }: PlayerProps) {
               />
             </mesh>
             {/* Hat band */}
-            <mesh position={[0, 0.06, 0]}>
-              <cylinderGeometry args={[0.84, 0.84, 0.06, 32]} />
+            <mesh position={[0, 0.09, 0]}>
+              <cylinderGeometry args={[0.48, 0.48, 0.06, 32]} />
               <meshStandardMaterial 
                 color="#5d4037"
                 roughness={0.6}
@@ -320,15 +320,8 @@ export function Player({ moveTargetRef }: PlayerProps) {
               />
             </mesh>
             {/* Inner brim (transition to cone) */}
-            <mesh position={[0, 0.04, 0]} >
-              <cylinderGeometry 
-                args={[
-                  0.4, // top radius gets slightly smaller
-                  0.4, // bottom radius
-                  0.1, // height
-                  32, // segments
-                ]} 
-              />
+            <mesh position={[0, 0.12, 0]} >
+              <cylinderGeometry args={[0.4, 0.4, 0.1, 32]} />
               <meshStandardMaterial 
                 color="#fbc02d"
                 roughness={0.5}
