@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Vector3, Color, AdditiveBlending } from "three";
-import { Trail, MeshDistortMaterial } from "@react-three/drei";
+import { Trail, MeshDistortMaterial, Sparkles } from "@react-three/drei";
 import { useGameStore } from "../store/gameStore";
 
 interface OrbEffectsProps {
@@ -126,6 +126,13 @@ export function OrbEffects({ isAttacking, opacity = 1 }: OrbEffectsProps) {
         distance={3}
         color="#7e57c2"
       />
+
+      <Sparkles count={96}
+      speed={1}
+      opacity={1}
+      scale={1*(1+damage/3)}
+      noise={1}
+        />
 
       {/* Trail */}
       <Trail
