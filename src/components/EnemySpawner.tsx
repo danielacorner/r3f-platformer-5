@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Vector3 } from 'three';
 import { Enemy } from './Enemy';
 import { useGameStore } from '../store/gameStore';
-import { LEVEL_CONFIGS } from './Level';
+import { LEVEL_CONFIGS } from './level/Level/Level';
 import { Text } from '@react-three/drei';
 
 interface EnemySpawnerProps {

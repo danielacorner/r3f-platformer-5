@@ -5,7 +5,7 @@ import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { pathFinder } from '../utils/pathfinding';
 import { useGameStore } from '../store/gameStore';
-import { LEVEL_CONFIGS } from '../components/Level';
+import { LEVEL_CONFIGS } from './level/Level/Level';
 
 interface EnemyProps {
   position: Vector3;
