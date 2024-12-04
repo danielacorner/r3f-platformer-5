@@ -102,7 +102,7 @@ export function OrbEffects({ isAttacking, opacity = 1 }: OrbEffectsProps) {
       {/* Energy rings */}
       {RING_COLORS.map((color, i) => (
         <mesh
-          scale={(isAttacking ? 3.4 : 5.4) * (1 + damage / 32)}
+          scale={(isAttacking ? 3.4 : 5.4) * (1 + damage / 32) * (i <= damage?1:0)}
           key={i}
           ref={energyRingRefs[i]}
           rotation={[(Math.PI * 2 * i) / 3, Math.PI / 4, Math.PI / 3]}
@@ -159,4 +159,9 @@ const RING_COLORS = [
   new Color("#7e57c2"),
   new Color("#1dd0fd"),
   new Color("#f87171"),
+  new Color("#38bdf8"),
+  new Color("#22c55e"),
+  new Color("#3b82f6"),
+  new Color("#8b0000"),
+  new Color("#ef4444"),
 ];

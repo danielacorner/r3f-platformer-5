@@ -250,36 +250,39 @@ export function Player({ moveTargetRef }: PlayerProps) {
             </mesh>
           </group>
 
-          {/* Dark face area */}
-          <mesh position={[0, 0.9, 0]}>
-            <sphereGeometry args={[0.22, 16, 16]} />
-            <meshStandardMaterial color="#000000" />
-          </mesh>
-
-          {/* Glowing eyes */}
-          <group position={[0, 0.93, 0]}>
-            {/* Left eye */}
-            <mesh position={[-0.08, 0, 0.12]}>
-              <sphereGeometry args={[0.04, 8, 8]} />
-              <meshStandardMaterial color="#ffeb3b" emissive="#ffeb3b" emissiveIntensity={0.8} />
+          {/* Black head */}
+          <group position={[0, 1.1, 0]}>
+            {/* Main head shape */}
+            <mesh scale={1.2}>
+              <boxGeometry args={[0.35, 0.35, 0.35]} />
+              <meshStandardMaterial color="#000000" />
             </mesh>
-            {/* Right eye */}
-            <mesh position={[0.08, 0, 0.12]}>
-              <sphereGeometry args={[0.04, 8, 8]} />
-              <meshStandardMaterial color="#ffeb3b" emissive="#ffeb3b" emissiveIntensity={0.8} />
+            {/* Front face overlay for depth */}
+            <mesh position={[0, 0, 0.18]}>
+              <boxGeometry args={[0.4, 0.4, 0.05]} />
+              <meshStandardMaterial color="#000000" />
+            </mesh>
+            {/* Glowing eyes */}
+            <mesh position={[-0.1, 0, 0.2]}>
+              <sphereGeometry args={[0.045, 12, 12]} />
+              <meshStandardMaterial color="#ffeb3b" emissive="#ffeb3b" emissiveIntensity={1} />
+            </mesh>
+            <mesh position={[0.1, 0, 0.2]}>
+              <sphereGeometry args={[0.045, 12, 12]} />
+              <meshStandardMaterial color="#ffeb3b" emissive="#ffeb3b" emissiveIntensity={1} />
             </mesh>
           </group>
 
           {/* Tall pointy wizard hat */}
-          <group position={[0, 1.1, 0]} rotation-z={Math.PI * 0.05}>
+          <group position={[0, 1.35, -0.1]} rotation-z={Math.PI * 0.05}>
             {/* Hat brim */}
             <mesh position={[0, 0, 0]}>
-              <cylinderGeometry args={[0.5, 0.5, 0.1, 16]} />
+              <cylinderGeometry args={[0.6, 0.6, 0.1, 32]} />
               <meshStandardMaterial color="#fdd835" />
             </mesh>
             {/* Hat cone */}
             <mesh position={[0, 0.4, 0]} rotation-z={Math.sin(Date.now() * 0.001) * 0.1}>
-              <cylinderGeometry args={[0.2, 0.4, 0.8, 16]} />
+              <cylinderGeometry args={[0.25, 0.5, 0.8, 32]} />
               <meshStandardMaterial color="#fdd835" />
             </mesh>
           </group>
@@ -290,17 +293,14 @@ export function Player({ moveTargetRef }: PlayerProps) {
             rotation-z={Math.PI * -0.1}
             rotation-y={Math.sin(Date.now() * 0.001) * 0.1}
           >
-            {/* Staff pole */}
             <mesh position={[0, 0.6, 0]}>
               <cylinderGeometry args={[0.04, 0.04, 2, 8]} />
               <meshStandardMaterial color="#4a148c" />
             </mesh>
-            {/* Staff orb */}
             <mesh position={[0, 1.5, 0]}>
               <sphereGeometry args={[0.2, 16, 16]} />
-              <meshStandardMaterial color="#4fc3f7" emissive="#4fc3f7" emissiveIntensity={0.8} />
+              <meshStandardMaterial color="#4fc3f7" emissive="#4fc3f7" emissiveIntensity={1} />
             </mesh>
-            {/* Staff top ornament */}
             <mesh position={[0, 1.7, 0]}>
               <coneGeometry args={[0.1, 0.2, 8]} />
               <meshStandardMaterial color="#4a148c" />
