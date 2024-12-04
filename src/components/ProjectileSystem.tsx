@@ -34,14 +34,15 @@ export function ProjectileSystem({ projectiles, emissiveColor, geometry, materia
       }
       const projTime = time - startTimes.current[proj.id];
 
-      // Enhanced arc motion
-      const arcHeight = 0.5;
+      // Enhanced arc motion with lower height and adjusted trajectory
+      const arcHeight = 0.2; // Reduced from 0.5
       const arcOffset = Math.sin(proj.progress * Math.PI) * arcHeight;
-      const wobble = Math.sin(projTime * 10) * 0.05 * (1 - proj.progress);
+      const wobble = Math.sin(projTime * 10) * 0.02 * (1 - proj.progress); // Reduced wobble
       
-      // Calculate position with enhanced arc and wobble
+      // Calculate position with flatter arc
       const basePos = new Vector3().lerpVectors(proj.startPos, proj.targetPos, proj.progress);
-      basePos.y += arcOffset + wobble;
+      // Add less height to the arc and make it peak earlier in the trajectory
+      basePos.y += arcOffset * (1 - proj.progress) + wobble;
 
       // Dynamic scaling based on progress
       const scaleBase = 1 + Math.sin(projTime * 8) * 0.1;

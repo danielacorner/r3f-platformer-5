@@ -167,176 +167,57 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
 
   const lastAttackTime = useRef(0);
   const [projectiles, setProjectiles] = useState<Projectile[]>([]);
-  const PROJECTILE_SPEED = 25;
-  const MAX_PROJECTILES = 10;
-  const PROJECTILE_HEIGHT = 0.1;
-  const [time, setTime] = useState(0);
-  const [orbs, setOrbs] = useState<Array<{ angle: number }>>([]);
-
-  const projectilesRef = useRef<Projectile[]>([]);
+  const PROJECTILE_SPEED = 15; // Reduced speed for better visibility
   const towerRef = useRef<THREE.Group>(null);
 
-  // Extract actual level from tower type (e.g., "fire5" -> 5)
-  const actualLevel = parseInt(type.slice(-1)) || 1;
-
-  const getOrbStyle = useCallback(() => {
-    const baseStyle = {
-      size: 0.12,
-      emissiveIntensity: 3,
-      opacity: 0.9
-    };
-
-    switch (elementType) {
-      case 'light':
-        return { ...baseStyle, emissiveIntensity: 4, opacity: 0.95 };
-      case 'fire':
-        return { ...baseStyle, emissiveIntensity: 5 };
-      case 'ice':
-        return { ...baseStyle, opacity: 0.7, emissiveIntensity: 2.5 };
-      case 'nature':
-        return { ...baseStyle, emissiveIntensity: 2.8 };
-      case 'water':
-        return { ...baseStyle, opacity: 0.8, emissiveIntensity: 2.2 };
-      case 'dark':
-        return { ...baseStyle, emissiveIntensity: 3.5 };
-      default:
-        return baseStyle;
-    }
-  }, [elementType]);
-
-  const ElementShape = useCallback(({ index, position, rotation }: { index: number; position: [number, number, number]; rotation: number }) => {
-    const orbStyle = getOrbStyle();
-    const scale = 0.12;
-
-    const getElementalEffect = () => {
-      switch (elementType) {
-        case 'fire':
-          return (
-            <group position={position} rotation={[time * 0.8, rotation + time, time * 0.5]}>
-              {index > 0 && (
-                <mesh scale={1 + (index * 0.1)}>
-                  <octahedronGeometry args={[scale * (1 + index * 0.1)]} />
-                  <meshStandardMaterial
-                    color="orange"
-                    emissive="red"
-                    emissiveIntensity={3 + index}
-                    transparent
-                    opacity={0.3}
-                    wireframe
-                  />
-                </mesh>
-              )}
-              <mesh castShadow>
-                <octahedronGeometry args={[scale * (1 + index * 0.1)]} />
-                <meshStandardMaterial
-                  color={stats.color}
-                  emissive={stats.emissive}
-                  emissiveIntensity={orbStyle.emissiveIntensity * (1 + index * 0.5)}
-                  metalness={0.9}
-                  roughness={0.1}
-                />
-              </mesh>
-            </group>
-          );
-        // ... rest of the element cases
-        default:
-          return (
-            <mesh position={position} rotation={[0, rotation, 0]} castShadow>
-              <sphereGeometry args={[scale, 16, 16]} />
-              <meshStandardMaterial
-                color={stats.color}
-                emissive={stats.emissive}
-                emissiveIntensity={orbStyle.emissiveIntensity}
-                transparent
-                opacity={orbStyle.opacity}
-                metalness={0.9}
-                roughness={0.1}
-              />
-            </mesh>
-          );
-      }
-    };
-
-    return getElementalEffect();
-  }, [elementType, time, stats, getOrbStyle]);
-
-  useEffect(() => {
-    projectilesRef.current = projectiles;
-  }, [projectiles]);
-
   useFrame((_, delta) => {
-    setTime(t => t + delta);
+    if (preview) return;
 
-    // Update projectiles with proper targeting
-    setProjectiles(prev => prev.map(projectile => {
-      // Find the target creep
-      const targetCreep = creeps.find(c => c.id === projectile.creepId);
-      if (targetCreep && targetCreep.position) {
-        // Update target position (leading the target slightly)
-        const targetPos = new Vector3(...targetCreep.position);
-        targetPos.y += 0.2; // Aim slightly above creep center
-        
-        // Calculate direction to target
-        const direction = targetPos.clone().sub(projectile.position).normalize();
-        
-        // Update velocity towards target
-        projectile.velocity.lerp(direction.multiplyScalar(PROJECTILE_SPEED), 0.1);
-      }
-      
-      // Update position
-      projectile.position.add(projectile.velocity.clone().multiplyScalar(delta));
-      projectile.timeAlive += delta;
-      return projectile;
-    }).filter(projectile => projectile.timeAlive < 0.5)); // Reduced lifetime for faster hits
+    // Update existing projectiles
+    setProjectiles(prev => 
+      prev
+        .map(projectile => ({
+          ...projectile,
+          position: projectile.position.clone().add(
+            projectile.velocity.clone().multiplyScalar(delta)
+          ),
+          timeAlive: projectile.timeAlive + delta
+        }))
+        .filter(projectile => projectile.timeAlive < 1) // Increased lifetime
+    );
 
-    // Attack logic
-    if (preview || !onDamageEnemy || phase !== 'combat') return;
-
+    // Check if we can fire
     const now = Date.now();
     if (now - lastAttackTime.current < attackCooldown) return;
 
-    // Find closest creep
-    let closestCreep = null;
-    let closestDistance = range;
-
-    creeps.forEach(creep => {
-      if (!creep.position || creep.health <= 0) return;
-
-      const creepPos = new Vector3(...creep.position);
-      const towerPos = position instanceof Vector3 ? position : new Vector3(...position);
-      const distance = towerPos.distanceTo(creepPos);
-
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestCreep = creep;
-      }
+    // Find target
+    const towerPos = new Vector3(...(position instanceof Vector3 ? position.toArray() : position));
+    const target = creeps.find(creep => {
+      if (!creep.position || creep.health <= 0) return false;
+      const dist = new Vector3(...creep.position).distanceTo(towerPos);
+      return dist <= range;
     });
 
-    if (closestCreep) {
-      const towerPos = position instanceof Vector3 ? position : new Vector3(...position);
-      const baseHeight = 0.2; // Reduced from 0.4 to 0.2
-      towerPos.y += baseHeight + PROJECTILE_HEIGHT; // Lower spawn point
+    if (target) {
+      // Fire projectile
+      const firePos = towerPos.clone();
+      firePos.y += 0.5; // Spawn at middle of tower
 
-      const targetPos = new Vector3(...closestCreep.position);
-      targetPos.y += 0.2; // Reduced from 0.3 to 0.2 for lower targeting
+      const targetPos = new Vector3(...target.position);
+      targetPos.y += 0.5; // Aim at middle of target
 
-      // Calculate initial direction to target
-      const direction = targetPos.clone().sub(towerPos).normalize();
+      const direction = targetPos.clone().sub(firePos).normalize();
 
-      // Add new projectile
-      if (projectilesRef.current.length < MAX_PROJECTILES) {
-        setProjectiles(prev => [
-          ...prev,
-          {
-            id: Math.random(),
-            position: towerPos.clone(),
-            velocity: direction.multiplyScalar(PROJECTILE_SPEED),
-            creepId: closestCreep.id,
-            timeAlive: 0
-          }
-        ]);
+      setProjectiles(prev => [...prev, {
+        id: Math.random(),
+        position: firePos,
+        velocity: direction.multiplyScalar(PROJECTILE_SPEED),
+        creepId: target.id,
+        timeAlive: 0
+      }]);
 
-        onDamageEnemy(closestCreep.id, damage, {
+      if (onDamageEnemy) {
+        onDamageEnemy(target.id, damage, {
           [elementType]: {
             value: stats.special?.value || 0,
             duration: stats.special?.duration || 3000,
@@ -344,31 +225,14 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
             type: stats.special?.type
           }
         });
-
-        lastAttackTime.current = now;
       }
+
+      lastAttackTime.current = now;
     }
   });
 
-  // Create range indicator geometry
-  const rangeIndicator = useMemo(() => {
-    const circleGeometry = new THREE.CircleGeometry(range, 64);
-    const points = circleGeometry.attributes.position;
-    const positions = [];
-    
-    for (let i = 1; i <= 64; i++) {
-      positions.push(points.getX(i), 0, points.getY(i));
-    }
-    positions.push(points.getX(1), 0, points.getY(1));
-    
-    const geometry = new Float32Array(positions);
-    const lineGeometry = new THREE.BufferGeometry();
-    lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(geometry, 3));
-    
-    return lineGeometry;
-  }, [range]);
-
-  // Safely parse tower type
+  // Extract actual level from tower type (e.g., "fire5" -> 5)
+  const actualLevel = parseInt(type.slice(-1)) || 1;
   const baseWidth = 0.8;
   const baseHeight = 2;
   const scale = {
@@ -384,68 +248,11 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
 
   return (
     <group ref={towerRef} position={position instanceof Vector3 ? position.toArray() : position}>
-      {/* Range indicator */}
-      {(preview || phase === 'prep') && (
-        <group>
-          {/* Bright glow ring */}
-          <line geometry={rangeIndicator}>
-            <lineBasicMaterial
-              color={canAfford ? "#00ffff" : "#ff0000"}
-              linewidth={2}
-              transparent
-              opacity={preview ? 0.8 : 0.4}
-            />
-          </line>
-          {/* Additional bright inner ring for placement */}
-          {preview && (
-            <>
-              <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-                <ringGeometry args={[range - 0.1, range, 64]} />
-                <meshBasicMaterial
-                  color={canAfford ? "#00ffff" : "#ff0000"}
-                  transparent
-                  opacity={0.3}
-                  side={THREE.DoubleSide}
-                />
-              </mesh>
-              {/* Outer glow effect */}
-              <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-                <ringGeometry args={[range - 0.2, range + 0.2, 64]} />
-                <meshBasicMaterial
-                  color={canAfford ? "#ffffff" : "#ff6666"}
-                  transparent
-                  opacity={0.15}
-                  side={THREE.DoubleSide}
-                />
-              </mesh>
-            </>
-          )}
-        </group>
-      )}
       {/* Base platform for all towers */}
       <mesh position={[0, 0.1, 0]} castShadow receiveShadow>
         <cylinderGeometry args={[scaledWidth * 0.7, scaledWidth * 0.8, 0.2, 8]} />
         <meshStandardMaterial color={stats.color} />
       </mesh>
-
-      {/* Projectiles */}
-      {projectiles.map((projectile) => (
-        <mesh key={projectile.id} position={projectile.position.toArray()}>
-          <sphereGeometry args={[0.1]} /> {/* Slightly smaller projectile */}
-          <meshStandardMaterial
-            color={stats.color}
-            emissive={stats.emissive}
-            emissiveIntensity={3}
-          />
-          {/* Add trail effect */}
-          <Trail
-            width={0.15} // Slightly thinner trail
-            length={5}
-            color={stats.emissive}
-            attenuation={(t) => t * t}
-          />
-        </mesh>
-      ))}
 
       {/* Element-specific main structure */}
       {elementType === 'light' && (
@@ -637,26 +444,61 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
         </>
       )}
 
-      {/* Orbiting Indicator Orbs */}
-      <group position={[0, scaledHeight + 0.5, 0]}>
-        {Array.from({ length: actualLevel }).map((_, index) => {
-          const angle = (time * 0.8) + (index * (2 * Math.PI / actualLevel));
-          const radius = 0.5;
-          const x = radius * Math.cos(angle);
-          const z = radius * Math.sin(angle);
-          const y = Math.sin(time * 2 + index * (Math.PI / actualLevel)) * 0.1;
-
-          return (
-            <ElementShape
-              key={`shape-${index}`}
-              index={index}
-              position={[x, y, z]}
-              rotation={angle}
+      {/* Projectiles */}
+      {projectiles.map(projectile => {
+        // Update target position for active projectiles
+        const target = creeps.find(c => c.id === projectile.creepId);
+        if (target?.position) {
+          const targetPos = new Vector3(...target.position);
+          targetPos.y += 0.5;
+          const newDir = targetPos.clone().sub(projectile.position).normalize();
+          projectile.velocity = newDir.multiplyScalar(PROJECTILE_SPEED);
+        }
+        
+        return (
+          <mesh
+            key={projectile.id}
+            position={projectile.position}
+            scale={0.2}
+          >
+            <sphereGeometry />
+            <meshStandardMaterial 
+              color={stats.emissive || "#ffff00"} 
+              emissive={stats.emissive || "#ffff00"}
+              emissiveIntensity={2}
+              toneMapped={false}
             />
-          );
-        })}
+            <Trail
+              width={0.1}
+              length={8}
+              decay={1}
+              local={false}
+              stride={0}
+              interval={1}
+              attenuation={(t) => {
+                return t * t;
+              }}
+            >
+              <meshBasicMaterial 
+                color={stats.emissive || "#ffff00"} 
+                toneMapped={false}
+              />
+            </Trail>
+          </mesh>
+        );
+      })}
 
-      </group>
+      {/* Range indicator */}
+      {(preview || phase === 'prep') && (
+        <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0, range, 32]} />
+          <meshBasicMaterial 
+            color={preview ? (canAfford ? "#44ff88" : "#ff4444") : "#ffffff"} 
+            transparent 
+            opacity={0.2} 
+          />
+        </mesh>
+      )}
     </group>
   );
 }
