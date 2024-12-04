@@ -40,7 +40,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   const speed = useGameStore(state => state.upgrades.speed);
   const orbSpeed = useGameStore(state => state.orbSpeed);
   const multishot = useGameStore(state => state.upgrades.multishot);
-
+  console.log("🚀 ~ MagicOrb ~ orbSpeed:", orbSpeed)
   // Calculate actual values based on upgrades
   const actualDamage = BASE_ATTACK_DAMAGE * (1 + damage * 0.1);
   const actualRange = BASE_ATTACK_RANGE * (1 + range * 0.1);
@@ -147,7 +147,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
     const position = playerRef.current.translation();
     const playerPos = new Vector3(position.x, position.y, position.z);
-    const time = Date.now() * 0.002 * actualOrbSpeed;
+    const time = Date.now() * 0.002 * actualOrbSpeed*(1+speed*0.12);
 
     if (!isAttacking) {
       // Normal orbit for all orbs
@@ -173,7 +173,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
       }
     } else {
       // Update attack progress
-      const newProgress = Math.min(attackProgress + delta * 2, 1);
+      const newProgress = Math.min(attackProgress + delta * 2 * orbSpeed, 1);
       setAttackProgress(newProgress);
 
       // Update all attacking orbs
