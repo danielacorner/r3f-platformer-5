@@ -168,6 +168,7 @@ interface GameState {
   projectiles: Projectile[];
   towerStates: TowerState[];
   playerRef: any | null;
+  orbSpeed: number;
 }
 
 const initialState: GameState = {
@@ -197,6 +198,7 @@ const initialState: GameState = {
   projectiles: [],
   towerStates: [],
   playerRef: null,
+  orbSpeed: 1,
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -373,7 +375,27 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       // Calculate derived stats
       const damageMultiplier = 1 + (newUpgrades.damage * 0.15); // 15% per level
-      const cooldownReduction = 1 - (newUpgrades.speed * 0.12); // 12% per level
+      
+      // Calculate speed stats with new mechanics
+      let cooldownReduction = 1;
+      let orbSpeedBonus = 1;
+      
+      if (skill === 'speed') {
+        const totalSpeedReduction = newUpgrades.speed * 0.12; // 12% per level
+        if (totalSpeedReduction >= 1) {
+          // Cap cooldown reduction at 100% and convert excess to orb speed
+          cooldownReduction = 0; // -100% cooldown
+          const excessReduction = totalSpeedReduction - 1;
+          orbSpeedBonus = 1 + excessReduction; // Convert excess to orb speed
+        } else {
+          cooldownReduction = 1 - totalSpeedReduction;
+          orbSpeedBonus = 1;
+        }
+      } else {
+        // For other skills, maintain current cooldown reduction
+        cooldownReduction = 1 - (newUpgrades.speed * 0.12);
+      }
+      
       const rangeMultiplier = 1 + (newUpgrades.range * 0.12); // 12% per level
       const multishotChance = newUpgrades.multishot * 0.15; // 15% chance per level
 
@@ -383,6 +405,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         // Update derived stats
         damage: damageMultiplier,
         attackSpeed: cooldownReduction,
+        orbSpeed: orbSpeedBonus,
         range: rangeMultiplier,
         multishot: multishotChance
       };

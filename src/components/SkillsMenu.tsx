@@ -90,7 +90,13 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
               if (key === "damage") {
                 effectText = `+${level * 15}% Damage`;
               } else if (key === "speed") {
-                effectText = `-${level * 12}% Cooldown`;
+                const totalSpeedReduction = level * 12;
+                if (totalSpeedReduction >= 100) {
+                  const excessReduction = totalSpeedReduction - 100;
+                  effectText = `-100% Cooldown, +${Math.floor(excessReduction)}% Orb Speed`;
+                } else {
+                  effectText = `-${totalSpeedReduction}% Cooldown`;
+                }
               } else if (key === "range") {
                 effectText = `+${level * 12}% Range`;
               } else if (key === "multishot") {

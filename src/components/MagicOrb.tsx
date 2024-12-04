@@ -37,13 +37,15 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   const damageCreep = useGameStore(state => state.damageCreep);
   const damage = useGameStore(state => state.upgrades.damage);
   const range = useGameStore(state => state.upgrades.range);
-  const cooldown = useGameStore(state => state.upgrades.cooldown);
+  const speed = useGameStore(state => state.upgrades.speed);
+  const orbSpeed = useGameStore(state => state.orbSpeed);
   const multishot = useGameStore(state => state.upgrades.multishot);
 
   // Calculate actual values based on upgrades
   const actualDamage = BASE_ATTACK_DAMAGE * (1 + damage * 0.1);
   const actualRange = BASE_ATTACK_RANGE * (1 + range * 0.1);
-  const actualCooldown = BASE_ATTACK_COOLDOWN * (1 - cooldown * 0.1);
+  const actualCooldown = BASE_ATTACK_COOLDOWN * (1 - speed * 0.12);
+  const actualOrbSpeed = BASE_ORB_SPEED * orbSpeed;
   const multishotChance = multishot * 0.15; // 15% chance per level
 
   // Get multishot level and calculate number of orbs
@@ -145,7 +147,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
     const position = playerRef.current.translation();
     const playerPos = new Vector3(position.x, position.y, position.z);
-    const time = Date.now() * 0.002 * BASE_ORB_SPEED;
+    const time = Date.now() * 0.002 * actualOrbSpeed;
 
     if (!isAttacking) {
       // Normal orbit for all orbs
