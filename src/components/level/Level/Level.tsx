@@ -359,7 +359,7 @@ export function Level() {
       <RockInstances count={30} radius={20} />
       <CrystalInstances count={8} radius={15} />
       <MushroomInstances count={16} radius={18} />
-      <FirefliesInstances />
+      <FirefliesInstances count={24}/>
       <GrassInstances count={100} />
 
       {/* Special Crystals */}
