@@ -167,8 +167,9 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
 
   const lastAttackTime = useRef(0);
   const [projectiles, setProjectiles] = useState<Projectile[]>([]);
-  const PROJECTILE_SPEED = 15;
+  const PROJECTILE_SPEED = 25;
   const MAX_PROJECTILES = 10;
+  const PROJECTILE_HEIGHT = 0.1;
   const [time, setTime] = useState(0);
   const [orbs, setOrbs] = useState<Array<{ angle: number }>>([]);
 
@@ -266,12 +267,27 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
   useFrame((_, delta) => {
     setTime(t => t + delta);
 
-    // Update projectiles
+    // Update projectiles with proper targeting
     setProjectiles(prev => prev.map(projectile => {
+      // Find the target creep
+      const targetCreep = creeps.find(c => c.id === projectile.creepId);
+      if (targetCreep && targetCreep.position) {
+        // Update target position (leading the target slightly)
+        const targetPos = new Vector3(...targetCreep.position);
+        targetPos.y += 0.2; // Aim slightly above creep center
+        
+        // Calculate direction to target
+        const direction = targetPos.clone().sub(projectile.position).normalize();
+        
+        // Update velocity towards target
+        projectile.velocity.lerp(direction.multiplyScalar(PROJECTILE_SPEED), 0.1);
+      }
+      
+      // Update position
       projectile.position.add(projectile.velocity.clone().multiplyScalar(delta));
       projectile.timeAlive += delta;
       return projectile;
-    }).filter(projectile => projectile.timeAlive < 1));
+    }).filter(projectile => projectile.timeAlive < 0.5)); // Reduced lifetime for faster hits
 
     // Attack logic
     if (preview || !onDamageEnemy || phase !== 'combat') return;
@@ -297,12 +313,15 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
     });
 
     if (closestCreep) {
-      const towerHeight = 1.2 + (level - 1) * 0.2;
       const towerPos = position instanceof Vector3 ? position : new Vector3(...position);
-      towerPos.y += towerHeight;
+      const baseHeight = 0.2; // Reduced from 0.4 to 0.2
+      towerPos.y += baseHeight + PROJECTILE_HEIGHT; // Lower spawn point
 
       const targetPos = new Vector3(...closestCreep.position);
-      targetPos.y += 0.5;
+      targetPos.y += 0.2; // Reduced from 0.3 to 0.2 for lower targeting
+
+      // Calculate initial direction to target
+      const direction = targetPos.clone().sub(towerPos).normalize();
 
       // Add new projectile
       if (projectilesRef.current.length < MAX_PROJECTILES) {
@@ -311,14 +330,13 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
           {
             id: Math.random(),
             position: towerPos.clone(),
-            velocity: targetPos.clone().sub(towerPos).normalize().multiplyScalar(PROJECTILE_SPEED),
+            velocity: direction.multiplyScalar(PROJECTILE_SPEED),
             creepId: closestCreep.id,
             timeAlive: 0
           }
         ]);
 
-        // Call onDamageEnemy with the tower's stats
-        onDamageEnemy(closestCreep.id, stats.damage, {
+        onDamageEnemy(closestCreep.id, damage, {
           [elementType]: {
             value: stats.special?.value || 0,
             duration: stats.special?.duration || 3000,
@@ -326,9 +344,9 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
             type: stats.special?.type
           }
         });
-      }
 
-      lastAttackTime.current = now;
+        lastAttackTime.current = now;
+      }
     }
   });
 
@@ -367,18 +385,43 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
   return (
     <group ref={towerRef} position={position instanceof Vector3 ? position.toArray() : position}>
       {/* Range indicator */}
-      {preview && (
-        <line geometry={rangeIndicator}>
-          <lineBasicMaterial
-            attach="material"
-            color={canAfford ? "#60a5fa" : "#ef4444"}
-            transparent
-            opacity={0.3}
-            linewidth={1}
-          />
-        </line>
+      {(preview || phase === 'prep') && (
+        <group>
+          {/* Bright glow ring */}
+          <line geometry={rangeIndicator}>
+            <lineBasicMaterial
+              color={canAfford ? "#00ffff" : "#ff0000"}
+              linewidth={2}
+              transparent
+              opacity={preview ? 0.8 : 0.4}
+            />
+          </line>
+          {/* Additional bright inner ring for placement */}
+          {preview && (
+            <>
+              <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <ringGeometry args={[range - 0.1, range, 64]} />
+                <meshBasicMaterial
+                  color={canAfford ? "#00ffff" : "#ff0000"}
+                  transparent
+                  opacity={0.3}
+                  side={THREE.DoubleSide}
+                />
+              </mesh>
+              {/* Outer glow effect */}
+              <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <ringGeometry args={[range - 0.2, range + 0.2, 64]} />
+                <meshBasicMaterial
+                  color={canAfford ? "#ffffff" : "#ff6666"}
+                  transparent
+                  opacity={0.15}
+                  side={THREE.DoubleSide}
+                />
+              </mesh>
+            </>
+          )}
+        </group>
       )}
-
       {/* Base platform for all towers */}
       <mesh position={[0, 0.1, 0]} castShadow receiveShadow>
         <cylinderGeometry args={[scaledWidth * 0.7, scaledWidth * 0.8, 0.2, 8]} />
@@ -387,22 +430,17 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
 
       {/* Projectiles */}
       {projectiles.map((projectile) => (
-        <mesh
-          key={projectile.id}
-          position={projectile.position}
-          scale={0.2}
-        >
-          <sphereGeometry args={[1, 8, 8]} />
+        <mesh key={projectile.id} position={projectile.position.toArray()}>
+          <sphereGeometry args={[0.1]} /> {/* Slightly smaller projectile */}
           <meshStandardMaterial
             color={stats.color}
             emissive={stats.emissive}
-            emissiveIntensity={2}
-            transparent
-            opacity={0.8}
+            emissiveIntensity={3}
           />
+          {/* Add trail effect */}
           <Trail
-            width={0.5}
-            length={8}
+            width={0.15} // Slightly thinner trail
+            length={5}
             color={stats.emissive}
             attenuation={(t) => t * t}
           />
