@@ -277,13 +277,70 @@ export function Player({ moveTargetRef }: PlayerProps) {
           <group position={[0, 1.35, -0.1]} rotation-z={Math.PI * 0.05}>
             {/* Hat brim */}
             <mesh position={[0, 0, 0]}>
-              <cylinderGeometry args={[0.6, 0.6, 0.1, 32]} />
-              <meshStandardMaterial color="#fdd835" />
+              <cylinderGeometry args={[0.85, 0.83, 0.08, 32]} />
+              <meshStandardMaterial 
+                color="#fbc02d" 
+                roughness={0.5}
+                metalness={0.1}
+                emissive="#fbc02d"
+                emissiveIntensity={0.2}
+              />
+            </mesh>
+            {/* Hat band */}
+            <mesh position={[0, 0.06, 0]}>
+              <cylinderGeometry args={[0.84, 0.84, 0.06, 32]} />
+              <meshStandardMaterial 
+                color="#5d4037"
+                roughness={0.6}
+                metalness={0.2}
+              />
+            </mesh>
+            {/* Inner brim (transition to cone) */}
+            <mesh position={[0, 0.04, 0]}>
+              <cylinderGeometry args={[0.4, 0.4, 0.1, 32]} />
+              <meshStandardMaterial 
+                color="#fbc02d"
+                roughness={0.5}
+                metalness={0.1}
+                emissive="#fbc02d"
+                emissiveIntensity={0.2}
+              />
             </mesh>
             {/* Hat cone */}
-            <mesh position={[0, 0.4, 0]} rotation-z={Math.sin(Date.now() * 0.001) * 0.1}>
-              <cylinderGeometry args={[0.25, 0.5, 0.8, 32]} />
-              <meshStandardMaterial color="#fdd835" />
+            <mesh position={[0, 0.3, 0]} rotation-z={Math.sin(Date.now() * 0.001) * 0.1}>
+              <cylinderGeometry args={[0.12, 0.4, 0.7, 32]} />
+              <meshStandardMaterial 
+                color="#fbc02d"
+                roughness={0.5}
+                metalness={0.1}
+                emissive="#fbc02d"
+                emissiveIntensity={0.2}
+              />
+              {/* Hat tip with droop */}
+              <group position={[0, 0.4, 0]} rotation-z={-0.6 + Math.sin(Date.now() * 0.001) * 0.2}>
+                {/* Drooping section */}
+                <mesh position={[0.1, 0.1, 0]}>
+                  <cylinderGeometry args={[0.08, 0.12, 0.25, 32]} />
+                  <meshStandardMaterial 
+                    color="#fbc02d"
+                    roughness={0.5}
+                    metalness={0.1}
+                    emissive="#fbc02d"
+                    emissiveIntensity={0.2}
+                  />
+                </mesh>
+                {/* Tip sphere */}
+                <mesh position={[0.2, 0.15, 0]}>
+                  <sphereGeometry args={[0.08, 16, 16]} />
+                  <meshStandardMaterial 
+                    color="#fbc02d"
+                    roughness={0.5}
+                    metalness={0.1}
+                    emissive="#fbc02d"
+                    emissiveIntensity={0.2}
+                  />
+                </mesh>
+              </group>
             </mesh>
           </group>
 
