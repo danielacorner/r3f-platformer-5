@@ -19,6 +19,7 @@ const MOVE_SPEED = 5;
 const FLOAT_HEIGHT = 0.5;
 const FLOAT_SPEED = 2;
 const CAMERA_LERP = 0.01;
+const CAMERA_HEIGHT = 32;
 
 export function Player({ moveTargetRef }: PlayerProps) {
   const playerRef = useRef<Group>(null);
@@ -208,11 +209,34 @@ export function Player({ moveTargetRef }: PlayerProps) {
     // Update camera position while maintaining offset
     const targetCameraPos = new Vector3(
       lastValidPosition.current.x + cameraOffset.current.x,
-      state.camera.position.y + 20,
+      Math.min(state.camera.position.y + 12,CAMERA_HEIGHT),
       lastValidPosition.current.z + cameraOffset.current.z
     );
 
-    state.camera.position.lerp(targetCameraPos, CAMERA_LERP);
+    // Calculate the camera's current horizontal angle
+    const currentAngle = Math.atan2(
+      state.camera.position.z - lastValidPosition.current.z,
+      state.camera.position.x - lastValidPosition.current.x
+    );
+
+    // Lerp the angle towards north (Math.PI/2)
+    const targetAngle = Math.PI / 2;
+    const lerpedAngle = currentAngle + (targetAngle - currentAngle) * CAMERA_LERP;
+
+    // Get the distance from camera to target
+    const distance = new Vector3(
+      state.camera.position.x - lastValidPosition.current.x,
+      0,
+      state.camera.position.z - lastValidPosition.current.z
+    ).length();
+
+    // Update camera position using the lerped angle and current distance
+    state.camera.position.x = lastValidPosition.current.x + Math.cos(lerpedAngle) * distance;
+    state.camera.position.z = lastValidPosition.current.z + Math.sin(lerpedAngle) * distance;
+    
+    // Smoothly lerp the height
+    state.camera.position.y += (targetCameraPos.y - state.camera.position.y) * CAMERA_LERP;
+
     state.camera.lookAt(lastValidPosition.current.x, 0, lastValidPosition.current.z);
   });
 
@@ -297,7 +321,14 @@ export function Player({ moveTargetRef }: PlayerProps) {
             </mesh>
             {/* Inner brim (transition to cone) */}
             <mesh position={[0, 0.04, 0]} >
-              <cylinderGeometry args={[0.4, 0.4, 0.1, 32]} />
+              <cylinderGeometry 
+                args={[
+                  0.4, // top radius gets slightly smaller
+                  0.4, // bottom radius
+                  0.1, // height
+                  32, // segments
+                ]} 
+              />
               <meshStandardMaterial 
                 color="#fbc02d"
                 roughness={0.5}
