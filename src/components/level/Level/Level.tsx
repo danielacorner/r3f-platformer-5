@@ -17,7 +17,7 @@ import { TreeInstances } from './TreeInstances';
 import { glowColor, grassColor, platformColor } from '../../../utils/constants';
 import { MushroomInstances } from './MushroomInstances';
 import { generatePath, PathDecorations } from './PathDecoration';
-
+import { FirefliesInstances } from './FirefliesInstances';
 
 const pathMaterial = createShaderMaterial('path', {
   color: { value: new Vector3(0.26, 0.22, 0.79) },
@@ -359,6 +359,7 @@ export function Level() {
       <RockInstances count={30} radius={20} />
       <CrystalInstances count={8} radius={15} />
       <MushroomInstances count={16} radius={18} />
+      <FirefliesInstances />
       <GrassInstances count={100} />
 
       {/* Special Crystals */}

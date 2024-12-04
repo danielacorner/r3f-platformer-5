@@ -1,4 +1,3 @@
-
 import { useRef, useEffect, useMemo } from 'react';
 import { InstancedMesh, Object3D } from 'three';
 
@@ -166,6 +165,7 @@ export function MushroomInstances({ count = 25, radius = 22 }) {
         >
           <sphereGeometry args={[1, 32, 16]} />
           <meshStandardMaterial 
+            color="#8B4513"
             roughness={0.8}
             metalness={0.1}
           />
@@ -178,6 +178,7 @@ export function MushroomInstances({ count = 25, radius = 22 }) {
         >
           <cylinderGeometry args={[0.5, 0.7, 1, 8]} />
           <meshStandardMaterial 
+            color="#F5DEB3"
             roughness={0.6}
             metalness={0.1}
           />
@@ -186,6 +187,7 @@ export function MushroomInstances({ count = 25, radius = 22 }) {
           ref={spotsRef}
           args={[undefined, undefined, count * 10]}
           castShadow
+          visible={false}
         >
           <sphereGeometry args={[1, 8, 8]} />
           <meshStandardMaterial
