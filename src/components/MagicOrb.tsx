@@ -154,8 +154,8 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
       orbsRef.current.forEach((orb, index) => {
         if (orb) {
           const angle = time + (Math.PI * 2 * index) / orbsRef.current.length;
-          const orbitX = Math.cos(angle) * BASE_ORB_RADIUS;
-          const orbitZ = Math.sin(angle) * BASE_ORB_RADIUS;
+          const orbitX = Math.cos(angle) * BASE_ORB_RADIUS*(1+range/1.5);
+          const orbitZ = Math.sin(angle) * BASE_ORB_RADIUS*(1+range/1.5);
           orb.position.set(
             playerPos.x + orbitX,
             playerPos.y + 1,

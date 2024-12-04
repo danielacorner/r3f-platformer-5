@@ -31,6 +31,7 @@ export function Player({ moveTargetRef }: PlayerProps) {
   const prevLevel = useRef(1);
   const level = useGameStore(state => state.level);
   const range = useGameStore(state => state.upgrades.range);
+  const damage = useGameStore(state => state.upgrades.damage);
   const lastMoveTime = useRef(Date.now());
   const stuckCheckInterval = useRef<number | null>(null);
   const [rigidBodyKey, setRigidBodyKey] = useState(0);
@@ -225,6 +226,7 @@ export function Player({ moveTargetRef }: PlayerProps) {
         type="dynamic"
         position={lastValidPosition.current.toArray()}
         enabledRotations={[false, false, false]}
+        scale={1+damage/12}
       >
         <CuboidCollider args={[0.3, 0.4, 0.3]} position={[0, FLOAT_HEIGHT, 0]} />
         <group ref={visualRef}>
