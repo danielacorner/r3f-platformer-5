@@ -233,66 +233,78 @@ export function Player({ moveTargetRef }: PlayerProps) {
           {/* Range Indicator */}
           <line rotation-x={-Math.PI / 2} position={[0, 0.1, 0]}>
             <primitive object={rangeIndicator} />
-            <lineBasicMaterial color="#4c99f7" linewidth={1}  />
+            <lineBasicMaterial color="#4c99f7" linewidth={1} />
           </line>
 
-          {/* Cloak - Main body */}
-          <mesh position={[0, 0.4, 0]}>
-            <cylinderGeometry args={[0.3, 0.5, 1.2, 8]} />
-            <meshStandardMaterial color="#1a237e" />
-          </mesh>
-
-          {/* Dark face */}
-          <mesh position={[0, 0.8, 0]}>
-            <sphereGeometry args={[0.2, 16, 16]} />
-            <meshStandardMaterial color="#000000" />
-          </mesh>
-
-          {/* Yellow straw hat */}
-          <mesh position={[0, 1.1, 0]} rotation={[0.2, 0, 0]}>
-            <cylinderGeometry args={[0.4, 0.3, 0.15, 8]} />
-            <meshStandardMaterial color="#fdd835" />
-          </mesh>
-          <mesh position={[0, 1.0, 0]}>
-            <cylinderGeometry args={[0.5, 0.5, 0.05, 8]} />
-            <meshStandardMaterial color="#fdd835" />
-          </mesh>
-
-          {/* Wand */}
-          <group position={[0.4, 0.4, -0.2]} rotation={[0, 0, -Math.PI / 4]}>
-            {/* Wand stick */}
+          {/* Blue Cloak with wind animation */}
+          <group position={[0, 0.4, 0]}>
+            {/* Main cloak body */}
             <mesh>
-              <cylinderGeometry args={[0.02, 0.02, 0.6, 8]} />
-              <meshStandardMaterial color="#4a148c" />
+              <cylinderGeometry args={[0.35, 0.6, 1.4, 12]} />
+              <meshStandardMaterial color="#1a237e" />
             </mesh>
-            {/* Wand tip */}
-            <mesh position={[0, 0.35, 0]}>
-              <sphereGeometry args={[0.04, 8, 8]} />
-              <meshStandardMaterial color="#7e57c2" emissive="#7e57c2" emissiveIntensity={0.5} />
+            {/* Cloak bottom with wind effect */}
+            <mesh position={[0, -0.7, 0]} rotation-y={Math.sin(Date.now() * 0.002) * 0.2}>
+              <cylinderGeometry args={[0.6, 0.7, 0.3, 12]} />
+              <meshStandardMaterial color="#1a237e" />
             </mesh>
           </group>
 
-          {/* Floating effect particles */}
-          <group position={[0, 0, 0]}>
-            {[...Array(5)].map((_, i) => (
-              <mesh
-                key={i}
-                position={[
-                  Math.sin((i / 5) * Math.PI * 2) * 0.3,
-                  -0.2 + Math.sin(i * 1.5) * 0.1,
-                  Math.cos((i / 5) * Math.PI * 2) * 0.3
-                ]}
-              >
-                <sphereGeometry args={[0.03, 8, 8]} />
-                <meshStandardMaterial
-                  color="#4a148c"
-                  emissive="#7e57c2"
-                  emissiveIntensity={0.5}
-                  transparent
-                  opacity={0.6}
-                />
-              </mesh>
-            ))}
+          {/* Dark face area */}
+          <mesh position={[0, 0.9, 0]}>
+            <sphereGeometry args={[0.22, 16, 16]} />
+            <meshStandardMaterial color="#000000" />
+          </mesh>
+
+          {/* Glowing eyes */}
+          <group position={[0, 0.93, 0]}>
+            {/* Left eye */}
+            <mesh position={[-0.08, 0, 0.12]}>
+              <sphereGeometry args={[0.04, 8, 8]} />
+              <meshStandardMaterial color="#ffeb3b" emissive="#ffeb3b" emissiveIntensity={0.8} />
+            </mesh>
+            {/* Right eye */}
+            <mesh position={[0.08, 0, 0.12]}>
+              <sphereGeometry args={[0.04, 8, 8]} />
+              <meshStandardMaterial color="#ffeb3b" emissive="#ffeb3b" emissiveIntensity={0.8} />
+            </mesh>
+          </group>
+
+          {/* Tall pointy wizard hat */}
+          <group position={[0, 1.1, 0]} rotation-z={Math.PI * 0.05}>
+            {/* Hat brim */}
+            <mesh position={[0, 0, 0]}>
+              <cylinderGeometry args={[0.5, 0.5, 0.1, 16]} />
+              <meshStandardMaterial color="#fdd835" />
+            </mesh>
+            {/* Hat cone */}
+            <mesh position={[0, 0.4, 0]} rotation-z={Math.sin(Date.now() * 0.001) * 0.1}>
+              <cylinderGeometry args={[0.2, 0.4, 0.8, 16]} />
+              <meshStandardMaterial color="#fdd835" />
+            </mesh>
+          </group>
+
+          {/* Magic Staff */}
+          <group 
+            position={[0.5, 0.2, 0]} 
+            rotation-z={Math.PI * -0.1}
+            rotation-y={Math.sin(Date.now() * 0.001) * 0.1}
+          >
+            {/* Staff pole */}
+            <mesh position={[0, 0.6, 0]}>
+              <cylinderGeometry args={[0.04, 0.04, 2, 8]} />
+              <meshStandardMaterial color="#4a148c" />
+            </mesh>
+            {/* Staff orb */}
+            <mesh position={[0, 1.5, 0]}>
+              <sphereGeometry args={[0.2, 16, 16]} />
+              <meshStandardMaterial color="#4fc3f7" emissive="#4fc3f7" emissiveIntensity={0.8} />
+            </mesh>
+            {/* Staff top ornament */}
+            <mesh position={[0, 1.7, 0]}>
+              <coneGeometry args={[0.1, 0.2, 8]} />
+              <meshStandardMaterial color="#4a148c" />
+            </mesh>
           </group>
 
           {/* Level up effect */}
