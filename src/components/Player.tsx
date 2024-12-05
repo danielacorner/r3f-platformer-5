@@ -151,10 +151,15 @@ export function Player({ moveTargetRef }: PlayerProps) {
 
       if (distanceToTarget > 0.1) {
         directionToTarget.normalize();
-        velocity.x = directionToTarget.x * MOVE_SPEED;
-        velocity.z = directionToTarget.z * MOVE_SPEED;
+        // Scale velocity based on distance to target
+        const speedScale = Math.min(distanceToTarget, 1.0);
+        velocity.x = directionToTarget.x * MOVE_SPEED * speedScale;
+        velocity.z = directionToTarget.z * MOVE_SPEED * speedScale;
       } else {
         moveTargetRef.current.active = false;
+        // Stop movement when very close to target
+        velocity.x = 0;
+        velocity.z = 0;
       }
     }
 
