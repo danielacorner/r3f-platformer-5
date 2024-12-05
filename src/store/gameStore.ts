@@ -48,11 +48,11 @@ interface TowerStats {
 
 export const TOWER_STATS: Record<ElementType, TowerStats> = {
   // Storm Towers - Lightning Magic
-  storm1: { damage: 30, range: 7, attackSpeed: 1.2, cost: 100, special: { type: 'chain_lightning', value: 0.8, chain_count: 2 }, color: '#a5b4fc', emissive: '#818cf8', description: "Chain Lightning - Damage chains to nearby enemies" },
-  storm2: { damage: 50, range: 7.5, attackSpeed: 1.3, cost: 250, special: { type: 'thunder_strike', value: 1.2, fork_chance: 0.3 }, color: '#a5b4fc', emissive: '#818cf8', description: "Thunder Strike - Chance to fork to additional targets" },
-  storm3: { damage: 75, range: 8, attackSpeed: 1.4, cost: 500, special: { type: 'static_field', value: 0.05, radius: 3 }, color: '#a5b4fc', emissive: '#818cf8', description: "Static Field - Damages enemies based on their max health" },
-  storm4: { damage: 100, range: 8.5, attackSpeed: 1.5, cost: 1000, special: { type: 'overload', value: 1.5, explosion: 50 }, color: '#a5b4fc', emissive: '#818cf8', description: "Overload - Charged enemies explode on death" },
-  storm5: { damage: 150, range: 9, attackSpeed: 1.6, cost: 2000, special: { type: 'storm_fury', value: 2.0, tick_damage: 30 }, color: '#a5b4fc', emissive: '#818cf8', description: "Storm Fury - Continuous lightning damage in area" },
+  storm1: { damage: 30, range: 7, attackSpeed: 1.2, cost: 100, special: { type: 'chain_lightning', value: 0.8, chain_count: 2 }, color: '#fef9c3', emissive: '#facc15', description: "Chain Lightning - Damage chains to nearby enemies" },
+  storm2: { damage: 50, range: 7.5, attackSpeed: 1.3, cost: 250, special: { type: 'thunder_strike', value: 1.2, fork_chance: 0.3 }, color: '#fef9c3', emissive: '#facc15', description: "Thunder Strike - Chance to fork to additional targets" },
+  storm3: { damage: 75, range: 8, attackSpeed: 1.4, cost: 500, special: { type: 'static_field', value: 0.05, radius: 3 }, color: '#fef9c3', emissive: '#facc15', description: "Static Field - Damages enemies based on their max health" },
+  storm4: { damage: 100, range: 8.5, attackSpeed: 1.5, cost: 1000, special: { type: 'overload', value: 1.5, explosion: 50 }, color: '#fef9c3', emissive: '#facc15', description: "Overload - Charged enemies explode on death" },
+  storm5: { damage: 150, range: 9, attackSpeed: 1.6, cost: 2000, special: { type: 'storm_fury', value: 2.0, tick_damage: 30 }, color: '#fef9c3', emissive: '#facc15', description: "Storm Fury - Continuous lightning damage in area" },
 
   // Fire Towers - Destructive Force
   fire1: { damage: 40, range: 6, attackSpeed: 0.8, cost: 100, special: { type: 'burn', value: 10 }, color: '#fecaca', emissive: '#ef4444', description: "Ignite - Sets enemies on fire" },

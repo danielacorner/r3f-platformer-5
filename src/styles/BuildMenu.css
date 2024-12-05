@@ -240,6 +240,12 @@
   border-color: #71717a;
 }
 
+.element-preview[data-element="storm"],
+.tower-buttonw[data-element="storm"] {
+  background: linear-gradient(135deg, #1f1b0d, #2b2613);
+  border-color: #fef9c3;
+}
+
 /* Vibrant hover borders */
 .element-preview[data-element="water"]:hover,
 .tower-button[data-element="water"]:hover {
@@ -269,6 +275,11 @@
 .element-preview[data-element="dark"]:hover,
 .tower-button[data-element="dark"]:hover {
   border-color: #a1a1aa;
+}
+
+.element-preview[data-element="storm"]:hover,
+.tower-button[data-element="storm"]:hover {
+  border-color: #fef9c3;
 }
 
 /* Vibrant icon colors and glow effects */
@@ -306,6 +317,12 @@
 .tower-button[data-element="dark"] svg {
   color: #e4e4e7;
   filter: drop-shadow(0 0 4px #a1a1aa);
+}
+
+.element-preview[data-element="storm"] svg,
+.tower-button[data-element="storm"] svg {
+  color: #fef9c3;
+  filter: drop-shadow(0 0 4px #facc15);
 }
 
 .tower-expanded {
@@ -551,6 +568,11 @@
   border-color: #a855f7;
 }
 
+.tower-button[data-tower-type^="storm"] {
+  background-color: #fef9c3;
+  border-color: #facc15;
+}
+
 /* Hover effects */
 .tower-button[data-tower-type^="light"]:hover {
   background-color: #fcd34d;
@@ -574,6 +596,10 @@
 
 .tower-button[data-tower-type^="dark"]:hover {
   background-color: #a855f7;
+}
+
+.tower-button[data-tower-type^="storm"]:hover {
+  background-color: #facc15;
 }
 
 /* Text color on hover */
@@ -908,3 +934,4 @@
 .skills-menu::-webkit-scrollbar-thumb:hover {
   background: rgba(59, 89, 152, 0.7);
 }
+
