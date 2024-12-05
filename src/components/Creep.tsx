@@ -3,7 +3,6 @@ import { useFrame } from '@react-three/fiber';
 import { Vector3, InstancedMesh, Object3D, Matrix4, BufferGeometry, BufferAttribute, BoxGeometry, Color, PlaneGeometry, MeshBasicMaterial, SphereGeometry, CylinderGeometry, TorusGeometry, IcosahedronGeometry, ConeGeometry, MeshStandardMaterial, DoubleSide, Group, OctahedronGeometry, DodecahedronGeometry } from 'three';
 import { useGameStore } from '../store/gameStore';
 import { createShaderMaterial } from '../utils/shaders';
-import { Billboard } from '@react-three/drei';
 import * as THREE from 'three'
 import { BufferGeometryUtils } from 'three/examples/jsm/Addons.js';
 
@@ -247,6 +246,10 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
 
     // Get camera quaternion for billboard effect
     const cameraQuaternion = state.camera.quaternion;
+    const matrix = new Matrix4();
+    const tempMatrix = new Matrix4();
+    const tempScaleMatrix = new Matrix4();
+    const tempTranslateMatrix = new Matrix4();
 
     // Create a map to track used indices per type
     const usedIndices: { [key: string]: number } = {};
@@ -307,22 +310,29 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
         const barWidth = 1.3;
         const barHeight = 0.2;
         const healthColor = healthPercent > 0.5 ? '#22c55e' : healthPercent > 0.25 ? '#eab308' : '#ef4444';
+        const barY = position.y + 1.5;
 
-        // Update background bar
-        tempObject.position.set(position.x, position.y + 1.5, position.z);
-        tempObject.quaternion.copy(cameraQuaternion);
-        tempObject.scale.set(barWidth, barHeight, 1);
-        tempObject.updateMatrix();
-        healthBarBackgroundRef.current.setMatrixAt(index, tempObject.matrix);
+        // Base matrix for both bars
+        matrix.identity();
+        matrix.makeTranslation(position.x, barY, position.z);
+        matrix.multiply(new Matrix4().makeRotationFromQuaternion(cameraQuaternion));
 
-        // Update foreground (health) bar
+        // Background bar
+        tempMatrix.copy(matrix);
+        tempScaleMatrix.makeScale(barWidth, barHeight, 1);
+        tempMatrix.multiply(tempScaleMatrix);
+        healthBarBackgroundRef.current.setMatrixAt(index, tempMatrix);
+
+        // Health bar
         const healthBarWidth = barWidth * healthPercent;
-        const healthBarX = position.x + (-barWidth * (1 - healthPercent)) / 2;
-        tempObject.position.set(healthBarX, position.y + 1.5, position.z + 0.01);
-        tempObject.quaternion.copy(cameraQuaternion);
-        tempObject.scale.set(healthBarWidth, barHeight, 1);
-        tempObject.updateMatrix();
-        healthBarForegroundRef.current.setMatrixAt(index, tempObject.matrix);
+        const offsetX = (barWidth - healthBarWidth) / 2;
+        
+        tempMatrix.copy(matrix);
+        tempTranslateMatrix.makeTranslation(-offsetX, 0, 0.001);
+        tempMatrix.multiply(tempTranslateMatrix);
+        tempScaleMatrix.makeScale(healthBarWidth, barHeight, 1);
+        tempMatrix.multiply(tempScaleMatrix);
+        healthBarForegroundRef.current.setMatrixAt(index, tempMatrix);
         (healthBarForegroundRef.current.material as MeshBasicMaterial).color.set(healthColor);
 
         // Move to next path segment if needed
@@ -378,9 +388,11 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
           depthTest: false,
           depthWrite: false,
           side: DoubleSide,
+          polygonOffset: true,
+          polygonOffsetFactor: -1,
         }), 100]}
         renderOrder={10}
-        />
+      />
       <instancedMesh
         ref={healthBarForegroundRef}
         args={[new PlaneGeometry(1, 1), new MeshBasicMaterial({
@@ -390,9 +402,11 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
           depthTest: false,
           depthWrite: false,
           side: DoubleSide,
+          polygonOffset: true,
+          polygonOffsetFactor: -2,
         }), 100]}
         renderOrder={11}
-        />
+      />
     </group>
   );
 }
