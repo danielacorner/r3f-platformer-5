@@ -25,7 +25,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   const [attackingOrbs, setAttackingOrbs] = useState<{ [key: number]: any }>({});
   const [attackProgress, setAttackProgress] = useState(0);
   const [canAttack, setCanAttack] = useState(true);
-  const [hitEffects, setHitEffects] = useState<{ position: Vector3; key: number }[]>([]);
+  const [hitEffects, setHitEffects] = useState<{ position: Vector3; key: string }[]>([]);
   
   // Refs for tracking positions and timing
   const lastAttackTime = useRef(0);
@@ -33,6 +33,22 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   const midPoints = useRef<{ [key: number]: Vector3 }>({});
   const frameCount = useRef(0);
   const trailPoints = useRef<Vector3[]>([]);
+
+  // Add a UUID generator for truly unique keys
+  const generateUUID = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
+
+  const addHitEffect = (position: Vector3) => {
+    setHitEffects(prev => [...prev, { 
+      position, 
+      key: generateUUID() // Use UUID instead of timestamp + counter
+    }]);
+  };
 
   // Get all relevant stats from game store
   const creeps = useGameStore(state => state.creeps);
@@ -216,13 +232,13 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
           if (newProgress >= 0.45) {
             damageCreep(target.id, actualDamage);
-            // Add hit effect at collision point
+            // Add hit effect at collision point using the new function
             const hitPosition = new Vector3(
               target.position[0],
               target.position[1] + 0.5,
               target.position[2]
             );
-            setHitEffects(prev => [...prev, { position: hitPosition, key: Date.now() }]);
+            addHitEffect(hitPosition);
           }
         } else {
           // Returning to orbit
