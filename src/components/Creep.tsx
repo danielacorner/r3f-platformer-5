@@ -100,7 +100,7 @@ interface CreepManagerProps {
   pathPoints: Vector3[];
 }
 
-const SPEED_MULTIPLIER = 1;
+const SPEED_MULTIPLIER = 4;
 
 const creepSizes = {
   normal: [1.0, 1.0, 1.0],    // Infantry mech
