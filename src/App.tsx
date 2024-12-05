@@ -19,7 +19,6 @@ import { BuildMenu } from './components/BuildMenu';
 import { GameUI } from './components/GameUI';
 import { useGameStore } from './store/gameStore';
 import { useEffect, useRef } from 'react';
-import { FollowingCloud } from './components/FollowingCloud';
 
 function TDCamera() {
   const { playerRef } = useGameStore();
@@ -173,7 +172,7 @@ export default function App() {
             <Level />
           </Physics>
           <TDCamera />
-          <FollowingCloud />
+          {/* <FollowingCloud /> */}
 
           <Effects />
           <BakeShadows />

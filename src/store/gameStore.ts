@@ -3,7 +3,7 @@ import { Vector3 } from 'three';
 import { RapierRigidBody } from '@react-three/rapier';
 
 export type ElementType =
-  | 'light1' | 'light2' | 'light3' | 'light4' | 'light5'
+  | 'storm1' | 'storm2' | 'storm3' | 'storm4' | 'storm5'
   | 'fire1' | 'fire2' | 'fire3' | 'fire4' | 'fire5'
   | 'ice1' | 'ice2' | 'ice3' | 'ice4' | 'ice5'
   | 'nature1' | 'nature2' | 'nature3' | 'nature4' | 'nature5'
@@ -20,7 +20,7 @@ interface TowerStats {
   color?: string;
   emissive?: string;
   special?: {
-    type: 'slow' | 'amplify' | 'poison' | 'splash' | 'armor_reduction' | 'chain_amplify' | 'aura_amplify' | 'purify' | 'burn' | 'meteor' | 'inferno' | 'phoenix' | 'apocalypse' | 'frozen_ground' | 'shatter' | 'blizzard' | 'absolute_zero' | 'spores' | 'thorns' | 'plague' | 'pandemic' | 'tsunami' | 'whirlpool' | 'flood' | 'maelstrom' | 'curse' | 'void' | 'nightmare' | 'oblivion';
+    type: 'slow' | 'chain_lightning' | 'thunder_strike' | 'static_field' | 'overload' | 'poison' | 'splash' | 'armor_reduction' | 'chain_amplify' | 'aura_amplify' | 'purify' | 'burn' | 'meteor' | 'inferno' | 'phoenix' | 'apocalypse' | 'frozen_ground' | 'shatter' | 'blizzard' | 'absolute_zero' | 'spores' | 'thorns' | 'plague' | 'pandemic' | 'tsunami' | 'whirlpool' | 'flood' | 'maelstrom' | 'curse' | 'void' | 'nightmare' | 'oblivion';
     value: number;
     bounces?: number;
     radius?: number;
@@ -40,17 +40,19 @@ interface TowerStats {
     mana_burn?: number;
     fear_chance?: number;
     soul_harvest?: boolean;
+    chain_count?: number;
+    fork_chance?: number;
   };
   description?: string;
 }
 
 export const TOWER_STATS: Record<ElementType, TowerStats> = {
-  // Light Towers - Holy Magic
-  light1: { damage: 15, range: 8, attackSpeed: 1.0, cost: 100, special: { type: 'amplify', value: 0.15 }, color: '#fef3c7', emissive: '#fcd34d', description: "Blessing - Marks enemies to take increased damage" },
-  light2: { damage: 25, range: 8.5, attackSpeed: 1.1, cost: 250, special: { type: 'chain_amplify', value: 0.25, bounces: 2 }, color: '#fef3c7', emissive: '#fcd34d', description: "Holy Chain - Blessing jumps to nearby enemies" },
-  light3: { damage: 40, range: 9, attackSpeed: 1.2, cost: 500, special: { type: 'aura_amplify', value: 0.35, radius: 4 }, color: '#fef3c7', emissive: '#fcd34d', description: "Sanctify - Creates an aura that amplifies all damage" },
-  light4: { damage: 60, range: 9.5, attackSpeed: 1.3, cost: 1000, special: { type: 'purify', value: 0.45, heal_block: 5 }, color: '#fef3c7', emissive: '#fcd34d', description: "Purification - Prevents enemy healing and amplifies damage" },
-  light5: { damage: 90, range: 10, attackSpeed: 1.4, cost: 2000, special: { type: 'divine_mark', value: 0.60, explosion: 100 }, color: '#fef3c7', emissive: '#fcd34d', description: "Divine Judgment - Marked enemies explode on death" },
+  // Storm Towers - Lightning Magic
+  storm1: { damage: 30, range: 7, attackSpeed: 1.2, cost: 100, special: { type: 'chain_lightning', value: 0.8, chain_count: 2 }, color: '#a5b4fc', emissive: '#818cf8', description: "Chain Lightning - Damage chains to nearby enemies" },
+  storm2: { damage: 50, range: 7.5, attackSpeed: 1.3, cost: 250, special: { type: 'thunder_strike', value: 1.2, fork_chance: 0.3 }, color: '#a5b4fc', emissive: '#818cf8', description: "Thunder Strike - Chance to fork to additional targets" },
+  storm3: { damage: 75, range: 8, attackSpeed: 1.4, cost: 500, special: { type: 'static_field', value: 0.05, radius: 3 }, color: '#a5b4fc', emissive: '#818cf8', description: "Static Field - Damages enemies based on their max health" },
+  storm4: { damage: 100, range: 8.5, attackSpeed: 1.5, cost: 1000, special: { type: 'overload', value: 1.5, explosion: 50 }, color: '#a5b4fc', emissive: '#818cf8', description: "Overload - Charged enemies explode on death" },
+  storm5: { damage: 150, range: 9, attackSpeed: 1.6, cost: 2000, special: { type: 'storm_fury', value: 2.0, tick_damage: 30 }, color: '#a5b4fc', emissive: '#818cf8', description: "Storm Fury - Continuous lightning damage in area" },
 
   // Fire Towers - Destructive Force
   fire1: { damage: 40, range: 6, attackSpeed: 0.8, cost: 100, special: { type: 'burn', value: 10 }, color: '#fecaca', emissive: '#ef4444', description: "Ignite - Sets enemies on fire" },

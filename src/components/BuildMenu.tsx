@@ -13,7 +13,7 @@ import {
 
   GiLeafSwirl,
 
-  GiSunflower,
+  GiLightningStorm,
 
   GiSkullCrossedBones
 
@@ -29,17 +29,17 @@ import { SkillsMenu } from './SkillsMenu';
 
 export const TOWER_TYPES = {
 
-  // Light Towers
+  // Storm Towers
 
-  light1: { level: 1, type: 'light1' as ElementType, label: 'Light I', icon: <GiSunflower />, description: 'Basic amplification tower', cost: TOWER_STATS.light1.cost },
+  storm1: { level: 1, type: 'storm1' as ElementType, label: 'Storm I', icon: <GiLightningStorm />, description: 'Chain Lightning', cost: TOWER_STATS.storm1.cost },
 
-  light2: { level: 2, type: 'light2' as ElementType, label: 'Light II', icon: <GiSunflower />, description: 'Enhanced amplification', cost: TOWER_STATS.light2.cost },
+  storm2: { level: 2, type: 'storm2' as ElementType, label: 'Storm II', icon: <GiLightningStorm />, description: 'Thunder Strike', cost: TOWER_STATS.storm2.cost },
 
-  light3: { level: 3, type: 'light3' as ElementType, label: 'Light III', icon: <GiSunflower />, description: 'Advanced amplification', cost: TOWER_STATS.light3.cost },
+  storm3: { level: 3, type: 'storm3' as ElementType, label: 'Storm III', icon: <GiLightningStorm />, description: 'Static Field', cost: TOWER_STATS.storm3.cost },
 
-  light4: { level: 4, type: 'light4' as ElementType, label: 'Light IV', icon: <GiSunflower />, description: 'Superior amplification', cost: TOWER_STATS.light4.cost },
+  storm4: { level: 4, type: 'storm4' as ElementType, label: 'Storm IV', icon: <GiLightningStorm />, description: 'Overload', cost: TOWER_STATS.storm4.cost },
 
-  light5: { level: 5, type: 'light5' as ElementType, label: 'Light V', icon: <GiSunflower />, description: 'Ultimate amplification', cost: TOWER_STATS.light5.cost },
+  storm5: { level: 5, type: 'storm5' as ElementType, label: 'Storm V', icon: <GiLightningStorm />, description: 'Storm Fury', cost: TOWER_STATS.storm5.cost },
 
 
 
@@ -292,7 +292,7 @@ export function BuildMenu() {
               {element === 'fire' && <GiFireBowl />}
               {element === 'ice' && <GiSnowflake1 />}
               {element === 'nature' && <GiLeafSwirl />}
-              {element === 'light' && <GiSunflower />}
+              {element === 'storm' && <GiLightningStorm />}
               {element === 'dark' && <GiSkullCrossedBones />}
               <span className="element-name">{element}</span>
             </button>

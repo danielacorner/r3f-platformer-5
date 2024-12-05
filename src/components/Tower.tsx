@@ -472,6 +472,48 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
         </>
       )}
 
+      {elementType === 'storm' && (
+        <>
+          {/* Lightning rod structure */}
+          <mesh position={[0, scaledHeight / 2 + 0.2, 0]} castShadow>
+            <cylinderGeometry args={[scaledWidth * 0.3, scaledWidth * 0.4, scaledHeight, 6]} />
+            <meshStandardMaterial
+              color={stats.color}
+              emissive={stats.emissive}
+              emissiveIntensity={1.5}
+              transparent={preview}
+              opacity={preview ? 0.5 : 1}
+            />
+          </mesh>
+          {/* Energy orbs */}
+          {[...Array(level + 2)].map((_, i) => (
+            <group key={i} rotation={[0, (Math.PI * 2 * i) / (level + 2), Math.PI * 0.1]}>
+              <mesh position={[0.3, scaledHeight * 0.6, 0]} castShadow>
+                <sphereGeometry args={[0.15]} />
+                <meshStandardMaterial
+                  color={stats.emissive}
+                  emissive={stats.emissive}
+                  emissiveIntensity={2}
+                  transparent={preview}
+                  opacity={preview ? 0.5 : 1}
+                />
+              </mesh>
+            </group>
+          ))}
+          {/* Lightning crown */}
+          <mesh position={[0, scaledHeight + 0.2, 0]} castShadow>
+            <octahedronGeometry args={[0.3]} />
+            <meshStandardMaterial
+              color={stats.emissive}
+              emissive={stats.emissive}
+              emissiveIntensity={2}
+              transparent={preview}
+              opacity={preview ? 0.5 : 1}
+            />
+          </mesh>
+        </>
+      )}
+
       {/* Range indicator */}
       {(preview || phase === 'prep') && (
         <group>
@@ -521,37 +563,37 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
         }
         
         return (
-          <mesh
-            key={projectile.id}
-            position={projectile.position}
-            scale={0.15} // Slightly smaller projectiles
-          >
-            <sphereGeometry />
-            <meshStandardMaterial 
-              color={stats.emissive || "#ffff00"} 
-              emissive={stats.emissive || "#ffff00"}
-              emissiveIntensity={2}
-              toneMapped={false}
-            />
+          <group key={projectile.id}>
+            <mesh
+              position={projectile.position}
+              scale={elementType === 'storm' ? 0.1 : 0.15}
+            >
+              <sphereGeometry />
+              <meshStandardMaterial 
+                color={stats.emissive} 
+                emissive={stats.emissive}
+                emissiveIntensity={elementType === 'storm' ? 3 : 2}
+                toneMapped={false}
+              />
+            </mesh>
             <Trail
-              width={0.08} // Thinner trail
-              length={6}
-              decay={1}
+              width={elementType === 'storm' ? 0.15 : 0.08}
+              length={elementType === 'storm' ? 8 : 6}
+              decay={elementType === 'storm' ? 0.8 : 1}
               local={false}
               stride={0}
               interval={1}
-              attenuation={(t) => {
-                return t * t;
-              }}
+              attenuation={(t) => t * t}
+              color={stats.emissive}
             >
               <meshBasicMaterial 
-                color={stats.emissive || "#ffff00"} 
+                color={stats.emissive} 
                 toneMapped={false}
                 transparent
                 opacity={0.8}
               />
             </Trail>
-          </mesh>
+          </group>
         );
       })}
     </group>

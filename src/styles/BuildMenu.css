@@ -401,6 +401,7 @@
   transition: all 0.2s ease;
   min-width: 3rem;
   min-height: 3rem;
+  width: 64px;
 }
 
 .tower-button[data-element$="1"] {
