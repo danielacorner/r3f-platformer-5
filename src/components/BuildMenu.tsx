@@ -29,19 +29,6 @@ import { SkillsMenu } from './SkillsMenu';
 
 export const TOWER_TYPES = {
 
-  // Storm Towers
-
-  storm1: { level: 1, type: 'storm1' as ElementType, label: 'Storm I', icon: <GiLightningStorm />, description: 'Chain Lightning', cost: TOWER_STATS.storm1.cost },
-
-  storm2: { level: 2, type: 'storm2' as ElementType, label: 'Storm II', icon: <GiLightningStorm />, description: 'Thunder Strike', cost: TOWER_STATS.storm2.cost },
-
-  storm3: { level: 3, type: 'storm3' as ElementType, label: 'Storm III', icon: <GiLightningStorm />, description: 'Static Field', cost: TOWER_STATS.storm3.cost },
-
-  storm4: { level: 4, type: 'storm4' as ElementType, label: 'Storm IV', icon: <GiLightningStorm />, description: 'Overload', cost: TOWER_STATS.storm4.cost },
-
-  storm5: { level: 5, type: 'storm5' as ElementType, label: 'Storm V', icon: <GiLightningStorm />, description: 'Storm Fury', cost: TOWER_STATS.storm5.cost },
-
-
 
   // Fire Towers
 
@@ -85,6 +72,21 @@ export const TOWER_TYPES = {
 
 
 
+
+  // Storm Towers
+
+  storm1: { level: 1, type: 'storm1' as ElementType, label: 'Storm I', icon: <GiLightningStorm />, description: 'Chain Lightning', cost: TOWER_STATS.storm1.cost },
+
+  storm2: { level: 2, type: 'storm2' as ElementType, label: 'Storm II', icon: <GiLightningStorm />, description: 'Thunder Strike', cost: TOWER_STATS.storm2.cost },
+
+  storm3: { level: 3, type: 'storm3' as ElementType, label: 'Storm III', icon: <GiLightningStorm />, description: 'Static Field', cost: TOWER_STATS.storm3.cost },
+
+  storm4: { level: 4, type: 'storm4' as ElementType, label: 'Storm IV', icon: <GiLightningStorm />, description: 'Overload', cost: TOWER_STATS.storm4.cost },
+
+  storm5: { level: 5, type: 'storm5' as ElementType, label: 'Storm V', icon: <GiLightningStorm />, description: 'Storm Fury', cost: TOWER_STATS.storm5.cost },
+
+
+
   // Water Towers
 
   water1: { level: 1, type: 'water1' as ElementType, label: 'Water I', icon: <GiWaterDrop />, description: 'Basic splash damage', cost: TOWER_STATS.water1.cost },
@@ -109,7 +111,7 @@ export const TOWER_TYPES = {
 
   dark4: { level: 4, type: 'dark4' as ElementType, label: 'Dark IV', icon: <GiSkullCrossedBones />, description: 'Superior reduction', cost: TOWER_STATS.dark4.cost },
 
-  dark5: { level: 5, type: 'dark5' as ElementType, label: 'Dark V', icon: <GiSkullCrossedBones />, description: 'Ultimate reduction', cost: TOWER_STATS.dark5.cost }
+  dark5: { level: 5, type: 'dark5' as ElementType, label: 'Dark V', icon: <GiSkullCrossedBones />, description: 'Ultimate reduction', cost: TOWER_STATS.dark5.cost },
 
 } as const;
 
