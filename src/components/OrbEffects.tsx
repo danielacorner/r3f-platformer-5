@@ -127,12 +127,12 @@ export function OrbEffects({ isAttacking, opacity = 1 }: OrbEffectsProps) {
         color="#7e57c2"
       />
 
-      <Sparkles count={96}
+      {/* <Sparkles count={96}
       speed={1}
       opacity={1}
       scale={1*(1+damage/3)}
       noise={1}
-        />
+        /> */}
 
       {/* Trail */}
       <Trail
