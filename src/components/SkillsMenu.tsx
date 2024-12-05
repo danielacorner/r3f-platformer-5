@@ -7,9 +7,9 @@ import {
   FaBullseye,
   FaShieldAlt,
   FaTimes,
-  FaMagic,
   FaHourglassHalf,
 } from "react-icons/fa";
+import { GiMultipleTargets } from "react-icons/gi";
 import { useGameStore } from "../store/gameStore";
 
 interface SkillsMenuProps {
@@ -37,7 +37,7 @@ const UPGRADE_DETAILS = {
     color: "#3b82f6",
   },
   multishot: {
-    icon: FaMagic,
+    icon: GiMultipleTargets,
     name: "Multi Orb",
     description: "Chance to cast an additional magic orb (+15%)",
     color: "#f97316",
@@ -58,16 +58,16 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
     e.stopPropagation();
   };
 
-  const menuContent = (
+  return createPortal(
     <>
       <div className="skills-menu-overlay" onClick={handleBackdropClick} />
       <div className="skills-menu" onClick={handleMenuClick}>
         <div className="skills-header">
-          <h2>Skills</h2>
+          <h2>Magic Skills</h2>
           <div className="header-right">
             <div className="skill-points">
               <FaStar className="text-yellow-400" />
-              <span>{skillPoints} points</span>
+              <span>{skillPoints} skill points</span>
             </div>
             <button
               className="close-icon-button"
@@ -84,7 +84,6 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
         <div className="skills-grid">
           {Object.entries(UPGRADE_DETAILS).map(
             ([key, { icon: Icon, name, description, color }]) => {
-              // Calculate cumulative effect
               const level = upgrades[key as keyof typeof upgrades];
               let effectText = "";
               if (key === "damage") {
@@ -93,7 +92,9 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
                 const totalSpeedReduction = level * 12;
                 if (totalSpeedReduction >= 100) {
                   const excessReduction = totalSpeedReduction - 100;
-                  effectText = `-100% Cooldown, +${Math.floor(excessReduction)}% Orb Speed`;
+                  effectText = `-100% Cooldown, +${Math.floor(
+                    excessReduction
+                  )}% Orb Speed`;
                 } else {
                   effectText = `-${totalSpeedReduction}% Cooldown`;
                 }
@@ -107,7 +108,14 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
                 <div key={key} className="skill-item">
                   <div
                     className="skill-icon"
-                    style={{ backgroundColor: color }}
+                    data-skill={key}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "1.4rem",
+                      color: "white",
+                    }}
                   >
                     <Icon />
                   </div>
@@ -134,8 +142,7 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
           )}
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
-
-  return createPortal(menuContent, document.body);
 }

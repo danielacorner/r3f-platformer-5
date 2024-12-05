@@ -649,21 +649,25 @@
 
 .skills-menu {
   position: fixed;
-  top: 50%;
+  top: -50vh;
   left: 50%;
   transform: translate(-50%, -50%);
   width: 90%;
-  max-width: 600px;
+  max-width: 800px;
   max-height: 85vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(to bottom, #1e293b, #0f172a);
+  background: linear-gradient(135deg, #1e293b, #0f172a);
   border: 2px solid #3b5998;
   border-radius: 12px;
   padding: 1rem;
   z-index: 10000;
   box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
   animation: slideIn 0.3s ease-out;
+}
+
+.skill-info{
+  flex-grow:1;
 }
 
 @keyframes slideIn {
@@ -741,79 +745,157 @@
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  background: rgba(30, 41, 59, 0.5);
-  border-radius: 8px;
-  border: 1px solid rgba(59, 89, 152, 0.5);
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  transform: scale(1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.skill-item:hover {
+  transform: scale(1.02);
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 
+    0 0 20px rgba(59, 130, 246, 0.15),
+    inset 0 0 20px rgba(59, 130, 246, 0.1);
 }
 
 .skill-icon {
-  width: 2.5rem;
-  height: 2.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  font-size: 1.2rem;
-  color: white;
+  width: 3rem;
+  height: 3rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  flex-shrink:0;
 }
 
-.skill-info {
-  flex: 1;
+.skill-icon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.skill-item:hover .skill-icon::before {
+  opacity: 1;
+}
+
+.skill-icon svg {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  transition: all 0.3s ease;
+}
+
+.skill-item:hover .skill-icon svg {
+  transform: scale(1.1);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
 }
 
 .skill-name {
-  font-weight: 600;
-  color: #e2e8f0;
-  margin-bottom: 0.25rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  background: linear-gradient(to right, #f0f9ff, #bfdbfe);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .skill-description {
-  font-size: 0.8rem;
   color: #94a3b8;
-  margin-bottom: 0.25rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin: 0.5rem 0;
 }
 
 .skill-level {
-  font-size: 0.8rem;
   color: #60a5fa;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-shadow: 0 0 8px rgba(96, 165, 250, 0.3);
 }
 
 .upgrade-button {
-  padding: 0.5rem 1rem;
-  background: #3b82f6;
-  color: white;
+  background: linear-gradient(to bottom, #3b82f6, #2563eb);
   border: none;
-  border-radius: 4px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  padding: 0.6rem 1.2rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: 
+    0 4px 6px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+display:flex;
+justify-content: center;
 }
 
 .upgrade-button:hover:not(:disabled) {
-  background: #2563eb;
-  transform: translateY(-1px);
+  background: linear-gradient(to bottom, #2563eb, #1d4ed8);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 6px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .upgrade-button:disabled {
-  background: #475569;
+  background: linear-gradient(to bottom, #475569, #334155);
   cursor: not-allowed;
   opacity: 0.7;
 }
 
-.close-button {
-  width: 100%;
-  padding: 0.75rem;
-  background: #475569;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
+/* Skill-specific colors */
+.skill-icon[data-skill="damage"] {
+  border-color: #9333ea;
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.2), rgba(147, 51, 234, 0.1));
 }
 
-.close-button:hover {
-  background: #64748b;
+.skill-icon[data-skill="speed"] {
+  border-color: #22d3ee;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.2), rgba(34, 211, 238, 0.1));
+}
+
+.skill-icon[data-skill="range"] {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.1));
+}
+
+.skill-icon[data-skill="multishot"] {
+  border-color: #f97316;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(249, 115, 22, 0.1));
+}
+
+.skills-menu {
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  border: 2px solid #3b5998;
+  box-shadow: 
+    0 0 30px rgba(0, 0, 0, 0.5),
+    inset 0 0 50px rgba(59, 130, 246, 0.1);
+  animation: 
+    slideIn 0.3s ease-out,
+    glowPulse 2s infinite alternate;
+}
+
+@keyframes glowPulse {
+  from { box-shadow: 0 0 30px rgba(0, 0, 0, 0.5), inset 0 0 50px rgba(59, 130, 246, 0.1); }
+  to { box-shadow: 0 0 40px rgba(0, 0, 0, 0.6), inset 0 0 60px rgba(59, 130, 246, 0.15); }
+}
+
+.skills-header {
+  background: linear-gradient(to right, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.2));
+  padding: 1rem;
+  margin: -1rem -1rem 1rem -1rem;
+  border-bottom: 2px solid rgba(59, 130, 246, 0.3);
+}
+
+.skills-header h2 {
+  font-size: 1.75rem;
+  background: linear-gradient(to right, #60a5fa, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 @media screen and (max-width: 640px) {
@@ -935,3 +1017,388 @@
   background: rgba(59, 89, 152, 0.7);
 }
 
+/* High-end Skills Menu Design */
+.skills-menu {
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  box-shadow: 
+    0 0 30px rgba(0, 0, 0, 0.5),
+    0 0 60px rgba(59, 130, 246, 0.1),
+    inset 0 0 100px rgba(59, 130, 246, 0.05);
+  animation: 
+    slideIn 0.3s ease-out,
+    borderGlow 4s infinite alternate;
+  position: relative;
+  overflow: hidden;
+}
+
+.skills-menu::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle at center,
+    transparent 30%,
+    rgba(59, 130, 246, 0.03) 60%,
+    transparent 70%
+  );
+  animation: rotate 20s linear infinite;
+  pointer-events: none;
+}
+
+.skills-menu::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, 
+    rgba(59, 130, 246, 0.1) 0%,
+    transparent 50%,
+    rgba(59, 130, 246, 0.1) 100%
+  );
+  pointer-events: none;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes borderGlow {
+  0% { border-color: rgba(59, 130, 246, 0.3); }
+  50% { border-color: rgba(59, 130, 246, 0.5); }
+  100% { border-color: rgba(59, 130, 246, 0.3); }
+}
+
+.skills-header {
+  background: linear-gradient(to right, 
+    rgba(59, 130, 246, 0.1),
+    rgba(59, 130, 246, 0.2)
+  );
+  padding: 1.5rem;
+  margin: -1rem -1rem 1.5rem -1rem;
+  border-bottom: 2px solid rgba(59, 130, 246, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.skills-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.skills-header h2 {
+  font-size: 2rem;
+  background: linear-gradient(to right, #60a5fa, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  position: relative;
+  display: inline-block;
+}
+
+.skills-header h2::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(to right,
+    transparent,
+    #3b82f6,
+    transparent
+  );
+}
+
+.skill-item {
+  background: linear-gradient(135deg,
+    rgba(30, 41, 59, 0.9),
+    rgba(15, 23, 42, 0.9)
+  );
+  border: 2px solid rgba(59, 130, 246, 0.2);
+  transform: scale(1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.skill-item::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 50%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.skill-item:hover::before {
+  opacity: 1;
+  animation: pulseGlow 2s infinite;
+}
+
+@keyframes pulseGlow {
+  0% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.2); opacity: 0.3; }
+  100% { transform: scale(1); opacity: 0.5; }
+}
+
+.skill-icon {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 1rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.skill-icon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(255, 255, 255, 0.2),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.skill-icon::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(
+    from 0deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  animation: rotate 4s linear infinite;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.skill-item:hover .skill-icon::before,
+.skill-item:hover .skill-icon::after {
+  opacity: 1;
+}
+
+/* Skill-specific icon styles */
+.skill-icon[data-skill="damage"] {
+  background: linear-gradient(135deg,
+    rgba(147, 51, 234, 0.3),
+    rgba(147, 51, 234, 0.1)
+  );
+  box-shadow: 
+    0 0 20px rgba(147, 51, 234, 0.2),
+    inset 0 0 20px rgba(147, 51, 234, 0.1);
+}
+
+.skill-icon[data-skill="speed"] {
+  background: linear-gradient(135deg,
+    rgba(34, 211, 238, 0.3),
+    rgba(34, 211, 238, 0.1)
+  );
+  box-shadow: 
+    0 0 20px rgba(34, 211, 238, 0.2),
+    inset 0 0 20px rgba(34, 211, 238, 0.1);
+}
+
+.skill-icon[data-skill="range"] {
+  background: linear-gradient(135deg,
+    rgba(59, 130, 246, 0.3),
+    rgba(59, 130, 246, 0.1)
+  );
+  box-shadow: 
+    0 0 20px rgba(59, 130, 246, 0.2),
+    inset 0 0 20px rgba(59, 130, 246, 0.1);
+}
+
+.skill-icon[data-skill="multishot"] {
+  background: linear-gradient(135deg,
+    rgba(249, 115, 22, 0.3),
+    rgba(249, 115, 22, 0.1)
+  );
+  box-shadow: 
+    0 0 20px rgba(249, 115, 22, 0.2),
+    inset 0 0 20px rgba(249, 115, 22, 0.1);
+}
+
+.skill-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  background: linear-gradient(to right,
+    #f0f9ff,
+    #bfdbfe
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  position: relative;
+  display: inline-block;
+}
+
+.skill-name::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(to right,
+    transparent,
+    rgba(191, 219, 254, 0.3),
+    transparent
+  );
+}
+
+.skill-description {
+  color: #94a3b8;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0.75rem 0;
+  position: relative;
+  padding-left: 1rem;
+}
+
+.skill-description::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.5rem;
+  width: 3px;
+  height: calc(100% - 1rem);
+  background: linear-gradient(to bottom,
+    rgba(59, 130, 246, 0.3),
+    transparent
+  );
+  border-radius: 2px;
+}
+
+.skill-level {
+  color: #60a5fa;
+  font-weight: 600;
+  font-size: 1rem;
+  text-shadow: 0 0 10px rgba(96, 165, 250, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.upgrade-button {
+  background: linear-gradient(to bottom,
+    #3b82f6,
+    #2563eb
+  );
+  border: none;
+  padding: 0.7rem 1.5rem 0.9rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: 
+    0 4px 6px rgba(0, 0, 0, 0.1),
+    0 0 20px rgba(59, 130, 246, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.75rem;
+}
+
+.upgrade-button::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.2),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.upgrade-button:hover::before {
+  opacity: 1;
+}
+
+.upgrade-button:hover:not(:disabled) {
+  background: linear-gradient(to bottom,
+    #2563eb,
+    #1d4ed8
+  );
+  transform: translateY(-2px);
+  box-shadow: 
+    0 6px 8px rgba(0, 0, 0, 0.2),
+    0 0 30px rgba(59, 130, 246, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.upgrade-button:disabled {
+  background: linear-gradient(to bottom,
+    #475569,
+    #334155
+  );
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Skill points animation */
+.skill-points {
+  position: relative;
+  padding: 0.5rem 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 1rem;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.1rem;
+  color: #fbbf24;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
+}
+
+.skill-points svg {
+  animation: starPulse 2s infinite;
+}
+
+@keyframes starPulse {
+  0% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(251, 191, 36, 0.5)); }
+  50% { transform: scale(1.2); filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.7)); }
+  100% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(251, 191, 36, 0.5)); }
+}
