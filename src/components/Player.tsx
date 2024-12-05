@@ -207,6 +207,8 @@ export function Player({ moveTargetRef }: PlayerProps) {
         enabledRotations={[false, false, false]}
         scale={1 + damage/12}
         linearDamping={0.95}
+        // need this here or else player stops being able to move (like render loop stops or simulation temp reaches 0)
+        gravityScale={0.1} 
       >
         <CuboidCollider args={[0.3, 0.4, 0.3]} position={[0, FLOAT_HEIGHT, 0]} />
         <group ref={visualRef}>
