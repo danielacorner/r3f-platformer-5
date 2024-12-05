@@ -691,6 +691,7 @@
   flex-shrink: 0;
 }
 
+
 .skills-header h2 {
   color: #60a5fa;
   font-size: 1.5rem;
@@ -1087,6 +1088,7 @@ justify-content: center;
 .skills-header::before {
   content: '';
   position: absolute;
+  pointer-events: none;
   top: 0;
   left: -100%;
   width: 200%;
