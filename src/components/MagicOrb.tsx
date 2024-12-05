@@ -5,6 +5,7 @@ import { useGameStore } from '../store/gameStore';
 import { RigidBody } from '@react-three/rapier';
 import { OrbTrail } from './OrbTrail';
 import { OrbEffects } from './OrbEffects';
+import { HitSparks } from "./HitSparks";
 
 const BASE_ORB_RADIUS = 1.5; // Base orbit radius
 const BASE_ORB_SPEED = 2; // Base orbit speed
@@ -24,6 +25,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   const [attackingOrbs, setAttackingOrbs] = useState<{ [key: number]: any }>({});
   const [attackProgress, setAttackProgress] = useState(0);
   const [canAttack, setCanAttack] = useState(true);
+  const [hitEffects, setHitEffects] = useState<{ position: Vector3; key: number }[]>([]);
   
   // Refs for tracking positions and timing
   const lastAttackTime = useRef(0);
@@ -214,6 +216,13 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
           if (newProgress >= 0.45) {
             damageCreep(target.id, actualDamage);
+            // Add hit effect at collision point
+            const hitPosition = new Vector3(
+              target.position[0],
+              target.position[1] + 0.5,
+              target.position[2]
+            );
+            setHitEffects(prev => [...prev, { position: hitPosition, key: Date.now() }]);
           }
         } else {
           // Returning to orbit
@@ -260,6 +269,16 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
           </group>
         );
       })}
+      {/* Hit Effects */}
+      {hitEffects.map(({ position, key }) => (
+        <HitSparks
+          key={key}
+          position={position}
+          onComplete={() => {
+            setHitEffects(prev => prev.filter(effect => effect.key !== key));
+          }}
+        />
+      ))}
     </group>
   );
 }
