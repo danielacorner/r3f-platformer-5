@@ -25,7 +25,7 @@ export function Player({ moveTargetRef }: PlayerProps) {
   const playerRef = useRef<Group>(null);
   const { forward, backward, left, right } = useKeyboardControls();
   const visualRef = useRef<Group>(null);
-  const lastValidPosition = useRef(new Vector3());
+  const lastValidPosition = useRef(new Vector3(0, FLOAT_HEIGHT, 0));
   const cameraOffset = useRef<Vector3 | null>(null);
   const { camera } = useThree();
   const [showLevelUpEffect, setShowLevelUpEffect] = useState(false);
@@ -33,41 +33,36 @@ export function Player({ moveTargetRef }: PlayerProps) {
   const level = useGameStore(state => state.level);
   const range = useGameStore(state => state.upgrades.range);
   const damage = useGameStore(state => state.upgrades.damage);
-  const lastMoveTime = useRef(Date.now());
-  const stuckCheckInterval = useRef<number | null>(null);
   const [rigidBodyKey, setRigidBodyKey] = useState(0);
+  const floatOffset = useRef(0);
 
-  // Monitor movement state
+  // Initialize physics and camera
   useEffect(() => {
-    const checkMovement = () => {
-      const currentTime = Date.now();
-      const timeSinceLastMove = currentTime - lastMoveTime.current;
-      
-      // If we haven't moved for 5 seconds and should be moving
-      if (timeSinceLastMove > 5000 && moveTargetRef.current?.active) {
-        console.log("Movement appears stuck, recreating physics body");
-        // Force RigidBody recreation by changing its key
-        setRigidBodyKey(prev => prev + 1);
-        if (moveTargetRef.current) moveTargetRef.current.active = false;
-      }
-    };
+    if (!playerRef.current || !camera) return;
 
-    stuckCheckInterval.current = window.setInterval(checkMovement, 1000);
+    // Set initial camera position
+    camera.position.set(0, CAMERA_HEIGHT, CAMERA_HEIGHT * 0.5);
+    camera.lookAt(0, 0, 0);
+    
+    // Initialize camera offset
+    cameraOffset.current = camera.position.clone().sub(new Vector3(0, FLOAT_HEIGHT, 0));
+    
+    // Initialize physics state
+    playerRef.current.setTranslation({ x: 0, y: FLOAT_HEIGHT, z: 0 });
+    playerRef.current.setLinvel({ x: 0, y: 0, z: 0 });
+    playerRef.current.resetForces(true);
+    
+    // Reset move target
+    if (moveTargetRef.current) {
+      moveTargetRef.current.active = false;
+    }
 
     return () => {
-      if (stuckCheckInterval.current !== null) {
-        clearInterval(stuckCheckInterval.current);
+      if (moveTargetRef.current) {
+        moveTargetRef.current.active = false;
       }
     };
-  }, []);
-
-  // Store initial camera offset
-  useEffect(() => {
-    if (!playerRef.current) return;
-    const position = playerRef.current.translation();
-    const playerPos = new Vector3(position.x, position.y, position.z);
-    cameraOffset.current = new Vector3().subVectors(camera.position, playerPos);
-  }, []);
+  }, [camera, rigidBodyKey]);
 
   // Check for level up
   useEffect(() => {
@@ -105,12 +100,11 @@ export function Player({ moveTargetRef }: PlayerProps) {
     if (!playerRef.current || !visualRef.current || !cameraOffset.current) return;
 
     const position = playerRef.current.translation();
-    const currentPos2 = new Vector3(position.x, position.y, position.z);
+    const currentPos = new Vector3(position.x, position.y, position.z);
 
-    // Update last move time if position has changed
-    if (!currentPos2.equals(lastValidPosition.current)) {
-      lastMoveTime.current = Date.now();
-    }
+    // Update floating animation
+    floatOffset.current += delta * FLOAT_SPEED;
+    const floatHeight = FLOAT_HEIGHT + Math.sin(floatOffset.current) * 0.1;
 
     // Get movement input
     const velocity = { x: 0, y: 0, z: 0 };
@@ -160,7 +154,7 @@ export function Player({ moveTargetRef }: PlayerProps) {
         velocity.x = directionToTarget.x * MOVE_SPEED;
         velocity.z = directionToTarget.z * MOVE_SPEED;
       } else {
-        if (moveTargetRef.current) moveTargetRef.current.active = false;
+        moveTargetRef.current.active = false;
       }
     }
 
@@ -170,74 +164,35 @@ export function Player({ moveTargetRef }: PlayerProps) {
       if (isNaN(position.x) || isNaN(position.y) || isNaN(position.z)) {
         playerRef.current.setTranslation(lastValidPosition.current);
         playerRef.current.setLinvel({ x: 0, y: 0, z: 0 });
-        playerRef.current.resetForces(true);
-        if (moveTargetRef.current) moveTargetRef.current.active = false;
         return;
       }
 
-      playerRef.current.setLinvel({
-        x: velocity.x,
-        y: 0,
-        z: velocity.z
-      });
+      playerRef.current.setLinvel(velocity);
 
       // Rotate visual group based on movement direction
       const angle = Math.atan2(velocity.x, velocity.z);
       visualRef.current.rotation.y = angle;
-    } else {
-      playerRef.current.setLinvel({ x: 0, y: 0, z: 0 });
+
+      // Update last valid position
+      lastValidPosition.current.copy(currentPos);
     }
 
-    // Keep player at float height
-    const currentPos = playerRef.current.translation();
+    // Keep player at float height with smooth animation
     playerRef.current.setTranslation({
-      x: currentPos.x,
-      y: FLOAT_HEIGHT + Math.sin(state.clock.elapsedTime * FLOAT_SPEED) * 0.1,
-      z: currentPos.z
+      x: position.x,
+      y: floatHeight,
+      z: position.z
     });
 
-    // Update last valid position
-    if (!isNaN(currentPos.x) && !isNaN(currentPos.y) && !isNaN(currentPos.z)) {
-      lastValidPosition.current.set(currentPos.x, currentPos.y, currentPos.z);
-    } else {
-      // Reset to last valid position if current position is invalid
-      playerRef.current.setTranslation(lastValidPosition.current);
-      if (moveTargetRef.current) moveTargetRef.current.active = false;
-      return;
-    }
-
-    // Update camera position while maintaining offset
+    // Update camera position
     const targetCameraPos = new Vector3(
-      lastValidPosition.current.x + cameraOffset.current.x,
-      Math.min(state.camera.position.y + 12,CAMERA_HEIGHT),
-      lastValidPosition.current.z + cameraOffset.current.z
+      position.x + cameraOffset.current.x,
+      position.y + cameraOffset.current.y,
+      position.z + cameraOffset.current.z
     );
 
-    // Calculate the camera's current horizontal angle
-    const currentAngle = Math.atan2(
-      state.camera.position.z - lastValidPosition.current.z,
-      state.camera.position.x - lastValidPosition.current.x
-    );
-
-    // Lerp the angle towards north (Math.PI/2)
-    const targetAngle = Math.PI / 2;
-    const lerpedAngle = currentAngle + (targetAngle - currentAngle) * CAMERA_LERP;
-
-    // Get the distance from camera to target
-    const distance = new Vector3(
-      state.camera.position.x - lastValidPosition.current.x,
-      0,
-      state.camera.position.z - lastValidPosition.current.z
-    ).length();
-
-    // Update camera position using the lerped angle and current distance
-    state.camera.position.x = lastValidPosition.current.x + Math.cos(lerpedAngle) * distance;
-    state.camera.position.z = lastValidPosition.current.z + Math.sin(lerpedAngle) * distance;
-    
-    // Smoothly lerp the height
-    state.camera.position.y += (targetCameraPos.y - state.camera.position.y) * CAMERA_LERP;
-
-    state.camera.lookAt(lastValidPosition.current.x, 0, lastValidPosition.current.z);
+    state.camera.position.lerp(targetCameraPos, CAMERA_LERP);
+    state.camera.lookAt(position.x, 0, position.z);
   });
 
   return (
@@ -248,9 +203,10 @@ export function Player({ moveTargetRef }: PlayerProps) {
         colliders={false}
         mass={1}
         type="dynamic"
-        position={lastValidPosition.current.toArray()}
+        position={[0, FLOAT_HEIGHT, 0]}
         enabledRotations={[false, false, false]}
-        scale={1+damage/12}
+        scale={1 + damage/12}
+        linearDamping={0.95}
       >
         <CuboidCollider args={[0.3, 0.4, 0.3]} position={[0, FLOAT_HEIGHT, 0]} />
         <group ref={visualRef}>
