@@ -558,28 +558,51 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
         if (target?.position) {
           const targetPos = new Vector3(...target.position);
           targetPos.y += 0.3; // Match the target height used in firing
-          const newDir = targetPos.clone().sub(projectile.position).normalize();
-          projectile.velocity = newDir.multiplyScalar(PROJECTILE_SPEED);
+          
+          if (elementType.startsWith('fire')) {
+            // Calculate arc for fireballs
+            const startPos = projectile.position.clone();
+            const distance = targetPos.distanceTo(startPos);
+            const height = Math.min(distance * 0.5, 3); // Arc height based on distance
+            const progress = projectile.position.distanceTo(startPos) / distance;
+            
+            // Parabolic arc
+            const arcY = Math.sin(progress * Math.PI) * height;
+            const newPos = startPos.lerp(targetPos, progress);
+            newPos.y += arcY;
+            
+            // Update projectile position and velocity
+            const newDir = newPos.clone().sub(projectile.position).normalize();
+            projectile.velocity = newDir.multiplyScalar(PROJECTILE_SPEED * 0.8); // Slightly slower for better arc visibility
+          } else {
+            // Regular straight projectiles
+            const newDir = targetPos.clone().sub(projectile.position).normalize();
+            projectile.velocity = newDir.multiplyScalar(PROJECTILE_SPEED);
+          }
         }
         
         return (
           <group key={projectile.id}>
             <mesh
               position={projectile.position}
-              scale={elementType === 'storm' ? 0.1 : 0.15}
+              scale={elementType.startsWith('fire') ? 0.2 : 0.15}
             >
-              <sphereGeometry />
+              {elementType.startsWith('fire') ? (
+                <sphereGeometry args={[1, 8, 8]} />
+              ) : (
+                <sphereGeometry />
+              )}
               <meshStandardMaterial 
                 color={stats.emissive} 
                 emissive={stats.emissive}
-                emissiveIntensity={elementType === 'storm' ? 3 : 2}
+                emissiveIntensity={elementType.startsWith('fire') ? 4 : 2}
                 toneMapped={false}
               />
             </mesh>
             <Trail
-              width={elementType === 'storm' ? 0.15 : 0.08}
-              length={elementType === 'storm' ? 8 : 6}
-              decay={elementType === 'storm' ? 0.8 : 1}
+              width={elementType.startsWith('fire') ? 0.2 : 0.08}
+              length={elementType.startsWith('fire') ? 12 : 6}
+              decay={elementType.startsWith('fire') ? 0.6 : 1}
               local={false}
               stride={0}
               interval={1}

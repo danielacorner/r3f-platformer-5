@@ -20,7 +20,7 @@ interface TowerStats {
   color?: string;
   emissive?: string;
   special?: {
-    type: 'slow' | 'chain_lightning' | 'thunder_strike' | 'static_field' | 'overload' | 'poison' | 'splash' | 'armor_reduction' | 'chain_amplify' | 'aura_amplify' | 'purify' | 'burn' | 'meteor' | 'inferno' | 'phoenix' | 'apocalypse' | 'frozen_ground' | 'shatter' | 'blizzard' | 'absolute_zero' | 'spores' | 'thorns' | 'plague' | 'pandemic' | 'tsunami' | 'whirlpool' | 'flood' | 'maelstrom' | 'curse' | 'void' | 'nightmare' | 'oblivion';
+    type: 'slow' | 'chain_lightning' | 'thunder_strike' | 'static_field' | 'overload' | 'poison' | 'splash' | 'armor_reduction' | 'chain_amplify' | 'aura_amplify' | 'purify' | 'burn' | 'meteor' | 'inferno' | 'phoenix' | 'apocalypse' | 'frozen_ground' | 'shatter' | 'blizzard' | 'absolute_zero' | 'spores' | 'thorns' | 'plague' | 'pandemic' | 'tsunami' | 'whirlpool' | 'flood' | 'maelstrom' | 'curse' | 'void' | 'nightmare' | 'oblivion' | 'fireball' | 'inferno_blast' | 'meteor_strike' | 'volcanic_burst' | 'armageddon';
     value: number;
     bounces?: number;
     radius?: number;
@@ -42,6 +42,8 @@ interface TowerStats {
     soul_harvest?: boolean;
     chain_count?: number;
     fork_chance?: number;
+    splash_radius?: number;
+    burn_duration?: number;
   };
   description?: string;
 }
@@ -55,11 +57,11 @@ export const TOWER_STATS: Record<ElementType, TowerStats> = {
   storm5: { damage: 150, range: 9, attackSpeed: 1.6, cost: 2000, special: { type: 'storm_fury', value: 2.0, tick_damage: 30 }, color: '#fef9c3', emissive: '#facc15', description: "Storm Fury - Continuous lightning damage in area" },
 
   // Fire Towers - Destructive Force
-  fire1: { damage: 40, range: 6, attackSpeed: 0.8, cost: 100, special: { type: 'burn', value: 10 }, color: '#fecaca', emissive: '#ef4444', description: "Ignite - Sets enemies on fire" },
-  fire2: { damage: 85, range: 6.5, attackSpeed: 0.9, cost: 250, special: { type: 'meteor', value: 50, radius: 2 }, color: '#fecaca', emissive: '#ef4444', description: "Meteor - Occasionally drops meteors on groups" },
-  fire3: { damage: 150, range: 7, attackSpeed: 1.0, cost: 500, special: { type: 'inferno', value: 20, stack_multiplier: 1.5 }, color: '#fecaca', emissive: '#ef4444', description: "Inferno - Burns stack and intensify" },
-  fire4: { damage: 250, range: 7.5, attackSpeed: 1.1, cost: 1000, special: { type: 'phoenix', value: 300, cooldown: 10 }, color: '#fecaca', emissive: '#ef4444', description: "Phoenix - Periodically releases a devastating blast" },
-  fire5: { damage: 400, range: 8, attackSpeed: 1.2, cost: 2000, special: { type: 'apocalypse', value: 100, charge_rate: 0.2 }, color: '#fecaca', emissive: '#ef4444', description: "Apocalypse - Damage increases while attacking same target" },
+  fire1: { damage: 40, range: 6, attackSpeed: 0.8, cost: 100, special: { type: 'fireball', value: 15, splash_radius: 1.5 }, color: '#fecaca', emissive: '#ef4444', description: "Fireball - Deals splash damage on impact" },
+  fire2: { damage: 85, range: 6.5, attackSpeed: 0.9, cost: 250, special: { type: 'inferno_blast', value: 25, splash_radius: 2, burn_duration: 3 }, color: '#fecaca', emissive: '#ef4444', description: "Inferno Blast - Larger splash and burns enemies" },
+  fire3: { damage: 150, range: 7, attackSpeed: 1.0, cost: 500, special: { type: 'meteor_strike', value: 40, splash_radius: 2.5, burn_duration: 4 }, color: '#fecaca', emissive: '#ef4444', description: "Meteor Strike - Massive impact with lasting flames" },
+  fire4: { damage: 250, range: 7.5, attackSpeed: 1.1, cost: 1000, special: { type: 'volcanic_burst', value: 60, splash_radius: 3, burn_duration: 5 }, color: '#fecaca', emissive: '#ef4444', description: "Volcanic Burst - Erupts on impact, creating fire zones" },
+  fire5: { damage: 400, range: 8, attackSpeed: 1.2, cost: 2000, special: { type: 'armageddon', value: 100, splash_radius: 4, burn_duration: 6 }, color: '#fecaca', emissive: '#ef4444', description: "Armageddon - Devastating explosions and infernos" },
 
   // Ice Towers - Control and Debuff
   ice1: { damage: 20, range: 7, attackSpeed: 1.2, cost: 100, special: { type: 'slow', value: 0.2 }, color: '#e0f2fe', emissive: '#38bdf8', description: "Frost - Slows enemy movement" },
@@ -187,8 +189,8 @@ const initialState: GameState = {
   score: 0,
   lives: 20,
   experience: process.env.NODE_ENV === 'development' ? 90 : 0,
-  level: 1,
-  skillPoints: process.env.NODE_ENV === 'development' ? 99 : 0,
+  level: 3,
+  skillPoints: process.env.NODE_ENV === 'development' ? 90 : 3,
   upgrades: {
     damage: 0,
     speed: 0,
@@ -455,3 +457,67 @@ export const useGameStore = create<GameState>((set, get) => ({
     return state;
   }),
 }));
+
+const handleProjectileHit = (projectile: Projectile, creep: Creep) => {
+  const tower = towers.find(t => t.id === projectile.towerId);
+  if (!tower) return;
+
+  const stats = TOWER_STATS[tower.type];
+  const special = stats.special;
+
+  // Calculate base damage
+  let damage = stats.damage;
+
+  // Apply special effects
+  if (special) {
+    if (special.type.startsWith('fireball') || special.type.startsWith('inferno_blast') || 
+        special.type.startsWith('meteor_strike') || special.type.startsWith('volcanic_burst') || 
+        special.type.startsWith('armageddon')) {
+      // Apply splash damage to nearby creeps
+      const splashRadius = special.splash_radius || 1.5;
+      const splashDamage = special.value;
+      const burnDuration = special.burn_duration || 0;
+
+      // Find creeps in splash radius
+      creeps.forEach(nearbyCreep => {
+        if (nearbyCreep.id !== creep.id) {
+          const distance = new Vector3(...nearbyCreep.position)
+            .distanceTo(new Vector3(...creep.position));
+          
+          if (distance <= splashRadius) {
+            // Calculate damage falloff based on distance
+            const falloff = 1 - (distance / splashRadius);
+            const totalSplashDamage = splashDamage * falloff;
+            
+            // Apply splash damage
+            nearbyCreep.health -= totalSplashDamage;
+            
+            // Apply burn effect if applicable
+            if (burnDuration > 0) {
+              nearbyCreep.effects.push({
+                type: 'burn',
+                damage: totalSplashDamage * 0.2,
+                duration: burnDuration,
+                tickRate: 1
+              });
+            }
+          }
+        }
+      });
+
+      // Apply burn effect to main target
+      if (burnDuration > 0) {
+        creep.effects.push({
+          type: 'burn',
+          damage: splashDamage * 0.2,
+          duration: burnDuration,
+          tickRate: 1
+        });
+      }
+    }
+    // Handle other special effects...
+  }
+
+  // Apply damage to main target
+  creep.health -= damage;
+}
