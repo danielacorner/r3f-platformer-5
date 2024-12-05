@@ -168,12 +168,6 @@ interface GameState {
     multishot: number;
   };
   wave: number;
-  waveInProgress: boolean;
-  spawnQueue: {
-    type: 'normal' | 'fast' | 'armored' | 'boss';
-    delay: number;
-  }[];
-  waveStartTime?: number;
   creeps: CreepState[];
   projectiles: Projectile[];
   towerStates: TowerState[];
@@ -195,8 +189,8 @@ const initialState: GameState = {
   score: 0,
   lives: 20,
   experience: process.env.NODE_ENV === 'development' ? 90 : 0,
-  level: 1,
-  skillPoints: process.env.NODE_ENV === 'development' ? 90 : 2,
+  level: 3,
+  skillPoints: process.env.NODE_ENV === 'development' ? 90 : 3,
   upgrades: {
     damage: 0,
     speed: 0,
@@ -204,8 +198,6 @@ const initialState: GameState = {
     multishot: 0
   },
   wave: 0,
-  waveInProgress: false,
-  spawnQueue: [],
   creeps: [],
   projectiles: [],
   towerStates: [],
@@ -463,175 +455,6 @@ export const useGameStore = create<GameState>((set, get) => ({
       return { playerRef: ref };
     }
     return state;
-  }),
-
-  startWave: () => set(state => {
-    if (state.waveInProgress) return state;
-
-    // Wave patterns with increased spacing
-    const wavePatterns = [
-      // Wave 1: Introduction - Normal creeps
-      [
-        { type: 'normal', delay: 0 },
-        { type: 'normal', delay: 5000 },
-        { type: 'normal', delay: 10000 },
-        { type: 'normal', delay: 15000 },
-      ],
-      // Wave 2: Mix of normal and fast
-      [
-        { type: 'normal', delay: 0 },
-        { type: 'fast', delay: 4000 },
-        { type: 'normal', delay: 8000 },
-        { type: 'fast', delay: 12000 },
-        { type: 'normal', delay: 16000 },
-      ],
-      // Wave 3: Armored introduction
-      [
-        { type: 'armored', delay: 0 },
-        { type: 'normal', delay: 6000 },
-        { type: 'armored', delay: 12000 },
-        { type: 'normal', delay: 18000 },
-        { type: 'normal', delay: 24000 },
-      ],
-      // Wave 4: Fast assault
-      [
-        { type: 'fast', delay: 0 },
-        { type: 'fast', delay: 5000 },
-        { type: 'fast', delay: 10000 },
-        { type: 'normal', delay: 16000 },
-        { type: 'armored', delay: 22000 },
-        { type: 'fast', delay: 28000 },
-      ],
-      // Wave 5: Mixed challenge
-      [
-        { type: 'armored', delay: 0 },
-        { type: 'fast', delay: 6000 },
-        { type: 'normal', delay: 12000 },
-        { type: 'fast', delay: 18000 },
-        { type: 'armored', delay: 24000 },
-        { type: 'normal', delay: 30000 },
-        { type: 'fast', delay: 36000 },
-      ],
-      // Wave 6: Heavy assault
-      [
-        { type: 'armored', delay: 0 },
-        { type: 'armored', delay: 8000 },
-        { type: 'fast', delay: 14000 },
-        { type: 'fast', delay: 17000 },
-        { type: 'armored', delay: 24000 },
-        { type: 'normal', delay: 30000 },
-        { type: 'normal', delay: 36000 },
-      ],
-      // Wave 7: Speed rush
-      [
-        { type: 'fast', delay: 0 },
-        { type: 'fast', delay: 4000 },
-        { type: 'fast', delay: 8000 },
-        { type: 'normal', delay: 16000 },
-        { type: 'armored', delay: 24000 },
-        { type: 'fast', delay: 30000 },
-        { type: 'fast', delay: 34000 },
-        { type: 'fast', delay: 38000 },
-      ],
-      // Wave 8: Tank parade
-      [
-        { type: 'armored', delay: 0 },
-        { type: 'armored', delay: 8000 },
-        { type: 'armored', delay: 16000 },
-        { type: 'fast', delay: 24000 },
-        { type: 'fast', delay: 28000 },
-        { type: 'armored', delay: 36000 },
-      ],
-      // Wave 9: Mixed mayhem
-      [
-        { type: 'fast', delay: 0 },
-        { type: 'armored', delay: 6000 },
-        { type: 'normal', delay: 12000 },
-        { type: 'fast', delay: 18000 },
-        { type: 'armored', delay: 24000 },
-        { type: 'normal', delay: 30000 },
-        { type: 'fast', delay: 36000 },
-        { type: 'armored', delay: 42000 },
-      ],
-      // Wave 10: Boss wave
-      [
-        { type: 'fast', delay: 0 },
-        { type: 'fast', delay: 4000 },
-        { type: 'armored', delay: 12000 },
-        { type: 'boss', delay: 20000 },
-        { type: 'armored', delay: 28000 },
-        { type: 'fast', delay: 36000 },
-        { type: 'fast', delay: 40000 },
-      ],
-    ];
-
-    const nextWave = state.wave + 1;
-    if (nextWave > wavePatterns.length) return state;
-
-    return {
-      ...state,
-      wave: nextWave,
-      waveInProgress: true,
-      spawnQueue: wavePatterns[nextWave - 1],
-      waveStartTime: Date.now(),
-    };
-  }),
-
-  spawnCreep: (type: 'normal' | 'fast' | 'armored' | 'boss', position: [number, number, number]) => set(state => {
-    const id = Math.random().toString(36).substr(2, 9);
-    
-    const creepStats = {
-      normal: { health: 100, speed: 3, size: 1.5, value: 20 },
-      fast: { health: 60, speed: 6, size: 1.2, value: 25 },
-      armored: { health: 200, speed: 2.25, size: 1.8, value: 40 },
-      boss: { health: 500, speed: 1.5, size: 2.7, value: 100 },
-    };
-
-    const stats = creepStats[type];
-    const creep: CreepState = {
-      id,
-      position,
-      type,
-      health: stats.health,
-      maxHealth: stats.health,
-      speed: stats.speed,
-      size: stats.size,
-      value: stats.value,
-      waveId: state.wave,
-      effects: {},
-    };
-
-    return {
-      ...state,
-      enemiesAlive: state.enemiesAlive + 1,
-      creeps: [...state.creeps, creep],
-    };
-  }),
-
-  updateWave: () => set(state => {
-    if (!state.waveInProgress || state.spawnQueue.length === 0) return state;
-
-    const now = Date.now();
-    const startTime = state.waveStartTime || now;
-    const elapsed = now - startTime;
-
-    // Find creeps ready to spawn
-    const readyToSpawn = state.spawnQueue.filter(c => c.delay <= elapsed);
-    const remainingQueue = state.spawnQueue.filter(c => c.delay > elapsed);
-
-    // Spawn ready creeps
-    readyToSpawn.forEach(({ type }) => {
-      state.spawnCreep(type, [20, 1, 20]); // Starting position
-    });
-
-    // Check if wave is complete
-    const waveComplete = remainingQueue.length === 0 && state.enemiesAlive === 0;
-
-    return {
-      ...state,
-      spawnQueue: remainingQueue,
-      waveInProgress: !waveComplete,
-    };
   }),
 }));
 

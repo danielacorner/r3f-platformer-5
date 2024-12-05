@@ -10,132 +10,113 @@ import { BufferGeometryUtils } from 'three/examples/jsm/Addons.js';
 // Create geometries for different creep types
 const CREEP_GEOMETRIES = {
   normal: (() => {
-    // Forest Guardian - Crystal-like structure
-    const base = new CylinderGeometry(0.4, 0.8, 2.0, 6);
-    base.translate(0, 1.0, 0);
-    
-    const top = new SphereGeometry(0.6, 8, 8);
-    top.translate(0, 2.0, 0);
-    
-    const crystal1 = new CylinderGeometry(0.2, 0, 0.8, 4);
-    crystal1.translate(0.4, 1.8, 0.4);
-    
-    const crystal2 = crystal1.clone();
-    crystal2.translate(-0.8, 0, -0.8);
-    
-    return BufferGeometryUtils.mergeGeometries([base, top, crystal1, crystal2]);
+    // Forest Sprite - Tall and mystical tree creature
+    const geometry = new CylinderGeometry(0.2, 0.4, 1.5, 6);
+    geometry.translate(0, 0.75, 0);
+    return geometry;
   })(),
-  
+
   fast: (() => {
-    // Wind Dancer - Sleek with trailing ribbons
-    const body = new CylinderGeometry(0.3, 0.6, 1.8, 5);
-    body.rotateZ(Math.PI / 6);
-    
-    const wing1 = new BoxGeometry(1.2, 0.15, 0.4);
-    wing1.translate(0.6, 0.3, 0);
-    
-    const wing2 = wing1.clone();
-    wing2.translate(-1.2, -0.6, 0);
-    
-    const tail = new CylinderGeometry(0.2, 0.05, 1.2, 4);
-    tail.rotateZ(-Math.PI / 3);
-    tail.translate(-0.4, -0.8, 0);
-    
-    return BufferGeometryUtils.mergeGeometries([body, wing1, wing2, tail]);
+    // Wind Spirit - Light and ethereal
+    const geometry = new ConeGeometry(0.3, 1.2, 5);
+    geometry.translate(0, 0.6, 0);
+    geometry.rotateY(Math.PI / 4);
+    return geometry;
   })(),
-  
+
   armored: (() => {
-    // War Machine - Heavy tank with details
-    const body = new BoxGeometry(1.8, 1.2, 2.2);
-    
-    const turret = new CylinderGeometry(0.5, 0.5, 0.6, 8);
-    turret.rotateX(Math.PI / 2);
-    turret.translate(0, 0.6, 0);
-    
-    const barrel = new CylinderGeometry(0.15, 0.15, 1.2, 8);
-    barrel.rotateZ(Math.PI / 2);
-    barrel.translate(0.6, 0.6, 0);
-    
-    const armor1 = new BoxGeometry(2.0, 0.3, 0.4);
-    armor1.translate(0, -0.2, 0.8);
-    
-    const armor2 = armor1.clone();
-    armor2.translate(0, 0, -1.6);
-    
-    return BufferGeometryUtils.mergeGeometries([body, turret, barrel, armor1, armor2]);
+    // Ancient Guardian - Heavy and imposing
+    const geometry = new CylinderGeometry(0.5, 0.6, 1.2, 6);
+    geometry.translate(0, 0.6, 0);
+    return geometry;
   })(),
-  
+
   boss: (() => {
-    // Doom Harbinger - Complex and intimidating
-    const core = new SphereGeometry(1.2, 8, 8);
-    
-    const crown = new CylinderGeometry(0.9, 1.2, 0.9, 6);
-    crown.translate(0, 1.0, 0);
-    
-    const spike1 = new CylinderGeometry(0.15, 0, 0.9, 4);
-    spike1.translate(0.6, 1.3, 0.6);
-    
-    const spike2 = spike1.clone();
-    spike2.translate(-1.2, 0, -1.2);
-    
-    const ring1 = new TorusGeometry(1.8, 0.15, 8, 24);
-    ring1.rotateX(Math.PI / 3);
-    
-    const ring2 = ring1.clone();
-    ring2.rotateX(-Math.PI / 3);
-    ring2.rotateY(Math.PI / 4);
-    
-    return BufferGeometryUtils.mergeGeometries([core, crown, spike1, spike2, ring1, ring2]);
+    // Dark Forest Lord - Massive and threatening
+    const geometry = new CylinderGeometry(0.8, 1.0, 1.8, 8);
+    geometry.translate(0, 0.9, 0);
+    return geometry;
   })(),
 };
 
-// Base sizes for different creep types (increased further)
-const creepSizes = {
-  normal: [2.0, 2.0, 2.0],    // Even larger balanced size
-  fast: [1.6, 1.6, 1.6],      // Larger but still agile
-  armored: [2.4, 2.4, 2.4],   // Massive tank
-  boss: [3.6, 3.6, 3.6],      // Truly imposing
+// Speed multipliers for different creep types
+const creepSpeeds = {
+  normal: 0.2,
+  fast: 0.3,
+  armored: 0.15,
+  boss: 0.1,
 };
 
-// Materials for different creep types (enhanced visibility)
+// Materials for different creep types
 const creepMaterials = {
   normal: new MeshStandardMaterial({
-    color: new Color('#4CAF50'),  // Brighter forest green
-    roughness: 0.6,
-    metalness: 0.4,
+    color: new Color('#2d4a1c'),  // Dark forest green
+    roughness: 0.7,
+    metalness: 0.2,
     flatShading: true,
   }),
   fast: new MeshStandardMaterial({
-    color: new Color('#00BCD4'),  // Bright cyan
-    roughness: 0.3,
-    metalness: 0.7,
+    color: new Color('#4a7c59'),  // Forest sage
+    roughness: 0.6,
+    metalness: 0.3,
     flatShading: true,
   }),
   armored: new MeshStandardMaterial({
-    color: new Color('#B0BEC5'),  // Brighter steel
-    roughness: 0.2,
-    metalness: 0.9,
+    color: new Color('#1f3d0c'),  // Deep forest
+    roughness: 0.5,
+    metalness: 0.4,
     flatShading: true,
   }),
   boss: new MeshStandardMaterial({
-    color: new Color('#FF5252'),  // Bright crimson
-    roughness: 0.4,
-    metalness: 0.8,
-    emissive: new Color('#FF1744'),  // Brighter red glow
+    color: new Color('#8b0000'),  // Dark red
+    roughness: 0.3,
+    metalness: 0.6,
+    emissive: new Color('#400000'),
     emissiveIntensity: 0.5,
     flatShading: true,
   }),
 };
 
-// Speed multipliers remain the same as they're already fast
-const creepSpeeds = {
-  normal: 0.3,
-  fast: 0.45,
-  armored: 0.225,
-  boss: 0.15,
+const tempObject = new Object3D();
+const tempVector = new Vector3();
+const tempMatrix = new Matrix4();
+
+interface CreepData {
+  id: number;
+  position: [number, number, number];
+  type: 'normal' | 'armored' | 'fast' | 'boss';
+  health: number;
+  maxHealth: number;
+  effects: {
+    [key: string]: {
+      value: number;
+      duration: number;
+      startTime: number;
+      stacks?: number;
+    };
+  };
+}
+
+interface CreepManagerProps {
+  pathPoints: Vector3[];
+}
+
+const SPEED_MULTIPLIER = 1;
+
+const creepSizes = {
+  normal: [1.0, 1.0, 1.0],    // Infantry mech
+  fast: [0.8, 0.8, 0.8],      // Stealth drone
+  armored: [1.2, 1.2, 1.2],   // Battle tank
+  boss: [1.8, 1.8, 1.8],      // Assault walker
 };
 
-// Rewards for killing creeps
+const creepColors = {
+  normal: '#2d4a1c',    // Dark forest green
+  armored: '#94a3b8',   // Bright steel - stands out well
+  fast: '#2dd4bf',      // Bright teal - distinctive
+  boss: '#f43f5e',      // Bright rose - imposing
+};
+
 const creepRewards = {
   normal: 20,
   armored: 40,
@@ -158,9 +139,9 @@ const effectColors = {
   mark: '#ff00ff',
 };
 
-const creeps: any[] = [];
+const creeps: CreepManagerProps[] = [];
 
-export function CreepManager({ pathPoints }: any) {
+export function CreepManager({ pathPoints }: CreepManagerProps) {
   const meshRef = useRef<InstancedMesh>(null);
   const healthBarBackgroundRef = useRef<InstancedMesh>(null);
   const healthBarForegroundRef = useRef<InstancedMesh>(null);
@@ -296,7 +277,7 @@ export function CreepManager({ pathPoints }: any) {
 
       if (currentPoint && nextPoint) {
         // Update progress along current path segment
-        const speed = creepSpeeds[creep.type] * 1 || 0.1;
+        const speed = creepSpeeds[creep.type] * SPEED_MULTIPLIER || 0.1;
         pathState.progress += speed * delta;
 
         // Calculate position along path
@@ -311,7 +292,6 @@ export function CreepManager({ pathPoints }: any) {
         const angle = Math.atan2(direction.x, direction.z);
 
         // Update creep instance
-        const tempObject = new Object3D();
         tempObject.position.copy(position);
         tempObject.position.y += 0.5;
         tempObject.rotation.y = angle;
@@ -329,22 +309,20 @@ export function CreepManager({ pathPoints }: any) {
         const healthColor = healthPercent > 0.5 ? '#22c55e' : healthPercent > 0.25 ? '#eab308' : '#ef4444';
 
         // Update background bar
-        const tempObject2 = new Object3D();
-        tempObject2.position.set(position.x, position.y + 1.5, position.z);
-        tempObject2.quaternion.copy(cameraQuaternion);
-        tempObject2.scale.set(barWidth, barHeight, 1);
-        tempObject2.updateMatrix();
-        healthBarBackgroundRef.current.setMatrixAt(index, tempObject2.matrix);
+        tempObject.position.set(position.x, position.y + 1.5, position.z);
+        tempObject.quaternion.copy(cameraQuaternion);
+        tempObject.scale.set(barWidth, barHeight, 1);
+        tempObject.updateMatrix();
+        healthBarBackgroundRef.current.setMatrixAt(index, tempObject.matrix);
 
         // Update foreground (health) bar
         const healthBarWidth = barWidth * healthPercent;
         const healthBarX = position.x + (-barWidth * (1 - healthPercent)) / 2;
-        const tempObject3 = new Object3D();
-        tempObject3.position.set(healthBarX, position.y + 1.5, position.z + 0.01);
-        tempObject3.quaternion.copy(cameraQuaternion);
-        tempObject3.scale.set(healthBarWidth, barHeight, 1);
-        tempObject3.updateMatrix();
-        healthBarForegroundRef.current.setMatrixAt(index, tempObject3.matrix);
+        tempObject.position.set(healthBarX, position.y + 1.5, position.z + 0.01);
+        tempObject.quaternion.copy(cameraQuaternion);
+        tempObject.scale.set(healthBarWidth, barHeight, 1);
+        tempObject.updateMatrix();
+        healthBarForegroundRef.current.setMatrixAt(index, tempObject.matrix);
         (healthBarForegroundRef.current.material as MeshBasicMaterial).color.set(healthColor);
 
         // Move to next path segment if needed
@@ -368,23 +346,21 @@ export function CreepManager({ pathPoints }: any) {
 
     // Hide unused instances
     for (let i = creeps.length; i < 100; i++) {
-      const tempObject4 = new Object3D();
-      tempObject4.position.set(0, -1000, 0);
-      tempObject4.scale.set(0, 0, 0);
-      tempObject4.updateMatrix();
-      healthBarBackgroundRef.current.setMatrixAt(i, tempObject4.matrix);
-      healthBarForegroundRef.current.setMatrixAt(i, tempObject4.matrix);
+      tempObject.position.set(0, -1000, 0);
+      tempObject.scale.set(0, 0, 0);
+      tempObject.updateMatrix();
+      healthBarBackgroundRef.current.setMatrixAt(i, tempObject.matrix);
+      healthBarForegroundRef.current.setMatrixAt(i, tempObject.matrix);
     }
 
     // Hide unused creep instances
     Object.entries(creepMeshes.current).forEach(([type, mesh]) => {
       const usedCount = usedIndices[type] || 0;
       for (let i = usedCount; i < mesh.count; i++) {
-        const tempObject5 = new Object3D();
-        tempObject5.position.set(0, -1000, 0);
-        tempObject5.scale.set(0, 0, 0);
-        tempObject5.updateMatrix();
-        mesh.setMatrixAt(i, tempObject5.matrix);
+        tempObject.position.set(0, -1000, 0);
+        tempObject.scale.set(0, 0, 0);
+        tempObject.updateMatrix();
+        mesh.setMatrixAt(i, tempObject.matrix);
       }
       mesh.instanceMatrix.needsUpdate = true;
     });

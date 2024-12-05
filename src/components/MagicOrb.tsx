@@ -150,41 +150,41 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
     const playerPos = new Vector3(position.x, position.y, position.z);
     const time = Date.now() * 0.002 * actualOrbSpeed*(1+speed*0.12);
 
+    // Complex orbit pattern for non-attacking orbs
+    orbsRef.current.forEach((orb, index) => {
+      if (!orb || attackingOrbs[index]) return; // Skip if orb is attacking
+      
+      const baseAngle = time + (Math.PI * 2 * index) / orbsRef.current.length;
+      
+      // Create a complex pattern using multiple sine waves
+      const frequency1 = 1;
+      const frequency2 = 0.5;
+      const phase = index * Math.PI / 3;
+      
+      // Main orbit
+      const mainRadius = BASE_ORB_RADIUS * (1 + range/1.5);
+      
+      // Add secondary movements
+      const radiusModulation = Math.sin(time * frequency2 + phase) * 0.3;
+      const currentRadius = mainRadius * (1 + radiusModulation);
+      
+      // Create a figure-8 like pattern
+      const orbitX = Math.cos(baseAngle * frequency1) * currentRadius +
+                    Math.sin(time * frequency2 + phase) * mainRadius * 0.2;
+      const orbitZ = Math.sin(baseAngle * frequency1) * currentRadius +
+                    Math.cos(time * frequency2 + phase) * mainRadius * 0.2;
+
+      // Add subtle vertical movement
+      const heightOffset = Math.sin(time * frequency2 + phase) * 0.2;
+      
+      orb.position.set(
+        playerPos.x + orbitX,
+        playerPos.y + 1 + heightOffset,
+        playerPos.z + orbitZ
+      );
+    });
+
     if (!isAttacking) {
-      // Complex orbit pattern for all orbs
-      orbsRef.current.forEach((orb, index) => {
-        if (orb) {
-          const baseAngle = time + (Math.PI * 2 * index) / orbsRef.current.length;
-          
-          // Create a complex pattern using multiple sine waves
-          const frequency1 = 1;
-          const frequency2 = 0.5;
-          const phase = index * Math.PI / 3;
-          
-          // Main orbit
-          const mainRadius = BASE_ORB_RADIUS * (1 + range/1.5);
-          
-          // Add secondary movements
-          const radiusModulation = Math.sin(time * frequency2 + phase) * 0.3;
-          const currentRadius = mainRadius * (1 + radiusModulation);
-          
-          // Create a figure-8 like pattern
-          const orbitX = Math.cos(baseAngle * frequency1) * currentRadius +
-                        Math.sin(time * frequency2 + phase) * mainRadius * 0.2;
-          const orbitZ = Math.sin(baseAngle * frequency1) * currentRadius +
-                        Math.cos(time * frequency2 + phase) * mainRadius * 0.2;
-
-          // Add subtle vertical movement
-          const heightOffset = Math.sin(time * frequency2 + phase) * 0.2;
-          
-          orb.position.set(
-            playerPos.x + orbitX,
-            playerPos.y + 1 + heightOffset,
-            playerPos.z + orbitZ
-          );
-        }
-      });
-
       // Check for new attacks
       if (canAttack) {
         const enemies = findNearestEnemies();
