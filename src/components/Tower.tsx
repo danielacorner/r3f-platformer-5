@@ -12,6 +12,7 @@ import { createShaderMaterial } from '../utils/shaders';
 import { ObjectPool } from '../utils/objectPool';
 import { TowerSellMenu } from './TowerSellMenu';
 import { GridMarker } from './GridMarker';
+import { Lightning } from './Lightning';
 
 const TOWER_GEOMETRY = new THREE.BoxGeometry(1, 2, 1);
 const PROJECTILE_GEOMETRY = new THREE.SphereGeometry(0.1, 8, 8);
@@ -169,8 +170,92 @@ export function Tower({ position, type = 'dark1', level = 1, preview = false, on
 
   const lastAttackTime = useRef(0);
   const [projectiles, setProjectiles] = useState<Projectile[]>([]);
-  const PROJECTILE_SPEED = 15; // Reduced speed for better visibility
+  const [lightnings, setLightnings] = useState<{ start: Vector3, end: Vector3, id: number }[]>([]);
+  const PROJECTILE_SPEED = 15;
   const towerRef = useRef<THREE.Group>(null);
+
+  const isStormTower = elementType === 'storm';
+
+  useFrame((_, delta) => {
+    if (preview) return;
+
+    // Update existing projectiles
+    if (!isStormTower) {
+      setProjectiles(prev => 
+        prev
+          .map(projectile => ({
+            ...projectile,
+            position: projectile.position.clone().add(
+              projectile.velocity.clone().multiplyScalar(delta)
+            ),
+            timeAlive: projectile.timeAlive + delta
+          }))
+          .filter(projectile => projectile.timeAlive < 1)
+      );
+    }
+
+    // Check if we can fire
+    const now = Date.now();
+    if (now - lastAttackTime.current < attackCooldown) return;
+
+    // Find target
+    const towerPos = new Vector3(...(position instanceof Vector3 ? position.toArray() : position));
+    const target = creeps.find(creep => {
+      if (!creep.position || creep.health <= 0) return false;
+      const dist = new Vector3(...creep.position).distanceTo(towerPos);
+      return dist <= range;
+    });
+
+    if (target) {
+      const firePos = towerPos.clone();
+      firePos.y += 0.8;
+      const targetPos = new Vector3(...target.position);
+      targetPos.y += 0.3;
+
+      if (isStormTower) {
+        // Create storm bolt from tower
+        setLightnings(prev => [...prev, {
+          start: firePos,
+          end: targetPos,
+          id: Math.random()
+        }]);
+
+        if (onDamageEnemy) {
+          onDamageEnemy(target.id, damage, {
+            [elementType]: {
+              value: stats.special?.value || 0,
+              duration: stats.special?.duration || 3000,
+              startTime: now,
+              type: stats.special?.type
+            }
+          });
+        }
+      } else {
+        // Regular projectile for other towers
+        const direction = targetPos.clone().sub(firePos).normalize();
+        setProjectiles(prev => [...prev, {
+          id: Math.random(),
+          position: firePos,
+          velocity: direction.multiplyScalar(PROJECTILE_SPEED),
+          creepId: target.id,
+          timeAlive: 0
+        }]);
+
+        if (onDamageEnemy) {
+          onDamageEnemy(target.id, damage, {
+            [elementType]: {
+              value: stats.special?.value || 0,
+              duration: stats.special?.duration || 3000,
+              startTime: now,
+              type: stats.special?.type
+            }
+          });
+        }
+      }
+
+      lastAttackTime.current = now;
+    }
+  });
 
   // Add hover and sell state
   const [isHovered, setIsHovered] = useState(false);
@@ -225,67 +310,6 @@ export function Tower({ position, type = 'dark1', level = 1, preview = false, on
   const handleClose = () => {
     setShowSellMenu(false);
   };
-
-  useFrame((_, delta) => {
-    if (preview) return;
-
-    // Update existing projectiles
-    setProjectiles(prev => 
-      prev
-        .map(projectile => ({
-          ...projectile,
-          position: projectile.position.clone().add(
-            projectile.velocity.clone().multiplyScalar(delta)
-          ),
-          timeAlive: projectile.timeAlive + delta
-        }))
-        .filter(projectile => projectile.timeAlive < 1)
-    );
-
-    // Check if we can fire
-    const now = Date.now();
-    if (now - lastAttackTime.current < attackCooldown) return;
-
-    // Find target
-    const towerPos = new Vector3(...(position instanceof Vector3 ? position.toArray() : position));
-    const target = creeps.find(creep => {
-      if (!creep.position || creep.health <= 0) return false;
-      const dist = new Vector3(...creep.position).distanceTo(towerPos);
-      return dist <= range;
-    });
-
-    if (target) {
-      // Fire projectile
-      const firePos = towerPos.clone();
-      firePos.y += 0.8; // Adjusted firing height to match tower's mid-section
-
-      const targetPos = new Vector3(...target.position);
-      targetPos.y += 0.3; // Aim slightly above enemy's base
-
-      const direction = targetPos.clone().sub(firePos).normalize();
-
-      setProjectiles(prev => [...prev, {
-        id: Math.random(),
-        position: firePos,
-        velocity: direction.multiplyScalar(PROJECTILE_SPEED),
-        creepId: target.id,
-        timeAlive: 0
-      }]);
-
-      if (onDamageEnemy) {
-        onDamageEnemy(target.id, damage, {
-          [elementType]: {
-            value: stats.special?.value || 0,
-            duration: stats.special?.duration || 3000,
-            startTime: now,
-            type: stats.special?.type
-          }
-        });
-      }
-
-      lastAttackTime.current = now;
-    }
-  });
 
   // Extract actual level from tower type (e.g., "fire5" -> 5)
   const actualLevel = parseInt(type.slice(-1)) || 1;
@@ -634,74 +658,56 @@ export function Tower({ position, type = 'dark1', level = 1, preview = false, on
           </group>
         )}
 
-        {/* Projectiles */}
-        {projectiles.map(projectile => {
-          // Update target position for active projectiles
-          const target = creeps.find(c => c.id === projectile.creepId);
-          if (target?.position) {
-            const targetPos = new Vector3(...target.position);
-            targetPos.y += 0.3; // Match the target height used in firing
-            
-            if (elementType.startsWith('fire')) {
-              // Calculate arc for fireballs
-              const startPos = projectile.position.clone();
-              const distance = targetPos.distanceTo(startPos);
-              const height = Math.min(distance * 0.5, 3); // Arc height based on distance
-              const progress = projectile.position.distanceTo(startPos) / distance;
-              
-              // Parabolic arc
-              const arcY = Math.sin(progress * Math.PI) * height;
-              const newPos = startPos.lerp(targetPos, progress);
-              newPos.y += arcY;
-              
-              // Update projectile position and velocity
-              const newDir = newPos.clone().sub(projectile.position).normalize();
-              projectile.velocity = newDir.multiplyScalar(PROJECTILE_SPEED * 0.8); // Slightly slower for better arc visibility
-            } else {
-              // Regular straight projectiles
-              const newDir = targetPos.clone().sub(projectile.position).normalize();
-              projectile.velocity = newDir.multiplyScalar(PROJECTILE_SPEED);
-            }
-          }
-          
-          return (
-            <group key={projectile.id}>
-              <mesh
-                position={projectile.position}
-                scale={elementType.startsWith('fire') ? 0.2 : 0.15}
-              >
-                {elementType.startsWith('fire') ? (
-                  <sphereGeometry args={[1, 8, 8]} />
-                ) : (
-                  <sphereGeometry />
-                )}
-                <meshStandardMaterial 
-                  color={stats.emissive} 
-                  emissive={stats.emissive}
-                  emissiveIntensity={elementType.startsWith('fire') ? 4 : 2}
-                  toneMapped={false}
-                />
-              </mesh>
-              <Trail
-                width={elementType.startsWith('fire') ? 0.2 : 0.08}
-                length={elementType.startsWith('fire') ? 12 : 6}
-                decay={elementType.startsWith('fire') ? 0.6 : 1}
-                local={false}
-                stride={0}
-                interval={1}
-                attenuation={(t) => t * t}
-                color={stats.emissive}
-              >
-                <meshBasicMaterial 
-                  color={stats.emissive} 
-                  toneMapped={false}
-                  transparent
-                  opacity={0.8}
-                />
-              </Trail>
-            </group>
-          );
-        })}
+        {/* Regular projectiles for non-storm towers */}
+        {!isStormTower && projectiles.map(projectile => (
+          <group key={projectile.id}>
+            <mesh
+              position={projectile.position}
+              scale={elementType.startsWith('fire') ? 0.2 : 0.15}
+            >
+              {elementType.startsWith('fire') ? (
+                <sphereGeometry args={[1, 8, 8]} />
+              ) : (
+                <sphereGeometry />
+              )}
+              <meshStandardMaterial 
+                color={stats.emissive} 
+                emissive={stats.emissive}
+                emissiveIntensity={elementType.startsWith('fire') ? 4 : 2}
+                toneMapped={false}
+              />
+            </mesh>
+            <Trail
+              width={elementType.startsWith('fire') ? 0.2 : 0.08}
+              length={elementType.startsWith('fire') ? 12 : 6}
+              decay={elementType.startsWith('fire') ? 0.6 : 1}
+              local={false}
+              stride={0}
+              interval={1}
+              attenuation={(t) => t * t}
+              color={stats.emissive}
+            >
+              <meshBasicMaterial 
+                color={stats.emissive} 
+                toneMapped={false}
+                transparent
+                opacity={0.8}
+              />
+            </Trail>
+          </group>
+        ))}
+
+        {/* Storm bolts */}
+        {isStormTower && lightnings.map(bolt => (
+          <Lightning
+            key={bolt.id}
+            startPosition={bolt.start}
+            endPosition={bolt.end}
+            onComplete={() => {
+              setLightnings(prev => prev.filter(b => b.id !== bolt.id));
+            }}
+          />
+        ))}
         
         {/* Sell menu */}
         {showSellMenu && !preview && (
