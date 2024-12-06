@@ -93,12 +93,21 @@ export const TOWER_STATS: Record<ElementType, TowerStats> = {
   dark5: { damage: 200, range: 9, attackSpeed: 1.4, cost: 2000, special: { type: 'oblivion', value: 0.60, soul_harvest: true }, color: '#f3e8ff', emissive: '#a855f7', description: "Oblivion - Harvests souls of fallen enemies for bonus effects" }
 }
 
-export const isTowerOnPath = (position: [number, number, number]) => {
+export const isTowerOnPath = (position: number[] | { x: number; y: number; z: number }) => {
   const pathData = generatePath();
   const towerRadius = 0.5; // Half width of tower
 
+  // Convert position to [x, y, z] format
+  let x: number, y: number, z: number;
+  if (Array.isArray(position)) {
+    [x, y, z] = position;
+  } else {
+    x = position.x;
+    y = position.y;
+    z = position.z;
+  }
+
   for (const segment of pathData.segments) {
-    const [x, y, z] = position;
     const [segX, segY, segZ] = segment.position;
     const [scaleX, scaleY, scaleZ] = segment.scale;
     const rotation = segment.rotation[1];
@@ -206,6 +215,11 @@ interface GameState {
   playerRef: any | null;
   orbSpeed: number;
   highlightedPathSegment: PathSegment | null;
+  addPlacedTower: (
+    position: number[] | { x: number; y: number; z: number },
+    type: ElementType,
+    level?: number
+  ) => void;
 }
 
 const initialState: GameState = {
@@ -277,8 +291,15 @@ export const useGameStore = create<GameState>((set, get) => ({
     const state = get();
     const cost = TOWER_STATS[type]?.cost ?? 0;
     
+    // Convert position to array format if it's a Vector3
+    const positionArray = position instanceof Vector3 
+      ? position.toArray()
+      : Array.isArray(position) 
+        ? position 
+        : [position.x, position.y, position.z];
+
     // Check if tower is on path
-    const collidingSegment = isTowerOnPath(position as [number, number, number]);
+    const collidingSegment = isTowerOnPath(positionArray);
     if (collidingSegment) {
       return;
     }
@@ -287,7 +308,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       set(state => ({
         placedTowers: [...state.placedTowers, {
           id: Date.now(),
-          position,
+          position: positionArray,
           type,
           level,
           kills: 0

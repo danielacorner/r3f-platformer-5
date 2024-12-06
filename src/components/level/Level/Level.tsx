@@ -321,12 +321,11 @@ export function Level() {
       if (!isOccupied) {
         const stats = TOWER_STATS[selectedObjectType];
         if (money >= stats.cost) {
-          addPlacedTower({
-            id: Date.now(),
-            position: snappedPosition.toArray(),
-            type: selectedObjectType,
-            level: selectedObjectLevel,
-          });
+          addPlacedTower(
+            snappedPosition.toArray(),
+            selectedObjectType,
+            selectedObjectLevel
+          );
           setSelectedObjectType(null);
         }
       }
@@ -335,7 +334,11 @@ export function Level() {
 
   const handleConfirmTower = () => {
     if (pendingTowerPosition && selectedObjectType) {
-      addPlacedTower(pendingTowerPosition, selectedObjectType, selectedObjectLevel);
+      addPlacedTower(
+        pendingTowerPosition,
+        selectedObjectType,
+        selectedObjectLevel
+      );
       setSelectedObjectType(null);
       setPendingTowerPosition(null);
     }

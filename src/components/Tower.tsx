@@ -158,14 +158,14 @@ export function TowerManager({ towers }: TowerManagerProps) {
   );
 }
 
-export function Tower({ position, type, level = 1, preview = false, onDamageEnemy, canAfford = true, id }: TowerProps) {
+export function Tower({ position, type = 'dark1', level = 1, preview = false, onDamageEnemy, canAfford = true, id }: TowerProps) {
   const phase = useGameStore(state => state.phase);
   const creeps = useGameStore(state => state.creeps);
   const stats = TOWER_STATS[type] ?? TOWER_STATS.dark1;
   const attackCooldown = 1000 / stats.attackSpeed;
   const range = stats.range * (1 + (level - 1) * 0.2);
   const damage = stats.damage * (1 + (level - 1) * 0.3);
-  const elementType = type.replace(/[0-9]/g, '');
+  const elementType = type?.replace(/[0-9]/g, '') || 'dark';
 
   const lastAttackTime = useRef(0);
   const [projectiles, setProjectiles] = useState<Projectile[]>([]);
