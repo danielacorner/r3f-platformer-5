@@ -291,10 +291,18 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
     <group 
       ref={towerRef} 
       position={position instanceof Vector3 ? position.toArray() : position}
-      onClick={handleClick}
-      onPointerOver={handlePointerOver}
-      onPointerOut={handlePointerOut}
     >
+      {/* Invisible click area */}
+      <mesh
+        onClick={handleClick}
+        onPointerOver={handlePointerOver}
+        onPointerOut={handlePointerOut}
+        position={[0, scaledHeight / 2, 0]}
+      >
+        <cylinderGeometry args={[scaledWidth * 1.35, scaledWidth * 1.35, scaledHeight, 8]} />
+        <meshBasicMaterial transparent opacity={0} />
+      </mesh>
+
       {/* Base platform for all towers */}
       <mesh position={[0, 0.1, 0]} castShadow receiveShadow>
         <cylinderGeometry args={[scaledWidth * 0.7, scaledWidth * 0.8, 0.2, 8]} />
