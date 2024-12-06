@@ -10,6 +10,7 @@ import * as THREE from 'three';
 import { ProjectileSystem } from './ProjectileSystem';
 import { createShaderMaterial } from '../utils/shaders';
 import { ObjectPool } from '../utils/objectPool';
+import { TowerSellMenu } from './TowerSellMenu';
 
 const TOWER_GEOMETRY = new THREE.BoxGeometry(1, 2, 1);
 const PROJECTILE_GEOMETRY = new THREE.SphereGeometry(0.1, 8, 8);
@@ -25,7 +26,7 @@ interface TowerProps {
   preview?: boolean;
   onDamageEnemy?: (enemyId: number, damage: number, effects: any) => void;
   canAfford?: boolean;
-
+  id: number;
 }
 
 interface Arrow {
@@ -156,7 +157,7 @@ export function TowerManager({ towers }: TowerManagerProps) {
   );
 }
 
-export function Tower({ position, type, level = 1, preview = false, onDamageEnemy, canAfford = true }: TowerProps) {
+export function Tower({ position, type, level = 1, preview = false, onDamageEnemy, canAfford = true, id }: TowerProps) {
   const phase = useGameStore(state => state.phase);
   const creeps = useGameStore(state => state.creeps);
   const stats = TOWER_STATS[type] ?? TOWER_STATS.dark1;
@@ -169,6 +170,46 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
   const [projectiles, setProjectiles] = useState<Projectile[]>([]);
   const PROJECTILE_SPEED = 15; // Reduced speed for better visibility
   const towerRef = useRef<THREE.Group>(null);
+
+  // Add hover and sell state
+  const [isHovered, setIsHovered] = useState(false);
+  const [showSellMenu, setShowSellMenu] = useState(false);
+  const { addMoney, removePlacedTower } = useGameStore();
+
+  // Handle tower interactions
+  const handlePointerOver = (e: any) => {
+    e.stopPropagation();
+    if (!preview) {
+      document.body.style.cursor = 'pointer';
+      setIsHovered(true);
+    }
+  };
+
+  const handlePointerOut = (e: any) => {
+    e.stopPropagation();
+    if (!e.relatedTarget?.closest('.tower-sell-menu')) {
+      document.body.style.cursor = 'auto';
+      setIsHovered(false);
+    }
+  };
+
+  const handleClick = (e: any) => {
+    e.stopPropagation();
+    if (!preview) {
+      setShowSellMenu(true);
+    }
+  };
+
+  const handleSell = () => {
+    const sellValue = Math.floor(stats.cost * 0.7);
+    addMoney(sellValue);
+    removePlacedTower(id);
+    setShowSellMenu(false);
+  };
+
+  const handleClose = () => {
+    setShowSellMenu(false);
+  };
 
   useFrame((_, delta) => {
     if (preview) return;
@@ -247,7 +288,13 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
   const scaledHeight = baseHeight * scale;
 
   return (
-    <group ref={towerRef} position={position instanceof Vector3 ? position.toArray() : position}>
+    <group 
+      ref={towerRef} 
+      position={position instanceof Vector3 ? position.toArray() : position}
+      onClick={handleClick}
+      onPointerOver={handlePointerOver}
+      onPointerOut={handlePointerOut}
+    >
       {/* Base platform for all towers */}
       <mesh position={[0, 0.1, 0]} castShadow receiveShadow>
         <cylinderGeometry args={[scaledWidth * 0.7, scaledWidth * 0.8, 0.2, 8]} />
@@ -255,6 +302,8 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
           color={stats.color} 
           transparent={preview}
           opacity={preview ? 0.5 : 1}
+          emissive={isHovered ? stats.emissive : undefined}
+          emissiveIntensity={isHovered ? 0.5 : 0}
         />
       </mesh>
 
@@ -619,6 +668,15 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
           </group>
         );
       })}
+      
+      {/* Sell menu */}
+      {showSellMenu && !preview && (
+        <TowerSellMenu
+          onSell={handleSell}
+          onClose={handleClose}
+          sellValue={Math.floor(stats.cost * 0.7)}
+        />
+      )}
     </group>
   );
 }

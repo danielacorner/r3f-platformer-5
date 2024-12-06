@@ -19,6 +19,9 @@ import { BuildMenu } from './components/BuildMenu';
 import { GameUI } from './components/GameUI';
 import { useGameStore } from './store/gameStore';
 import { useEffect, useRef } from 'react';
+import './styles/BuildMenu.css';
+import './styles/TowerConfirmation.css';
+import './styles/TowerSellMenu.css';
 
 function TDCamera() {
   const { playerRef } = useGameStore();
