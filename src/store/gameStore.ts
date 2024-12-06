@@ -529,7 +529,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     
     set((state) => ({
       currentWave: state.currentWave + 1,
-      showWaveIndicator: true
+      wave: state.currentWave + 1, // Keep wave and currentWave in sync
+      showWaveIndicator: true,
+      phase: 'combat',
+      isSpawning: true,
     }));
 
     // Hide the indicator after 1 second to allow for 2 second fade out

@@ -7,10 +7,10 @@ export function GameUI() {
     phase, 
     lives, 
     currentLevel,
-    wave,startWave
+    currentWave,
+    totalWaves,
+    startWave
   } = useGameStore();
-
-
 
   return (
     <div className="game-ui">
@@ -21,7 +21,7 @@ export function GameUI() {
         </div>
         <div className="stat-item">
           <span className="stat-label">Wave:</span>
-          <span className="stat-value">{wave}</span>
+          <span className="stat-value">{currentWave} / {totalWaves}</span>
         </div>
         <div className="stat-item">
           <span className="stat-label">Lives:</span>
