@@ -5,19 +5,12 @@ import '../styles/GameUI.css';
 export function GameUI() {
   const { 
     phase, 
-    setPhase, 
     lives, 
     currentLevel,
-    setIsSpawning,
-    wave,
+    wave,startWave
   } = useGameStore();
 
-  const startWave = (e) => {
-    e.stopPropagation();
-    console.log('Starting wave...');
-    setPhase('combat');
-    setIsSpawning(true);
-  };
+
 
   return (
     <div className="game-ui">

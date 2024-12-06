@@ -17,6 +17,7 @@ import { Physics } from '@react-three/rapier';
 import { Level } from './components/level/Level/Level';
 import { BuildMenu } from './components/BuildMenu';
 import { GameUI } from './components/GameUI';
+import { WaveIndicator } from './components/WaveIndicator';
 import { useGameStore } from './store/gameStore';
 import { useEffect, useRef } from 'react';
 import './styles/BuildMenu.css';
@@ -126,7 +127,9 @@ function Effects() {
 export default function App() {
 
   return (
-    <div style={{ width: '100vw', height: '100vh', background: '#000913' }}>
+    <>
+    
+    <div style={{ width: '100vw', height: '100vh', background: '#000913', position: 'relative' }}>
       <Canvas
         shadows="soft"
         camera={{ fov: 50 }}
@@ -185,5 +188,9 @@ export default function App() {
       <GameUI />
       <Loader />
     </div>
+    <WaveIndicator />
+
+    </>
+
   );
 }

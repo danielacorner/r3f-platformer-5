@@ -215,6 +215,9 @@ interface GameState {
   playerRef: any | null;
   orbSpeed: number;
   highlightedPathSegment: PathSegment | null;
+  currentWave: number;
+  totalWaves: number;
+  showWaveIndicator: boolean;
   addPlacedTower: (
     position: number[] | { x: number; y: number; z: number },
     type: ElementType,
@@ -251,6 +254,9 @@ const initialState: GameState = {
   playerRef: null,
   orbSpeed: 1,
   highlightedPathSegment: null,
+  currentWave: 0,
+  totalWaves: 15,
+  showWaveIndicator: false,
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -515,6 +521,24 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   setHighlightedPathSegment: (segment) => {
     set({ highlightedPathSegment: segment });
+  },
+
+  startWave: () => {
+    const state = get();
+    console.log('Starting wave, current state:', state);
+    
+    set((state) => ({
+      currentWave: state.currentWave + 1,
+      showWaveIndicator: true
+    }));
+
+    // Hide the indicator after 1 second to allow for 2 second fade out
+    setTimeout(() => {
+      console.log('Hiding wave indicator');
+      set({ showWaveIndicator: false });
+    }, 1000);
+
+    console.log('Wave started, new state:', get());
   },
 }));
 

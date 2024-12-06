@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { Vector3 } from 'three';
 import { generateWaveSet, WaveCreep, Wave as ConfigWave } from '../config/waveConfig';
+import { Html } from '@react-three/drei';
 
 interface WaveManagerProps {
   pathPoints: Vector3[];
@@ -20,7 +21,10 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
     incrementLevel,
     enemiesAlive,
     addMoney,
-    setWave
+    setWave,
+    isWaveInProgress,
+    setIsWaveInProgress,
+    setWaveStartTime
   } = useGameStore();
   
   const waveQueue = useRef<Array<WaveCreep & { waveId: number }>>([]);
@@ -185,6 +189,40 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
     return () => clearTimeout(timer);
   }, [phase, isSpawning, enemiesAlive, currentLevel]);
 
+  const startWave = () => {
+    if (isWaveInProgress) return;
+    
+    // Debug log
+    console.log('Starting wave...');
+    
+    // Get the store instance
+    const store = useGameStore.getState();
+    console.log('Current store state:', store);
+    
+    // Call startWave
+    store.startWave();
+    console.log('Wave started, new state:', useGameStore.getState());
+    
+    setIsWaveInProgress(true);
+    setWaveStartTime(Date.now());
+  };
+
+  const handleNextWave = () => {
+    // Debug log
+    console.log('Next wave clicked');
+    
+    // Get current store state
+    const store = useGameStore.getState();
+    
+    // Update wave state
+    store.startWave();
+    
+    // Start wave
+    startWave();
+    
+    console.log('Wave started, new state:', useGameStore.getState());
+  };
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -192,5 +230,5 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
     };
   }, []);
 
-  return null;
+  return null
 }
