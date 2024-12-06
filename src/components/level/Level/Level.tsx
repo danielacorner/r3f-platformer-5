@@ -198,10 +198,17 @@ export function Level() {
   const planeIntersectPoint = useMemo(() => new Vector3(), []);
   const moveTargetRef = useRef({ x: 0, z: 0, active: false });
 
+  // Track dragging state
+  const isDragging = useRef(false);
+  const dragStartPosition = useRef<{ x: number; y: number } | null>(null);
+  const DRAG_THRESHOLD = 5; // pixels
+
   // Handle click events
   const handleClick = (event: any) => {
-    // Only handle clicks if not placing towers
-    if (selectedObjectType) return;
+    // Don't handle clicks if:
+    // 1. We're in tower placement mode
+    // 2. We're dragging/have dragged
+    if (selectedObjectType || isDragging.current) return;
 
     // Convert mouse position to normalized device coordinates
     const mouse = new Vector2(
@@ -216,7 +223,7 @@ export function Level() {
     if (raycaster.ray.intersectPlane(groundPlane, planeIntersectPoint)) {
       // Update click position for visual indicator
       setClickPosition(planeIntersectPoint.clone());
-      setClickCounter(prev => prev + 1); // Increment counter on each click
+      setClickCounter(prev => prev + 1);
 
       // Update move target
       moveTargetRef.current = {
@@ -227,19 +234,55 @@ export function Level() {
     }
   };
 
-  // Add click event listener
+  const handlePointerDown = (e: PointerEvent) => {
+    dragStartPosition.current = { x: e.clientX, y: e.clientY };
+    isDragging.current = false;
+  };
+
+  const handlePointerMove = (e: PointerEvent) => {
+    if (!dragStartPosition.current) return;
+
+    const dx = e.clientX - dragStartPosition.current.x;
+    const dy = e.clientY - dragStartPosition.current.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance > DRAG_THRESHOLD) {
+      isDragging.current = true;
+    }
+  };
+
+  const handlePointerUp = () => {
+    // Reset drag tracking
+    dragStartPosition.current = null;
+    // Keep isDragging true until next pointerdown
+  };
+
+  // Add event listeners
   useEffect(() => {
     const clickHandler = (e: MouseEvent) => handleClick(e);
+    const pointerDownHandler = (e: PointerEvent) => handlePointerDown(e);
+    const pointerMoveHandler = (e: PointerEvent) => handlePointerMove(e);
+    const pointerUpHandler = (e: PointerEvent) => handlePointerUp();
+
     window.addEventListener('click', clickHandler);
-    return () => window.removeEventListener('click', clickHandler);
-  }, [selectedObjectType]); // Re-add listener when selectedObjectType changes
+    window.addEventListener('pointerdown', pointerDownHandler);
+    window.addEventListener('pointermove', pointerMoveHandler);
+    window.addEventListener('pointerup', pointerUpHandler);
+
+    return () => {
+      window.removeEventListener('click', clickHandler);
+      window.removeEventListener('pointerdown', pointerDownHandler);
+      window.removeEventListener('pointermove', pointerMoveHandler);
+      window.removeEventListener('pointerup', pointerUpHandler);
+    };
+  }, [selectedObjectType]);
 
   // Path Generation
   const { segments, points: pathPoints } = useMemo(() => generatePath(), []);
 
   // Tower Placement Logic
-  const handlePointerMove = (event: any) => {
-    if (!selectedObjectType || pendingTowerPosition) return;  // Don't update position if there's a pending tower
+  const handleTowerPointerMove = (event: any) => {
+    if (!selectedObjectType || pendingTowerPosition) return;
 
     // Snap to grid
     const snappedPosition: [number, number, number] = [
@@ -339,7 +382,7 @@ export function Level() {
         <mesh
           position={[0, -0.5, 0]}
           receiveShadow
-          onPointerMove={handlePointerMove}
+          onPointerMove={handleTowerPointerMove}
           onClick={handlePlaceTower}
         >
           <boxGeometry args={[60, 1, 60]} />

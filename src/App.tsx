@@ -49,17 +49,17 @@ function TDCamera() {
     // Convert screen movement to world-space direction based on camera angle
     const forward = new THREE.Vector3();
     const right = new THREE.Vector3();
-    const camera = controlsRef.current.object;
+    // const camera = controlsRef.current.object;
 
-    forward.set(0, 0, 1)
-      .applyQuaternion(camera.quaternion)
-      .setY(0)
-      .normalize();
+    // forward.set(0, 0, 1)
+    //   .applyQuaternion(camera.quaternion)
+    //   .setY(0)
+    //   .normalize();
 
-    right.set(1, 0, 0)
-      .applyQuaternion(camera.quaternion)
-      .setY(0)
-      .normalize();
+    // right.set(1, 0, 0)
+    //   .applyQuaternion(camera.quaternion)
+    //   .setY(0)
+    //   .normalize();
 
     // Move player based on pan direction
     const movement = new THREE.Vector3()
