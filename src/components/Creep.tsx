@@ -53,18 +53,27 @@ const creepMaterials = {
     roughness: 0.7,
     metalness: 0.2,
     flatShading: true,
+    transparent: true,
+    opacity: 1,
+    side: DoubleSide,
   }),
   fast: new MeshStandardMaterial({
     color: new Color('#4a7c59'),  // Forest sage
     roughness: 0.6,
     metalness: 0.3,
     flatShading: true,
+    transparent: true,
+    opacity: 1,
+    side: DoubleSide,
   }),
   armored: new MeshStandardMaterial({
     color: new Color('#1f3d0c'),  // Deep forest
     roughness: 0.5,
     metalness: 0.4,
     flatShading: true,
+    transparent: true,
+    opacity: 1,
+    side: DoubleSide,
   }),
   boss: new MeshStandardMaterial({
     color: new Color('#8b0000'),  // Dark red
@@ -73,6 +82,9 @@ const creepMaterials = {
     emissive: new Color('#400000'),
     emissiveIntensity: 0.5,
     flatShading: true,
+    transparent: true,
+    opacity: 1,
+    side: DoubleSide,
   }),
 };
 
@@ -141,7 +153,7 @@ const effectColors = {
 const creeps: CreepManagerProps[] = [];
 
 export function CreepManager({ pathPoints }: CreepManagerProps) {
-  const meshRef = useRef<InstancedMesh>(null);
+  const groupRef = useRef<Group>(null);
   const healthBarBackgroundRef = useRef<InstancedMesh>(null);
   const healthBarForegroundRef = useRef<InstancedMesh>(null);
   const creepMeshes = useRef<{ [key: string]: InstancedMesh }>({});
@@ -152,35 +164,25 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
 
   // Set up meshes for each creep type
   useEffect(() => {
-    console.log('Setting up creep meshes');
+    if (!groupRef.current) return;
     
-    // Clean up old meshes first
-    if (meshRef.current) {
-      while (meshRef.current.children.length > 0) {
-        meshRef.current.remove(meshRef.current.children[0]);
-      }
-    }
-
-    // Create new meshes
     Object.entries(CREEP_GEOMETRIES).forEach(([type, geometry]) => {
-      console.log(`Creating mesh for type: ${type}`);
       const mesh = new InstancedMesh(
         geometry,
         creepMaterials[type as keyof typeof creepMaterials],
         100 // Max instances per type
       );
-      mesh.name = type; // Add name for identification
+      mesh.name = type;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
-      mesh.frustumCulled = false; // Ensure it's always rendered
+      mesh.frustumCulled = false;
       creepMeshes.current[type] = mesh;
-      meshRef.current?.add(mesh);
+      groupRef.current?.add(mesh);
     });
 
     return () => {
-      // Cleanup meshes on unmount
       Object.values(creepMeshes.current).forEach(mesh => {
-        meshRef.current?.remove(mesh);
+        groupRef.current?.remove(mesh);
       });
       creepMeshes.current = {};
     };
@@ -242,7 +244,12 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
 
   // Update creep instances and health bars
   useFrame((state, delta) => {
-    if (!meshRef.current || !healthBarBackgroundRef.current || !healthBarForegroundRef.current) return;
+    if (!groupRef.current || !healthBarBackgroundRef.current || !healthBarForegroundRef.current) return;
+
+    // Reset all instance counts
+    Object.values(creepMeshes.current).forEach(mesh => {
+      mesh.count = 100; // Set to max instances
+    });
 
     // Get camera quaternion for billboard effect
     const cameraQuaternion = state.camera.quaternion;
@@ -296,9 +303,11 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
 
         // Update creep instance
         tempObject.position.copy(position);
-        tempObject.position.y += 0.5;
+        tempObject.position.y = 2; // Lift higher off ground
         tempObject.rotation.y = angle;
+        tempObject.scale.set(1, 1, 1); // Ensure scale is set
         tempObject.updateMatrix();
+        
         mesh.setMatrixAt(instanceIndex, tempObject.matrix);
         mesh.instanceMatrix.needsUpdate = true;
 
@@ -378,7 +387,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
 
   return (
     <group>
-      <group ref={meshRef} />
+      <group ref={groupRef} />
       <instancedMesh 
         ref={healthBarBackgroundRef}
         args={[new PlaneGeometry(1, 1), new MeshBasicMaterial({
