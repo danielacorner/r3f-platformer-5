@@ -2,7 +2,7 @@ import { Vector3, Color, Euler, Matrix4, Object3D, InstancedMesh, Group } from '
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
-import { useGameStore } from '../store/gameStore';
+import { useGameStore, isTowerOnPath } from '../store/gameStore';
 import { TOWER_STATS } from '../store/gameStore';
 import { Edges, Float, Trail } from '@react-three/drei';
 import { Html } from '@react-three/drei';
@@ -175,7 +175,21 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
   // Add hover and sell state
   const [isHovered, setIsHovered] = useState(false);
   const [showSellMenu, setShowSellMenu] = useState(false);
-  const { addMoney, removePlacedTower } = useGameStore();
+  const { addMoney, removePlacedTower, setHighlightedPathSegment } = useGameStore();
+
+  useEffect(() => {
+    if (preview) {
+      const segment = isTowerOnPath(position as [number, number, number]);
+      setHighlightedPathSegment(segment);
+    } else {
+      setHighlightedPathSegment(null);
+    }
+  }, [preview, position, setHighlightedPathSegment]);
+
+  const isInvalidPlacement = Boolean(isTowerOnPath(position as [number, number, number]));
+  const previewScale = isInvalidPlacement ? 1.2 : 1;
+  const previewColor = isInvalidPlacement ? '#ff0000' : (canAfford ? '#ffffff' : '#ff0000');
+  const previewOpacity = isInvalidPlacement ? 0.6 : 0.8;
 
   // Handle tower interactions
   const handlePointerOver = (e: any) => {
@@ -315,387 +329,389 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
       )}
 
       {/* Base platform for all towers */}
-      <mesh position={[0, 0.1, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[scaledWidth * 0.7, scaledWidth * 0.8, 0.2, 8]} />
-        <meshStandardMaterial 
-          color={stats.color} 
-          transparent={preview}
-          opacity={preview ? 0.5 : 1}
-          emissive={isHovered ? stats.emissive : undefined}
-          emissiveIntensity={isHovered ? 0.5 : 0}
-        />
-      </mesh>
+      <group scale={preview ? previewScale : 1}>
+        <mesh position={[0, 0.1, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[scaledWidth * 0.7, scaledWidth * 0.8, 0.2, 8]} />
+          <meshStandardMaterial 
+            color={preview ? previewColor : stats.color} 
+            emissive={preview ? previewColor : stats.emissive}
+            emissiveIntensity={preview ? 0.5 : 0.2}
+            transparent={preview}
+            opacity={preview ? previewOpacity : 1}
+          />
+        </mesh>
 
-      {/* Element-specific main structure */}
-      {elementType === 'light' && (
-        <>
-          {/* Crystal spire design */}
-          <mesh position={[0, scaledHeight / 2 + 0.2, 0]} castShadow>
-            <cylinderGeometry args={[0.2, scaledWidth * 0.5, scaledHeight, 6]} />
-            <meshStandardMaterial
-              color={stats.color}
-              emissive={stats.emissive}
-              emissiveIntensity={1}
-              transparent={preview}
-              opacity={preview ? 0.5 : 1}
-            />
-          </mesh>
-          {/* Floating crystals */}
-          {[...Array(level)].map((_, i) => (
-            <group key={i} rotation={[0, (Math.PI * 2 * i) / level, 0]}>
-              <mesh position={[0.4, scaledHeight * 0.7 + i * 0.2, 0]} castShadow>
-                <octahedronGeometry args={[0.15]} />
-                <meshStandardMaterial
-                  color={stats.color}
-                  emissive={stats.emissive}
-                  emissiveIntensity={1}
-                  transparent={preview}
-                  opacity={preview ? 0.5 : 1}
-                />
-              </mesh>
-            </group>
-          ))}
-        </>
-      )}
-
-      {elementType === 'fire' && (
-        <>
-          {/* Volcanic tower design */}
-          <mesh position={[0, scaledHeight / 2 + 0.2, 0]} castShadow>
-            <cylinderGeometry args={[scaledWidth * 0.3, scaledWidth * 0.6, scaledHeight, 4]} />
-            <meshStandardMaterial
-              color="#8B0000"
-              emissive={stats.emissive}
-              emissiveIntensity={0.5}
-              transparent={preview}
-              opacity={preview ? 0.5 : 1}
-            />
-          </mesh>
-          {/* Lava streams */}
-          {[...Array(4)].map((_, i) => (
-            <group key={i} rotation={[0, (Math.PI * 2 * i) / 4, 0]}>
-              <mesh position={[0.2, scaledHeight * 0.6, 0]} castShadow>
-                <sphereGeometry args={[0.1]} />
-                <meshStandardMaterial
-                  color={stats.emissive}
-                  emissive={stats.emissive}
-                  emissiveIntensity={1}
-                  transparent={preview}
-                  opacity={preview ? 0.5 : 1}
-                />
-              </mesh>
-            </group>
-          ))}
-          {/* Top flame */}
-          <mesh position={[0, scaledHeight + 0.2, 0]} castShadow>
-            <coneGeometry args={[0.3, 0.6, 4]} />
-            <meshStandardMaterial
-              color={stats.emissive}
-              emissive={stats.emissive}
-              emissiveIntensity={1}
-              transparent={preview}
-              opacity={preview ? 0.5 : 1}
-            />
-          </mesh>
-        </>
-      )}
-
-      {elementType === 'ice' && (
-        <>
-          {/* Crystalline ice structure */}
-          <mesh position={[0, scaledHeight / 2 + 0.2, 0]} castShadow>
-            <cylinderGeometry args={[scaledWidth * 0.4, scaledWidth * 0.5, scaledHeight, 6]} />
-            <meshStandardMaterial
-              color={stats.color}
-              emissive={stats.emissive}
-              emissiveIntensity={0.5}
-              transparent={preview}
-              opacity={preview ? 0.5 : 1}
-            />
-          </mesh>
-          {/* Ice shards */}
-          {[...Array(level + 2)].map((_, i) => (
-            <group key={i} rotation={[0, (Math.PI * 2 * i) / (level + 2), Math.PI * 0.1]}>
-              <mesh position={[0.3, scaledHeight * 0.6, 0]} castShadow>
-                <coneGeometry args={[0.1, 0.4, 4]} />
-                <meshStandardMaterial
-                  color={stats.color}
-                  transparent={preview}
-                  opacity={preview ? 0.5 : 1}
-                />
-              </mesh>
-            </group>
-          ))}
-        </>
-      )}
-
-      {elementType === 'nature' && (
-        <>
-          {/* Organic trunk */}
-          <mesh position={[0, scaledHeight / 2 + 0.2, 0]} castShadow>
-            <cylinderGeometry args={[scaledWidth * 0.3, scaledWidth * 0.4, scaledHeight, 6]} />
-            <meshStandardMaterial
-              color="#4B3621"
-              transparent={preview}
-              opacity={preview ? 0.5 : 1}
-            />
-          </mesh>
-          {/* Leaves and vines */}
-          {[...Array(level + 1)].map((_, i) => (
-            <group key={i} rotation={[0, (Math.PI * 2 * i) / (level + 1), 0]}>
-              <mesh position={[0.25, scaledHeight * (0.4 + i * 0.2), 0]} castShadow>
-                <sphereGeometry args={[0.2]} />
-                <meshStandardMaterial
-                  color={stats.color}
-                  emissive={stats.emissive}
-                  emissiveIntensity={0.3}
-                  transparent={preview}
-                  opacity={preview ? 0.5 : 1}
-                />
-              </mesh>
-            </group>
-          ))}
-          {/* Top bloom */}
-          <mesh position={[0, scaledHeight + 0.2, 0]} castShadow>
-            <dodecahedronGeometry args={[0.3]} />
-            <meshStandardMaterial
-              color={stats.emissive}
-              emissive={stats.emissive}
-              emissiveIntensity={0.5}
-              transparent={preview}
-              opacity={preview ? 0.5 : 1}
-            />
-          </mesh>
-        </>
-      )}
-
-      {elementType === 'water' && (
-        <>
-          {/* Flowing water column */}
-          <mesh position={[0, scaledHeight / 2 + 0.2, 0]} castShadow>
-            <cylinderGeometry args={[scaledWidth * 0.3, scaledWidth * 0.4, scaledHeight, 8]} />
-            <meshStandardMaterial
-              color={stats.color}
-              emissive={stats.emissive}
-              emissiveIntensity={0.3}
-              transparent={true}
-              opacity={0.7}
-            />
-          </mesh>
-          {/* Water rings */}
-          {[...Array(level)].map((_, i) => (
-            <group key={i} position={[0, scaledHeight * (0.3 + i * 0.25), 0]}>
-              <mesh castShadow>
-                <torusGeometry args={[0.3, 0.1, 8, 16]} />
-                <meshBasicMaterial
-                  color={stats.color}
-                  transparent={true}
-                  opacity={0.6}
-                />
-              </mesh>
-            </group>
-          ))}
-        </>
-      )}
-
-      {elementType === 'dark' && (
-        <>
-          {/* Dark obelisk */}
-          <mesh position={[0, scaledHeight / 2 + 0.2, 0]} castShadow>
-            <cylinderGeometry args={[scaledWidth * 0.2, scaledWidth * 0.4, scaledHeight, 4]} />
-            <meshStandardMaterial
-              color="#1a1a1a"
-              emissive={stats.emissive}
-              emissiveIntensity={0.7}
-              transparent={preview}
-              opacity={preview ? 0.5 : 1}
-            />
-          </mesh>
-          {/* Floating dark orbs */}
-          {[...Array(level)].map((_, i) => (
-            <group key={i} rotation={[0, (Math.PI * 2 * i) / level, 0]}>
-              <mesh position={[0.3, scaledHeight * (0.3 + i * 0.2), 0]} castShadow>
-                <sphereGeometry args={[0.15]} />
-                <meshStandardMaterial
-                  color={stats.color}
-                  emissive={stats.emissive}
-                  emissiveIntensity={1}
-                  transparent={preview}
-                  opacity={preview ? 0.5 : 1}
-                />
-              </mesh>
-            </group>
-          ))}
-          {/* Top crystal */}
-          <mesh position={[0, scaledHeight + 0.2, 0]} castShadow>
-            <octahedronGeometry args={[0.25]} />
-            <meshStandardMaterial
-              color={stats.color}
-              emissive={stats.emissive}
-              emissiveIntensity={1}
-              transparent={preview}
-              opacity={preview ? 0.1 : 1}
-            />
-          </mesh>
-        </>
-      )}
-
-      {elementType === 'storm' && (
-        <>
-          {/* Lightning rod structure */}
-          <mesh position={[0, scaledHeight / 2 + 0.2, 0]} castShadow>
-            <cylinderGeometry args={[scaledWidth * 0.3, scaledWidth * 0.4, scaledHeight, 6]} />
-            <meshStandardMaterial
-              color={stats.color}
-              emissive={stats.emissive}
-              emissiveIntensity={1.5}
-              transparent={preview}
-              opacity={preview ? 0.5 : 1}
-            />
-          </mesh>
-          {/* Energy orbs */}
-          {[...Array(level + 2)].map((_, i) => (
-            <group key={i} rotation={[0, (Math.PI * 2 * i) / (level + 2), Math.PI * 0.1]}>
-              <mesh position={[0.3, scaledHeight * 0.6, 0]} castShadow>
-                <sphereGeometry args={[0.15]} />
-                <meshStandardMaterial
-                  color={stats.emissive}
-                  emissive={stats.emissive}
-                  emissiveIntensity={2}
-                  transparent={preview}
-                  opacity={preview ? 0.5 : 1}
-                />
-              </mesh>
-            </group>
-          ))}
-          {/* Lightning crown */}
-          <mesh position={[0, scaledHeight + 0.2, 0]} castShadow>
-            <octahedronGeometry args={[0.3]} />
-            <meshStandardMaterial
-              color={stats.emissive}
-              emissive={stats.emissive}
-              emissiveIntensity={2}
-              transparent={preview}
-              opacity={preview ? 0.5 : 1}
-            />
-          </mesh>
-        </>
-      )}
-
-      {/* Range indicator */}
-      {(preview || phase === 'prep') && (
-        <group>
-          {/* Base ring */}
-          <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[range-0.1, range, 32]} />
-            <meshBasicMaterial 
-              color={preview ? (canAfford ? "#44ff88" : "#ff4444") : "#ffffff"} 
-              transparent 
-              opacity={preview ? 0.3 : 0.1} 
-            />
-          </mesh>
-          
-          {/* Outer glow for preview */}
-          {preview && (
-            <>
-              <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-                <ringGeometry args={[range - 0.1, range, 32]} />
-                <meshBasicMaterial 
-                  color={canAfford ? "#44ff88" : "#ff4444"}
-                  transparent 
-                  opacity={0.4} 
-                />
-              </mesh>
-              <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-                <ringGeometry args={[range - 0.2, range + 0.2, 32]} />
-                <meshBasicMaterial 
-                  color={canAfford ? "#ffffff" : "#ff6666"}
-                  transparent 
-                  opacity={0.2} 
-                />
-              </mesh>
-            </>
-          )}
-        </group>
-      )}
-
-      {/* Projectiles */}
-      {projectiles.map(projectile => {
-        // Update target position for active projectiles
-        const target = creeps.find(c => c.id === projectile.creepId);
-        if (target?.position) {
-          const targetPos = new Vector3(...target.position);
-          targetPos.y += 0.3; // Match the target height used in firing
-          
-          if (elementType.startsWith('fire')) {
-            // Calculate arc for fireballs
-            const startPos = projectile.position.clone();
-            const distance = targetPos.distanceTo(startPos);
-            const height = Math.min(distance * 0.5, 3); // Arc height based on distance
-            const progress = projectile.position.distanceTo(startPos) / distance;
-            
-            // Parabolic arc
-            const arcY = Math.sin(progress * Math.PI) * height;
-            const newPos = startPos.lerp(targetPos, progress);
-            newPos.y += arcY;
-            
-            // Update projectile position and velocity
-            const newDir = newPos.clone().sub(projectile.position).normalize();
-            projectile.velocity = newDir.multiplyScalar(PROJECTILE_SPEED * 0.8); // Slightly slower for better arc visibility
-          } else {
-            // Regular straight projectiles
-            const newDir = targetPos.clone().sub(projectile.position).normalize();
-            projectile.velocity = newDir.multiplyScalar(PROJECTILE_SPEED);
-          }
-        }
-        
-        return (
-          <group key={projectile.id}>
-            <mesh
-              position={projectile.position}
-              scale={elementType.startsWith('fire') ? 0.2 : 0.15}
-            >
-              {elementType.startsWith('fire') ? (
-                <sphereGeometry args={[1, 8, 8]} />
-              ) : (
-                <sphereGeometry />
-              )}
-              <meshStandardMaterial 
-                color={stats.emissive} 
+        {/* Element-specific main structure */}
+        {elementType === 'light' && (
+          <>
+            {/* Crystal spire design */}
+            <mesh position={[0, scaledHeight / 2 + 0.2, 0]} castShadow>
+              <cylinderGeometry args={[0.2, scaledWidth * 0.5, scaledHeight, 6]} />
+              <meshStandardMaterial
+                color={stats.color}
                 emissive={stats.emissive}
-                emissiveIntensity={elementType.startsWith('fire') ? 4 : 2}
-                toneMapped={false}
+                emissiveIntensity={1}
+                transparent={preview}
+                opacity={preview ? 0.5 : 1}
               />
             </mesh>
-            <Trail
-              width={elementType.startsWith('fire') ? 0.2 : 0.08}
-              length={elementType.startsWith('fire') ? 12 : 6}
-              decay={elementType.startsWith('fire') ? 0.6 : 1}
-              local={false}
-              stride={0}
-              interval={1}
-              attenuation={(t) => t * t}
-              color={stats.emissive}
-            >
-              <meshBasicMaterial 
-                color={stats.emissive} 
-                toneMapped={false}
-                transparent
-                opacity={0.8}
+            {/* Floating crystals */}
+            {[...Array(level)].map((_, i) => (
+              <group key={i} rotation={[0, (Math.PI * 2 * i) / level, 0]}>
+                <mesh position={[0.4, scaledHeight * 0.7 + i * 0.2, 0]} castShadow>
+                  <octahedronGeometry args={[0.15]} />
+                  <meshStandardMaterial
+                    color={stats.color}
+                    emissive={stats.emissive}
+                    emissiveIntensity={1}
+                    transparent={preview}
+                    opacity={preview ? 0.5 : 1}
+                  />
+                </mesh>
+              </group>
+            ))}
+          </>
+        )}
+
+        {elementType === 'fire' && (
+          <>
+            {/* Volcanic tower design */}
+            <mesh position={[0, scaledHeight / 2 + 0.2, 0]} castShadow>
+              <cylinderGeometry args={[scaledWidth * 0.3, scaledWidth * 0.6, scaledHeight, 4]} />
+              <meshStandardMaterial
+                color="#8B0000"
+                emissive={stats.emissive}
+                emissiveIntensity={0.5}
+                transparent={preview}
+                opacity={preview ? 0.5 : 1}
               />
-            </Trail>
+            </mesh>
+            {/* Lava streams */}
+            {[...Array(4)].map((_, i) => (
+              <group key={i} rotation={[0, (Math.PI * 2 * i) / 4, 0]}>
+                <mesh position={[0.2, scaledHeight * 0.6, 0]} castShadow>
+                  <sphereGeometry args={[0.1]} />
+                  <meshStandardMaterial
+                    color={stats.emissive}
+                    emissive={stats.emissive}
+                    emissiveIntensity={1}
+                    transparent={preview}
+                    opacity={preview ? 0.5 : 1}
+                  />
+                </mesh>
+              </group>
+            ))}
+            {/* Top flame */}
+            <mesh position={[0, scaledHeight + 0.2, 0]} castShadow>
+              <coneGeometry args={[0.3, 0.6, 4]} />
+              <meshStandardMaterial
+                color={stats.emissive}
+                emissive={stats.emissive}
+                emissiveIntensity={1}
+                transparent={preview}
+                opacity={preview ? 0.5 : 1}
+              />
+            </mesh>
+          </>
+        )}
+
+        {elementType === 'ice' && (
+          <>
+            {/* Crystalline ice structure */}
+            <mesh position={[0, scaledHeight / 2 + 0.2, 0]} castShadow>
+              <cylinderGeometry args={[scaledWidth * 0.4, scaledWidth * 0.5, scaledHeight, 6]} />
+              <meshStandardMaterial
+                color={stats.color}
+                emissive={stats.emissive}
+                emissiveIntensity={0.5}
+                transparent={preview}
+                opacity={preview ? 0.5 : 1}
+              />
+            </mesh>
+            {/* Ice shards */}
+            {[...Array(level + 2)].map((_, i) => (
+              <group key={i} rotation={[0, (Math.PI * 2 * i) / (level + 2), Math.PI * 0.1]}>
+                <mesh position={[0.3, scaledHeight * 0.6, 0]} castShadow>
+                  <coneGeometry args={[0.1, 0.4, 4]} />
+                  <meshStandardMaterial
+                    color={stats.color}
+                    transparent={preview}
+                    opacity={preview ? 0.5 : 1}
+                  />
+                </mesh>
+              </group>
+            ))}
+          </>
+        )}
+
+        {elementType === 'nature' && (
+          <>
+            {/* Organic trunk */}
+            <mesh position={[0, scaledHeight / 2 + 0.2, 0]} castShadow>
+              <cylinderGeometry args={[scaledWidth * 0.3, scaledWidth * 0.4, scaledHeight, 6]} />
+              <meshStandardMaterial
+                color="#4B3621"
+                transparent={preview}
+                opacity={preview ? 0.5 : 1}
+              />
+            </mesh>
+            {/* Leaves and vines */}
+            {[...Array(level + 1)].map((_, i) => (
+              <group key={i} rotation={[0, (Math.PI * 2 * i) / (level + 1), 0]}>
+                <mesh position={[0.25, scaledHeight * (0.4 + i * 0.2), 0]} castShadow>
+                  <sphereGeometry args={[0.2]} />
+                  <meshStandardMaterial
+                    color={stats.color}
+                    emissive={stats.emissive}
+                    emissiveIntensity={0.3}
+                    transparent={preview}
+                    opacity={preview ? 0.5 : 1}
+                  />
+                </mesh>
+              </group>
+            ))}
+            {/* Top bloom */}
+            <mesh position={[0, scaledHeight + 0.2, 0]} castShadow>
+              <dodecahedronGeometry args={[0.3]} />
+              <meshStandardMaterial
+                color={stats.emissive}
+                emissive={stats.emissive}
+                emissiveIntensity={0.5}
+                transparent={preview}
+                opacity={preview ? 0.5 : 1}
+              />
+            </mesh>
+          </>
+        )}
+
+        {elementType === 'water' && (
+          <>
+            {/* Flowing water column */}
+            <mesh position={[0, scaledHeight / 2 + 0.2, 0]} castShadow>
+              <cylinderGeometry args={[scaledWidth * 0.3, scaledWidth * 0.4, scaledHeight, 8]} />
+              <meshStandardMaterial
+                color={stats.color}
+                emissive={stats.emissive}
+                emissiveIntensity={0.3}
+                transparent={true}
+                opacity={0.7}
+              />
+            </mesh>
+            {/* Water rings */}
+            {[...Array(level)].map((_, i) => (
+              <group key={i} position={[0, scaledHeight * (0.3 + i * 0.25), 0]}>
+                <mesh castShadow>
+                  <torusGeometry args={[0.3, 0.1, 8, 16]} />
+                  <meshBasicMaterial
+                    color={stats.color}
+                    transparent={true}
+                    opacity={0.6}
+                  />
+                </mesh>
+              </group>
+            ))}
+          </>
+        )}
+
+        {elementType === 'dark' && (
+          <>
+            {/* Dark obelisk */}
+            <mesh position={[0, scaledHeight / 2 + 0.2, 0]} castShadow>
+              <cylinderGeometry args={[scaledWidth * 0.2, scaledWidth * 0.4, scaledHeight, 4]} />
+              <meshStandardMaterial
+                color="#1a1a1a"
+                emissive={stats.emissive}
+                emissiveIntensity={0.7}
+                transparent={preview}
+                opacity={preview ? 0.5 : 1}
+              />
+            </mesh>
+            {/* Floating dark orbs */}
+            {[...Array(level)].map((_, i) => (
+              <group key={i} rotation={[0, (Math.PI * 2 * i) / level, 0]}>
+                <mesh position={[0.3, scaledHeight * (0.3 + i * 0.2), 0]} castShadow>
+                  <sphereGeometry args={[0.15]} />
+                  <meshStandardMaterial
+                    color={stats.color}
+                    emissive={stats.emissive}
+                    emissiveIntensity={1}
+                    transparent={preview}
+                    opacity={preview ? 0.5 : 1}
+                  />
+                </mesh>
+              </group>
+            ))}
+            {/* Top crystal */}
+            <mesh position={[0, scaledHeight + 0.2, 0]} castShadow>
+              <octahedronGeometry args={[0.25]} />
+              <meshStandardMaterial
+                color={stats.color}
+                emissive={stats.emissive}
+                emissiveIntensity={1}
+                transparent={preview}
+                opacity={preview ? 0.1 : 1}
+              />
+            </mesh>
+          </>
+        )}
+
+        {elementType === 'storm' && (
+          <>
+            {/* Lightning rod structure */}
+            <mesh position={[0, scaledHeight / 2 + 0.2, 0]} castShadow>
+              <cylinderGeometry args={[scaledWidth * 0.3, scaledWidth * 0.4, scaledHeight, 6]} />
+              <meshStandardMaterial
+                color={stats.color}
+                emissive={stats.emissive}
+                emissiveIntensity={1.5}
+                transparent={preview}
+                opacity={preview ? 0.5 : 1}
+              />
+            </mesh>
+            {/* Energy orbs */}
+            {[...Array(level + 2)].map((_, i) => (
+              <group key={i} rotation={[0, (Math.PI * 2 * i) / (level + 2), Math.PI * 0.1]}>
+                <mesh position={[0.3, scaledHeight * 0.6, 0]} castShadow>
+                  <sphereGeometry args={[0.15]} />
+                  <meshStandardMaterial
+                    color={stats.emissive}
+                    emissive={stats.emissive}
+                    emissiveIntensity={2}
+                    transparent={preview}
+                    opacity={preview ? 0.5 : 1}
+                  />
+                </mesh>
+              </group>
+            ))}
+            {/* Lightning crown */}
+            <mesh position={[0, scaledHeight + 0.2, 0]} castShadow>
+              <octahedronGeometry args={[0.3]} />
+              <meshStandardMaterial
+                color={stats.emissive}
+                emissive={stats.emissive}
+                emissiveIntensity={2}
+                transparent={preview}
+                opacity={preview ? 0.5 : 1}
+              />
+            </mesh>
+          </>
+        )}
+
+        {/* Range indicator */}
+        {(preview || phase === 'prep') && (
+          <group>
+            {/* Base ring */}
+            <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+              <ringGeometry args={[range-0.1, range, 32]} />
+              <meshBasicMaterial 
+                color={preview ? (canAfford ? "#44ff88" : "#ff4444") : "#ffffff"} 
+                transparent 
+                opacity={preview ? 0.3 : 0.1} 
+              />
+            </mesh>
+            
+            {/* Outer glow for preview */}
+            {preview && (
+              <>
+                <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                  <ringGeometry args={[range - 0.1, range, 32]} />
+                  <meshBasicMaterial 
+                    color={canAfford ? "#44ff88" : "#ff4444"}
+                    transparent 
+                    opacity={0.4} 
+                  />
+                </mesh>
+                <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                  <ringGeometry args={[range - 0.2, range + 0.2, 32]} />
+                  <meshBasicMaterial 
+                    color={canAfford ? "#ffffff" : "#ff6666"}
+                    transparent 
+                    opacity={0.2} 
+                  />
+                </mesh>
+              </>
+            )}
           </group>
-        );
-      })}
-      
-      {/* Sell menu */}
-      {showSellMenu && !preview && (
-        <TowerSellMenu
-          onSell={handleSell}
-          onClose={handleClose}
-          sellValue={Math.floor(stats.cost * 0.7)}
-        />
-      )}
+        )}
+
+        {/* Projectiles */}
+        {projectiles.map(projectile => {
+          // Update target position for active projectiles
+          const target = creeps.find(c => c.id === projectile.creepId);
+          if (target?.position) {
+            const targetPos = new Vector3(...target.position);
+            targetPos.y += 0.3; // Match the target height used in firing
+            
+            if (elementType.startsWith('fire')) {
+              // Calculate arc for fireballs
+              const startPos = projectile.position.clone();
+              const distance = targetPos.distanceTo(startPos);
+              const height = Math.min(distance * 0.5, 3); // Arc height based on distance
+              const progress = projectile.position.distanceTo(startPos) / distance;
+              
+              // Parabolic arc
+              const arcY = Math.sin(progress * Math.PI) * height;
+              const newPos = startPos.lerp(targetPos, progress);
+              newPos.y += arcY;
+              
+              // Update projectile position and velocity
+              const newDir = newPos.clone().sub(projectile.position).normalize();
+              projectile.velocity = newDir.multiplyScalar(PROJECTILE_SPEED * 0.8); // Slightly slower for better arc visibility
+            } else {
+              // Regular straight projectiles
+              const newDir = targetPos.clone().sub(projectile.position).normalize();
+              projectile.velocity = newDir.multiplyScalar(PROJECTILE_SPEED);
+            }
+          }
+          
+          return (
+            <group key={projectile.id}>
+              <mesh
+                position={projectile.position}
+                scale={elementType.startsWith('fire') ? 0.2 : 0.15}
+              >
+                {elementType.startsWith('fire') ? (
+                  <sphereGeometry args={[1, 8, 8]} />
+                ) : (
+                  <sphereGeometry />
+                )}
+                <meshStandardMaterial 
+                  color={stats.emissive} 
+                  emissive={stats.emissive}
+                  emissiveIntensity={elementType.startsWith('fire') ? 4 : 2}
+                  toneMapped={false}
+                />
+              </mesh>
+              <Trail
+                width={elementType.startsWith('fire') ? 0.2 : 0.08}
+                length={elementType.startsWith('fire') ? 12 : 6}
+                decay={elementType.startsWith('fire') ? 0.6 : 1}
+                local={false}
+                stride={0}
+                interval={1}
+                attenuation={(t) => t * t}
+                color={stats.emissive}
+              >
+                <meshBasicMaterial 
+                  color={stats.emissive} 
+                  toneMapped={false}
+                  transparent
+                  opacity={0.8}
+                />
+              </Trail>
+            </group>
+          );
+        })}
+        
+        {/* Sell menu */}
+        {showSellMenu && !preview && (
+          <TowerSellMenu
+            onSell={handleSell}
+            onClose={handleClose}
+            sellValue={Math.floor(stats.cost * 0.7)}
+          />
+        )}
+      </group>
     </group>
   );
 }

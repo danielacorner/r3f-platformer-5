@@ -183,6 +183,9 @@ export function Level() {
     damageCreep,
   } = useGameStore();
 
+  const { wave, currentLevel } = useGameStore();
+  const { highlightedPathSegment } = useGameStore();
+
   // Refs and State
   const pathRef = useRef<InstancedMesh>(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -449,17 +452,7 @@ export function Level() {
       {/* Path Decoration Crystals */}
       <PathDecorations pathPoints={pathPoints} />
 
-      {/* Path */}
-      {/* <instancedMesh
-        ref={pathRef}
-        args={[new BoxGeometry(1, 1, 1), pathMaterial, segments.length]}
-        receiveShadow
-        castShadow
-      >
-        <Edges scale={1.1} threshold={15} color={glowColor} />
-      </instancedMesh> */}
-
-      {/* Path Decorations */}
+      {/* Path segments */}
       {segments.map((segment, index) => (
         <group key={`decoration-${index}`} position={segment.position} rotation={segment.rotation}>
           <mesh position={[0, 0.1, 0]} receiveShadow>
@@ -468,6 +461,23 @@ export function Level() {
           </mesh>
         </group>
       ))}
+
+      {/* Highlighted path segment */}
+      {highlightedPathSegment && (
+        <group
+          position={highlightedPathSegment.position}
+          rotation={highlightedPathSegment.rotation}
+        >
+          <mesh position={[0, 0.12, 0]}>
+            <boxGeometry args={[highlightedPathSegment.scale[0], 0.1, highlightedPathSegment.scale[2]]} />
+            <meshBasicMaterial color="#ff0000" transparent opacity={0.3} />
+          </mesh>
+          <mesh position={[0, 0.13, 0]}>
+            <boxGeometry args={[highlightedPathSegment.scale[0], 0.05, highlightedPathSegment.scale[2]]} />
+            <meshBasicMaterial color="#ff0000" transparent opacity={0.2} />
+          </mesh>
+        </group>
+      )}
 
       {/* Game Elements */}
       <WaveManager pathPoints={pathPoints} />

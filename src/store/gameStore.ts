@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Vector3 } from 'three';
 import { RapierRigidBody } from '@react-three/rapier';
+import { generatePath } from '../components/level/Level/PathDecoration';
 
 export type ElementType =
   | 'storm1' | 'storm2' | 'storm3' | 'storm4' | 'storm5'
@@ -92,6 +93,31 @@ export const TOWER_STATS: Record<ElementType, TowerStats> = {
   dark5: { damage: 200, range: 9, attackSpeed: 1.4, cost: 2000, special: { type: 'oblivion', value: 0.60, soul_harvest: true }, color: '#f3e8ff', emissive: '#a855f7', description: "Oblivion - Harvests souls of fallen enemies for bonus effects" }
 }
 
+export const isTowerOnPath = (position: [number, number, number]) => {
+  const pathData = generatePath();
+  const towerRadius = 0.5; // Half width of tower
+
+  for (const segment of pathData.segments) {
+    const [x, y, z] = position;
+    const [segX, segY, segZ] = segment.position;
+    const [scaleX, scaleY, scaleZ] = segment.scale;
+    const rotation = segment.rotation[1];
+
+    // Transform tower position to segment's local space
+    const dx = x - segX;
+    const dz = z - segZ;
+    const localX = dx * Math.cos(-rotation) - dz * Math.sin(-rotation);
+    const localZ = dx * Math.sin(-rotation) + dz * Math.cos(-rotation);
+
+    // Check if tower overlaps with segment bounds (adding tower radius)
+    if (Math.abs(localX) <= (scaleX / 2 + towerRadius) && 
+        Math.abs(localZ) <= (scaleZ / 2 + towerRadius)) {
+      return segment;
+    }
+  }
+  return null;
+};
+
 export interface Projectile {
   id: number;
   startPos: Vector3;
@@ -145,6 +171,12 @@ interface PlacedTower {
   kills: number;
 }
 
+interface PathSegment {
+  position: [number, number, number];
+  scale: [number, number, number];
+  rotation: [number, number, number];
+}
+
 interface GameState {
   phase: 'prep' | 'combat' | 'victory';
   currentLevel: number;
@@ -173,6 +205,7 @@ interface GameState {
   towerStates: TowerState[];
   playerRef: any | null;
   orbSpeed: number;
+  highlightedPathSegment: PathSegment | null;
 }
 
 const initialState: GameState = {
@@ -203,6 +236,7 @@ const initialState: GameState = {
   towerStates: [],
   playerRef: null,
   orbSpeed: 1,
+  highlightedPathSegment: null,
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -239,9 +273,16 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ wave });
   },
 
-  addPlacedTower: (position, type, level) => {
+  addPlacedTower: (position, type, level = 1) => {
     const state = get();
     const cost = TOWER_STATS[type]?.cost ?? 0;
+    
+    // Check if tower is on path
+    const collidingSegment = isTowerOnPath(position as [number, number, number]);
+    if (collidingSegment) {
+      return;
+    }
+
     if (state.money >= cost) {
       set(state => ({
         placedTowers: [...state.placedTowers, {
@@ -456,6 +497,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
     return state;
   }),
+
+  setHighlightedPathSegment: (segment) => {
+    set({ highlightedPathSegment: segment });
+  },
 }));
 
 const handleProjectileHit = (projectile: Projectile, creep: Creep) => {
