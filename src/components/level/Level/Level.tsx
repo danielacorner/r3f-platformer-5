@@ -297,25 +297,37 @@ export function Level() {
   };
 
   const handlePlaceTower = (event: any) => {
-    if (!selectedObjectType || !canAffordTower) return;
+    event.stopPropagation();
+    
+    if (selectedObjectType && event.point) {
+      // Snap to grid
+      const snappedPosition = new Vector3(
+        Math.round(event.point.x),
+        0,
+        Math.round(event.point.z)
+      );
 
-    // Snap to grid
-    const snappedPosition: [number, number, number] = [
-      Math.round(event.point.x),
-      0.5,
-      Math.round(event.point.z)
-    ];
+      // Check if position is already occupied
+      const isOccupied = placedTowers.some(tower => {
+        const towerPos = tower.position instanceof Vector3 
+          ? tower.position 
+          : new Vector3(...tower.position);
+        return towerPos.distanceTo(snappedPosition) < 0.1;
+      });
 
-    // On mobile, show confirmation UI
-    if (window.innerWidth <= 768) {
-      setPendingTowerPosition(snappedPosition);
-      setPreviewPosition(snappedPosition); // Keep preview at the same position
-      return;
+      if (!isOccupied) {
+        const stats = TOWER_STATS[selectedObjectType];
+        if (money >= stats.cost) {
+          addPlacedTower({
+            id: Date.now(),
+            position: snappedPosition.toArray(),
+            type: selectedObjectType,
+            level: selectedObjectLevel,
+          });
+          setSelectedObjectType(null);
+        }
+      }
     }
-
-    // On desktop, place tower immediately
-    addPlacedTower(snappedPosition, selectedObjectType, selectedObjectLevel);
-    setSelectedObjectType(null);
   };
 
   const handleConfirmTower = () => {
@@ -329,6 +341,31 @@ export function Level() {
   const handleCancelTower = () => {
     setPendingTowerPosition(null);
     // setSelectedObjectType(null);
+  };
+
+  const handleTowerPreview = (event: any) => {
+    event.stopPropagation();
+    
+    if (selectedObjectType && event.point) {
+      // Snap preview position to grid
+      const snappedPosition = new Vector3(
+        Math.round(event.point.x),
+        0,
+        Math.round(event.point.z)
+      );
+
+      // Check if position is already occupied
+      const isOccupied = placedTowers.some(tower => {
+        const towerPos = tower.position instanceof Vector3 
+          ? tower.position 
+          : new Vector3(...tower.position);
+        return towerPos.distanceTo(snappedPosition) < 0.1;
+      });
+
+      if (!isOccupied) {
+        setPreviewPosition(snappedPosition);
+      }
+    }
   };
 
   // Instance Matrices for Path

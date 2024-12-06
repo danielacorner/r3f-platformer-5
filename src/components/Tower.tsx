@@ -11,6 +11,7 @@ import { ProjectileSystem } from './ProjectileSystem';
 import { createShaderMaterial } from '../utils/shaders';
 import { ObjectPool } from '../utils/objectPool';
 import { TowerSellMenu } from './TowerSellMenu';
+import { GridMarker } from './GridMarker';
 
 const TOWER_GEOMETRY = new THREE.BoxGeometry(1, 2, 1);
 const PROJECTILE_GEOMETRY = new THREE.SphereGeometry(0.1, 8, 8);
@@ -302,6 +303,16 @@ export function Tower({ position, type, level = 1, preview = false, onDamageEnem
         <cylinderGeometry args={[scaledWidth * 1.35, scaledWidth * 1.35, scaledHeight, 8]} />
         <meshBasicMaterial transparent opacity={0} />
       </mesh>
+
+      {/* Grid marker (only shown during preview) */}
+      {preview && (
+        <GridMarker
+          position={[0, 0.01, 0]}
+          size={1.2}
+          color={canAfford ? '#ffffff' : '#ff0000'}
+          opacity={0.3}
+        />
+      )}
 
       {/* Base platform for all towers */}
       <mesh position={[0, 0.1, 0]} castShadow receiveShadow>
