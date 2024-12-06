@@ -248,15 +248,15 @@ const initialState: GameState = {
     multishot: 0
   },
   wave: 0,
+  currentWave: 0,
+  totalWaves: 12,
+  showWaveIndicator: false,
   creeps: [],
   projectiles: [],
   towerStates: [],
   playerRef: null,
   orbSpeed: 1,
   highlightedPathSegment: null,
-  currentWave: 0,
-  totalWaves: 15,
-  showWaveIndicator: false,
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
