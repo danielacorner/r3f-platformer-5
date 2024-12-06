@@ -3,7 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { Environment, useGLTF, Stars, Float, useTexture } from '@react-three/drei';
 import { Vector3, Raycaster, Color, DoubleSide, Plane, Vector2, InstancedMesh, Object3D, Matrix4, BoxGeometry, Mesh, Euler, Float32BufferAttribute } from 'three';
-import { TOWER_STATS, useGameStore } from '../../../store/gameStore';
+import { useGameStore, isTowerOnPath, TOWER_STATS } from '../../../store/gameStore';
 import { Edges, MeshTransmissionMaterial, Float as FloatDrei } from '@react-three/drei';
 import { WaveManager } from '../../WaveManager';
 import { Tower } from '../../Tower';
@@ -306,19 +306,22 @@ export function Level() {
       // Snap to grid
       const snappedPosition = new Vector3(
         Math.round(event.point.x),
-        0,
+        0.5,
         Math.round(event.point.z)
       );
 
-      // Check if position is already occupied
+      // Check if position is already occupied by another tower
       const isOccupied = placedTowers.some(tower => {
         const towerPos = tower.position instanceof Vector3 
           ? tower.position 
           : new Vector3(...tower.position);
-        return towerPos.distanceTo(snappedPosition) < 0.1;
+        return towerPos.distanceTo(snappedPosition) < 0.5;
       });
 
-      if (!isOccupied) {
+      // Check if tower would collide with path
+      const collidesWithPath = isTowerOnPath(snappedPosition.toArray());
+
+      if (!isOccupied && !collidesWithPath) {
         const stats = TOWER_STATS[selectedObjectType];
         if (money >= stats.cost) {
           addPlacedTower(
@@ -356,7 +359,7 @@ export function Level() {
       // Snap preview position to grid
       const snappedPosition = new Vector3(
         Math.round(event.point.x),
-        0,
+        0.5,
         Math.round(event.point.z)
       );
 
@@ -365,7 +368,7 @@ export function Level() {
         const towerPos = tower.position instanceof Vector3 
           ? tower.position 
           : new Vector3(...tower.position);
-        return towerPos.distanceTo(snappedPosition) < 0.1;
+        return towerPos.distanceTo(snappedPosition) < 0.5;  // Slightly more forgiving
       });
 
       if (!isOccupied) {

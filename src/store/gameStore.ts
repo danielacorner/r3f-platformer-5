@@ -298,12 +298,6 @@ export const useGameStore = create<GameState>((set, get) => ({
         ? position 
         : [position.x, position.y, position.z];
 
-    // Check if tower is on path
-    const collidingSegment = isTowerOnPath(positionArray);
-    if (collidingSegment) {
-      return;
-    }
-
     if (state.money >= cost) {
       set(state => ({
         placedTowers: [...state.placedTowers, {
