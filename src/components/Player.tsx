@@ -19,7 +19,8 @@ const MOVE_SPEED = 5;
 const FLOAT_HEIGHT = 0.5;
 const FLOAT_SPEED = 2;
 const CAMERA_LERP = 0.15;
-const CAMERA_HEIGHT = 40;
+const CAMERA_HEIGHT = 56;
+const START_ANIMATION_DURATION = 2; // longer animation duration
 
 export function Player({ moveTargetRef }: PlayerProps) {
   const playerRef = useRef<Group>(null);
@@ -28,6 +29,7 @@ export function Player({ moveTargetRef }: PlayerProps) {
   const lastValidPosition = useRef(new Vector3(0, FLOAT_HEIGHT, 0));
   const cameraOffset = useRef<Vector3 | null>(null);
   const lastTouchY = useRef<number | null>(null);
+  const introStartTime = useRef<number | null>(null);
   const { camera } = useThree();
   const [showLevelUpEffect, setShowLevelUpEffect] = useState(false);
   const prevLevel = useRef(1);
@@ -45,13 +47,16 @@ export function Player({ moveTargetRef }: PlayerProps) {
   useEffect(() => {
     if (!playerRef.current || !camera) return;
 
-    // Set initial camera position
-    camera.position.set(0, CAMERA_HEIGHT, CAMERA_HEIGHT * 0.5);
-    camera.lookAt(0, 0, 0);
+    // Set initial camera position (very low and close, facing player)
+    camera.position.set(0, 2, -3);
+    camera.lookAt(0, 2, 0);
     
     // Initialize camera offset
     cameraOffset.current = camera.position.clone().sub(new Vector3(0, FLOAT_HEIGHT, 0));
     
+    // Start intro animation
+    introStartTime.current = Date.now();
+
     // Initialize physics state
     playerRef.current.setTranslation({ x: 0, y: FLOAT_HEIGHT, z: 0 });
     playerRef.current.setLinvel({ x: 0, y: 0, z: 0 });
@@ -240,13 +245,48 @@ export function Player({ moveTargetRef }: PlayerProps) {
     const verticalOffset = CAMERA_HEIGHT * cameraZoom * cameraAngle;
     const horizontalOffset = CAMERA_HEIGHT * cameraZoom * (1 - cameraAngle);
 
-    // Use fixed offset to maintain camera angle
-    state.camera.position.x = position.x;
-    state.camera.position.y = verticalOffset;
-    state.camera.position.z = position.z + horizontalOffset;
+    // Calculate camera position based on intro animation or normal gameplay
+    let targetX = position.x;
+    let targetY = verticalOffset;
+    let targetZ = position.z + horizontalOffset;
 
-    // Keep look target directly in front of player
-    state.camera.lookAt(position.x, 0, position.z);
+    if (introStartTime.current) {
+      const elapsed = (Date.now() - introStartTime.current) / 1000; // seconds
+      
+      if (elapsed < START_ANIMATION_DURATION) {
+        const progress = Math.min(1, elapsed / START_ANIMATION_DURATION);
+        
+        // Logarithmic easing for zoom out
+        const zoomProgress = Math.log(1.48 + progress * 6) / Math.log(10);
+        // Delayed quadratic easing for vertical movement
+        const verticalProgress = Math.max(0, Math.pow((progress - 0.2) * 1.2, 2));
+        
+        // Start position (low and close, facing player)
+        const startY = 2;
+        const startZ = -3;
+        
+        // First zoom out (z axis), then move up (y axis)
+        targetZ = position.z + startZ + (horizontalOffset - startZ) * zoomProgress;
+        targetY = startY + (verticalOffset - startY) * verticalProgress;
+        
+        // Animate look-at point from player height to ground
+        const lookAtHeight = 2 * (1 - verticalProgress);
+        camera.lookAt(position.x, lookAtHeight, position.z);
+      } else {
+        // Animation finished
+        introStartTime.current = null;
+      }
+    }
+
+    // Apply final camera position
+    state.camera.position.x = targetX;
+    state.camera.position.y = targetY;
+    state.camera.position.z = targetZ;
+
+    // Only look at player position if intro is finished
+    if (!introStartTime.current) {
+      state.camera.lookAt(position.x, 0, position.z);
+    }
   });
 
   return (
@@ -333,7 +373,18 @@ export function Player({ moveTargetRef }: PlayerProps) {
             </mesh>
             {/* Inner brim (transition to cone) */}
             <mesh position={[0, 0.12, 0]} >
-              <cylinderGeometry args={[0.4, 0.4, 0.1, 32]} />
+              <cylinderGeometry 
+                args={[
+                  0.4, // top radius gets slightly smaller
+                  0.4, // bottom radius
+                  0.1, // height
+                  32, // segments
+                  1,
+                  true,
+                  Math.PI * (0.25), // adjust arc start
+                  Math.PI * (1.5) // adjust arc length
+                ]} 
+              />
               <meshStandardMaterial 
                 color="#fbc02d"
                 roughness={0.5}
