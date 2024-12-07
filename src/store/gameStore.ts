@@ -225,6 +225,7 @@ interface GameState {
     type: ElementType,
     level?: number
   ) => void;
+  cameraZoom: number;
 }
 
 const initialState: GameState = {
@@ -261,6 +262,7 @@ const initialState: GameState = {
   showWaveIndicator: false,
   showTowerConfirmation: false,
   pendingTowerPosition: null,
+  cameraZoom: 1,
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -546,6 +548,11 @@ export const useGameStore = create<GameState>((set, get) => ({
     }, 1000);
 
     console.log('Wave started, new state:', get());
+  },
+  adjustCameraZoom: (delta: number) => {
+    const currentZoom = get().cameraZoom;
+    const newZoom = Math.max(0.5, Math.min(2, currentZoom + delta));
+    set({ cameraZoom: newZoom });
   },
 }));
 

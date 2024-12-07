@@ -33,6 +33,8 @@ export function Player({ moveTargetRef }: PlayerProps) {
   const level = useGameStore(state => state.level);
   const range = useGameStore(state => state.upgrades.range);
   const damage = useGameStore(state => state.upgrades.damage);
+  const cameraZoom = useGameStore(state => state.cameraZoom);
+  const adjustCameraZoom = useGameStore(state => state.adjustCameraZoom);
   const [rigidBodyKey, setRigidBodyKey] = useState(0);
   const floatOffset = useRef(0);
 
@@ -57,12 +59,21 @@ export function Player({ moveTargetRef }: PlayerProps) {
       moveTargetRef.current.active = false;
     }
 
+    // Add wheel event listener for zoom
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const zoomDelta = e.deltaY * 0.001;
+      adjustCameraZoom(zoomDelta);
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: false });
     return () => {
       if (moveTargetRef.current) {
         moveTargetRef.current.active = false;
       }
+      window.removeEventListener('wheel', handleWheel);
     };
-  }, [camera, rigidBodyKey]);
+  }, [camera, adjustCameraZoom, rigidBodyKey]);
 
   // Check for level up
   useEffect(() => {
@@ -192,8 +203,8 @@ export function Player({ moveTargetRef }: PlayerProps) {
     // Update camera position
     const targetCameraPos = new Vector3(
       position.x,
-      CAMERA_HEIGHT,
-      position.z + CAMERA_HEIGHT * 0.5
+      CAMERA_HEIGHT * cameraZoom,
+      position.z + (CAMERA_HEIGHT * 0.5 * cameraZoom)
     );
 
     state.camera.position.lerp(targetCameraPos, CAMERA_LERP);
