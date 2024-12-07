@@ -19,7 +19,7 @@ const MOVE_SPEED = 5;
 const FLOAT_HEIGHT = 0.5;
 const FLOAT_SPEED = 2;
 const CAMERA_LERP = 0.01;
-const CAMERA_HEIGHT = 32;
+const CAMERA_HEIGHT = 40;
 
 export function Player({ moveTargetRef }: PlayerProps) {
   const playerRef = useRef<Group>(null);
@@ -191,9 +191,9 @@ export function Player({ moveTargetRef }: PlayerProps) {
 
     // Update camera position
     const targetCameraPos = new Vector3(
-      position.x + cameraOffset.current.x,
-      position.y + cameraOffset.current.y,
-      position.z + cameraOffset.current.z
+      position.x,
+      CAMERA_HEIGHT,
+      position.z + CAMERA_HEIGHT * 0.5
     );
 
     state.camera.position.lerp(targetCameraPos, CAMERA_LERP);
