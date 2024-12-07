@@ -67,7 +67,7 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
           <div className="header-right">
             <div className="skill-points">
               <FaStar className="text-yellow-400" />
-              <span>{skillPoints} skill points</span>
+              <span>{skillPoints} {window.innerWidth < 640 ? "" : "skill points"}</span>
             </div>
             <button
               className="close-icon-button"

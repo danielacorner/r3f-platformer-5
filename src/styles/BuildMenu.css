@@ -902,56 +902,73 @@ justify-content: center;
 @media screen and (max-width: 640px) {
   .skills-menu {
     width: 95%;
-    padding: 0.75rem;
-    max-height: 80vh;
+    padding: 0.5rem;
+    max-height: 90vh;
+    overflow-y: auto;
   }
 
   .skills-header {
-    padding-bottom: 0.5rem;
-    margin-bottom: 0.5rem;
+    padding-bottom: 0.25rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .skill-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.5rem;
+    flex-shrink: 0;
   }
 
-  .header-right {
+  .skill-points {
+    font-size: 0.85rem;
+  }
+
+  .skill-description {
+    font-size: 0.8rem;
+    opacity: 0.8;
+    margin: 0;
+  }
+
+  .skill-name {
+    font-size: 0.85rem;
+    margin: 0;
+  }
+
+  .skill-grid {
+    gap: 0.25rem;
+    padding: 0.25rem;
+  }
+
+  .skill-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
     gap: 0.5rem;
+    align-items: center;
+    padding: 0.5rem;
+    min-height: 0;
+  }
+
+  .upgrade-button {
+    padding: 0.25rem;
+    font-size: 1rem;
+    min-width: 2rem;
+    /* height: 2rem; */
+    margin: 0;
+  }
+  .skill-level{
+    position: absolute;
+    top: 1px;
+    right: 12px;
   }
 
   .close-icon-button {
     width: 1.75rem;
     height: 1.75rem;
+    padding: 0.25rem;
   }
 
-  .skills-grid {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
-  }
-
-  .skill-item {
-    padding: 0.75rem;
-    gap: 0.75rem;
-  }
-
-  .skill-icon {
-    width: 2rem;
-    height: 2rem;
-    font-size: 1rem;
-  }
-
-  .skill-name {
-    font-size: 0.9rem;
-  }
-
-  .skill-description {
-    font-size: 0.75rem;
-  }
-
-  .skill-level {
-    font-size: 0.75rem;
-  }
-
-  .upgrade-button {
-    padding: 0.4rem;
-    min-width: 2rem;
-    font-size: 1.2rem;
+  .header-right {
+    gap: 0.5rem;
   }
 }
 
