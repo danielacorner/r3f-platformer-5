@@ -1,8 +1,27 @@
 import { useGameStore } from '../store/gameStore';
 import { animated, useSpring } from '@react-spring/web';
+import { useEffect, useState } from 'react';
 
 export const WaveIndicator = () => {
   const { currentWave, totalWaves, showWaveIndicator } = useGameStore();
+  const [fontSize, setFontSize] = useState({ wave: '48px', number: '180px' });
+
+  useEffect(() => {
+    const updateFontSize = () => {
+      const width = window.innerWidth;
+      if (width < 480) { // Mobile
+        setFontSize({ wave: '32px', number: '96px' });
+      } else if (width < 768) { // Tablet
+        setFontSize({ wave: '40px', number: '140px' });
+      } else { // Desktop
+        setFontSize({ wave: '48px', number: '180px' });
+      }
+    };
+
+    updateFontSize();
+    window.addEventListener('resize', updateFontSize);
+    return () => window.removeEventListener('resize', updateFontSize);
+  }, []);
 
   const springs = useSpring({
     opacity: showWaveIndicator ? 1 : 0,
@@ -38,21 +57,22 @@ export const WaveIndicator = () => {
     >
       <div>
         <div style={{ 
-          fontSize: '48px', 
+          fontSize: fontSize.wave, 
           opacity: 0.8, 
           marginBottom: '20px',
-          letterSpacing: '8px',
+          letterSpacing: '0.2em',
           fontWeight: 'normal',
+          textAlign: 'center',
         }}>
           Wave
         </div>
         <div style={{ 
-          fontSize: '180px', 
-          letterSpacing: '8px',
-          fontWeight: 'normal',
-          lineHeight: '1',
+          fontSize: fontSize.number, 
+          letterSpacing: '0.1em',
+          fontWeight: 'bold',
+          textAlign: 'center',
         }}>
-          {currentWave} / {totalWaves}
+          {currentWave}/{totalWaves}
         </div>
       </div>
     </animated.div>
