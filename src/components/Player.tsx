@@ -207,7 +207,12 @@ export function Player({ moveTargetRef }: PlayerProps) {
       position.z + (CAMERA_HEIGHT * 0.5 * cameraZoom)
     );
 
-    state.camera.position.lerp(targetCameraPos, CAMERA_LERP);
+    // Lerp X and Z together to maintain angle
+    state.camera.position.x = state.camera.position.x + (targetCameraPos.x - state.camera.position.x) * CAMERA_LERP;
+    state.camera.position.y = targetCameraPos.y;
+    state.camera.position.z = state.camera.position.z + (targetCameraPos.z - state.camera.position.z) * CAMERA_LERP;
+
+    // Keep look target directly in front of player
     state.camera.lookAt(position.x, 0, position.z);
   });
 
