@@ -104,6 +104,9 @@ export default function App() {
   return (
     <>
     <div style={{ width: '100vw', height: '100vh', background: '#000913', position: 'relative' }}>
+      <BuildMenu />
+      <GameUI />
+      <WaveIndicator />
       <Canvas
         shadows="soft"
         camera={{ fov: 50 }}
@@ -156,11 +159,8 @@ export default function App() {
           <BakeShadows />
         </Suspense>
       </Canvas>
-      <BuildMenu />
-      <GameUI />
       <Loader />
     </div>
-    <WaveIndicator />
     </>
   );
 }

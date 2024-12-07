@@ -218,6 +218,8 @@ interface GameState {
   currentWave: number;
   totalWaves: number;
   showWaveIndicator: boolean;
+  showTowerConfirmation: boolean;
+  pendingTowerPosition: { x: number; y: number; z: number } | null;
   addPlacedTower: (
     position: number[] | { x: number; y: number; z: number },
     type: ElementType,
@@ -235,7 +237,7 @@ const initialState: GameState = {
   placedTowers: [],
   selectedObjectType: null,
   selectedObjectLevel: null,
-  money: process.env.NODE_ENV === 'development' ? 10000 : 500,
+  money: process.env.NODE_ENV === 'development' ? 9999 : 200,
   score: 0,
   lives: 20,
   experience: process.env.NODE_ENV === 'development' ? 90 : 0,
@@ -245,18 +247,20 @@ const initialState: GameState = {
     damage: 0,
     speed: 0,
     range: 0,
-    multishot: 0
+    multishot: 0,
   },
   wave: 0,
-  currentWave: 0,
-  totalWaves: 12,
-  showWaveIndicator: false,
   creeps: [],
   projectiles: [],
   towerStates: [],
   playerRef: null,
   orbSpeed: 1,
   highlightedPathSegment: null,
+  currentWave: 0,
+  totalWaves: 12,
+  showWaveIndicator: false,
+  showTowerConfirmation: false,
+  pendingTowerPosition: null,
 }
 
 export const useGameStore = create<GameState>((set, get) => ({

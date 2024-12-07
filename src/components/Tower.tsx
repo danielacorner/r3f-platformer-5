@@ -29,6 +29,8 @@ interface TowerProps {
   onDamageEnemy?: (enemyId: number, damage: number, effects: any) => void;
   canAfford?: boolean;
   id: number;
+  opacity?: number;
+  isPreview?: boolean;
 }
 
 interface Arrow {
@@ -159,7 +161,7 @@ export function TowerManager({ towers }: TowerManagerProps) {
   );
 }
 
-export function Tower({ position, type = 'dark1', level = 1, preview = false, onDamageEnemy, canAfford = true, id }: TowerProps) {
+export function Tower({ position, type = 'dark1', level = 1, preview = false, onDamageEnemy, canAfford = true, id, opacity = 1, isPreview = false }: TowerProps) {
   const phase = useGameStore(state => state.phase);
   const creeps = useGameStore(state => state.creeps);
   const stats = TOWER_STATS[type] ?? TOWER_STATS.dark1;

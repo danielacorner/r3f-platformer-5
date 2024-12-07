@@ -322,14 +322,18 @@ export function Level() {
       const collidesWithPath = isTowerOnPath(snappedPosition.toArray());
 
       if (!isOccupied && !collidesWithPath) {
-        const stats = TOWER_STATS[selectedObjectType];
-        if (money >= stats.cost) {
-          addPlacedTower(
-            snappedPosition.toArray(),
-            selectedObjectType,
-            selectedObjectLevel
-          );
-          setSelectedObjectType(null);
+        if (window.innerWidth < 640) {
+          setPendingTowerPosition(snappedPosition.toArray());
+        } else {
+          const stats = TOWER_STATS[selectedObjectType];
+          if (money >= stats.cost) {
+            addPlacedTower(
+              snappedPosition.toArray(),
+              selectedObjectType,
+              selectedObjectLevel
+            );
+            setSelectedObjectType(null);
+          }
         }
       }
     }
@@ -337,13 +341,16 @@ export function Level() {
 
   const handleConfirmTower = () => {
     if (pendingTowerPosition && selectedObjectType) {
-      addPlacedTower(
-        pendingTowerPosition,
-        selectedObjectType,
-        selectedObjectLevel
-      );
-      setSelectedObjectType(null);
-      setPendingTowerPosition(null);
+      const stats = TOWER_STATS[selectedObjectType];
+      if (money >= stats.cost) {
+        addPlacedTower(
+          pendingTowerPosition,
+          selectedObjectType,
+          selectedObjectLevel
+        );
+        setSelectedObjectType(null);
+        setPendingTowerPosition(null);
+      }
     }
   };
 
@@ -538,10 +545,9 @@ export function Level() {
       )}
       {pendingTowerPosition && (
         <TowerConfirmation
-          position={pendingTowerPosition}
+          position={[pendingTowerPosition[0], pendingTowerPosition[1] + 0.5, pendingTowerPosition[2]]}
           onConfirm={handleConfirmTower}
           onCancel={handleCancelTower}
-          camera={camera}
         />
       )}
     </group>
