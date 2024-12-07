@@ -18,7 +18,7 @@ interface PlayerProps {
 const MOVE_SPEED = 5;
 const FLOAT_HEIGHT = 0.5;
 const FLOAT_SPEED = 2;
-const CAMERA_LERP = 0.01;
+const CAMERA_LERP = 0.15;
 const CAMERA_HEIGHT = 40;
 
 export function Player({ moveTargetRef }: PlayerProps) {
@@ -207,10 +207,10 @@ export function Player({ moveTargetRef }: PlayerProps) {
       position.z + (CAMERA_HEIGHT * 0.5 * cameraZoom)
     );
 
-    // Lerp X and Z together to maintain angle
-    state.camera.position.x = state.camera.position.x + (targetCameraPos.x - state.camera.position.x) * CAMERA_LERP;
+    // Use a fixed offset to maintain camera angle
+    state.camera.position.x = position.x;
     state.camera.position.y = targetCameraPos.y;
-    state.camera.position.z = state.camera.position.z + (targetCameraPos.z - state.camera.position.z) * CAMERA_LERP;
+    state.camera.position.z = position.z + (CAMERA_HEIGHT * 0.5 * cameraZoom);
 
     // Keep look target directly in front of player
     state.camera.lookAt(position.x, 0, position.z);
