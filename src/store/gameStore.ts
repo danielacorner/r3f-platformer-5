@@ -212,7 +212,7 @@ interface GameState {
   creeps: CreepState[];
   projectiles: Projectile[];
   towerStates: TowerState[];
-  playerRef: any | null;
+  playerRef: RapierRigidBody | null;
   orbSpeed: number;
   highlightedPathSegment: PathSegment | null;
   currentWave: number;

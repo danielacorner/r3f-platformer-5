@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { Canvas,  } from '@react-three/fiber';
+import { Canvas } from '@react-three/fiber';
 import {
   SoftShadows,
   OrbitControls,
@@ -26,10 +26,8 @@ import './styles/TowerSellMenu.css';
 
 function TDCamera() {
   const { playerRef } = useGameStore();
-  const controlsRef = useRef();
-  const lastPanPosition = useRef({ x: 0, y: 0 });
   const isPanning = useRef(false);
-  
+  const lastPanPosition = useRef({ x: 0, y: 0 });
 
   const handlePointerDown = (e) => {
     if (e.button === 2 || e.button === 1) { // Right click or middle click
@@ -50,26 +48,7 @@ function TDCamera() {
     const dx = (e.clientX - lastPanPosition.current.x) * 0.1;
     const dy = (e.clientY - lastPanPosition.current.y) * 0.1;
 
-    // Convert screen movement to world-space direction based on camera angle
-    const forward = new THREE.Vector3();
-    const right = new THREE.Vector3();
-    // const camera = controlsRef.current.object;
-
-    // forward.set(0, 0, 1)
-    //   .applyQuaternion(camera.quaternion)
-    //   .setY(0)
-    //   .normalize();
-
-    // right.set(1, 0, 0)
-    //   .applyQuaternion(camera.quaternion)
-    //   .setY(0)
-    //   .normalize();
-
-    // Move player based on pan direction
-    const movement = new THREE.Vector3()
-      .addScaledVector(forward, -dy)
-      .addScaledVector(right, dx);
-
+    const movement = new THREE.Vector3(-dx, 0, -dy);
     const currentPos = playerRef.current.translation();
     playerRef.current.setTranslation({
       x: currentPos.x + movement.x,
@@ -94,7 +73,6 @@ function TDCamera() {
 
   return (
     <OrbitControls
-      ref={controlsRef}
       makeDefault
       maxPolarAngle={Math.PI / 2.5}
       minPolarAngle={Math.PI / 4}
@@ -107,8 +85,6 @@ function TDCamera() {
     />
   );
 }
-
-
 
 function Effects() {
   return (
@@ -125,10 +101,8 @@ function Effects() {
 }
 
 export default function App() {
-
   return (
     <>
-    
     <div style={{ width: '100vw', height: '100vh', background: '#000913', position: 'relative' }}>
       <Canvas
         shadows="soft"
@@ -178,8 +152,6 @@ export default function App() {
             <Level />
           </Physics>
           <TDCamera />
-          {/* <FollowingCloud /> */}
-
           <Effects />
           <BakeShadows />
         </Suspense>
@@ -189,8 +161,6 @@ export default function App() {
       <Loader />
     </div>
     <WaveIndicator />
-
     </>
-
   );
 }
