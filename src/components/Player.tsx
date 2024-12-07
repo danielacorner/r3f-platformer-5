@@ -29,6 +29,8 @@ export function Player({ moveTargetRef }: PlayerProps) {
   const lastValidPosition = useRef(new Vector3(0, FLOAT_HEIGHT, 0));
   const cameraOffset = useRef<Vector3 | null>(null);
   const lastTouchY = useRef<number | null>(null);
+  const lastTouchX = useRef<number | null>(null);
+  const cameraRotation = useRef(0);
   const introStartTime = useRef<number | null>(null);
   const { camera } = useThree();
   const [showLevelUpEffect, setShowLevelUpEffect] = useState(false);
@@ -84,20 +86,31 @@ export function Player({ moveTargetRef }: PlayerProps) {
     // Handle touch controls for camera angle
     const handleTouchStart = (e: TouchEvent) => {
       lastTouchY.current = e.touches[0].clientY;
+      lastTouchX.current = e.touches[0].clientX;
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (lastTouchY.current === null) return;
+      if (lastTouchY.current === null || lastTouchX.current === null) return;
       
       const touchY = e.touches[0].clientY;
+      const touchX = e.touches[0].clientX;
+
+      // Vertical movement controls camera angle
       const deltaY = (touchY - lastTouchY.current) * 0.002;
       adjustCameraAngle(deltaY);
+
+      // Horizontal movement controls rotation
+      const deltaX = (touchX - lastTouchX.current) * 0.1;
+      const newRotation = cameraRotation.current - deltaX;
+      cameraRotation.current = Math.max(-30, Math.min(30, newRotation));
       
       lastTouchY.current = touchY;
+      lastTouchX.current = touchX;
     };
 
     const handleTouchEnd = () => {
       lastTouchY.current = null;
+      lastTouchX.current = null;
     };
 
     window.addEventListener('wheel', handleWheel, { passive: false });
@@ -245,10 +258,15 @@ export function Player({ moveTargetRef }: PlayerProps) {
     const verticalOffset = CAMERA_HEIGHT * cameraZoom * cameraAngle;
     const horizontalOffset = CAMERA_HEIGHT * cameraZoom * (1 - cameraAngle);
 
+    // Apply rotation to camera position
+    const rotationRad = (cameraRotation.current * Math.PI) / 180;
+    const rotatedX = Math.sin(rotationRad) * horizontalOffset;
+    const rotatedZ = Math.cos(rotationRad) * horizontalOffset;
+
     // Calculate camera position based on intro animation or normal gameplay
-    let targetX = position.x;
+    let targetX = position.x + rotatedX;
     let targetY = verticalOffset;
-    let targetZ = position.z + horizontalOffset;
+    let targetZ = position.z + rotatedZ;
 
     if (introStartTime.current) {
       const elapsed = (Date.now() - introStartTime.current) / 1000; // seconds
