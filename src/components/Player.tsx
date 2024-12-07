@@ -27,6 +27,7 @@ export function Player({ moveTargetRef }: PlayerProps) {
   const visualRef = useRef<Group>(null);
   const lastValidPosition = useRef(new Vector3(0, FLOAT_HEIGHT, 0));
   const cameraOffset = useRef<Vector3 | null>(null);
+  const lastTouchY = useRef<number | null>(null);
   const { camera } = useThree();
   const [showLevelUpEffect, setShowLevelUpEffect] = useState(false);
   const prevLevel = useRef(1);
@@ -34,7 +35,9 @@ export function Player({ moveTargetRef }: PlayerProps) {
   const range = useGameStore(state => state.upgrades.range);
   const damage = useGameStore(state => state.upgrades.damage);
   const cameraZoom = useGameStore(state => state.cameraZoom);
+  const cameraAngle = useGameStore(state => state.cameraAngle);
   const adjustCameraZoom = useGameStore(state => state.adjustCameraZoom);
+  const adjustCameraAngle = useGameStore(state => state.adjustCameraAngle);
   const [rigidBodyKey, setRigidBodyKey] = useState(0);
   const floatOffset = useRef(0);
 
@@ -59,21 +62,54 @@ export function Player({ moveTargetRef }: PlayerProps) {
       moveTargetRef.current.active = false;
     }
 
-    // Add wheel event listener for zoom
+    // Add wheel event listener for zoom and angle control
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      const zoomDelta = e.deltaY * 0.001;
-      adjustCameraZoom(zoomDelta);
+      const delta = e.deltaY * 0.001;
+      
+      if (e.shiftKey) {
+        // Adjust vertical angle with shift + wheel
+        adjustCameraAngle(delta);
+      } else {
+        // Regular zoom without shift
+        adjustCameraZoom(delta);
+      }
+    };
+
+    // Handle touch controls for camera angle
+    const handleTouchStart = (e: TouchEvent) => {
+      lastTouchY.current = e.touches[0].clientY;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (lastTouchY.current === null) return;
+      
+      const touchY = e.touches[0].clientY;
+      const deltaY = (touchY - lastTouchY.current) * 0.002;
+      adjustCameraAngle(deltaY);
+      
+      lastTouchY.current = touchY;
+    };
+
+    const handleTouchEnd = () => {
+      lastTouchY.current = null;
     };
 
     window.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd);
+
     return () => {
       if (moveTargetRef.current) {
         moveTargetRef.current.active = false;
       }
       window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [camera, adjustCameraZoom, rigidBodyKey]);
+  }, [camera, adjustCameraZoom, adjustCameraAngle, rigidBodyKey]);
 
   // Check for level up
   useEffect(() => {
@@ -201,16 +237,13 @@ export function Player({ moveTargetRef }: PlayerProps) {
     });
 
     // Update camera position
-    const targetCameraPos = new Vector3(
-      position.x,
-      CAMERA_HEIGHT * cameraZoom,
-      position.z + (CAMERA_HEIGHT * 0.5 * cameraZoom)
-    );
+    const verticalOffset = CAMERA_HEIGHT * cameraZoom * cameraAngle;
+    const horizontalOffset = CAMERA_HEIGHT * cameraZoom * (1 - cameraAngle);
 
-    // Use a fixed offset to maintain camera angle
+    // Use fixed offset to maintain camera angle
     state.camera.position.x = position.x;
-    state.camera.position.y = targetCameraPos.y;
-    state.camera.position.z = position.z + (CAMERA_HEIGHT * 0.5 * cameraZoom);
+    state.camera.position.y = verticalOffset;
+    state.camera.position.z = position.z + horizontalOffset;
 
     // Keep look target directly in front of player
     state.camera.lookAt(position.x, 0, position.z);

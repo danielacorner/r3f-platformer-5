@@ -226,6 +226,7 @@ interface GameState {
     level?: number
   ) => void;
   cameraZoom: number;
+  cameraAngle: number;
 }
 
 const initialState: GameState = {
@@ -263,6 +264,7 @@ const initialState: GameState = {
   showTowerConfirmation: false,
   pendingTowerPosition: null,
   cameraZoom: 1,
+  cameraAngle: 0.5, // Default angle (0 is horizontal, 1 is vertical)
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -553,6 +555,11 @@ export const useGameStore = create<GameState>((set, get) => ({
     const currentZoom = get().cameraZoom;
     const newZoom = Math.max(0.5, Math.min(2, currentZoom + delta));
     set({ cameraZoom: newZoom });
+  },
+  adjustCameraAngle: (delta: number) => {
+    const currentAngle = get().cameraAngle;
+    const newAngle = Math.max(0.2, Math.min(0.8, currentAngle + delta));
+    set({ cameraAngle: newAngle });
   },
 }));
 
