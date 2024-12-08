@@ -6,6 +6,7 @@ import { createShaderMaterial } from '../utils/shaders';
 import * as THREE from 'three'
 import { BufferGeometryUtils } from 'three/examples/jsm/Addons.js';
 import { GoblinModel } from './GoblinModel';
+import { CreeperModel } from './CreeperModel';
 
 // Create geometries for different creep types
 const CREEP_GEOMETRIES = {
@@ -271,7 +272,23 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
                 position={position}
                 rotation={[0, angle + Math.PI, 0]}
               >
-                <GoblinModel scale={0.4} />
+                <group position={[0, 0.5, 0]}>
+                  <GoblinModel scale={0.4} />
+                </group>
+              </group>
+            );
+          }
+
+          if (creep.type === 'fast') {
+            return (
+              <group 
+                key={creep.id} 
+                position={position}
+                rotation={[0, angle + Math.PI, 0]}
+              >
+                <group position={[0, 0.5, 0]}>
+                  <CreeperModel scale={0.4} />
+                </group>
               </group>
             );
           }
