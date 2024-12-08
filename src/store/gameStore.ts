@@ -95,7 +95,8 @@ export const TOWER_STATS: Record<ElementType, TowerStats> = {
 
 export const isTowerOnPath = (position: number[] | { x: number; y: number; z: number }) => {
   const pathData = generatePath();
-  const towerRadius = 0.5; // Half width of tower
+  const towerRadius = 0.35; // Reduced from 0.5 to allow closer placement
+  const pathMargin = 0.2; // Added margin to make path hitbox smaller than visual
 
   // Convert position to [x, y, z] format
   let x: number, y: number, z: number;
@@ -118,9 +119,12 @@ export const isTowerOnPath = (position: number[] | { x: number; y: number; z: nu
     const localX = dx * Math.cos(-rotation) - dz * Math.sin(-rotation);
     const localZ = dx * Math.sin(-rotation) + dz * Math.cos(-rotation);
 
-    // Check if tower overlaps with segment bounds (adding tower radius)
-    if (Math.abs(localX) <= (scaleX / 2 + towerRadius) && 
-        Math.abs(localZ) <= (scaleZ / 2 + towerRadius)) {
+    // Check if tower overlaps with segment bounds, using reduced path size
+    const effectiveScaleX = scaleX - pathMargin;
+    const effectiveScaleZ = scaleZ - pathMargin;
+    
+    if (Math.abs(localX) <= (effectiveScaleX / 2 + towerRadius) && 
+        Math.abs(localZ) <= (effectiveScaleZ / 2 + towerRadius)) {
       return segment;
     }
   }

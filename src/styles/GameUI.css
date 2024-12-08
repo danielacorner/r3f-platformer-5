@@ -171,6 +171,15 @@
 }
 
 @media screen and (max-width: 432px) {
+  .start-wave-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    font-size: 1.1rem;
+  }  
+}
+@media screen and (max-width: 432px) {
   .game-ui {
     padding: 12px;
   }

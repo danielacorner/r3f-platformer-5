@@ -1,16 +1,10 @@
-import { useGameStore } from '../store/gameStore';
-import { FaPlay } from 'react-icons/fa';
-import '../styles/GameUI.css';
+import { useGameStore } from "../store/gameStore";
+import { FaPlay } from "react-icons/fa";
+import "../styles/GameUI.css";
 
 export function GameUI() {
-  const { 
-    phase, 
-    lives, 
-    currentLevel,
-    currentWave,
-    totalWaves,
-    startWave
-  } = useGameStore();
+  const { phase, lives, currentLevel, currentWave, totalWaves, startWave } =
+    useGameStore();
 
   return (
     <div className="game-ui">
@@ -21,7 +15,9 @@ export function GameUI() {
         </div>
         <div className="stat-item">
           <span className="stat-label">Wave:</span>
-          <span className="stat-value">{currentWave} / {totalWaves}</span>
+          <span className="stat-value">
+            {currentWave} / {totalWaves}
+          </span>
         </div>
         <div className="stat-item">
           <span className="stat-label">Lives:</span>
@@ -29,11 +25,14 @@ export function GameUI() {
         </div>
       </div>
 
-      {phase === 'prep' && (
+      {phase === "prep" && (
         <div className="game-controls">
           <button
             className="start-wave-button"
-            onClick={startWave}
+            onClick={(e) => {
+              e.stopPropagation();
+              startWave();
+            }}
           >
             <FaPlay />
             <span>Next Wave</span>
