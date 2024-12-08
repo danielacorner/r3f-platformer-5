@@ -20,7 +20,8 @@ const FLOAT_HEIGHT = 0.5;
 const FLOAT_SPEED = 2;
 const CAMERA_LERP = 0.15;
 const CAMERA_HEIGHT = 56;
-const START_ANIMATION_DURATION = 2; // longer animation duration
+const START_ANIMATION_DURATION = 2;
+const BOUNDARY_SIZE = 20; // Size of the playable area (half-width)
 
 export function Player({ moveTargetRef }: PlayerProps) {
   const playerRef = useRef<Group>(null);
@@ -29,8 +30,6 @@ export function Player({ moveTargetRef }: PlayerProps) {
   const lastValidPosition = useRef(new Vector3(0, FLOAT_HEIGHT, 0));
   const cameraOffset = useRef<Vector3 | null>(null);
   const lastTouchY = useRef<number | null>(null);
-  const lastTouchX = useRef<number | null>(null);
-  const cameraRotation = useRef(0);
   const introStartTime = useRef<number | null>(null);
   const { camera } = useThree();
   const [showLevelUpEffect, setShowLevelUpEffect] = useState(false);
@@ -86,31 +85,20 @@ export function Player({ moveTargetRef }: PlayerProps) {
     // Handle touch controls for camera angle
     const handleTouchStart = (e: TouchEvent) => {
       lastTouchY.current = e.touches[0].clientY;
-      lastTouchX.current = e.touches[0].clientX;
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (lastTouchY.current === null || lastTouchX.current === null) return;
+      if (lastTouchY.current === null) return;
       
       const touchY = e.touches[0].clientY;
-      const touchX = e.touches[0].clientX;
-
-      // Vertical movement controls camera angle
       const deltaY = (touchY - lastTouchY.current) * 0.002;
       adjustCameraAngle(deltaY);
-
-      // Horizontal movement controls rotation
-      const deltaX = (touchX - lastTouchX.current) * 0.1;
-      const newRotation = cameraRotation.current - deltaX;
-      cameraRotation.current = Math.max(-30, Math.min(30, newRotation));
       
       lastTouchY.current = touchY;
-      lastTouchX.current = touchX;
     };
 
     const handleTouchEnd = () => {
       lastTouchY.current = null;
-      lastTouchX.current = null;
     };
 
     window.addEventListener('wheel', handleWheel, { passive: false });
@@ -237,14 +225,30 @@ export function Player({ moveTargetRef }: PlayerProps) {
         return;
       }
 
+      // Check boundary constraints and adjust velocity
+      const nextX = position.x + velocity.x * delta;
+      const nextZ = position.z + velocity.z * delta;
+
+      // Clamp position within boundaries
+      if (Math.abs(nextX) >= BOUNDARY_SIZE) {
+        velocity.x = 0;
+      }
+      if (Math.abs(nextZ) >= BOUNDARY_SIZE) {
+        velocity.z = 0;
+      }
+
       playerRef.current.setLinvel(velocity);
 
-      // Rotate visual group based on movement direction
-      const angle = Math.atan2(velocity.x, velocity.z);
-      visualRef.current.rotation.y = angle;
+      // Only update last valid position if within bounds
+      if (Math.abs(position.x) < BOUNDARY_SIZE && Math.abs(position.z) < BOUNDARY_SIZE) {
+        lastValidPosition.current.copy(currentPos);
+      }
 
-      // Update last valid position
-      lastValidPosition.current.copy(currentPos);
+      // Rotate visual group based on movement direction
+      if (velocity.x !== 0 || velocity.z !== 0) {
+        const angle = Math.atan2(velocity.x, velocity.z);
+        visualRef.current.rotation.y = angle;
+      }
     }
 
     // Keep player at float height with smooth animation
@@ -258,15 +262,10 @@ export function Player({ moveTargetRef }: PlayerProps) {
     const verticalOffset = CAMERA_HEIGHT * cameraZoom * cameraAngle;
     const horizontalOffset = CAMERA_HEIGHT * cameraZoom * (1 - cameraAngle);
 
-    // Apply rotation to camera position
-    const rotationRad = (cameraRotation.current * Math.PI) / 180;
-    const rotatedX = Math.sin(rotationRad) * horizontalOffset;
-    const rotatedZ = Math.cos(rotationRad) * horizontalOffset;
-
     // Calculate camera position based on intro animation or normal gameplay
-    let targetX = position.x + rotatedX;
+    let targetX = position.x;
     let targetY = verticalOffset;
-    let targetZ = position.z + rotatedZ;
+    let targetZ = position.z + horizontalOffset;
 
     if (introStartTime.current) {
       const elapsed = (Date.now() - introStartTime.current) / 1000; // seconds
