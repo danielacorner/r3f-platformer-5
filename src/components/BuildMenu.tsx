@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useGameStore } from "../store/gameStore";
 
-import { FaCoins, FaChevronLeft, FaChevronRight, FaUser } from "react-icons/fa";
+import { FaCoins, FaUser } from "react-icons/fa";
 
 import {
   GiWaterDrop,
@@ -18,7 +18,17 @@ import "../styles/BuildMenu.css";
 
 import { SkillsMenu } from "./SkillsMenu";
 
-export const TOWER_TYPES = {
+export const TOWER_TYPES: Record<
+  string,
+  {
+    level: number;
+    type: ElementType;
+    label: string;
+    icon: JSX.Element;
+    description: string;
+    cost: number;
+  }
+> = {
   // Fire Towers
 
   fire1: {
@@ -349,7 +359,7 @@ function TowerButton({
         {TOWER_STATS[tower.type].special && (
           <div className="text-blue-400 text-xs mt-1">
             {TOWER_STATS[tower.type].special?.type}:{" "}
-            {TOWER_STATS[tower.type].special?.value * 100}%
+            {(TOWER_STATS[tower.type].special?.value ?? 0) * 100}%
           </div>
         )}
       </div>
@@ -431,12 +441,18 @@ export function BuildMenu() {
             <button
               className="element-preview"
               data-element={element}
-              style={{ touchAction: 'none' }}
+              style={{ touchAction: "none" }}
               onTouchStart={() => {
-                const expandedMenu = document.querySelector(`[data-element="${element}"] + .tower-expanded`);
+                const expandedMenu = document.querySelector<HTMLElement>(
+                  `[data-element="${element}"] + .tower-expanded`
+                );
                 if (expandedMenu) {
-                  expandedMenu.style.opacity = expandedMenu.style.opacity === '1' ? '0' : '1';
-                  expandedMenu.style.visibility = expandedMenu.style.visibility === 'visible' ? 'hidden' : 'visible';
+                  expandedMenu.style.opacity =
+                    expandedMenu.style.opacity === "1" ? "0" : "1";
+                  expandedMenu.style.visibility =
+                    expandedMenu.style.visibility === "visible"
+                      ? "hidden"
+                      : "visible";
                 }
               }}
             >

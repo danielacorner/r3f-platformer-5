@@ -1,6 +1,14 @@
-import { useRef, useEffect, useMemo } from 'react';
-import { InstancedMesh, Object3D, MathUtils, Color, ShaderMaterial, AdditiveBlending, InstancedBufferAttribute, Vector3, SphereGeometry } from 'three';
-import { useFrame } from '@react-three/fiber';
+import { useRef, useEffect, useMemo } from "react";
+import {
+  InstancedMesh,
+  Object3D,
+  ShaderMaterial,
+  AdditiveBlending,
+  InstancedBufferAttribute,
+  Vector3,
+  SphereGeometry,
+} from "three";
+import { useFrame } from "@react-three/fiber";
 
 const vertexShader = `
   attribute float opacity;
@@ -34,7 +42,7 @@ export function FirefliesInstances({ count = 50, radius = 25 }) {
   const opacities = useRef<Float32Array>(new Float32Array(count));
   const nextBlinkTimes = useRef<Float32Array>(new Float32Array(count));
   const blinkDurations = useRef<Float32Array>(new Float32Array(count));
-  
+
   // Store movement data for each firefly
   const fireflyData = useRef<FireflyData[]>([]);
 
@@ -51,14 +59,16 @@ export function FirefliesInstances({ count = 50, radius = 25 }) {
     if (!meshRef.current) return;
 
     // Initialize firefly data
-    fireflyData.current = Array(count).fill(null).map(() => ({
-      currentTarget: getRandomPoint(),
-      nextTarget: getRandomPoint(),
-      progress: 0,
-      speed: 0.2 + Math.random() * 0.3,
-      restTime: Math.random() * 2,
-      lastRestTime: 0
-    }));
+    fireflyData.current = Array(count)
+      .fill(null)
+      .map(() => ({
+        currentTarget: getRandomPoint(),
+        nextTarget: getRandomPoint(),
+        progress: 0,
+        speed: 0.2 + Math.random() * 0.3,
+        restTime: Math.random() * 2,
+        lastRestTime: 0,
+      }));
 
     // Initialize opacities and blink timings
     for (let i = 0; i < count; i++) {
@@ -69,7 +79,7 @@ export function FirefliesInstances({ count = 50, radius = 25 }) {
 
     // Update the instance attribute
     meshRef.current.geometry.setAttribute(
-      'opacity',
+      "opacity",
       new InstancedBufferAttribute(opacities.current, 1)
     );
   }, [count, radius]);
@@ -82,7 +92,7 @@ export function FirefliesInstances({ count = 50, radius = 25 }) {
     // Update each firefly
     for (let i = 0; i < count; i++) {
       const data = fireflyData.current[i];
-      
+
       // Update blinking
       if (time >= nextBlinkTimes.current[i]) {
         opacities.current[i] = Math.random();
@@ -101,13 +111,13 @@ export function FirefliesInstances({ count = 50, radius = 25 }) {
         }
       } else {
         data.progress = Math.min(1, data.progress + delta * data.speed);
-        
+
         tempObject.position.lerpVectors(
           data.currentTarget,
           data.nextTarget,
           data.progress
         );
-        
+
         tempObject.updateMatrix();
         meshRef.current.setMatrixAt(i, tempObject.matrix);
       }
@@ -115,7 +125,7 @@ export function FirefliesInstances({ count = 50, radius = 25 }) {
 
     // Update instance attributes
     meshRef.current.geometry.setAttribute(
-      'opacity',
+      "opacity",
       new InstancedBufferAttribute(opacities.current, 1)
     );
     meshRef.current.instanceMatrix.needsUpdate = true;

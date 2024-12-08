@@ -231,6 +231,7 @@ interface GameState {
   ) => void;
   cameraZoom: number;
   cameraAngle: number;
+  setSelectedObjectType: (type: PlaceableObjectType | null) => void;
 }
 
 const initialState: GameState = {
