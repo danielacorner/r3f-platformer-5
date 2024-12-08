@@ -28,6 +28,7 @@ import * as THREE from "three";
 import { BufferGeometryUtils } from "three/examples/jsm/Addons.js";
 import { GoblinModel } from "./GoblinModel";
 import { CreeperModel } from "./CreeperModel";
+import { PortalEffect } from "./PortalEffect";
 
 // Create geometries for different creep types
 const CREEP_GEOMETRIES = {
@@ -291,6 +292,14 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
   return (
     <group>
       <group ref={groupRef}>
+        {/* Spawn point portal */}
+        {pathPoints.length > 0 && (
+          <PortalEffect
+            position={[pathPoints[0].x, 0, pathPoints[0].z]}
+            color={new THREE.Color("#4a9eff")}
+          />
+        )}
+        {/* Creeps */}
         {creeps.map((creep) => {
           const position = new Vector3(...creep.position);
           const pathState = creepPaths.current.get(creep.id);
