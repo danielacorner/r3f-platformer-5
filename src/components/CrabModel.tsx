@@ -11,6 +11,12 @@ export function CrabModel({ scale = 1 }) {
   // Clone the scene once on mount
   const clonedScene = useMemo(() => {
     const clone = scene.clone(true);
+    
+    // Reset the clone's position to ensure it follows parent transformations
+    clone.position.set(0, 0, 0);
+    clone.rotation.set(0, 0, 0);
+    clone.scale.set(1, 1, 1);
+
     clone.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         child.castShadow = true;
@@ -21,6 +27,10 @@ export function CrabModel({ scale = 1 }) {
           child.material.transparent = true;
           child.material.needsUpdate = true;
         }
+        // Reset individual mesh transforms as well
+        child.position.set(0, 0, 0);
+        child.rotation.set(0, 0, 0);
+        child.scale.set(1, 1, 1);
       }
     });
     return clone;
@@ -28,7 +38,12 @@ export function CrabModel({ scale = 1 }) {
 
   return (
     <group ref={group}>
-      <primitive object={clonedScene} scale={[scale, scale, scale]} />
+      <primitive 
+        object={clonedScene} 
+        scale={[scale, scale, scale]}
+        position={[0, 0, 0]}
+        rotation={[0, 0, 0]}
+      />
     </group>
   );
 }

@@ -350,8 +350,8 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
                 position={position}
                 rotation={[0, angle + Math.PI, 0]}
               >
-                <group position={[0, 0, 0]}>
-                  <CrabModel scale={1} />
+                <group position={[0, 0.5, 0]}>
+                  <CrabModel scale={0.8} />
                 </group>
               </group>
             );
