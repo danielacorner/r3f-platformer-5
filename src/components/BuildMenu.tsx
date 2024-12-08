@@ -404,6 +404,7 @@ export function BuildMenu() {
           <button
             className="player-icon"
             onClick={() => setShowSkillsMenu(true)}
+            data-has-skillpoints={skillPoints > 0}
           >
             <FaUser />
 

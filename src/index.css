@@ -3,5 +3,8 @@
 @tailwind utilities;
 
 * {
-    user-select: none;
+  user-select: none;
+}
+body {
+  max-height: 100vh;
 }

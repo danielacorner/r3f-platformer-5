@@ -334,7 +334,7 @@
   visibility: hidden;
   transition: all 0.2s ease;
   border: 2px solid #4b6bab;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5),
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5),
     inset 0 0 20px rgba(73, 156, 255, 0.15);
 }
 
@@ -911,6 +911,8 @@
   padding: 1rem;
   margin: -1rem -1rem 1rem -1rem;
   border-bottom: 2px solid rgba(59, 130, 246, 0.3);
+  position: relative;
+  overflow: hidden;
 }
 
 .skills-header h2 {
@@ -1390,17 +1392,16 @@
 .upgrade-button::before {
   content: "";
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(
-    circle at center,
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
     rgba(255, 255, 255, 0.2),
-    transparent 70%
+    transparent
   );
-  opacity: 0;
-  transition: opacity 0.3s ease;
 }
 
 .upgrade-button:hover::before {
@@ -1451,5 +1452,153 @@
   100% {
     transform: scale(1);
     filter: drop-shadow(0 0 2px rgba(251, 191, 36, 0.5));
+  }
+}
+
+/* Avatar button glow effect when skill points available */
+.player-icon[data-has-skillpoints="true"] {
+  box-shadow: 0 0 15px #60a5fa, 0 0 30px rgba(96, 165, 250, 0.5);
+  border: 2px solid #60a5fa;
+  animation: avatarPulse 2s infinite;
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+}
+
+@keyframes avatarPulse {
+  0% {
+    box-shadow: 0 0 15px #60a5fa, 0 0 30px rgba(96, 165, 250, 0.5);
+    border-color: #60a5fa;
+  }
+  50% {
+    box-shadow: 0 0 25px #93c5fd, 0 0 50px rgba(147, 197, 253, 0.7);
+    border-color: #93c5fd;
+  }
+  100% {
+    box-shadow: 0 0 15px #60a5fa, 0 0 30px rgba(96, 165, 250, 0.5);
+    border-color: #60a5fa;
+  }
+}
+
+.player-icon[data-has-skillpoints="true"]:hover {
+  box-shadow: 0 0 25px #93c5fd, 0 0 50px rgba(147, 197, 253, 0.7);
+  transform: scale(1.05);
+}
+
+.skill-level-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.skill-level-display {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  border: 2px solid #3b5998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #bfd4ff;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3),
+    inset 0 0 20px rgba(73, 156, 255, 0.1);
+}
+
+.skill-level-up {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #3b5998;
+  border-radius: 4px;
+  background: linear-gradient(to bottom, #1e293b, #1e2837);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3),
+    0 0 10px rgba(73, 156, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.skill-level-up::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(73, 156, 255, 0.5),
+    transparent
+  );
+}
+
+.skill-level-up:hover {
+  transform: translateY(-1px);
+  border-color: #4b6bab;
+  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.3),
+    0 0 15px rgba(73, 156, 255, 0.3);
+}
+
+.level-up-arrow {
+  color: #bfd4ff;
+  font-size: 12px;
+}
+
+.skill-effect {
+  font-size: 1.1rem;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  margin-top: -0.75rem;
+}
+
+/* Update existing styles */
+.skill-item {
+  padding: 1rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 1rem;
+  align-items: center;
+  background: linear-gradient(
+    135deg,
+    rgba(30, 41, 59, 0.9),
+    rgba(15, 23, 42, 0.9)
+  );
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.skill-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+  .skill-level-display {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+
+  .skill-level-up {
+    width: 20px;
+    height: 20px;
+  }
+
+  .level-up-arrow {
+    font-size: 10px;
+  }
+
+  .skill-effect {
+    font-size: 0.9rem;
   }
 }

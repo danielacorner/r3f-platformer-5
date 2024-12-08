@@ -122,20 +122,24 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
                   <div className="skill-info">
                     <div className="skill-name">{name}</div>
                     <div className="skill-description">{description}</div>
-                    <div className="skill-level">
-                      Level {level} {level > 0 ? `(${effectText})` : ""}
+                    <div className="skill-effect" style={{ color }}>
+                      {effectText}
                     </div>
                   </div>
-                  <button
-                    className="upgrade-button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      upgradeSkill(key as keyof typeof upgrades);
-                    }}
-                    disabled={skillPoints === 0}
-                  >
-                    +
-                  </button>
+                  <div className="skill-level-container">
+                    <div className="skill-level-display">{level}</div>
+                    {skillPoints > 0 && (
+                      <button
+                        className="skill-level-up"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          upgradeSkill(key as keyof typeof upgrades);
+                        }}
+                      >
+                        <span className="level-up-arrow">▲</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             }
