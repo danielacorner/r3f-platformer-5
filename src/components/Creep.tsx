@@ -29,6 +29,8 @@ import { BufferGeometryUtils } from "three/examples/jsm/Addons.js";
 import { GoblinModel } from "./GoblinModel";
 import { CreeperModel } from "./CreeperModel";
 import { PortalEffect } from "./PortalEffect";
+import { BeetleModel } from "./BeetleModel";
+import { CrabModel } from "./CrabModel";
 
 // Create geometries for different creep types
 const CREEP_GEOMETRIES = {
@@ -341,6 +343,21 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
             );
           }
 
+          if (creep.type === "armored") {
+            return (
+              <group
+                key={creep.id}
+                position={position}
+                rotation={[0, angle + Math.PI, 0]}
+              >
+                <group position={[0, 0, 0]}>
+                  <CrabModel scale={1} />
+                </group>
+              </group>
+            );
+          }
+
+          // Boss type
           return (
             <mesh
               key={creep.id}

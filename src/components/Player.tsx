@@ -1,11 +1,20 @@
 import { useRef, useEffect, useState, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { RigidBody, CuboidCollider } from "@react-three/rapier";
-import { Vector3, Group, CircleGeometry, DoubleSide, LineBasicMaterial, Line, BufferGeometry, Float32BufferAttribute } from "three";
+import {
+  Vector3,
+  Group,
+  CircleGeometry,
+  DoubleSide,
+  LineBasicMaterial,
+  Line,
+  BufferGeometry,
+  Float32BufferAttribute,
+} from "three";
 import { useGameStore } from "../store/gameStore";
-import { useKeyboardControls } from '../hooks/useKeyboardControls';
-import { MagicOrb } from './MagicOrb';
-import { LevelUpEffect } from './LevelUpEffect';
+import { useKeyboardControls } from "../hooks/useKeyboardControls";
+import { MagicOrb } from "./MagicOrb";
+import { LevelUpEffect } from "./LevelUpEffect";
 
 interface PlayerProps {
   moveTargetRef: React.MutableRefObject<{
@@ -34,13 +43,13 @@ export function Player({ moveTargetRef }: PlayerProps) {
   const { camera } = useThree();
   const [showLevelUpEffect, setShowLevelUpEffect] = useState(false);
   const prevLevel = useRef(1);
-  const level = useGameStore(state => state.level);
-  const range = useGameStore(state => state.upgrades.range);
-  const damage = useGameStore(state => state.upgrades.damage);
-  const cameraZoom = useGameStore(state => state.cameraZoom);
-  const cameraAngle = useGameStore(state => state.cameraAngle);
-  const adjustCameraZoom = useGameStore(state => state.adjustCameraZoom);
-  const adjustCameraAngle = useGameStore(state => state.adjustCameraAngle);
+  const level = useGameStore((state) => state.level);
+  const range = useGameStore((state) => state.upgrades.range);
+  const damage = useGameStore((state) => state.upgrades.damage);
+  const cameraZoom = useGameStore((state) => state.cameraZoom);
+  const cameraAngle = useGameStore((state) => state.cameraAngle);
+  const adjustCameraZoom = useGameStore((state) => state.adjustCameraZoom);
+  const adjustCameraAngle = useGameStore((state) => state.adjustCameraAngle);
   const [rigidBodyKey, setRigidBodyKey] = useState(0);
   const floatOffset = useRef(0);
 
@@ -51,10 +60,12 @@ export function Player({ moveTargetRef }: PlayerProps) {
     // Set initial camera position (very low and close, facing player)
     camera.position.set(0, 2, -3);
     camera.lookAt(0, 2, 0);
-    
+
     // Initialize camera offset
-    cameraOffset.current = camera.position.clone().sub(new Vector3(0, FLOAT_HEIGHT, 0));
-    
+    cameraOffset.current = camera.position
+      .clone()
+      .sub(new Vector3(0, FLOAT_HEIGHT, 0));
+
     // Start intro animation
     introStartTime.current = Date.now();
 
@@ -62,7 +73,7 @@ export function Player({ moveTargetRef }: PlayerProps) {
     playerRef.current.setTranslation({ x: 0, y: FLOAT_HEIGHT, z: 0 });
     playerRef.current.setLinvel({ x: 0, y: 0, z: 0 });
     playerRef.current.resetForces(true);
-    
+
     // Reset move target
     if (moveTargetRef.current) {
       moveTargetRef.current.active = false;
@@ -72,7 +83,7 @@ export function Player({ moveTargetRef }: PlayerProps) {
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       const delta = e.deltaY * 0.001;
-      
+
       if (e.shiftKey) {
         // Adjust vertical angle with shift + wheel
         adjustCameraAngle(delta);
@@ -89,11 +100,11 @@ export function Player({ moveTargetRef }: PlayerProps) {
 
     const handleTouchMove = (e: TouchEvent) => {
       if (lastTouchY.current === null) return;
-      
+
       const touchY = e.touches[0].clientY;
       const deltaY = (touchY - lastTouchY.current) * 0.002;
       adjustCameraAngle(deltaY);
-      
+
       lastTouchY.current = touchY;
     };
 
@@ -101,19 +112,19 @@ export function Player({ moveTargetRef }: PlayerProps) {
       lastTouchY.current = null;
     };
 
-    window.addEventListener('wheel', handleWheel, { passive: false });
-    window.addEventListener('touchstart', handleTouchStart, { passive: true });
-    window.addEventListener('touchmove', handleTouchMove, { passive: true });
-    window.addEventListener('touchend', handleTouchEnd);
+    window.addEventListener("wheel", handleWheel, { passive: false });
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+    window.addEventListener("touchend", handleTouchEnd);
 
     return () => {
       if (moveTargetRef.current) {
         moveTargetRef.current.active = false;
       }
-      window.removeEventListener('wheel', handleWheel);
-      window.removeEventListener('touchstart', handleTouchStart);
-      window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener("wheel", handleWheel);
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
     };
   }, [camera, adjustCameraZoom, adjustCameraAngle, rigidBodyKey]);
 
@@ -133,24 +144,28 @@ export function Player({ moveTargetRef }: PlayerProps) {
     const circleGeometry = new CircleGeometry(totalRange, 64);
     const points = circleGeometry.attributes.position;
     const positions = [];
-    
+
     // Extract only the outer edge vertices
     for (let i = 1; i <= 64; i++) {
       positions.push(points.getX(i), points.getY(i), points.getZ(i));
     }
     // Close the circle
     positions.push(points.getX(1), points.getY(1), points.getZ(1));
-    
+
     const geometry = new Float32Array(positions);
     const lineGeometry = new BufferGeometry();
-    lineGeometry.setAttribute('position', new Float32BufferAttribute(geometry, 3));
-    
+    lineGeometry.setAttribute(
+      "position",
+      new Float32BufferAttribute(geometry, 3)
+    );
+
     return lineGeometry;
   }, [range]);
 
   // Handle movement and rotation
   useFrame((state, delta) => {
-    if (!playerRef.current || !visualRef.current || !cameraOffset.current) return;
+    if (!playerRef.current || !visualRef.current || !cameraOffset.current)
+      return;
 
     const position = playerRef.current.translation();
     const currentPos = new Vector3(position.x, position.y, position.z);
@@ -240,7 +255,10 @@ export function Player({ moveTargetRef }: PlayerProps) {
       playerRef.current.setLinvel(velocity);
 
       // Only update last valid position if within bounds
-      if (Math.abs(position.x) < BOUNDARY_SIZE && Math.abs(position.z) < BOUNDARY_SIZE) {
+      if (
+        Math.abs(position.x) < BOUNDARY_SIZE &&
+        Math.abs(position.z) < BOUNDARY_SIZE
+      ) {
         lastValidPosition.current.copy(currentPos);
       }
 
@@ -255,7 +273,7 @@ export function Player({ moveTargetRef }: PlayerProps) {
     playerRef.current.setTranslation({
       x: position.x,
       y: floatHeight,
-      z: position.z
+      z: position.z,
     });
 
     // Update camera position
@@ -269,23 +287,27 @@ export function Player({ moveTargetRef }: PlayerProps) {
 
     if (introStartTime.current) {
       const elapsed = (Date.now() - introStartTime.current) / 1000; // seconds
-      
+
       if (elapsed < START_ANIMATION_DURATION) {
         const progress = Math.min(1, elapsed / START_ANIMATION_DURATION);
-        
+
         // Logarithmic easing for zoom out
         const zoomProgress = Math.log(1.48 + progress * 6) / Math.log(10);
         // Delayed quadratic easing for vertical movement
-        const verticalProgress = Math.max(0, Math.pow((progress - 0.2) * 1.2, 2));
-        
+        const verticalProgress = Math.max(
+          0,
+          Math.pow((progress - 0.2) * 1.2, 2)
+        );
+
         // Start position (low and close, facing player)
         const startY = 2;
         const startZ = -3;
-        
+
         // First zoom out (z axis), then move up (y axis)
-        targetZ = position.z + startZ + (horizontalOffset - startZ) * zoomProgress;
+        targetZ =
+          position.z + startZ + (horizontalOffset - startZ) * zoomProgress;
         targetY = startY + (verticalOffset - startY) * verticalProgress;
-        
+
         // Animate look-at point from player height to ground
         const lookAtHeight = 2 * (1 - verticalProgress);
         camera.lookAt(position.x, lookAtHeight, position.z);
@@ -316,12 +338,15 @@ export function Player({ moveTargetRef }: PlayerProps) {
         type="dynamic"
         position={[0, FLOAT_HEIGHT, 0]}
         enabledRotations={[false, false, false]}
-        scale={1 + damage/12}
+        scale={1 + damage / 24}
         linearDamping={0.95}
         // need this here or else player stops being able to move (like render loop stops or simulation temp reaches 0)
-        gravityScale={0.1} 
+        gravityScale={0.1}
       >
-        <CuboidCollider args={[0.3, 0.4, 0.3]} position={[0, FLOAT_HEIGHT, 0]} />
+        <CuboidCollider
+          args={[0.3, 0.4, 0.3]}
+          position={[0, FLOAT_HEIGHT, 0]}
+        />
         <group ref={visualRef}>
           {/* Range Indicator */}
           <line rotation-x={-Math.PI / 2} position={[0, 0.1, 0]}>
@@ -337,7 +362,10 @@ export function Player({ moveTargetRef }: PlayerProps) {
               <meshStandardMaterial color="#1a237e" />
             </mesh>
             {/* Cloak bottom with wind effect */}
-            <mesh position={[0, -0.7, 0]} rotation-y={Math.sin(Date.now() * 0.002) * 0.2}>
+            <mesh
+              position={[0, -0.7, 0]}
+              rotation-y={Math.sin(Date.now() * 0.002) * 0.2}
+            >
               <cylinderGeometry args={[0.6, 0.7, 0.3, 12]} />
               <meshStandardMaterial color="#1a237e" />
             </mesh>
@@ -358,11 +386,19 @@ export function Player({ moveTargetRef }: PlayerProps) {
             {/* Glowing eyes */}
             <mesh position={[-0.1, 0, 0.2]}>
               <sphereGeometry args={[0.045, 12, 12]} />
-              <meshStandardMaterial color="#ffeb3b" emissive="#ffeb3b" emissiveIntensity={1} />
+              <meshStandardMaterial
+                color="#ffeb3b"
+                emissive="#ffeb3b"
+                emissiveIntensity={1}
+              />
             </mesh>
             <mesh position={[0.1, 0, 0.2]}>
               <sphereGeometry args={[0.045, 12, 12]} />
-              <meshStandardMaterial color="#ffeb3b" emissive="#ffeb3b" emissiveIntensity={1} />
+              <meshStandardMaterial
+                color="#ffeb3b"
+                emissive="#ffeb3b"
+                emissiveIntensity={1}
+              />
             </mesh>
           </group>
 
@@ -371,8 +407,8 @@ export function Player({ moveTargetRef }: PlayerProps) {
             {/* Hat brim */}
             <mesh position={[0, 0, 0]}>
               <cylinderGeometry args={[0.85, 0.83, 0.08, 32]} />
-              <meshStandardMaterial 
-                color="#fbc02d" 
+              <meshStandardMaterial
+                color="#fbc02d"
                 roughness={0.5}
                 metalness={0.1}
                 emissive="#fbc02d"
@@ -382,15 +418,15 @@ export function Player({ moveTargetRef }: PlayerProps) {
             {/* Hat band */}
             <mesh position={[0, 0.09, 0]}>
               <cylinderGeometry args={[0.48, 0.48, 0.06, 32]} />
-              <meshStandardMaterial 
+              <meshStandardMaterial
                 color="#5d4037"
                 roughness={0.6}
                 metalness={0.2}
               />
             </mesh>
             {/* Inner brim (transition to cone) */}
-            <mesh position={[0, 0.12, 0]} >
-              <cylinderGeometry 
+            <mesh position={[0, 0.12, 0]}>
+              <cylinderGeometry
                 args={[
                   0.4, // top radius gets slightly smaller
                   0.4, // bottom radius
@@ -398,11 +434,11 @@ export function Player({ moveTargetRef }: PlayerProps) {
                   32, // segments
                   1,
                   true,
-                  Math.PI * (0.25), // adjust arc start
-                  Math.PI * (1.5) // adjust arc length
-                ]} 
+                  Math.PI * 0.25, // adjust arc start
+                  Math.PI * 1.5, // adjust arc length
+                ]}
               />
-              <meshStandardMaterial 
+              <meshStandardMaterial
                 color="#fbc02d"
                 roughness={0.5}
                 metalness={0.1}
@@ -411,9 +447,12 @@ export function Player({ moveTargetRef }: PlayerProps) {
               />
             </mesh>
             {/* Hat cone */}
-            <mesh position={[0, 0.3, 0]} rotation-z={Math.sin(Date.now() * 0.001) * 0.1}>
+            <mesh
+              position={[0, 0.3, 0]}
+              rotation-z={Math.sin(Date.now() * 0.001) * 0.1}
+            >
               <cylinderGeometry args={[0.12, 0.4, 0.7, 32]} />
-              <meshStandardMaterial 
+              <meshStandardMaterial
                 color="#fbc02d"
                 roughness={0.5}
                 metalness={0.1}
@@ -421,11 +460,14 @@ export function Player({ moveTargetRef }: PlayerProps) {
                 emissiveIntensity={0.2}
               />
               {/* Hat tip with droop */}
-              <group position={[0, 0.4, 0]} rotation-z={-0.6 + Math.sin(Date.now() * 0.001) * 0.2}>
+              <group
+                position={[0, 0.4, 0]}
+                rotation-z={-0.6 + Math.sin(Date.now() * 0.001) * 0.2}
+              >
                 {/* Drooping section */}
                 <mesh position={[0.1, 0.1, 0]}>
                   <cylinderGeometry args={[0.08, 0.12, 0.25, 32]} />
-                  <meshStandardMaterial 
+                  <meshStandardMaterial
                     color="#fbc02d"
                     roughness={0.5}
                     metalness={0.1}
@@ -436,7 +478,7 @@ export function Player({ moveTargetRef }: PlayerProps) {
                 {/* Tip sphere */}
                 <mesh position={[0.2, 0.15, 0]}>
                   <sphereGeometry args={[0.08, 16, 16]} />
-                  <meshStandardMaterial 
+                  <meshStandardMaterial
                     color="#fbc02d"
                     roughness={0.5}
                     metalness={0.1}
@@ -452,24 +494,35 @@ export function Player({ moveTargetRef }: PlayerProps) {
           <group position={[0, 0.8, -0.2]}>
             {/* Cape top (shoulders) */}
             <mesh position={[0, 0, 0]} rotation-x={0.2}>
-              <cylinderGeometry args={[0.4, 0.5, 0.3, 8, 1, true, Math.PI * 0.25, Math.PI * 1.5]} />
-              <meshStandardMaterial 
+              <cylinderGeometry
+                args={[
+                  0.4,
+                  0.5,
+                  0.3,
+                  8,
+                  1,
+                  true,
+                  Math.PI * 0.25,
+                  Math.PI * 1.5,
+                ]}
+              />
+              <meshStandardMaterial
                 color="#1565c0"
                 roughness={0.6}
                 metalness={0.1}
                 side={2}
               />
             </mesh>
-            
+
             {/* Cape segments with wind animation */}
             {[0, 1, 2, 3].map((i) => (
-              <mesh 
-                key={i} 
-                position={[0, -0.15 - i * 0.3, -0.1 - i * 0.1]} 
+              <mesh
+                key={i}
+                position={[0, -0.15 - i * 0.3, -0.1 - i * 0.1]}
                 rotation-x={0.2 + Math.sin(Date.now() * 0.001 + i * 0.5) * 0.1}
                 rotation-z={Math.sin(Date.now() * 0.002 + i * 0.3) * 0.15}
               >
-                <cylinderGeometry 
+                <cylinderGeometry
                   args={[
                     0.5 - i * 0.05, // top radius gets slightly smaller
                     0.5 - (i + 1) * 0.05, // bottom radius
@@ -478,10 +531,10 @@ export function Player({ moveTargetRef }: PlayerProps) {
                     1,
                     true,
                     Math.PI * (0.25 + i * 0.02), // adjust arc start
-                    Math.PI * (1.5 - i * 0.04) // adjust arc length
-                  ]} 
+                    Math.PI * (1.5 - i * 0.04), // adjust arc length
+                  ]}
                 />
-                <meshStandardMaterial 
+                <meshStandardMaterial
                   color="#1565c0"
                   roughness={0.6}
                   metalness={0.1}
@@ -493,15 +546,24 @@ export function Player({ moveTargetRef }: PlayerProps) {
             ))}
 
             {/* Cape bottom with extra movement */}
-            <mesh 
-              position={[0, -1.35, -0.5]} 
+            <mesh
+              position={[0, -1.35, -0.5]}
               rotation-x={0.3 + Math.sin(Date.now() * 0.001) * 0.2}
               rotation-z={Math.sin(Date.now() * 0.002) * 0.25}
             >
-              <cylinderGeometry 
-                args={[0.3, 0.2, 0.4, 8, 1, true, Math.PI * 0.35, Math.PI * 1.3]} 
+              <cylinderGeometry
+                args={[
+                  0.3,
+                  0.2,
+                  0.4,
+                  8,
+                  1,
+                  true,
+                  Math.PI * 0.35,
+                  Math.PI * 1.3,
+                ]}
               />
-              <meshStandardMaterial 
+              <meshStandardMaterial
                 color="#1565c0"
                 roughness={0.6}
                 metalness={0.1}
@@ -513,8 +575,8 @@ export function Player({ moveTargetRef }: PlayerProps) {
           </group>
 
           {/* Magic Staff */}
-          <group 
-            position={[0.5, 0.2, 0]} 
+          <group
+            position={[0.5, 0.2, 0]}
             rotation-z={Math.PI * -0.1}
             rotation-y={Math.sin(Date.now() * 0.001) * 0.1}
           >
@@ -524,7 +586,11 @@ export function Player({ moveTargetRef }: PlayerProps) {
             </mesh>
             <mesh position={[0, 1.5, 0]}>
               <sphereGeometry args={[0.2, 16, 16]} />
-              <meshStandardMaterial color="#4fc3f7" emissive="#4fc3f7" emissiveIntensity={1} />
+              <meshStandardMaterial
+                color="#4fc3f7"
+                emissive="#4fc3f7"
+                emissiveIntensity={1}
+              />
             </mesh>
             <mesh position={[0, 1.7, 0]}>
               <coneGeometry args={[0.1, 0.2, 8]} />
