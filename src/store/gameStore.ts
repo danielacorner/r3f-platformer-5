@@ -232,6 +232,20 @@ interface GameState {
   cameraZoom: number;
   cameraAngle: number;
   setSelectedObjectType: (type: PlaceableObjectType | null) => void;
+  upgradeSkill: (skill: string, amount: number) => void;
+  setWave: (wave: number) => void;
+  setEnemiesAlive: (count: number) => void;
+  setIsSpawning: (isSpawning: boolean) => void;
+  setLevelComplete: (complete: boolean) => void;
+  setTimer: (timer: number) => void;
+  setCurrentLevel: (level: number) => void;
+  setTowerStates: (towerStates: TowerState[]) => void;
+  addTowerState: (towerState: TowerState) => void;
+  removeTowerState: (id: string) => void;
+  updateTowerState: (id: string, updates: Partial<TowerState>) => void;
+  setPlayerRef: (ref: RapierRigidBody | null) => void;
+  setHighlightedPathSegment: (segment: PathSegment | null) => void;
+  
 }
 
 const initialState: GameState = {
