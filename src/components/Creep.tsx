@@ -306,6 +306,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
           side: DoubleSide,
           polygonOffset: true,
           polygonOffsetFactor: -1,
+          visible: creeps.length > 0,
         }), 100]}
         renderOrder={10}
       />
@@ -320,6 +321,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
           side: DoubleSide,
           polygonOffset: true,
           polygonOffsetFactor: -2,
+          visible: creeps.length > 0,
         }), 100]}
         renderOrder={11}
       />
