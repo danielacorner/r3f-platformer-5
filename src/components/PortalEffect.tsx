@@ -38,6 +38,8 @@ void main() {
 export function PortalEffect({ position, color = new THREE.Color("#4a9eff") }) {
   const meshRef = useRef<THREE.Mesh>();
   const materialRef = useRef<THREE.ShaderMaterial>();
+  const portalSize = 5; // Increased size
+  const portalHeight = 3; // Added height for 3D effect
 
   const uniforms = useMemo(
     () => ({
@@ -51,17 +53,44 @@ export function PortalEffect({ position, color = new THREE.Color("#4a9eff") }) {
     if (materialRef.current) {
       materialRef.current.uniforms.time.value += delta;
     }
+    // Rotate the portal slowly
+    if (meshRef.current) {
+      meshRef.current.rotation.z += delta * 0.2;
+    }
   });
 
   return (
     <group position={position}>
+      {/* Ground glow */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}>
+        <planeGeometry args={[portalSize * 1.5, portalSize * 1.5]} />
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={0.15}
+          depthWrite={false}
+        />
+      </mesh>
+
+      {/* Vertical portal ring */}
+      <mesh position={[0, portalHeight/2, 0]}>
+        <torusGeometry args={[portalSize/2, 0.3, 16, 32]} />
+        <meshStandardMaterial
+          color={color}
+          emissive={color}
+          emissiveIntensity={0.5}
+          transparent
+          opacity={0.8}
+        />
+      </mesh>
+
       {/* Main portal disc */}
       <mesh
         ref={meshRef}
         rotation={[-Math.PI / 2, 0, 0]}
         position={[0, 0.1, 0]}
       >
-        <planeGeometry args={[3, 3, 32, 32]} />
+        <planeGeometry args={[portalSize, portalSize, 32, 32]} />
         <shaderMaterial
           ref={materialRef}
           vertexShader={portalVertexShader}
@@ -73,22 +102,29 @@ export function PortalEffect({ position, color = new THREE.Color("#4a9eff") }) {
         />
       </mesh>
 
-      {/* Outer glow */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}>
-        <planeGeometry args={[4, 4]} />
+      {/* Vertical energy beams */}
+      <mesh position={[0, portalHeight/2, 0]}>
+        <cylinderGeometry args={[portalSize/2.2, portalSize/2.2, portalHeight, 32, 4, true]} />
         <meshBasicMaterial
           color={color}
           transparent
           opacity={0.2}
+          side={THREE.DoubleSide}
           depthWrite={false}
         />
       </mesh>
 
-      {/* Light source */}
+      {/* Light sources */}
+      <pointLight
+        color={color}
+        intensity={3}
+        distance={8}
+        position={[0, portalHeight/2, 0]}
+      />
       <pointLight
         color={color}
         intensity={2}
-        distance={5}
+        distance={6}
         position={[0, 0.5, 0]}
       />
     </group>
