@@ -235,9 +235,10 @@ export function Tower({ position, type = 'dark1', level = 1, preview = false, on
       } else {
         // Regular projectile for other towers
         const direction = targetPos.clone().sub(firePos).normalize();
+        const adjustedFirePos = firePos.clone().add(new Vector3(0, 1, 0)); // Add height offset
         setProjectiles(prev => [...prev, {
           id: Math.random(),
-          position: firePos,
+          position: adjustedFirePos,
           velocity: direction.multiplyScalar(PROJECTILE_SPEED),
           creepId: target.id,
           timeAlive: 0

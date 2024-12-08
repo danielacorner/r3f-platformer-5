@@ -5,27 +5,36 @@ import * as THREE from "three";
 
 export function CreeperModel({ scale = 1 }) {
   const group = useRef<Group>(null);
-  const { scene, animations } = useGLTF("models/minecraft_creeper/scene.gltf");
-  const { actions } = useAnimations(animations, group);
+  const { scene, animations } = useGLTF("/models/minecraft_creeper/scene.gltf");
+  const { actions, names } = useAnimations(animations, group);
   
   useEffect(() => {
-    // Log available animations to help debug
-    console.log('Available Creeper animations:', Object.keys(actions));
+    // More detailed animation logging
+    console.log('Animations array:', animations);
+    console.log('Actions object:', actions);
+    console.log('Animation names:', names);
+    console.log('Available animations:', Object.keys(actions));
 
-    // Find and play the walk animation
-    const walkAnimation = Object.entries(actions).find(([name]) => 
-      name.toLowerCase().includes('walk')
-    )?.[1];
+    // Try to access walk animation directly
+    const walkAction = actions?.['walk'] || actions?.['Walk'] || actions?.['0'];
+    console.log('Walk action:', walkAction);
 
-    if (walkAnimation) {
-      walkAnimation.reset().play();
-      walkAnimation.timeScale = 1.2; // Slightly faster walk
+    if (walkAction) {
+      walkAction.reset().fadeIn(0.5).play();
+      walkAction.timeScale = 1.5;
+      walkAction.setEffectiveTimeScale(1.5);
+      walkAction.setLoop(THREE.LoopRepeat, Infinity);
+      console.log('Successfully started walk animation');
     } else {
-      // Fallback to first animation if walk not found
+      console.log('Could not find walk animation');
+      // Try the first available animation
       const firstAnimation = Object.values(actions)[0];
       if (firstAnimation) {
-        firstAnimation.reset().play();
-        firstAnimation.timeScale = 1.2;
+        firstAnimation.reset().fadeIn(0.5).play();
+        firstAnimation.timeScale = 1.5;
+        firstAnimation.setEffectiveTimeScale(1.5);
+        firstAnimation.setLoop(THREE.LoopRepeat, Infinity);
+        console.log('Using first available animation:', Object.keys(actions)[0]);
       }
     }
 
@@ -47,10 +56,17 @@ export function CreeperModel({ scale = 1 }) {
     });
 
     if (group.current) {
-      group.current.clear();
-      group.current.add(clonedScene);
+      // Instead of clearing, let's just add if empty
+      if (group.current.children.length === 0) {
+        group.current.add(clonedScene);
+      }
     }
-  }, [scene, actions]);
+
+    return () => {
+      // Cleanup animations
+      Object.values(actions).forEach(action => action?.stop());
+    };
+  }, [scene, actions, animations, names]);
 
   return (
     <group ref={group}>
@@ -63,4 +79,4 @@ export function CreeperModel({ scale = 1 }) {
 }
 
 // Preload the model
-useGLTF.preload("models/minecraft_creeper/scene.gltf");
+useGLTF.preload("/models/minecraft_creeper/scene.gltf");
