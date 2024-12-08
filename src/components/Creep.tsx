@@ -5,16 +5,11 @@ import { useGameStore } from '../store/gameStore';
 import { createShaderMaterial } from '../utils/shaders';
 import * as THREE from 'three'
 import { BufferGeometryUtils } from 'three/examples/jsm/Addons.js';
+import { GoblinModel } from './GoblinModel';
 
 // Create geometries for different creep types
 const CREEP_GEOMETRIES = {
-  normal: (() => {
-    // Forest Sprite - Tall and mystical tree creature
-    const geometry = new CylinderGeometry(0.2, 0.4, 1.5, 6);
-    geometry.translate(0, 0.75, 0);
-    return geometry;
-  })(),
-
+  normal: null, // We'll use the goblin model instead
   fast: (() => {
     // Wind Spirit - Light and ethereal
     const geometry = new ConeGeometry(0.3, 1.2, 5);
@@ -48,15 +43,7 @@ const creepSpeeds = {
 
 // Materials for different creep types
 const creepMaterials = {
-  normal: new MeshStandardMaterial({
-    color: new Color('#2d4a1c'),  // Dark forest green
-    roughness: 0.7,
-    metalness: 0.2,
-    flatShading: true,
-    transparent: true,
-    opacity: 1,
-    side: DoubleSide,
-  }),
+  normal: null, // We'll use the goblin model's materials
   fast: new MeshStandardMaterial({
     color: new Color('#4a7c59'),  // Forest sage
     roughness: 0.6,
@@ -156,84 +143,16 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
   const groupRef = useRef<Group>(null);
   const healthBarBackgroundRef = useRef<InstancedMesh>(null);
   const healthBarForegroundRef = useRef<InstancedMesh>(null);
-  const creepMeshes = useRef<{ [key: string]: InstancedMesh }>({});
   const creepPaths = useRef<Map<number, { pathIndex: number; progress: number }>>(new Map());
   const creeps = useGameStore(state => state.creeps);
   const removeCreep = useGameStore(state => state.removeCreep);
   const loseLife = useGameStore(state => state.loseLife);
-
-  // Set up meshes for each creep type
-  useEffect(() => {
-    if (!groupRef.current) return;
-    
-    Object.entries(CREEP_GEOMETRIES).forEach(([type, geometry]) => {
-      const mesh = new InstancedMesh(
-        geometry,
-        creepMaterials[type as keyof typeof creepMaterials],
-        100 // Max instances per type
-      );
-      mesh.name = type;
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      mesh.frustumCulled = false;
-      creepMeshes.current[type] = mesh;
-      groupRef.current?.add(mesh);
-    });
-
-    return () => {
-      Object.values(creepMeshes.current).forEach(mesh => {
-        groupRef.current?.remove(mesh);
-      });
-      creepMeshes.current = {};
-    };
-  }, []);
-
-  // Set up health bar meshes
-  useEffect(() => {
-    // Create health bar geometries
-    const barGeometry = new PlaneGeometry(1, 1);
-
-    // Create background bar mesh
-    const backgroundMesh = new InstancedMesh(
-      barGeometry,
-      new MeshBasicMaterial({
-        color: "#1a1a1a",
-        transparent: true,
-        opacity: 0.8,
-        depthTest: false,
-        depthWrite: false,
-        side: DoubleSide,
-      }),
-      100
-    );
-    backgroundMesh.renderOrder = 10;
-    healthBarBackgroundRef.current = backgroundMesh;
-
-    // Create foreground bar mesh
-    const foregroundMesh = new InstancedMesh(
-      barGeometry,
-      new MeshBasicMaterial({
-        transparent: true,
-        opacity: 0.9,
-        depthTest: false,
-        depthWrite: false,
-        side: DoubleSide,
-      }),
-      100
-    );
-    foregroundMesh.renderOrder = 11;
-    healthBarForegroundRef.current = foregroundMesh;
-
-    return () => {
-      barGeometry.dispose();
-    };
-  }, []);
+  const updateCreep = useGameStore(state => state.updateCreep);
 
   // Initialize new creeps
   useEffect(() => {
     creeps.forEach(creep => {
       if (!creepPaths.current.has(creep.id)) {
-        console.log(`Initializing path for creep ${creep.id}`);
         creepPaths.current.set(creep.id, {
           pathIndex: 0,
           progress: 0
@@ -242,44 +161,19 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
     });
   }, [creeps]);
 
-  // Update creep instances and health bars
+  // Update creep positions and health bars
   useFrame((state, delta) => {
     if (!groupRef.current || !healthBarBackgroundRef.current || !healthBarForegroundRef.current) return;
 
-    // Reset all instance counts
-    Object.values(creepMeshes.current).forEach(mesh => {
-      mesh.count = 100; // Set to max instances
-    });
-
-    // Get camera quaternion for billboard effect
-    const cameraQuaternion = state.camera.quaternion;
     const matrix = new Matrix4();
     const tempMatrix = new Matrix4();
     const tempScaleMatrix = new Matrix4();
     const tempTranslateMatrix = new Matrix4();
+    const cameraQuaternion = state.camera.quaternion;
 
-    // Create a map to track used indices per type
-    const usedIndices: { [key: string]: number } = {};
-
-    // Update visible creeps
     creeps.forEach((creep, index) => {
-      const mesh = creepMeshes.current[creep.type];
-      if (!mesh) {
-        console.warn(`No mesh found for creep type: ${creep.type}`);
-        return;
-      }
-
-      // Initialize or get the index counter for this type
-      if (typeof usedIndices[creep.type] === 'undefined') {
-        usedIndices[creep.type] = 0;
-      }
-      const instanceIndex = usedIndices[creep.type]++;
-
       const pathState = creepPaths.current.get(creep.id);
-      if (!pathState) {
-        console.warn(`No path state for creep ${creep.id}`);
-        return;
-      }
+      if (!pathState) return;
 
       // Get current and next path points
       const currentPoint = pathPoints[pathState.pathIndex];
@@ -287,7 +181,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
 
       if (currentPoint && nextPoint) {
         // Update progress along current path segment
-        const speed = creepSpeeds[creep.type] * SPEED_MULTIPLIER || 0.1;
+        const speed = creepSpeeds[creep.type] * SPEED_MULTIPLIER;
         pathState.progress += speed * delta;
 
         // Calculate position along path
@@ -296,23 +190,14 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
           nextPoint,
           pathState.progress
         );
+        position.y = 0.5; // Lift slightly off ground
 
         // Calculate rotation to face movement direction
         const direction = nextPoint.clone().sub(currentPoint).normalize();
         const angle = Math.atan2(direction.x, direction.z);
 
-        // Update creep instance
-        tempObject.position.copy(position);
-        tempObject.position.y = 2; // Lift higher off ground
-        tempObject.rotation.y = angle;
-        tempObject.scale.set(1, 1, 1); // Ensure scale is set
-        tempObject.updateMatrix();
-        
-        mesh.setMatrixAt(instanceIndex, tempObject.matrix);
-        mesh.instanceMatrix.needsUpdate = true;
-
         // Update creep position in store
-        creep.position = [position.x, position.y, position.z];
+        updateCreep(creep.id, { position: [position.x, position.y, position.z] });
 
         // Update health bars
         const healthPercent = creep.health / creep.maxHealth;
@@ -350,7 +235,6 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
           pathState.progress = 0;
 
           if (pathState.pathIndex >= pathPoints.length - 1) {
-            console.log(`Creep ${creep.id} reached end of path`);
             loseLife();
             removeCreep(creep.id);
             creepPaths.current.delete(creep.id);
@@ -359,35 +243,58 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
       }
     });
 
-    // Update instance matrices
+    // Update matrices
     healthBarBackgroundRef.current.instanceMatrix.needsUpdate = true;
     healthBarForegroundRef.current.instanceMatrix.needsUpdate = true;
-
-    // Hide unused instances
-    for (let i = creeps.length; i < 100; i++) {
-      tempObject.position.set(0, -1000, 0);
-      tempObject.scale.set(0, 0, 0);
-      tempObject.updateMatrix();
-      healthBarBackgroundRef.current.setMatrixAt(i, tempObject.matrix);
-      healthBarForegroundRef.current.setMatrixAt(i, tempObject.matrix);
-    }
-
-    // Hide unused creep instances
-    Object.entries(creepMeshes.current).forEach(([type, mesh]) => {
-      const usedCount = usedIndices[type] || 0;
-      for (let i = usedCount; i < mesh.count; i++) {
-        tempObject.position.set(0, -1000, 0);
-        tempObject.scale.set(0, 0, 0);
-        tempObject.updateMatrix();
-        mesh.setMatrixAt(i, tempObject.matrix);
-      }
-      mesh.instanceMatrix.needsUpdate = true;
-    });
   });
 
   return (
     <group>
-      <group ref={groupRef} />
+      <group ref={groupRef}>
+        {creeps.map((creep) => {
+          const position = new Vector3(...creep.position);
+          const pathState = creepPaths.current.get(creep.id);
+          if (!pathState) return null;
+
+          const currentPoint = pathPoints[pathState.pathIndex];
+          const nextPoint = pathPoints[pathState.pathIndex + 1];
+          
+          if (!currentPoint || !nextPoint) return null;
+
+          const direction = nextPoint.clone().sub(currentPoint).normalize();
+          const angle = Math.atan2(direction.x, direction.z);
+          
+          if (creep.type === 'normal') {
+            return (
+              <group 
+                key={creep.id} 
+                position={position}
+                rotation={[0, angle + Math.PI, 0]}
+              >
+                <GoblinModel scale={0.4} />
+              </group>
+            );
+          }
+          
+          return (
+            <mesh
+              key={creep.id}
+              geometry={CREEP_GEOMETRIES[creep.type]}
+              material={creepMaterials[creep.type]}
+              position={position}
+              rotation={[0, angle, 0]}
+              scale={creepSizes[creep.type]}
+            >
+              <meshStandardMaterial
+                color={creepColors[creep.type]}
+                roughness={0.7}
+                metalness={0.3}
+              />
+            </mesh>
+          );
+        })}
+      </group>
+      
       <instancedMesh 
         ref={healthBarBackgroundRef}
         args={[new PlaneGeometry(1, 1), new MeshBasicMaterial({
