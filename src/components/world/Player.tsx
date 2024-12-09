@@ -96,20 +96,31 @@ export function Player({ moveTargetRef }: PlayerProps) {
     // Handle touch controls for camera angle
     const handleTouchStart = (e: TouchEvent) => {
       lastTouchY.current = e.touches[0].clientY;
+      lastTouchX.current = e.touches[0].clientX;
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (lastTouchY.current === null) return;
+      if (lastTouchY.current === null || lastTouchX.current === null) return;
 
       const touchY = e.touches[0].clientY;
+      const touchX = e.touches[0].clientX;
+
+      // Vertical movement controls camera angle
       const deltaY = (touchY - lastTouchY.current) * 0.002;
       adjustCameraAngle(deltaY);
 
+      // Horizontal movement controls rotation
+      const deltaX = (touchX - lastTouchX.current) * 0.1;
+      const newRotation = cameraRotation.current - deltaX;
+      cameraRotation.current = Math.max(-30, Math.min(30, newRotation));
+
       lastTouchY.current = touchY;
+      lastTouchX.current = touchX;
     };
 
     const handleTouchEnd = () => {
       lastTouchY.current = null;
+      lastTouchX.current = null;
     };
 
     window.addEventListener("wheel", handleWheel, { passive: false });
