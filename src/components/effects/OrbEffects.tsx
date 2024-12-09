@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Vector3, Color, AdditiveBlending } from "three";
 import { Trail, MeshDistortMaterial, Sparkles } from "@react-three/drei";
-import { useGameStore } from "../store/gameStore";
+import { useGameStore } from "../../store/gameStore";
 
 interface OrbEffectsProps {
   isAttacking: boolean;
@@ -58,7 +58,7 @@ export function OrbEffects({ isAttacking, opacity = 1 }: OrbEffectsProps) {
   return (
     <group>
       {/* Main orb with distortion effect */}
-      <mesh ref={orbRef} scale={(isAttacking ? 0.8: 1) * (1 + damage / 4)}>
+      <mesh ref={orbRef} scale={(isAttacking ? 0.8 : 1) * (1 + damage / 4)}>
         <sphereGeometry args={[0.15, 32, 32]} />
         <MeshDistortMaterial
           ref={distortRef}
@@ -91,7 +91,7 @@ export function OrbEffects({ isAttacking, opacity = 1 }: OrbEffectsProps) {
         <meshPhongMaterial
           color={isAttacking ? ATTACK_COLOR : "#4a148c"}
           emissive={isAttacking ? ATTACK_COLOR : "#7e57c2"}
-          emissiveIntensity={(isAttacking ? 1.0 : 0.5)}
+          emissiveIntensity={isAttacking ? 1.0 : 0.5}
           transparent
           opacity={opacity * 0.2}
           depthWrite={false}
@@ -102,7 +102,11 @@ export function OrbEffects({ isAttacking, opacity = 1 }: OrbEffectsProps) {
       {/* Energy rings */}
       {RING_COLORS.map((color, i) => (
         <mesh
-          scale={(isAttacking ? 3.4 : 5.4) * (1 + damage / 32) * (i <= damage?1:0)}
+          scale={
+            (isAttacking ? 3.4 : 5.4) *
+            (1 + damage / 32) *
+            (i <= damage ? 1 : 0)
+          }
           key={i}
           ref={energyRingRefs[i]}
           rotation={[(Math.PI * 2 * i) / 3, Math.PI / 4, Math.PI / 3]}
@@ -136,7 +140,7 @@ export function OrbEffects({ isAttacking, opacity = 1 }: OrbEffectsProps) {
 
       {/* Trail */}
       <Trail
-        width={Math.max(0.1, Math.min((isAttacking ? 1.4 : 0.8), 2))}
+        width={Math.max(0.1, Math.min(isAttacking ? 1.4 : 0.8, 2))}
         length={Math.max(0.1, Math.min(3.4, 4))}
         color={isAttacking ? ATTACK_COLOR : PASSIVE_COLOR}
         decay={isAttacking ? 4.8 : 0.2}

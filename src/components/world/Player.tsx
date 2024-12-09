@@ -5,16 +5,13 @@ import {
   Vector3,
   Group,
   CircleGeometry,
-  DoubleSide,
-  LineBasicMaterial,
-  Line,
   BufferGeometry,
   Float32BufferAttribute,
 } from "three";
+import { LevelUpEffect } from "../effects/LevelUpEffect";
+import { MagicOrb } from "../projectiles/MagicOrb";
 import { useGameStore } from "../../store/gameStore";
 import { useKeyboardControls } from "../../hooks/useKeyboardControls";
-import { MagicOrb } from "../MagicOrb";
-import { LevelUpEffect } from "../LevelUpEffect";
 
 interface PlayerProps {
   moveTargetRef: React.MutableRefObject<{
@@ -29,8 +26,7 @@ const FLOAT_HEIGHT = 0.5;
 const FLOAT_SPEED = 2;
 const CAMERA_LERP = 0.15;
 const CAMERA_HEIGHT = 56;
-const START_ANIMATION_DURATION = 2;
-const BOUNDARY_SIZE = 20; // Size of the playable area (half-width)
+const START_ANIMATION_DURATION = 2; // longer animation duration
 
 export function Player({ moveTargetRef }: PlayerProps) {
   const playerRef = useRef<Group>(null);
@@ -39,6 +35,8 @@ export function Player({ moveTargetRef }: PlayerProps) {
   const lastValidPosition = useRef(new Vector3(0, FLOAT_HEIGHT, 0));
   const cameraOffset = useRef<Vector3 | null>(null);
   const lastTouchY = useRef<number | null>(null);
+  const lastTouchX = useRef<number | null>(null);
+  const cameraRotation = useRef(0);
   const introStartTime = useRef<number | null>(null);
   const { camera } = useThree();
   const [showLevelUpEffect, setShowLevelUpEffect] = useState(false);
@@ -251,33 +249,14 @@ export function Player({ moveTargetRef }: PlayerProps) {
         return;
       }
 
-      // Check boundary constraints and adjust velocity
-      const nextX = position.x + velocity.x * delta;
-      const nextZ = position.z + velocity.z * delta;
-
-      // Clamp position within boundaries
-      if (Math.abs(nextX) >= BOUNDARY_SIZE) {
-        velocity.x = 0;
-      }
-      if (Math.abs(nextZ) >= BOUNDARY_SIZE) {
-        velocity.z = 0;
-      }
-
       playerRef.current.setLinvel(velocity);
 
-      // Only update last valid position if within bounds
-      if (
-        Math.abs(position.x) < BOUNDARY_SIZE &&
-        Math.abs(position.z) < BOUNDARY_SIZE
-      ) {
-        lastValidPosition.current.copy(currentPos);
-      }
-
       // Rotate visual group based on movement direction
-      if (velocity.x !== 0 || velocity.z !== 0) {
-        const angle = Math.atan2(velocity.x, velocity.z);
-        visualRef.current.rotation.y = angle;
-      }
+      const angle = Math.atan2(velocity.x, velocity.z);
+      visualRef.current.rotation.y = angle;
+
+      // Update last valid position
+      lastValidPosition.current.copy(currentPos);
     }
 
     // Keep player at float height with smooth animation
@@ -291,10 +270,15 @@ export function Player({ moveTargetRef }: PlayerProps) {
     const verticalOffset = CAMERA_HEIGHT * cameraZoom * cameraAngle;
     const horizontalOffset = CAMERA_HEIGHT * cameraZoom * (1 - cameraAngle);
 
+    // Apply rotation to camera position
+    const rotationRad = (cameraRotation.current * Math.PI) / 180;
+    const rotatedX = Math.sin(rotationRad) * horizontalOffset;
+    const rotatedZ = Math.cos(rotationRad) * horizontalOffset;
+
     // Calculate camera position based on intro animation or normal gameplay
-    let targetX = position.x;
+    let targetX = position.x + rotatedX;
     let targetY = verticalOffset;
-    let targetZ = position.z + horizontalOffset;
+    let targetZ = position.z + rotatedZ;
 
     if (introStartTime.current) {
       const elapsed = (Date.now() - introStartTime.current) / 1000; // seconds
@@ -349,7 +333,7 @@ export function Player({ moveTargetRef }: PlayerProps) {
         type="dynamic"
         position={[0, FLOAT_HEIGHT, 0]}
         enabledRotations={[false, false, false]}
-        scale={1 + damage / 24}
+        scale={1 + damage / 12}
         linearDamping={0.95}
         // need this here or else player stops being able to move (like render loop stops or simulation temp reaches 0)
         gravityScale={0.1}

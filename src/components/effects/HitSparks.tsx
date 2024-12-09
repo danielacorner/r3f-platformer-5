@@ -1,6 +1,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+import { useGameStore } from "../../store/gameStore";
 
 interface HitSparksProps {
   position: THREE.Vector3;
@@ -8,10 +9,11 @@ interface HitSparksProps {
 }
 
 export function HitSparks({ position, onComplete }: HitSparksProps) {
+  const upgrades = useGameStore((state) => state.upgrades);
   const particlesRef = useRef<THREE.Points>(null);
   const startTime = useRef(Date.now());
-  const DURATION = 500; // Duration in milliseconds
-  const NUM_PARTICLES = 20;
+  const DURATION = 500 + 100 * upgrades.damage; // Duration in milliseconds
+  const NUM_PARTICLES = 20 * (1 + upgrades.damage / 2);
 
   // Create particles with initial positions and velocities
   const { positions, velocities, colors } = useMemo(() => {
@@ -41,9 +43,9 @@ export function HitSparks({ position, onComplete }: HitSparksProps) {
       velocities[idx + 2] = vz;
 
       // Orange-yellow color with slight variation
-      colors[idx] = 1;  // R
-      colors[idx + 1] = 0.5 + Math.random() * 0.3;  // G
-      colors[idx + 2] = 0;  // B
+      colors[idx] = 1; // R
+      colors[idx + 1] = 0.5 + Math.random() * 0.3; // G
+      colors[idx + 2] = 0; // B
     }
 
     return { positions, velocities, colors };
@@ -61,8 +63,9 @@ export function HitSparks({ position, onComplete }: HitSparksProps) {
       return;
     }
 
-    const positions = particlesRef.current.geometry.attributes.position.array as Float32Array;
-    
+    const positions = particlesRef.current.geometry.attributes.position
+      .array as Float32Array;
+
     // Update each particle position
     for (let i = 0; i < NUM_PARTICLES; i++) {
       const idx = i * 3;
@@ -94,7 +97,7 @@ export function HitSparks({ position, onComplete }: HitSparksProps) {
         />
       </bufferGeometry>
       <pointsMaterial
-        size={0.1}
+        size={0.1 + upgrades.damage / 20}
         vertexColors
         transparent
         opacity={0.8}

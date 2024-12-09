@@ -1,11 +1,11 @@
-import { useRef, useState, useEffect } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { Vector3, Group, BufferGeometry, Line } from 'three';
-import { useGameStore } from '../store/gameStore';
-import { RigidBody } from '@react-three/rapier';
-import { OrbTrail } from './OrbTrail';
-import { OrbEffects } from './OrbEffects';
-import { HitSparks } from "./HitSparks";
+import { useRef, useState, useEffect } from "react";
+import { useFrame } from "@react-three/fiber";
+import { Vector3, Group, BufferGeometry, Line } from "three";
+import { RigidBody } from "@react-three/rapier";
+import { OrbTrail } from "./OrbTrail";
+import { HitSparks } from "../effects/HitSparks";
+import { OrbEffects } from "../effects/OrbEffects";
+import { useGameStore } from "../../store/gameStore";
 
 const BASE_ORB_RADIUS = 1.5; // Base orbit radius
 const BASE_ORB_SPEED = 2; // Base orbit speed
@@ -22,11 +22,15 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   // Refs for all orbs
   const orbsRef = useRef<Group[]>([]);
   const [isAttacking, setIsAttacking] = useState(false);
-  const [attackingOrbs, setAttackingOrbs] = useState<{ [key: number]: any }>({});
+  const [attackingOrbs, setAttackingOrbs] = useState<{ [key: number]: any }>(
+    {}
+  );
   const [attackProgress, setAttackProgress] = useState(0);
   const [canAttack, setCanAttack] = useState(true);
-  const [hitEffects, setHitEffects] = useState<{ position: Vector3; key: string }[]>([]);
-  
+  const [hitEffects, setHitEffects] = useState<
+    { position: Vector3; key: string }[]
+  >([]);
+
   // Refs for tracking positions and timing
   const lastAttackTime = useRef(0);
   const startPositions = useRef<{ [key: number]: Vector3 }>({});
@@ -36,28 +40,34 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
   // Add a UUID generator for truly unique keys
   const generateUUID = () => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+      /[xy]/g,
+      function (c) {
+        const r = (Math.random() * 16) | 0;
+        const v = c === "x" ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+      }
+    );
   };
 
   const addHitEffect = (position: Vector3) => {
-    setHitEffects(prev => [...prev, { 
-      position, 
-      key: generateUUID() // Use UUID instead of timestamp + counter
-    }]);
+    setHitEffects((prev) => [
+      ...prev,
+      {
+        position,
+        key: generateUUID(), // Use UUID instead of timestamp + counter
+      },
+    ]);
   };
 
   // Get all relevant stats from game store
-  const creeps = useGameStore(state => state.creeps);
-  const damageCreep = useGameStore(state => state.damageCreep);
-  const damage = useGameStore(state => state.upgrades.damage);
-  const range = useGameStore(state => state.upgrades.range);
-  const speed = useGameStore(state => state.upgrades.speed);
-  const orbSpeed = useGameStore(state => state.orbSpeed);
-  const multishot = useGameStore(state => state.upgrades.multishot);
+  const creeps = useGameStore((state) => state.creeps);
+  const damageCreep = useGameStore((state) => state.damageCreep);
+  const damage = useGameStore((state) => state.upgrades.damage);
+  const range = useGameStore((state) => state.upgrades.range);
+  const speed = useGameStore((state) => state.upgrades.speed);
+  const orbSpeed = useGameStore((state) => state.orbSpeed);
+  const multishot = useGameStore((state) => state.upgrades.multishot);
   // Calculate actual values based on upgrades
   const actualDamage = BASE_ATTACK_DAMAGE * (1 + damage * 0.1);
   const actualRange = BASE_ATTACK_RANGE * (1 + range * 0.1);
@@ -67,14 +77,14 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
   // Get multishot level and calculate number of orbs
   const numAdditionalOrbs = Math.floor(multishotChance); // Full orbs
-  const partialOrbOpacity = (multishotChance % 1); // Opacity for the partial orb
+  const partialOrbOpacity = multishotChance % 1; // Opacity for the partial orb
   const totalOrbs = numAdditionalOrbs + (partialOrbOpacity > 0 ? 1 : 0) + 1; // +1 for main orb
 
   const findNearestEnemies = () => {
     if (!orbsRef.current[0] || !playerRef.current || !canAttack) return [];
 
     return creeps
-      .filter(enemy => {
+      .filter((enemy) => {
         if (!enemy || enemy.health <= 0) return false;
         const enemyPos = new Vector3(
           enemy.position[0],
@@ -123,7 +133,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
     const guaranteedOrbs = Math.floor(multishotChance) + 1; // +1 for main orb
     const extraOrbChance = multishotChance % 1;
     let totalAttackingOrbs = guaranteedOrbs;
-    
+
     if (Math.random() < extraOrbChance) {
       totalAttackingOrbs++;
     }
@@ -137,7 +147,8 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
     for (let i = 0; i < totalAttackingOrbs; i++) {
       const orb = orbsRef.current[i];
       if (orb) {
-        const targetEnemy = nearbyEnemies[Math.min(i, nearbyEnemies.length - 1)];
+        const targetEnemy =
+          nearbyEnemies[Math.min(i, nearbyEnemies.length - 1)];
         newAttackingOrbs[i] = targetEnemy;
         startPositions.current[i] = orb.position.clone();
         const targetPos = new Vector3(
@@ -145,7 +156,11 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
           targetEnemy.position[1] + 1,
           targetEnemy.position[2]
         );
-        midPoints.current[i] = calculateArcPoint(startPositions.current[i], targetPos, 3);
+        midPoints.current[i] = calculateArcPoint(
+          startPositions.current[i],
+          targetPos,
+          3
+        );
       }
     }
 
@@ -164,35 +179,37 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
     const position = playerRef.current.translation();
     const playerPos = new Vector3(position.x, position.y, position.z);
-    const time = Date.now() * 0.002 * actualOrbSpeed*(1+speed*0.12);
+    const time = Date.now() * 0.002 * actualOrbSpeed * (1 + speed * 0.12);
 
     // Complex orbit pattern for non-attacking orbs
     orbsRef.current.forEach((orb, index) => {
       if (!orb || attackingOrbs[index]) return; // Skip if orb is attacking
-      
+
       const baseAngle = time + (Math.PI * 2 * index) / orbsRef.current.length;
-      
+
       // Create a complex pattern using multiple sine waves
       const frequency1 = 1;
       const frequency2 = 0.5;
-      const phase = index * Math.PI / 3;
-      
+      const phase = (index * Math.PI) / 3;
+
       // Main orbit
-      const mainRadius = BASE_ORB_RADIUS * (1 + range/1.5);
-      
+      const mainRadius = BASE_ORB_RADIUS * (1 + range / 1.5);
+
       // Add secondary movements
       const radiusModulation = Math.sin(time * frequency2 + phase) * 0.3;
       const currentRadius = mainRadius * (1 + radiusModulation);
-      
+
       // Create a figure-8 like pattern
-      const orbitX = Math.cos(baseAngle * frequency1) * currentRadius +
-                    Math.sin(time * frequency2 + phase) * mainRadius * 0.2;
-      const orbitZ = Math.sin(baseAngle * frequency1) * currentRadius +
-                    Math.cos(time * frequency2 + phase) * mainRadius * 0.2;
+      const orbitX =
+        Math.cos(baseAngle * frequency1) * currentRadius +
+        Math.sin(time * frequency2 + phase) * mainRadius * 0.2;
+      const orbitZ =
+        Math.sin(baseAngle * frequency1) * currentRadius +
+        Math.cos(time * frequency2 + phase) * mainRadius * 0.2;
 
       // Add subtle vertical movement
       const heightOffset = Math.sin(time * frequency2 + phase) * 0.2;
-      
+
       orb.position.set(
         playerPos.x + orbitX,
         playerPos.y + 1 + heightOffset,
@@ -220,7 +237,11 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
         const startPos = startPositions.current[orbIndex];
         const midPoint = midPoints.current[orbIndex];
-        const targetPos = new Vector3(target.position[0], target.position[1] + 1, target.position[2]);
+        const targetPos = new Vector3(
+          target.position[0],
+          target.position[1] + 1,
+          target.position[2]
+        );
 
         if (newProgress < 0.5) {
           // Moving to enemy
@@ -244,9 +265,21 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
           // Returning to orbit
           const t = (newProgress - 0.5) * 2;
           const returnTarget = new Vector3(
-            playerPos.x + Math.cos(time + (Math.PI * 2 * parseInt(orbIndex)) / Object.keys(attackingOrbs).length) * BASE_ORB_RADIUS,
+            playerPos.x +
+              Math.cos(
+                time +
+                  (Math.PI * 2 * parseInt(orbIndex)) /
+                    Object.keys(attackingOrbs).length
+              ) *
+                BASE_ORB_RADIUS,
             playerPos.y + 1,
-            playerPos.z + Math.sin(time + (Math.PI * 2 * parseInt(orbIndex)) / Object.keys(attackingOrbs).length) * BASE_ORB_RADIUS
+            playerPos.z +
+              Math.sin(
+                time +
+                  (Math.PI * 2 * parseInt(orbIndex)) /
+                    Object.keys(attackingOrbs).length
+              ) *
+                BASE_ORB_RADIUS
           );
           orb.position.lerp(returnTarget, t);
         }
@@ -266,32 +299,43 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
   return (
     <group>
-      {Array(totalOrbs).fill(null).map((_, index) => {
-        const opacity = index === 0 ? 1 : index <= numAdditionalOrbs ? 1 : partialOrbOpacity;
-        return (
-          <group 
-            key={index}
-            ref={el => {
-              if (el) {
-                orbsRef.current[index] = el;
-              }
-            }}
-          >
-            <OrbEffects 
-              isAttacking={isAttacking && attackingOrbs[index] !== undefined} 
-              opacity={opacity} 
-            />
-            <OrbTrail />
-          </group>
-        );
-      })}
+      {Array(totalOrbs)
+        .fill(null)
+        .map((_, index) => {
+          const opacity =
+            index === 0
+              ? 1
+              : index <= numAdditionalOrbs
+              ? 1
+              : partialOrbOpacity;
+          return (
+            <group
+              key={index}
+              ref={(el) => {
+                if (el) {
+                  orbsRef.current[index] = el;
+                }
+              }}
+            >
+              <OrbEffects
+                isAttacking={isAttacking && attackingOrbs[index] !== undefined}
+                opacity={opacity}
+              />
+              <OrbTrail
+                isAttacking={isAttacking && attackingOrbs[index] !== undefined}
+              />
+            </group>
+          );
+        })}
       {/* Hit Effects */}
       {hitEffects.map(({ position, key }) => (
         <HitSparks
           key={key}
           position={position}
           onComplete={() => {
-            setHitEffects(prev => prev.filter(effect => effect.key !== key));
+            setHitEffects((prev) =>
+              prev.filter((effect) => effect.key !== key)
+            );
           }}
         />
       ))}
