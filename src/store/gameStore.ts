@@ -263,7 +263,7 @@ const initialState: GameState = {
   lives: 20,
   experience: process.env.NODE_ENV === 'development' ? 90 : 0,
   level: 1,
-  skillPoints: process.env.NODE_ENV === 'development' ? 90 : 9,
+  skillPoints: process.env.NODE_ENV === 'development' ? 90 : 5,
   upgrades: {
     damage: 0,
     speed: 0,
