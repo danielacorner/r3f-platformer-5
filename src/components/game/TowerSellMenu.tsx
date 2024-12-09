@@ -1,6 +1,6 @@
 import { Billboard, Html } from "@react-three/drei";
 import { FaTimes, FaCoins } from "react-icons/fa";
-import "../styles/TowerSellMenu.css";
+import "../../styles/TowerSellMenu.css";
 
 interface TowerSellMenuProps {
   onSell: () => void;
@@ -8,7 +8,11 @@ interface TowerSellMenuProps {
   sellValue: number;
 }
 
-export function TowerSellMenu({ onSell, onClose, sellValue }: TowerSellMenuProps) {
+export function TowerSellMenu({
+  onSell,
+  onClose,
+  sellValue,
+}: TowerSellMenuProps) {
   const handleSellClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onSell();

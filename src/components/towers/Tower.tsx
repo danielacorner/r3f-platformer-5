@@ -1,15 +1,15 @@
-import { Vector3, Matrix4, Object3D, InstancedMesh } from "three";
+import { Vector3, Object3D, InstancedMesh } from "three";
 import { useRef, useState, useEffect, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
-import { useGameStore, isTowerOnPath } from "../store/gameStore";
-import { TOWER_STATS } from "../store/gameStore";
+import { useGameStore, isTowerOnPath } from "../../store/gameStore";
+import { TOWER_STATS } from "../../store/gameStore";
 import { Trail } from "@react-three/drei";
 import * as THREE from "three";
-import { createShaderMaterial } from "../utils/shaders";
-import { ObjectPool } from "../utils/objectPool";
-import { TowerSellMenu } from "./TowerSellMenu";
-import { GridMarker } from "./GridMarker";
-import { Lightning } from "./Lightning";
+import { createShaderMaterial } from "../../utils/shaders";
+import { ObjectPool } from "../../utils/objectPool";
+import { TowerSellMenu } from "../game/TowerSellMenu";
+import { GridMarker } from "../game/GridMarker";
+import { Lightning } from "../projectiles/Lightning";
 
 const TOWER_GEOMETRY = new THREE.BoxGeometry(1, 2, 1);
 const PROJECTILE_GEOMETRY = new THREE.SphereGeometry(0.1, 8, 8);

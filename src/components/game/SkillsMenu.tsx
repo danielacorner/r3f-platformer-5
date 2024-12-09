@@ -3,14 +3,12 @@ import { createPortal } from "react-dom";
 import {
   FaStar,
   FaBolt,
-  FaRunning,
   FaBullseye,
-  FaShieldAlt,
   FaTimes,
   FaHourglassHalf,
 } from "react-icons/fa";
 import { GiMultipleTargets } from "react-icons/gi";
-import { useGameStore } from "../store/gameStore";
+import { useGameStore } from "../../store/gameStore";
 
 interface SkillsMenuProps {
   isOpen: boolean;
@@ -67,7 +65,9 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
           <div className="header-right">
             <div className="skill-points">
               <FaStar className="text-yellow-400" />
-              <span>{skillPoints} {window.innerWidth < 640 ? "" : "skill points"}</span>
+              <span>
+                {skillPoints} {window.innerWidth < 640 ? "" : "skill points"}
+              </span>
             </div>
             <button
               className="close-icon-button"

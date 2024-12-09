@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useGameStore } from "../store/gameStore";
+import { useGameStore } from "../../store/gameStore";
 
 import { FaCoins, FaUser } from "react-icons/fa";
 
@@ -12,9 +12,9 @@ import {
   GiSkullCrossedBones,
 } from "react-icons/gi";
 
-import { TOWER_STATS, ElementType } from "../store/gameStore";
+import { TOWER_STATS, ElementType } from "../../store/gameStore";
 
-import "../styles/BuildMenu.css";
+import "../../styles/BuildMenu.css";
 
 import { SkillsMenu } from "./SkillsMenu";
 

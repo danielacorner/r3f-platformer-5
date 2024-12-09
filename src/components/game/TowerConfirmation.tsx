@@ -1,11 +1,11 @@
-import { useRef } from 'react';
-import { Billboard, Html } from '@react-three/drei';
-import { FaCheck, FaTimes } from 'react-icons/fa';
-import { useGameStore } from '../store/gameStore';
-import { TOWER_TYPES } from './BuildMenu';
-import { FaCoins } from 'react-icons/fa';
-import { Tower } from './Tower';
-import '../styles/TowerConfirmation.css';
+import { useRef } from "react";
+import { Billboard, Html } from "@react-three/drei";
+import { FaCheck, FaTimes } from "react-icons/fa";
+import { useGameStore } from "../../store/gameStore";
+import { TOWER_TYPES } from "./BuildMenu";
+import { FaCoins } from "react-icons/fa";
+import { Tower } from "../towers/Tower";
+import "../../styles/TowerConfirmation.css";
 
 interface TowerConfirmationProps {
   position: [number, number, number];
@@ -13,13 +13,16 @@ interface TowerConfirmationProps {
   onCancel: () => void;
 }
 
-export function TowerConfirmation({ position, onConfirm, onCancel }: TowerConfirmationProps) {
+export function TowerConfirmation({
+  position,
+  onConfirm,
+  onCancel,
+}: TowerConfirmationProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   return (
     <group position={position}>
       <Billboard>
-
         <Html center transform position={[0, 2, 0]}>
           <div ref={containerRef} className="tower-confirmation-container">
             <div className="tower-confirmation">
@@ -38,12 +41,20 @@ export function TowerConfirmation({ position, onConfirm, onCancel }: TowerConfir
 }
 
 export function TowerConfirmationMobile() {
-  const { showTowerConfirmation, selectedObjectType, money, pendingTowerPosition } = useGameStore();
+  const {
+    showTowerConfirmation,
+    selectedObjectType,
+    money,
+    pendingTowerPosition,
+  } = useGameStore();
   const set = useGameStore.setState;
 
-  if (!showTowerConfirmation || !selectedObjectType || !pendingTowerPosition) return null;
+  if (!showTowerConfirmation || !selectedObjectType || !pendingTowerPosition)
+    return null;
 
-  const tower = Object.values(TOWER_TYPES).find(t => t.type === selectedObjectType);
+  const tower = Object.values(TOWER_TYPES).find(
+    (t) => t.type === selectedObjectType
+  );
   if (!tower) return null;
 
   const handleConfirm = () => {
@@ -73,7 +84,13 @@ export function TowerConfirmationMobile() {
   return (
     <>
       {/* Preview Tower */}
-      <group position={[pendingTowerPosition.x, pendingTowerPosition.y, pendingTowerPosition.z]}>
+      <group
+        position={[
+          pendingTowerPosition.x,
+          pendingTowerPosition.y,
+          pendingTowerPosition.z,
+        ]}
+      >
         <Tower
           position={[0, 0, 0]}
           type={selectedObjectType}
@@ -98,17 +115,14 @@ export function TowerConfirmationMobile() {
             </div>
           </div>
           <div className="confirmation-buttons">
-            <button 
-              className="confirm-button" 
+            <button
+              className="confirm-button"
               onClick={handleConfirm}
               disabled={money < tower.cost}
             >
               Place Tower
             </button>
-            <button 
-              className="cancel-button" 
-              onClick={handleCancel}
-            >
+            <button className="cancel-button" onClick={handleCancel}>
               Cancel
             </button>
           </div>

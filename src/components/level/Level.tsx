@@ -1,13 +1,7 @@
 import React, { useRef, useEffect, useMemo, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { RigidBody, CuboidCollider } from "@react-three/rapier";
-import {
-  Environment,
-  useGLTF,
-  Stars,
-  Float,
-  useTexture,
-} from "@react-three/drei";
+import { RigidBody } from "@react-three/rapier";
+import { Environment, Stars, Float } from "@react-three/drei";
 import {
   Vector3,
   Raycaster,
@@ -18,34 +12,27 @@ import {
   InstancedMesh,
   Object3D,
   Matrix4,
-  BoxGeometry,
   Mesh,
   Euler,
-  Float32BufferAttribute,
 } from "three";
 import {
   useGameStore,
   isTowerOnPath,
   TOWER_STATS,
 } from "../../store/gameStore";
-import {
-  Edges,
-  MeshTransmissionMaterial,
-  Float as FloatDrei,
-} from "@react-three/drei";
-import { WaveManager } from "../WaveManager";
-import { Tower } from "../Tower";
+
+import { WaveManager } from "../game/WaveManager";
 import { createShaderMaterial } from "../../utils/shaders";
-import { ObjectPool } from "../../utils/objectPool";
 import { CreepManager } from "../world/Creep";
 import { Player } from "../world/Player";
 import { ClickIndicator } from "../ClickIndicator";
-import { TowerConfirmation } from "../TowerConfirmation";
+import { TowerConfirmation } from "../game/TowerConfirmation";
 import { TreeInstances } from "./TreeInstances";
 import { glowColor, grassColor, platformColor } from "../../utils/constants";
 import { MushroomInstances } from "./MushroomInstances";
 import { generatePath, PathDecorations } from "./PathDecoration";
 import { FirefliesInstances } from "./FirefliesInstances";
+import { Tower } from "../towers/Tower";
 
 const pathMaterial = createShaderMaterial("path", {
   color: { value: new Vector3(0.26, 0.22, 0.79) },

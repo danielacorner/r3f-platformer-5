@@ -1,6 +1,6 @@
-import { useGameStore } from "../store/gameStore";
+import { useGameStore } from "../../store/gameStore";
 import { FaPlay } from "react-icons/fa";
-import "../styles/GameUI.css";
+import "../../styles/GameUI.css";
 
 export function GameUI() {
   const { phase, lives, currentLevel, currentWave, totalWaves, startWave } =
