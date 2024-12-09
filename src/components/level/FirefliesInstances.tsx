@@ -2,11 +2,12 @@ import { useRef, useEffect, useMemo } from "react";
 import {
   InstancedMesh,
   Object3D,
+  MathUtils,
+  Color,
   ShaderMaterial,
   AdditiveBlending,
   InstancedBufferAttribute,
   Vector3,
-  SphereGeometry,
 } from "three";
 import { useFrame } from "@react-three/fiber";
 
@@ -23,7 +24,7 @@ const vertexShader = `
 const fragmentShader = `
   varying float vOpacity;
   void main() {
-    gl_FragColor = vec4(1.0, 0.9, 0.5, vOpacity);
+    gl_FragColor = vec4(1.0, 1.0, 0.5, vOpacity);
   }
 `;
 
@@ -58,106 +59,133 @@ export function FirefliesInstances({ count = 50, radius = 25 }) {
   useEffect(() => {
     if (!meshRef.current) return;
 
-    // Initialize firefly data
+    // Initialize movement data for each firefly
     fireflyData.current = Array(count)
-      .fill(null)
-      .map(() => ({
-        currentTarget: getRandomPoint(),
-        nextTarget: getRandomPoint(),
-        progress: 0,
-        speed: 0.2 + Math.random() * 0.3,
-        restTime: Math.random() * 2,
-        lastRestTime: 0,
-      }));
+      .fill(0)
+      .map(() => {
+        const currentTarget = getRandomPoint();
+        const nextTarget = getRandomPoint();
+        return {
+          currentTarget,
+          nextTarget,
+          progress: 0,
+          speed: 0.2 + Math.random() * 0.3, // Units per second
+          restTime: 0.5 + Math.random() * 2, // Rest time at each point
+          lastRestTime: 0,
+        };
+      });
 
     // Initialize opacities and blink timings
     for (let i = 0; i < count; i++) {
-      opacities.current[i] = 0.1 + Math.random() * 0.1; // Much lower base opacity
-      nextBlinkTimes.current[i] = Math.random() * 2;
-      blinkDurations.current[i] = 0.1 + Math.random() * 0.2;
+      opacities.current[i] = 0.05;
+      nextBlinkTimes.current[i] = Math.random() * 3;
+      blinkDurations.current[i] = 0.2 + Math.random() * 0.3;
     }
 
-    // Update the instance attribute
+    // Set up initial positions
+    fireflyData.current.forEach((data, i) => {
+      tempObject.position.copy(data.currentTarget);
+      const scale = 0.03 + Math.random() * 0.02;
+      tempObject.scale.set(scale, scale, scale);
+      tempObject.updateMatrix();
+      meshRef.current!.setMatrixAt(i, tempObject.matrix);
+    });
+
+    // Set up the opacity attribute
+    const material = meshRef.current.material as ShaderMaterial;
+    material.uniforms = {};
+    const opacityAttribute = new Float32Array(count);
+    for (let i = 0; i < count; i++) {
+      opacityAttribute[i] = 0.05;
+    }
     meshRef.current.geometry.setAttribute(
       "opacity",
-      new InstancedBufferAttribute(opacities.current, 1)
+      new InstancedBufferAttribute(opacityAttribute, 1)
     );
+
+    meshRef.current.instanceMatrix.needsUpdate = true;
   }, [count, radius]);
 
   useFrame((state, delta) => {
     if (!meshRef.current) return;
+    const time = state.clock.elapsedTime;
 
-    const time = state.clock.getElapsedTime();
+    const opacityAttribute = meshRef.current.geometry.getAttribute("opacity");
 
-    // Update each firefly
-    for (let i = 0; i < count; i++) {
-      const data = fireflyData.current[i];
+    fireflyData.current.forEach((data, i) => {
+      // Update movement
+      if (time - data.lastRestTime >= data.restTime) {
+        data.progress += delta * data.speed;
 
-      // Update blinking
-      if (time >= nextBlinkTimes.current[i]) {
-        // Start a bright blink
-        opacities.current[i] = 0.8 + Math.random() * 0.2; // Bright flash
-        nextBlinkTimes.current[i] = time + 2 + Math.random() * 3; // Longer time between blinks
-      } else if (
-        time >=
-        nextBlinkTimes.current[i] - blinkDurations.current[i]
-      ) {
-        // Fade back to dim
-        const fadeProgress =
-          (nextBlinkTimes.current[i] - time) / blinkDurations.current[i];
-        opacities.current[i] = 0.1 + fadeProgress * 0.9;
-      }
-
-      // Update position
-      if (data.progress >= 1) {
-        if (time - data.lastRestTime >= data.restTime) {
+        if (data.progress >= 1) {
+          // Reached target, set up next movement
           data.currentTarget.copy(data.nextTarget);
-          data.nextTarget = getRandomPoint();
+          data.nextTarget.copy(getRandomPoint());
           data.progress = 0;
-          data.speed = 0.2 + Math.random() * 0.3;
-          data.restTime = Math.random() * 2;
           data.lastRestTime = time;
+          data.restTime = 0.5 + Math.random() * 2; // New random rest time
+          data.speed = 0.1 + Math.random() * 0.12; // New random speed
         }
-      } else {
-        data.progress = Math.min(1, data.progress + delta * data.speed);
 
-        tempObject.position.lerpVectors(
+        // Calculate position with smooth easing
+        const easeProgress = 1 - Math.cos(data.progress * Math.PI) / 2; // Smooth acceleration and deceleration
+        const newPosition = new Vector3().lerpVectors(
           data.currentTarget,
           data.nextTarget,
-          data.progress
+          easeProgress
+        );
+
+        // Add slight wobble
+        const wobbleX = Math.sin(time * 2 + i) * 0.05;
+        const wobbleY = Math.cos(time * 1.5 + i) * 0.05;
+        const wobbleZ = Math.sin(time * 1.7 + i) * 0.05;
+
+        tempObject.position
+          .copy(newPosition)
+          .add(new Vector3(wobbleX, wobbleY, wobbleZ));
+
+        // Handle blinking
+        if (time >= nextBlinkTimes.current[i]) {
+          const blinkProgress =
+            (time - nextBlinkTimes.current[i]) / blinkDurations.current[i];
+
+          if (blinkProgress >= 1) {
+            nextBlinkTimes.current[i] = time + 3 + Math.random() * 4;
+            opacityAttribute.setX(i, 0.05);
+          } else {
+            const opacity = Math.sin(blinkProgress * Math.PI) * 0.7 + 0.2;
+            opacityAttribute.setX(i, opacity);
+          }
+        }
+
+        // Scale based on current opacity
+        const baseScale = 0.03 + Math.random() * 0.02;
+        const scaleMultiplier = 1 + opacityAttribute.getX(i) * 0.5;
+        tempObject.scale.set(
+          baseScale * scaleMultiplier,
+          baseScale * scaleMultiplier,
+          baseScale * scaleMultiplier
         );
 
         tempObject.updateMatrix();
-        meshRef.current.setMatrixAt(i, tempObject.matrix);
+        meshRef.current!.setMatrixAt(i, tempObject.matrix);
       }
-    }
+    });
 
-    // Update instance attributes
-    meshRef.current.geometry.setAttribute(
-      "opacity",
-      new InstancedBufferAttribute(opacities.current, 1)
-    );
+    opacityAttribute.needsUpdate = true;
     meshRef.current.instanceMatrix.needsUpdate = true;
   });
 
-  const geometry = useMemo(() => new SphereGeometry(0.05, 8, 8), []);
-  const material = useMemo(
-    () =>
-      new ShaderMaterial({
-        vertexShader,
-        fragmentShader,
-        transparent: true,
-        blending: AdditiveBlending,
-        depthWrite: false,
-      }),
-    []
-  );
-
   return (
-    <instancedMesh
-      ref={meshRef}
-      args={[geometry, material, count]}
-      frustumCulled={false}
-    />
+    <instancedMesh ref={meshRef} args={[undefined, undefined, count]}>
+      <sphereGeometry args={[1, 8, 8]} />
+      <shaderMaterial
+        vertexShader={vertexShader}
+        fragmentShader={fragmentShader}
+        transparent
+        blending={AdditiveBlending}
+        depthWrite={false}
+      />
+    </instancedMesh>
   );
 }
