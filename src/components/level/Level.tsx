@@ -38,7 +38,7 @@ import { Tower } from "../Tower";
 import { createShaderMaterial } from "../../utils/shaders";
 import { ObjectPool } from "../../utils/objectPool";
 import { CreepManager } from "../Creep";
-import { Player } from "../Player";
+import { Player } from "../world/Player";
 import { ClickIndicator } from "../ClickIndicator";
 import { TowerConfirmation } from "../TowerConfirmation";
 import { TreeInstances } from "./TreeInstances";

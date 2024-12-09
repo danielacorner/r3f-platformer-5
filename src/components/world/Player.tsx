@@ -11,10 +11,10 @@ import {
   BufferGeometry,
   Float32BufferAttribute,
 } from "three";
-import { useGameStore } from "../store/gameStore";
-import { useKeyboardControls } from "../hooks/useKeyboardControls";
-import { MagicOrb } from "./MagicOrb";
-import { LevelUpEffect } from "./LevelUpEffect";
+import { useGameStore } from "../../store/gameStore";
+import { useKeyboardControls } from "../../hooks/useKeyboardControls";
+import { MagicOrb } from "../MagicOrb";
+import { LevelUpEffect } from "../LevelUpEffect";
 
 interface PlayerProps {
   moveTargetRef: React.MutableRefObject<{
