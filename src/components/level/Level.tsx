@@ -37,7 +37,7 @@ import { WaveManager } from "../WaveManager";
 import { Tower } from "../Tower";
 import { createShaderMaterial } from "../../utils/shaders";
 import { ObjectPool } from "../../utils/objectPool";
-import { CreepManager } from "../Creep";
+import { CreepManager } from "../world/Creep";
 import { Player } from "../world/Player";
 import { ClickIndicator } from "../ClickIndicator";
 import { TowerConfirmation } from "../TowerConfirmation";

@@ -1,36 +1,25 @@
-import { useRef, useEffect, useMemo } from "react";
+import { useRef, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import {
   Vector3,
   InstancedMesh,
   Object3D,
   Matrix4,
-  BufferGeometry,
-  BufferAttribute,
-  BoxGeometry,
   Color,
   PlaneGeometry,
   MeshBasicMaterial,
-  SphereGeometry,
   CylinderGeometry,
-  TorusGeometry,
-  IcosahedronGeometry,
   ConeGeometry,
   MeshStandardMaterial,
   DoubleSide,
   Group,
-  OctahedronGeometry,
-  DodecahedronGeometry,
 } from "three";
-import { useGameStore } from "../store/gameStore";
-import { createShaderMaterial } from "../utils/shaders";
 import * as THREE from "three";
-import { BufferGeometryUtils } from "three/examples/jsm/Addons.js";
-import { GoblinModel } from "./GoblinModel";
-import { CreeperModel } from "./CreeperModel";
-import { PortalEffect } from "./PortalEffect";
-import { BeetleModel } from "./BeetleModel";
-import { CrabModel } from "./CrabModel";
+import { GoblinModel } from "../models/GoblinModel";
+import { CreeperModel } from "../models/CreeperModel";
+import { PortalEffect } from "../effects/PortalEffect";
+import { CrabModel } from "../models/CrabModel";
+import { useGameStore } from "../../store/gameStore";
 
 // Create geometries for different creep types
 const CREEP_GEOMETRIES = {
@@ -99,26 +88,6 @@ const creepMaterials = {
     side: DoubleSide,
   }),
 };
-
-const tempObject = new Object3D();
-const tempVector = new Vector3();
-const tempMatrix = new Matrix4();
-
-interface CreepData {
-  id: number;
-  position: [number, number, number];
-  type: "normal" | "armored" | "fast" | "boss";
-  health: number;
-  maxHealth: number;
-  effects: {
-    [key: string]: {
-      value: number;
-      duration: number;
-      startTime: number;
-      stacks?: number;
-    };
-  };
-}
 
 interface CreepManagerProps {
   pathPoints: Vector3[];
