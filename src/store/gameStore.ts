@@ -270,20 +270,20 @@ const initialState: GameState = {
     range: 0,
     multishot: 0,
   },
-  wave: 0,
+  wave: process.env.NODE_ENV === 'development' ? 3 : 0,
   creeps: [],
   projectiles: [],
   towerStates: [],
   playerRef: null,
   orbSpeed: 1,
   highlightedPathSegment: null,
-  currentWave: 0,
-  totalWaves: 12,
+  currentWave: process.env.NODE_ENV === 'development' ? 3 : 0,
+  totalWaves: 4, // Set to 4 waves per level
   showWaveIndicator: false,
   showTowerConfirmation: false,
   pendingTowerPosition: null,
   cameraZoom: 1,
-  cameraAngle: 0.5, // Default angle (0 is horizontal, 1 is vertical)
+  cameraAngle: 0.5,
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -505,10 +505,22 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
   },
 
-  incrementLevel: () => set(state => ({
-    currentLevel: state.currentLevel + 1,
-    wave: 0
-  })),
+  incrementLevel: () => {
+    const state = get();
+    const nextLevel = state.currentLevel + 1;
+    console.log(`Incrementing to level ${nextLevel}`);
+    
+    // Reset wave counter and update level
+    set({
+      currentLevel: nextLevel,
+      wave: 0,
+      currentWave: 0,
+      totalWaves: 4, // Ensure it stays at 4 waves per level
+      isSpawning: false,
+      levelComplete: false,
+      phase: 'prep'
+    });
+  },
 
   addProjectile: (projectile) => set(state => ({
     projectiles: [...state.projectiles, projectile]
