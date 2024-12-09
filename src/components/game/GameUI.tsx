@@ -1,10 +1,19 @@
 import { useGameStore } from "../../store/gameStore";
-import { FaPlay } from "react-icons/fa";
+import { FaPlay, FaArrowRight } from "react-icons/fa";
 import "../../styles/GameUI.css";
 
 export function GameUI() {
-  const { phase, lives, currentLevel, currentWave, totalWaves, startWave } =
-    useGameStore();
+  const {
+    phase,
+    lives,
+    currentLevel,
+    currentWave,
+    totalWaves,
+    startWave,
+    incrementLevel,
+  } = useGameStore();
+
+  const isLevelComplete = currentWave === totalWaves;
 
   return (
     <div className="game-ui">
@@ -28,14 +37,20 @@ export function GameUI() {
       {phase === "prep" && (
         <div className="game-controls">
           <button
-            className="start-wave-button"
+            className={`start-wave-button ${
+              isLevelComplete ? "next-level" : ""
+            }`}
             onClick={(e) => {
               e.stopPropagation();
-              startWave();
+              if (isLevelComplete) {
+                incrementLevel();
+              } else {
+                startWave();
+              }
             }}
           >
-            <FaPlay />
-            <span>Next Wave</span>
+            {isLevelComplete ? <FaArrowRight /> : <FaPlay />}
+            <span>{isLevelComplete ? "Next Level" : "Next Wave"}</span>
           </button>
         </div>
       )}
