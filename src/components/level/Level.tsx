@@ -27,22 +27,22 @@ import {
   useGameStore,
   isTowerOnPath,
   TOWER_STATS,
-} from "../../../store/gameStore";
+} from "../../store/gameStore";
 import {
   Edges,
   MeshTransmissionMaterial,
   Float as FloatDrei,
 } from "@react-three/drei";
-import { WaveManager } from "../../WaveManager";
-import { Tower } from "../../Tower";
-import { createShaderMaterial } from "../../../utils/shaders";
-import { ObjectPool } from "../../../utils/objectPool";
-import { CreepManager } from "../../Creep";
-import { Player } from "../../Player";
-import { ClickIndicator } from "../../ClickIndicator";
-import { TowerConfirmation } from "../../TowerConfirmation";
+import { WaveManager } from "../WaveManager";
+import { Tower } from "../Tower";
+import { createShaderMaterial } from "../../utils/shaders";
+import { ObjectPool } from "../../utils/objectPool";
+import { CreepManager } from "../Creep";
+import { Player } from "../Player";
+import { ClickIndicator } from "../ClickIndicator";
+import { TowerConfirmation } from "../TowerConfirmation";
 import { TreeInstances } from "./TreeInstances";
-import { glowColor, grassColor, platformColor } from "../../../utils/constants";
+import { glowColor, grassColor, platformColor } from "../../utils/constants";
 import { MushroomInstances } from "./MushroomInstances";
 import { generatePath, PathDecorations } from "./PathDecoration";
 import { FirefliesInstances } from "./FirefliesInstances";

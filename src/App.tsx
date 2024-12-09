@@ -10,7 +10,7 @@ import {
 import { EffectComposer, Bloom, SMAA } from "@react-three/postprocessing";
 import * as THREE from "three";
 import { Physics } from "@react-three/rapier";
-import { Level } from "./components/level/Level/Level";
+import { Level } from "./components/level/Level";
 import { BuildMenu } from "./components/BuildMenu";
 import { GameUI } from "./components/GameUI";
 import { WaveIndicator } from "./components/WaveIndicator";

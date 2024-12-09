@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { Vector3 } from 'three';
 import { RapierRigidBody } from '@react-three/rapier';
-import { generatePath } from '../components/level/Level/PathDecoration';
+import { generatePath } from '../components/level/PathDecoration';
 
 export type ElementType =
   | 'storm1' | 'storm2' | 'storm3' | 'storm4' | 'storm5'

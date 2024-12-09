@@ -72,7 +72,7 @@ export function FirefliesInstances({ count = 50, radius = 25 }) {
 
     // Initialize opacities and blink timings
     for (let i = 0; i < count; i++) {
-      opacities.current[i] = Math.random();
+      opacities.current[i] = 0.1 + Math.random() * 0.1; // Much lower base opacity
       nextBlinkTimes.current[i] = Math.random() * 2;
       blinkDurations.current[i] = 0.1 + Math.random() * 0.2;
     }
@@ -95,8 +95,17 @@ export function FirefliesInstances({ count = 50, radius = 25 }) {
 
       // Update blinking
       if (time >= nextBlinkTimes.current[i]) {
-        opacities.current[i] = Math.random();
-        nextBlinkTimes.current[i] = time + 1 + Math.random() * 2;
+        // Start a bright blink
+        opacities.current[i] = 0.8 + Math.random() * 0.2; // Bright flash
+        nextBlinkTimes.current[i] = time + 2 + Math.random() * 3; // Longer time between blinks
+      } else if (
+        time >=
+        nextBlinkTimes.current[i] - blinkDurations.current[i]
+      ) {
+        // Fade back to dim
+        const fadeProgress =
+          (nextBlinkTimes.current[i] - time) / blinkDurations.current[i];
+        opacities.current[i] = 0.1 + fadeProgress * 0.9;
       }
 
       // Update position

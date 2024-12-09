@@ -1,11 +1,11 @@
-import { useRef, useState, useEffect, useCallback } from 'react';
-import { Vector3 } from 'three';
-import { RigidBody } from '@react-three/rapier';
-import { useFrame } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
-import { pathFinder } from '../utils/pathfinding';
-import { useGameStore } from '../store/gameStore';
-import { LEVEL_CONFIGS } from './level/Level/Level';
+import { useRef, useState, useEffect, useCallback } from "react";
+import { Vector3 } from "three";
+import { RigidBody } from "@react-three/rapier";
+import { useFrame } from "@react-three/fiber";
+import { Html } from "@react-three/drei";
+import { pathFinder } from "../utils/pathfinding";
+import { useGameStore } from "../store/gameStore";
+import { LEVEL_CONFIGS } from "./level/Level";
 
 interface EnemyProps {
   position: Vector3;
@@ -37,10 +37,10 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
   const RANDOM_WALK_STRENGTH = 0.4; // Strength of random movement (0-1)
   const PORTAL_BIAS = 0.7; // Bias towards portal (0-1)
 
-  const currentLevel = useGameStore(state => state.currentLevel);
+  const currentLevel = useGameStore((state) => state.currentLevel);
 
   useEffect(() => {
-    console.log('Enemy spawned at:', position.toArray());
+    console.log("Enemy spawned at:", position.toArray());
   }, [position]);
 
   useEffect(() => {
@@ -63,7 +63,7 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
           setIsStuck(true);
           // Force path recalculation
           updatePath(true);
-          console.log('Enemy is stuck');
+          console.log("Enemy is stuck");
         } else {
           setIsStuck(false);
         }
@@ -80,26 +80,32 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
     };
   }, []);
 
-  const updatePath = useCallback((forceUpdate: boolean = false) => {
-    if (rigidBodyRef.current && (forceUpdate || isStuck)) {
-      const currentPos = rigidBodyRef.current.translation();
-      const newPath = pathFinder.findPath(
-        new Vector3(currentPos.x, 0, currentPos.z),
-        target
-      );
+  const updatePath = useCallback(
+    (forceUpdate: boolean = false) => {
+      if (rigidBodyRef.current && (forceUpdate || isStuck)) {
+        const currentPos = rigidBodyRef.current.translation();
+        const newPath = pathFinder.findPath(
+          new Vector3(currentPos.x, 0, currentPos.z),
+          target
+        );
 
-      if (newPath.length > 0) {
-        setCurrentPath(newPath);
-        setCurrentWaypoint(newPath[0]);
-        setIsStuck(false);
-        console.log('Updated enemy path');
+        if (newPath.length > 0) {
+          setCurrentPath(newPath);
+          setCurrentWaypoint(newPath[0]);
+          setIsStuck(false);
+          console.log("Updated enemy path");
+        }
       }
-    }
-  }, [target, isStuck]);
+    },
+    [target, isStuck]
+  );
 
   // Regularly update path
   useEffect(() => {
-    pathUpdateInterval.current = setInterval(() => updatePath(), PATH_UPDATE_INTERVAL);
+    pathUpdateInterval.current = setInterval(
+      () => updatePath(),
+      PATH_UPDATE_INTERVAL
+    );
     return () => {
       if (pathUpdateInterval.current) {
         clearInterval(pathUpdateInterval.current);
@@ -126,7 +132,7 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
     // Move towards current waypoint or target
     let moveTarget = currentWaypoint || target;
     if (!moveTarget) {
-      console.warn('No valid target for enemy movement');
+      console.warn("No valid target for enemy movement");
       return;
     }
 
@@ -152,14 +158,16 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
       const velocity = rigidBodyRef.current.linvel();
 
       // Combine portal direction with random walk
-      const finalDirection = direction.clone().multiplyScalar(PORTAL_BIAS)
+      const finalDirection = direction
+        .clone()
+        .multiplyScalar(PORTAL_BIAS)
         .add(randomOffset.current)
         .normalize();
 
       rigidBodyRef.current.setLinvel({
         x: finalDirection.x * moveSpeed,
         y: velocity.y,
-        z: finalDirection.z * moveSpeed
+        z: finalDirection.z * moveSpeed,
       });
 
       // Rotate enemy to face movement direction
@@ -176,7 +184,7 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
     useGameStore.getState().addMoney(1);
 
     // Update enemy count
-    useGameStore.getState().setEnemiesAlive(prev => Math.max(0, prev - 1));
+    useGameStore.getState().setEnemiesAlive((prev) => Math.max(0, prev - 1));
 
     // Check if level is complete
     if (useGameStore.getState().enemiesAlive <= 1) {
@@ -186,7 +194,7 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
 
   useEffect(() => {
     if (health <= 0) {
-      console.log('Enemy died');
+      console.log("Enemy died");
       handleDeath();
       onDeath();
     }
@@ -195,8 +203,8 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
   const handleHit = (damage: number, knockback: Vector3) => {
     if (!rigidBodyRef.current) return;
 
-    console.log('Enemy taking damage:', damage, 'Current health:', health);
-    setHealth(prev => prev - damage);
+    console.log("Enemy taking damage:", damage, "Current health:", health);
+    setHealth((prev) => prev - damage);
     setIsHit(true);
 
     // Apply knockback
@@ -205,7 +213,7 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
       {
         x: currentVel.x + knockback.x,
         y: currentVel.y + knockback.y,
-        z: currentVel.z + knockback.z
+        z: currentVel.z + knockback.z,
       },
       true
     );
@@ -215,11 +223,13 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
   };
 
   const handleCollision = (event: any) => {
-    if (event.other.rigidBodyObject?.name === 'projectile') {
+    if (event.other.rigidBodyObject?.name === "projectile") {
       const projectileData = event.other.rigidBodyObject.userData;
       const damage = projectileData.isAOE ? 15 : 20; // Less damage for AOE hits
       const projectileVel = event.other.rigidBody.linvel();
-      const knockback = new Vector3(projectileVel.x, 0.5, projectileVel.z).normalize().multiplyScalar(5);
+      const knockback = new Vector3(projectileVel.x, 0.5, projectileVel.z)
+        .normalize()
+        .multiplyScalar(5);
       handleHit(damage, knockback);
     }
   };
@@ -238,7 +248,7 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
       linearDamping={0.5}
       gravityScale={1}
       onCollisionEnter={handleCollision}
-      userData={{ type: 'enemy', takeDamage: handleHit }}
+      userData={{ type: "enemy", takeDamage: handleHit }}
     >
       <group>
         {/* Health bar */}
@@ -246,27 +256,32 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
           position={[0, ENEMY_SIZE * 2, 0]}
           center
           style={{
-            width: '60px',
-            transform: 'translateX(-50%)',
-            pointerEvents: 'none'
+            width: "60px",
+            transform: "translateX(-50%)",
+            pointerEvents: "none",
           }}
         >
-          <div style={{
-            width: '100%',
-            height: '6px',
-            background: '#333',
-            border: '1px solid #000',
-            borderRadius: '3px',
-            overflow: 'hidden',
-            boxShadow: '0 0 4px rgba(0,0,0,0.5)'
-          }}>
-            <div style={{
-              width: `${health}%`,
-              height: '100%',
-              background: health > 50 ? '#00ff00' : health > 25 ? '#ffff00' : '#ff0000',
-              transition: 'all 0.2s',
-              boxShadow: isHit ? '0 0 8px #fff' : 'none'
-            }} />
+          <div
+            style={{
+              width: "100%",
+              height: "6px",
+              background: "#333",
+              border: "1px solid #000",
+              borderRadius: "3px",
+              overflow: "hidden",
+              boxShadow: "0 0 4px rgba(0,0,0,0.5)",
+            }}
+          >
+            <div
+              style={{
+                width: `${health}%`,
+                height: "100%",
+                background:
+                  health > 50 ? "#00ff00" : health > 25 ? "#ffff00" : "#ff0000",
+                transition: "all 0.2s",
+                boxShadow: isHit ? "0 0 8px #fff" : "none",
+              }}
+            />
           </div>
         </Html>
 
@@ -274,8 +289,8 @@ export function Enemy({ position, target, onDeath }: EnemyProps) {
         <mesh castShadow scale={isHit ? 1.2 : 1}>
           <sphereGeometry args={[ENEMY_SIZE]} />
           <meshStandardMaterial
-            color={isHit ? '#ff0000' : '#aa0000'}
-            emissive={isHit ? '#ff0000' : '#000000'}
+            color={isHit ? "#ff0000" : "#aa0000"}
+            emissive={isHit ? "#ff0000" : "#000000"}
             emissiveIntensity={isHit ? 0.5 : 0}
           />
         </mesh>

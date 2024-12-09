@@ -1,16 +1,18 @@
-import { useState, useEffect, useRef } from 'react';
-import { Vector3 } from 'three';
-import { Enemy } from './Enemy';
-import { useGameStore } from '../store/gameStore';
-import { LEVEL_CONFIGS } from './level/Level/Level';
-import { Text } from '@react-three/drei';
+import { useState, useEffect, useRef } from "react";
+import { Vector3 } from "three";
+import { Enemy } from "./Enemy";
+import { useGameStore } from "../store/gameStore";
+import { LEVEL_CONFIGS } from "./level/Level";
+import { Text } from "@react-three/drei";
 
 interface EnemySpawnerProps {
   position: Vector3;
 }
 
 export function EnemySpawner({ position }: EnemySpawnerProps) {
-  const [enemies, setEnemies] = useState<{ id: string; position: Vector3 }[]>([]);
+  const [enemies, setEnemies] = useState<{ id: string; position: Vector3 }[]>(
+    []
+  );
   const [queuedEnemies, setQueuedEnemies] = useState(0);
   const spawnTimerRef = useRef<NodeJS.Timeout | null>(null);
   const { phase, isSpawning, currentLevel, setEnemiesAlive } = useGameStore();
@@ -20,8 +22,8 @@ export function EnemySpawner({ position }: EnemySpawnerProps) {
 
   // Reset enemies when phase changes to prep
   useEffect(() => {
-    if (phase === 'prep') {
-      console.log('Prep phase - resetting enemies');
+    if (phase === "prep") {
+      console.log("Prep phase - resetting enemies");
       setEnemies([]);
       setEnemiesAlive(0);
     }
@@ -29,8 +31,13 @@ export function EnemySpawner({ position }: EnemySpawnerProps) {
 
   // Update queued enemies count
   useEffect(() => {
-    if (phase === 'combat' && isSpawning) {
-      console.log('Combat phase - updating queue. Max:', maxEnemies, 'Current:', enemies.length);
+    if (phase === "combat" && isSpawning) {
+      console.log(
+        "Combat phase - updating queue. Max:",
+        maxEnemies,
+        "Current:",
+        enemies.length
+      );
       setQueuedEnemies(Math.max(0, maxEnemies - enemies.length));
     } else {
       setQueuedEnemies(0);
@@ -39,7 +46,7 @@ export function EnemySpawner({ position }: EnemySpawnerProps) {
 
   // Update enemies alive count
   useEffect(() => {
-    console.log('Updating enemies alive count:', enemies.length);
+    console.log("Updating enemies alive count:", enemies.length);
     setEnemiesAlive(enemies.length);
   }, [enemies, setEnemiesAlive]);
 
@@ -50,22 +57,22 @@ export function EnemySpawner({ position }: EnemySpawnerProps) {
       spawnTimerRef.current = null;
     }
 
-    if (phase === 'combat' && isSpawning) {
-      console.log('Starting spawn timer...');
+    if (phase === "combat" && isSpawning) {
+      console.log("Starting spawn timer...");
 
       const spawnEnemy = () => {
-        setEnemies(prev => {
+        setEnemies((prev) => {
           if (prev.length >= maxEnemies) {
-            console.log('Max enemies reached:', maxEnemies);
+            console.log("Max enemies reached:", maxEnemies);
             return prev;
           }
-          console.log('Spawning new enemy. Current count:', prev.length);
+          console.log("Spawning new enemy. Current count:", prev.length);
           return [
             ...prev,
             {
               id: Math.random().toString(36).substr(2, 9),
-              position: position.clone()
-            }
+              position: position.clone(),
+            },
           ];
         });
       };
@@ -85,8 +92,8 @@ export function EnemySpawner({ position }: EnemySpawnerProps) {
   }, [phase, isSpawning, maxEnemies, position, spawnInterval]);
 
   const handleEnemyDeath = (enemyId: string) => {
-    console.log('Enemy death:', enemyId);
-    setEnemies(prev => prev.filter(enemy => enemy.id !== enemyId));
+    console.log("Enemy death:", enemyId);
+    setEnemies((prev) => prev.filter((enemy) => enemy.id !== enemyId));
   };
 
   const config = LEVEL_CONFIGS[currentLevel as keyof typeof LEVEL_CONFIGS];
@@ -127,7 +134,7 @@ export function EnemySpawner({ position }: EnemySpawnerProps) {
 
       {/* Enemies */}
       <group name="enemies">
-        {enemies.map(enemy => (
+        {enemies.map((enemy) => (
           <Enemy
             key={enemy.id}
             position={enemy.position}
