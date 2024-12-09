@@ -15,7 +15,7 @@ import {
   Group,
 } from "three";
 import * as THREE from "three";
-import { GoblinModel } from "../models/GoblinModel";
+import { GoblinMobModel } from "../models/GoblinMobModel";
 import { CreeperModel } from "../models/CreeperModel";
 import { PortalEffect } from "../effects/PortalEffect";
 import { CrabModel } from "../models/CrabModel";
@@ -292,7 +292,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
                 rotation={[0, angle + Math.PI, 0]}
               >
                 <group position={[0, 0.5, 0]}>
-                  <GoblinModel scale={0.4} />
+                  <GoblinMobModel scale={1.5} />
                 </group>
               </group>
             );
