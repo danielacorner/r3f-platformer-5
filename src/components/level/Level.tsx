@@ -320,7 +320,10 @@ export function Level() {
   }, [selectedObjectType]);
 
   // Path Generation
-  const { segments, points: pathPoints } = useMemo(() => generatePath(), []);
+  const { segments, points: pathPoints } = useMemo(
+    () => generatePath(currentLevel),
+    [currentLevel]
+  );
 
   // Tower Placement Logic
   const handleTowerPointerMove = (event: any) => {

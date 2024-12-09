@@ -20,7 +20,7 @@ interface PlayerProps {
     active: boolean;
   }>;
 }
-
+const CAMERA_ROTATION_LIMIT_X = 180;
 const MOVE_SPEED = 5;
 const FLOAT_HEIGHT = 0.5;
 const FLOAT_SPEED = 2;
@@ -110,7 +110,10 @@ export function Player({ moveTargetRef }: PlayerProps) {
       // Horizontal movement controls rotation
       const deltaX = (touchX - lastTouchX.current) * 0.1;
       const newRotation = cameraRotation.current - deltaX;
-      cameraRotation.current = Math.max(-30, Math.min(30, newRotation));
+      cameraRotation.current = Math.max(
+        -CAMERA_ROTATION_LIMIT_X,
+        Math.min(CAMERA_ROTATION_LIMIT_X, newRotation)
+      );
 
       lastTouchY.current = touchY;
       lastTouchX.current = touchX;
