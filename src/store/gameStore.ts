@@ -270,14 +270,14 @@ const initialState: GameState = {
     range: 0,
     multishot: 0,
   },
-  wave: process.env.NODE_ENV === 'development' ? 3 : 0,
+  wave: process.env.NODE_ENV === 'development' ? 4 : 0,
   creeps: [],
   projectiles: [],
   towerStates: [],
   playerRef: null,
   orbSpeed: 1,
   highlightedPathSegment: null,
-  currentWave: process.env.NODE_ENV === 'development' ? 3 : 0,
+  currentWave: process.env.NODE_ENV === 'development' ? 4 : 0,
   totalWaves: 4, // Set to 4 waves per level
   showWaveIndicator: false,
   showTowerConfirmation: false,
@@ -564,23 +564,67 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   startWave: () => {
     const state = get();
-    console.log('Starting wave, current state:', state);
-    
-    set((state) => ({
-      currentWave: state.currentWave + 1,
-      wave: state.currentWave + 1, // Keep wave and currentWave in sync
-      showWaveIndicator: true,
-      phase: 'combat',
-      isSpawning: true,
-    }));
+    state.setPhase("combat");
+    state.setIsSpawning(true);
 
-    // Hide the indicator after 1 second to allow for 2 second fade out
-    setTimeout(() => {
-      console.log('Hiding wave indicator');
-      set({ showWaveIndicator: false });
-    }, 1000);
+    // Configure wave properties based on level
+    let creepCount, creepSpeed, creepHealth, creepReward;
+    switch (state.currentLevel) {
+      case 1:
+        creepCount = 10;
+        creepSpeed = 2;
+        creepHealth = 100;
+        creepReward = 10;
+        break;
+      case 2:
+        creepCount = 25;
+        creepSpeed = 1.2;
+        creepHealth = 120;
+        creepReward = 12;
+        break;
+      case 3:
+        creepCount = 15;
+        creepSpeed = 3;
+        creepHealth = 150;
+        creepReward = 15;
+        break;
+      case 4:
+        creepCount = 20;
+        creepSpeed = 4;
+        creepHealth = 200;
+        creepReward = 20;
+        break;
+      default:
+        creepCount = 10;
+        creepSpeed = 2;
+        creepHealth = 100;
+        creepReward = 10;
+    }
 
-    console.log('Wave started, new state:', get());
+    // Spawn creeps with a delay
+    let spawned = 0;
+    const spawnInterval = setInterval(() => {
+      if (spawned >= creepCount) {
+        clearInterval(spawnInterval);
+        state.setIsSpawning(false);
+        return;
+      }
+
+      state.addCreep({
+        id: `creep-${Date.now()}-${Math.random()}`,
+        position: [...state.pathPoints[0]],
+        type: "basic",
+        health: creepHealth,
+        maxHealth: creepHealth,
+        speed: creepSpeed,
+        size: 1,
+        value: creepReward,
+        waveId: state.wave,
+        effects: {},
+      });
+
+      spawned++;
+    }, 500); // Spawn a creep every 500ms
   },
   adjustCameraZoom: (delta: number) => {
     const currentZoom = get().cameraZoom;

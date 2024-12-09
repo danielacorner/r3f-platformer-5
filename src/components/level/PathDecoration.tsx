@@ -6,6 +6,9 @@ import {
   Object3D,
   Matrix4,
   Euler,
+  Shape,
+  DoubleSide,
+  ExtrudeGeometry,
 } from "three";
 import { useGameStore } from "../../store/gameStore";
 import { PATH_CONFIGS } from "../../config/pathConfigs";
@@ -17,8 +20,8 @@ export interface PathSegment {
 }
 
 const FIXED_WIDTH = 2;
-const MIN_LENGTH = 3.6;
-const MAX_LENGTH = 3.6;
+const MIN_LENGTH = 1;
+const MAX_LENGTH = 1;
 const CRYSTAL_HEIGHT = 1;
 const CRYSTAL_SCALE = 0.5;
 
@@ -42,7 +45,7 @@ export function generatePath(currentLevel: number) {
 function generatePathSegments(pathPoints: Vector3[]): PathSegment[] {
   const segments: PathSegment[] = [];
   const curve = new CatmullRomCurve3(pathPoints, false, "catmullrom", 0.5);
-  const segmentCount = 50;
+  const segmentCount = 200;
 
   for (let i = 0; i < segmentCount; i++) {
     const t = i / segmentCount;
@@ -91,82 +94,211 @@ export function getPortalPosition(
   return config.portalPosition;
 }
 
-export function PathDecorations({ pathPoints }: { pathPoints: Vector3[] }) {
-  const pathRef = useRef<InstancedMesh>(null);
-  const crystalRef = useRef<InstancedMesh>(null);
-  const tempObject = useMemo(() => new Object3D(), []);
+function ChevronTile({
+  position,
+  rotation,
+  scale,
+}: {
+  position: [number, number, number];
+  rotation: [number, number, number];
+  scale: [number, number, number];
+}) {
+  const vertices = useMemo(
+    () =>
+      new Float32Array([
+        // Front face - chevron
+        -1,
+        0,
+        -1, // back left
+        1,
+        0,
+        -1, // back right
+        -0.7,
+        0,
+        0, // middle left
+        0.7,
+        0,
+        0, // middle right
+        -0.3,
+        0,
+        1, // front left
+        0.3,
+        0,
+        1, // front right
 
-  // Generate segments for the path
+        // Back face - chevron
+        -1,
+        -0.1,
+        -1, // back left
+        1,
+        -0.1,
+        -1, // back right
+        -0.7,
+        -0.1,
+        0, // middle left
+        0.7,
+        -0.1,
+        0, // middle right
+        -0.3,
+        -0.1,
+        1, // front left
+        0.3,
+        -0.1,
+        1, // front right
+      ]),
+    []
+  );
+
+  const indices = useMemo(
+    () =>
+      new Uint16Array([
+        // Top face
+        0,
+        1,
+        2, // back triangle left
+        1,
+        3,
+        2, // back triangle right
+        2,
+        3,
+        4, // front triangle left
+        3,
+        5,
+        4, // front triangle right
+
+        // Bottom face
+        6,
+        8,
+        7, // back triangle left
+        7,
+        8,
+        9, // back triangle right
+        8,
+        10,
+        9, // front triangle left
+        9,
+        10,
+        11, // front triangle right
+
+        // Side faces
+        0,
+        2,
+        6, // left back
+        2,
+        8,
+        6,
+        2,
+        4,
+        8, // left front
+        4,
+        10,
+        8,
+        1,
+        7,
+        3, // right back
+        3,
+        7,
+        9,
+        3,
+        9,
+        5, // right front
+        5,
+        9,
+        11,
+        0,
+        6,
+        1, // back
+        1,
+        6,
+        7,
+        4,
+        5,
+        10, // front
+        5,
+        11,
+        10,
+      ]),
+    []
+  );
+
+  return (
+    <mesh position={position} rotation={rotation} scale={scale}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={vertices.length / 3}
+          array={vertices}
+          itemSize={3}
+        />
+        <bufferAttribute
+          attach="index"
+          array={indices}
+          count={indices.length}
+          itemSize={1}
+        />
+      </bufferGeometry>
+      <meshStandardMaterial
+        color="#444444"
+        emissive="#9b9b9b"
+        emissiveIntensity={0.5}
+        roughness={0.2}
+        metalness={0.8}
+      />
+    </mesh>
+  );
+}
+
+export function PathDecorations({ pathPoints }: { pathPoints: Vector3[] }) {
   const segments = useMemo(
     () => generatePathSegments(pathPoints),
     [pathPoints]
   );
 
-  // Update instance matrices
-  useEffect(() => {
-    if (!pathRef.current || !crystalRef.current) return;
-
-    segments.forEach((segment, i) => {
-      // Path segment
-      tempObject.position.set(...segment.position);
-      tempObject.rotation.set(...segment.rotation);
-      tempObject.scale.set(...segment.scale);
-      tempObject.updateMatrix();
-      pathRef.current!.setMatrixAt(i, tempObject.matrix);
-
-      // Crystal decoration
-      tempObject.position.set(
-        segment.position[0],
-        segment.position[1] + CRYSTAL_HEIGHT,
-        segment.position[2]
-      );
-      tempObject.rotation.set(
-        0,
-        segment.rotation[1] + Math.PI * Math.random(),
-        0
-      );
-      tempObject.scale.set(CRYSTAL_SCALE, CRYSTAL_SCALE, CRYSTAL_SCALE);
-      tempObject.updateMatrix();
-      crystalRef.current!.setMatrixAt(i, tempObject.matrix);
-    });
-
-    pathRef.current.instanceMatrix.needsUpdate = true;
-    crystalRef.current.instanceMatrix.needsUpdate = true;
-  }, [segments, tempObject]);
-
   return (
     <>
-      {/* Path tiles */}
-      <instancedMesh
-        ref={pathRef}
-        args={[undefined, undefined, segments.length]}
-        castShadow
-      >
-        <boxGeometry args={[1, 0.1, 1]} />
-        <meshStandardMaterial
-          color="#312e81"
-          emissive="#312e81"
-          emissiveIntensity={0.5}
-          roughness={0.2}
-          metalness={0.8}
-        />
-      </instancedMesh>
+      {segments.map((segment, index) => (
+        <group key={index}>
+          {/* Regular or Chevron path segment */}
+          {index % 4 === 0 ? (
+            <ChevronTile
+              position={segment.position}
+              rotation={segment.rotation}
+              scale={segment.scale}
+            />
+          ) : (
+            <mesh
+              position={segment.position}
+              rotation={segment.rotation}
+              scale={segment.scale}
+            >
+              <boxGeometry />
+              <meshStandardMaterial color="#444" />
+            </mesh>
+          )}
 
-      {/* Crystal decorations */}
-      <instancedMesh
-        ref={crystalRef}
-        args={[undefined, undefined, segments.length]}
-        castShadow
-      >
-        <octahedronGeometry args={[0.5]} />
-        <meshStandardMaterial
-          color="#60a5fa"
-          emissive="#60a5fa"
-          emissiveIntensity={0.5}
-          roughness={0.2}
-          metalness={0.8}
-        />
-      </instancedMesh>
+          {/* Crystal decoration - only on every 4th segment */}
+          {index % 4 === 0 && (
+            <mesh
+              position={[
+                segment.position[0],
+                segment.position[1] + CRYSTAL_HEIGHT,
+                segment.position[2],
+              ]}
+              rotation={[0, Math.random() * Math.PI * 2, 0]}
+              scale={CRYSTAL_SCALE}
+            >
+              <octahedronGeometry args={[0.5]} />
+              <meshStandardMaterial
+                color="#60a5fa"
+                emissive="#60a5fa"
+                emissiveIntensity={0.5}
+                roughness={0.2}
+                metalness={0.8}
+              />
+            </mesh>
+          )}
+        </group>
+      ))}
     </>
   );
 }

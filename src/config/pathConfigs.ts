@@ -48,19 +48,42 @@ export const PATH_CONFIGS: Record<number, PathConfig> = {
     portalPosition: [20, baseHeight, 20]
   },
 
-  // Level 2: Figure-8 path
+  // Level 2: Overlapping loops path
   2: {
-    spawnerPosition: [0, 1, -HALF_SIZE + 5],
-    portalPosition: [0, 1, HALF_SIZE - 5],
+    // Overlapping loops path
     pathPoints: [
-      new Vector3(0, 0, -HALF_SIZE + 5),
-      new Vector3(-HALF_SIZE + 10, 0, -HALF_SIZE + 15),
-      new Vector3(-HALF_SIZE + 10, 0, 0),
-      new Vector3(0, 0, 0),
-      new Vector3(HALF_SIZE - 10, 0, 0),
-      new Vector3(HALF_SIZE - 10, 0, HALF_SIZE - 15),
-      new Vector3(0, 0, HALF_SIZE - 5),
+      // Starting point
+      new Vector3(-20, baseHeight, 0),
+      
+      // First large loop (left)
+      new Vector3(-15, baseHeight, -15),
+      new Vector3(-5, baseHeight, -20),
+      new Vector3(5, baseHeight, -15),
+      new Vector3(0, baseHeight, -5),
+      new Vector3(-15, baseHeight, -15),
+      
+      // Second large loop (right)
+      new Vector3(5, baseHeight, -20),
+      new Vector3(15, baseHeight, -15),
+      new Vector3(20, baseHeight, -5),
+      new Vector3(15, baseHeight, 5),
+      new Vector3(5, baseHeight, -20),
+      
+      // Connecting path
+      new Vector3(0, baseHeight, 0),
+      
+      // Third large loop (bottom)
+      new Vector3(-15, baseHeight, 15),
+      new Vector3(0, baseHeight, 20),
+      new Vector3(15, baseHeight, 15),
+      new Vector3(0, baseHeight, 5),
+      new Vector3(-15, baseHeight, 15),
+      
+      // Back to start
+      new Vector3(-20, baseHeight, 0)
     ],
+    spawnerPosition: [-20, baseHeight, 0],
+    portalPosition: [-20, baseHeight, 0]
   },
 
   // Level 3: Spiral path
