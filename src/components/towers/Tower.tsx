@@ -20,7 +20,7 @@ const tempVector = new Vector3();
 interface TowerProps {
   position: Vector3 | [number, number, number];
   type: string;
-  level?: number;
+  level?: number | null;
   preview?: boolean;
   onDamageEnemy?: (enemyId: number, damage: number, effects: any) => void;
   canAfford?: boolean;
@@ -303,12 +303,19 @@ export function Tower({
   // Add hover and sell state
   const [isHovered, setIsHovered] = useState(false);
   const [showSellMenu, setShowSellMenu] = useState(false);
-  const { addMoney, removePlacedTower, setHighlightedPathSegment } =
-    useGameStore();
+  const {
+    currentLevel,
+    addMoney,
+    removePlacedTower,
+    setHighlightedPathSegment,
+  } = useGameStore();
 
   useEffect(() => {
     if (preview) {
-      const segment = isTowerOnPath(position as [number, number, number]);
+      const segment = isTowerOnPath(
+        position as [number, number, number],
+        currentLevel
+      );
       setHighlightedPathSegment(segment);
     } else {
       setHighlightedPathSegment(null);
@@ -316,7 +323,7 @@ export function Tower({
   }, [preview, position, setHighlightedPathSegment]);
 
   const isInvalidPlacement = Boolean(
-    isTowerOnPath(position as [number, number, number])
+    isTowerOnPath(position as [number, number, number], currentLevel)
   );
   const previewScale = isInvalidPlacement ? 1.2 : 1;
   const previewColor = isInvalidPlacement

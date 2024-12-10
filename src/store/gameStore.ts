@@ -93,8 +93,8 @@ export const TOWER_STATS: Record<ElementType, TowerStats> = {
   dark5: { damage: 200, range: 9, attackSpeed: 1.4, cost: 2000, special: { type: 'oblivion', value: 0.60, soul_harvest: true }, color: '#f3e8ff', emissive: '#a855f7', description: "Oblivion - Harvests souls of fallen enemies for bonus effects" }
 }
 
-export const isTowerOnPath = (position: number[] | { x: number; y: number; z: number }) => {
-  const pathData = generatePath();
+export const isTowerOnPath = (position: number[] | { x: number; y: number; z: number },level:number) => {
+  const pathData = generatePath(level);
   const towerRadius = 0.35; // Reduced from 0.5 to allow closer placement
   const pathMargin = 0.2; // Added margin to make path hitbox smaller than visual
 
@@ -109,8 +109,8 @@ export const isTowerOnPath = (position: number[] | { x: number; y: number; z: nu
   }
 
   for (const segment of pathData.segments) {
-    const [segX, segY, segZ] = segment.position;
-    const [scaleX, scaleY, scaleZ] = segment.scale;
+    const [segX, _segY, segZ] = segment.position;
+    const [scaleX, _scaleY, scaleZ] = segment.scale;
     const rotation = segment.rotation[1];
 
     // Transform tower position to segment's local space
@@ -232,7 +232,7 @@ interface GameState {
   cameraZoom: number;
   cameraAngle: number;
   setSelectedObjectType: (type: PlaceableObjectType | null) => void;
-  upgradeSkill: (skill: string, amount: number) => void;
+  upgradeSkill: (skill: keyof GameState['upgrades']) => void;
   setWave: (wave: number) => void;
   setEnemiesAlive: (count: number) => void;
   setIsSpawning: (isSpawning: boolean) => void;
@@ -245,7 +245,16 @@ interface GameState {
   updateTowerState: (id: string, updates: Partial<TowerState>) => void;
   setPlayerRef: (ref: RapierRigidBody | null) => void;
   setHighlightedPathSegment: (segment: PathSegment | null) => void;
-  
+  pathPoints: Vector3[];
+  setPathPoints: (points: Vector3[]) => void;
+  addCreep: (creep: CreepState) => void;
+  addExperience: (amount: number) => void;
+  addMoney: (amount: number) => void;
+  addScore: (amount: number) => void;
+  removeCreep: (id: string) => void;
+  updateCreep: (id: string, updates: Partial<CreepState>) => void;
+  removePlacedTower: (id: number) => void;
+  setPhase: (phase: GameState['phase']) => void;
 }
 
 const initialState: GameState = {
@@ -270,31 +279,58 @@ const initialState: GameState = {
     range: 0,
     multishot: 0,
   },
-  wave: process.env.NODE_ENV === 'development' ? 4 : 0,
+  wave: process.env.NODE_ENV === 'development' ? 0 : 0,
   creeps: [],
   projectiles: [],
   towerStates: [],
   playerRef: null,
   orbSpeed: 1,
   highlightedPathSegment: null,
-  currentWave: process.env.NODE_ENV === 'development' ? 4 : 0,
+  currentWave: process.env.NODE_ENV === 'development' ? 0 : 0,
   totalWaves: 4, // Set to 4 waves per level
   showWaveIndicator: false,
   showTowerConfirmation: false,
   pendingTowerPosition: null,
   cameraZoom: 1,
   cameraAngle: 0.5,
+  pathPoints: [],
+  setSelectedObjectType: () => {},
+  upgradeSkill: () => {},
+  setWave: () => {},
+  setEnemiesAlive: () => {},
+  setIsSpawning: () => {},
+  setLevelComplete: () => {},
+  setTimer: () => {},
+  setCurrentLevel: () => {},
+  setTowerStates: () => {},
+  addTowerState: () => {},
+  removeTowerState: () => {},
+  updateTowerState: () => {},
+  setPlayerRef: () => {},
+  setHighlightedPathSegment: () => {},
+  addCreep: () => {},
+    addPlacedTower: () => {},
+    setPathPoints: () => {},
+    addExperience: () => {},
+    addMoney: () => {},
+    addScore: () => {},
+    removeCreep: () => {},
+    updateCreep: () => {},
+    removePlacedTower: () => {},
+    setPhase: () => {}
+
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
   ...initialState,
+  setPathPoints: (points: Vector3[]) => set({ pathPoints: points }),
 
-  setPhase: (phase) => {
+  setPhase: (phase: GameState['phase']) => {
     console.log(`Setting phase to: ${phase}`);
     set({ phase });
   },
 
-  setCurrentLevel: (level) => {
+  setCurrentLevel: (level: GameState['currentLevel']) => {
     console.log(`Setting level to: ${level}`);
     set({ currentLevel: level });
   },
@@ -335,7 +371,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       set(state => ({
         placedTowers: [...state.placedTowers, {
           id: Date.now(),
-          position: positionArray,
+          position: new Vector3(...positionArray),
           type,
           level,
           kills: 0
@@ -345,11 +381,11 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
   },
 
-  removePlacedTower: (id) => set(state => ({
+  removePlacedTower: (id: number) => set(state => ({
     placedTowers: state.placedTowers.filter(tower => tower.id !== id)
   })),
 
-  upgradeTower: (id) => {
+  upgradeTower: (id: number) => {
     const state = get();
     const tower = state.placedTowers.find(t => t.id === id);
     if (tower) {
@@ -365,13 +401,13 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
   },
 
-  setSelectedObjectType: (type, level = null) => set({ selectedObjectType: type, selectedObjectLevel: level }),
+  setSelectedObjectType: (type: ElementType | null | undefined, level = null as number|null) => set({ selectedObjectType: type, selectedObjectLevel: level }),
 
-  addMoney: (amount) => set(state => ({ money: state.money + amount })),
+  addMoney: (amount: number) => set(state => ({ money: state.money + amount })),
 
-  spendMoney: (amount) => set(state => ({ money: state.money - amount })),
+  spendMoney: (amount: number) => set(state => ({ money: state.money - amount })),
 
-  addScore: (amount) => set(state => ({ score: state.score + amount })),
+  addScore: (amount: number) => set(state => ({ score: state.score + amount })),
 
   loseLife: () => set(state => {
     const newLives = state.lives - 1;
@@ -398,7 +434,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     }));
   },
 
-  removeCreep: (id) => {
+  removeCreep: (id: string) => {
     console.log(`Removing creep: ${id}`);
     set(state => {
       const remainingCreeps = state.creeps.filter(c => c.id !== id);
@@ -412,7 +448,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
   },
 
-  updateCreep: (id, updates) => {
+  updateCreep: (id: string, updates: Partial<CreepState>) => {
     set(state => ({
       creeps: state.creeps.map(c =>
         c.id === id ? { ...c, ...updates } : c
@@ -420,7 +456,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     }));
   },
 
-  damageCreep: (id, damage) => {
+  damageCreep: (id: string, damage: number) => {
     const state = get();
     const creep = state.creeps.find(c => c.id === id);
     if (!creep) return;
@@ -457,7 +493,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
   },
 
-  upgradeSkill: (skill) => {
+  upgradeSkill: (skill: keyof GameState['upgrades']) => {
     set(state => {
       if (state.skillPoints <= 0) return state;
 
@@ -522,15 +558,15 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
   },
 
-  addProjectile: (projectile) => set(state => ({
+  addProjectile: (projectile: Projectile) => set(state => ({
     projectiles: [...state.projectiles, projectile]
   })),
 
-  removeProjectile: (id) => set(state => ({
+  removeProjectile: (id: number) => set(state => ({
     projectiles: state.projectiles.filter(p => p.id !== id)
   })),
 
-  updateProjectile: (id, updates) => set(state => ({
+  updateProjectile: (id: number, updates: Partial<Projectile>) => set(state => ({
     projectiles: state.projectiles.map(p =>
       p.id === id ? { ...p, ...updates } : p
     )
@@ -612,7 +648,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       state.addCreep({
         id: `creep-${Date.now()}-${Math.random()}`,
-        position: [...state.pathPoints[0]],
+        position: [...state.pathPoints[0]] as [number, number, number],
         type: "basic",
         health: creepHealth,
         maxHealth: creepHealth,
@@ -638,66 +674,3 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 }));
 
-const handleProjectileHit = (projectile: Projectile, creep: Creep) => {
-  const tower = towers.find(t => t.id === projectile.towerId);
-  if (!tower) return;
-
-  const stats = TOWER_STATS[tower.type];
-  const special = stats.special;
-
-  // Calculate base damage
-  let damage = stats.damage;
-
-  // Apply special effects
-  if (special) {
-    if (special.type.startsWith('fireball') || special.type.startsWith('inferno_blast') || 
-        special.type.startsWith('meteor_strike') || special.type.startsWith('volcanic_burst') || 
-        special.type.startsWith('armageddon')) {
-      // Apply splash damage to nearby creeps
-      const splashRadius = special.splash_radius || 1.5;
-      const splashDamage = special.value;
-      const burnDuration = special.burn_duration || 0;
-
-      // Find creeps in splash radius
-      creeps.forEach(nearbyCreep => {
-        if (nearbyCreep.id !== creep.id) {
-          const distance = new Vector3(...nearbyCreep.position)
-            .distanceTo(new Vector3(...creep.position));
-          
-          if (distance <= splashRadius) {
-            // Calculate damage falloff based on distance
-            const falloff = 1 - (distance / splashRadius);
-            const totalSplashDamage = splashDamage * falloff;
-            
-            // Apply splash damage
-            nearbyCreep.health -= totalSplashDamage;
-            
-            // Apply burn effect if applicable
-            if (burnDuration > 0) {
-              nearbyCreep.effects.push({
-                type: 'burn',
-                damage: totalSplashDamage * 0.2,
-                duration: burnDuration,
-                tickRate: 1
-              });
-            }
-          }
-        }
-      });
-
-      // Apply burn effect to main target
-      if (burnDuration > 0) {
-        creep.effects.push({
-          type: 'burn',
-          damage: splashDamage * 0.2,
-          duration: burnDuration,
-          tickRate: 1
-        });
-      }
-    }
-    // Handle other special effects...
-  }
-
-  // Apply damage to main target
-  creep.health -= damage;
-}

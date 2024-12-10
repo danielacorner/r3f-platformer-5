@@ -102,8 +102,9 @@ export function FirefliesInstances({ count = 50, radius = 25 }) {
       "opacity",
       new InstancedBufferAttribute(opacityAttribute, 1)
     );
-
-    meshRef.current.instanceMatrix.needsUpdate = true;
+    if (meshRef.current) {
+      meshRef.current.instanceMatrix.needsUpdate = true;
+    }
   }, [count, radius]);
 
   useFrame((state, delta) => {

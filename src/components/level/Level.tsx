@@ -324,6 +324,10 @@ export function Level() {
     () => generatePath(currentLevel),
     [currentLevel]
   );
+  // send pathPoints to store
+  useEffect(() => {
+    useGameStore.getState().setPathPoints(pathPoints);
+  }, [pathPoints]);
 
   // Tower Placement Logic
   const handleTowerPointerMove = (event: any) => {
@@ -362,7 +366,10 @@ export function Level() {
       });
 
       // Check if tower would collide with path
-      const collidesWithPath = isTowerOnPath(snappedPosition.toArray());
+      const collidesWithPath = isTowerOnPath(
+        snappedPosition.toArray(),
+        currentLevel
+      );
 
       if (!isOccupied && !collidesWithPath) {
         if (window.innerWidth < 640) {

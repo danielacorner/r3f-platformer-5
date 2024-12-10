@@ -15,78 +15,53 @@ import {
   Group,
 } from "three";
 import * as THREE from "three";
-import { GoblinMobModel } from "../models/GoblinMobModel";
+import { MushroomModel } from "../models/MushroomModel";
+import { AllayModel } from "../models/AllayModel";
+import { SpiderModel } from "../models/SpiderModel";
+import { WitherBossModel } from "../models/WitherBossModel";
+import { BeeModel } from "../models/BeeModel";
+import { EndermanModel } from "../models/EndermanModel";
+import { DrownedModel } from "../models/DrownedModel";
+import { GuardianModel } from "../models/GuardianModel";
 import { CreeperModel } from "../models/CreeperModel";
 import { PortalEffect } from "../effects/PortalEffect";
-import { CrabModel } from "../models/CrabModel";
 import { useGameStore } from "../../store/gameStore";
 
 // Create geometries for different creep types
 const CREEP_GEOMETRIES = {
-  normal: null, // We'll use the goblin model instead
-  fast: (() => {
-    // Wind Spirit - Light and ethereal
-    const geometry = new ConeGeometry(0.3, 1.2, 5);
-    geometry.translate(0, 0.6, 0);
-    geometry.rotateY(Math.PI / 4);
-    return geometry;
-  })(),
-
-  armored: (() => {
-    // Ancient Guardian - Heavy and imposing
-    const geometry = new CylinderGeometry(0.5, 0.6, 1.2, 6);
-    geometry.translate(0, 0.6, 0);
-    return geometry;
-  })(),
-
-  boss: (() => {
-    // Dark Forest Lord - Massive and threatening
-    const geometry = new CylinderGeometry(0.8, 1.0, 1.8, 8);
-    geometry.translate(0, 0.9, 0);
-    return geometry;
-  })(),
+  normal: null, // We'll use the Mushroom model instead
+  fast: null,   // We'll use the Allay model instead
+  armored: null, // We'll use the Guardian model instead
+  boss: null,    // We'll use the Wither Boss model instead
 };
 
 // Speed multipliers for different creep types
 const creepSpeeds = {
-  normal: 0.2,
-  fast: 0.3,
-  armored: 0.15,
-  boss: 0.1,
+  normal: 1.0,     // Mushroom - Standard speed
+  fast: 1.5,       // Allay - Fast and agile
+  spider: 1.2,     // Spider - Slightly faster than normal
+  wither: 0.8,     // Wither Boss - Slow but powerful
+  bee: 1.3,        // Bee - Quick and nimble
+  enderman: 1.4,   // Enderman - Very fast
+  drowned: 0.9,    // Drowned - Slow and shambling
+  guardian: 0.7,   // Guardian - Slow but tough
+  creeper: 1.1,    // Creeper - Standard speed
+  armored: 0.6,    // Heavily armored, very slow
+  boss: 0.5,       // Boss enemies, extremely slow
 };
 
-// Materials for different creep types
-const creepMaterials = {
-  normal: null, // We'll use the goblin model's materials
-  fast: new MeshStandardMaterial({
-    color: new Color("#4a7c59"), // Forest sage
-    roughness: 0.6,
-    metalness: 0.3,
-    flatShading: true,
-    transparent: true,
-    opacity: 1,
-    side: DoubleSide,
-  }),
-  armored: new MeshStandardMaterial({
-    color: new Color("#1f3d0c"), // Deep forest
-    roughness: 0.5,
-    metalness: 0.4,
-    flatShading: true,
-    transparent: true,
-    opacity: 1,
-    side: DoubleSide,
-  }),
-  boss: new MeshStandardMaterial({
-    color: new Color("#8b0000"), // Dark red
-    roughness: 0.3,
-    metalness: 0.6,
-    emissive: new Color("#400000"),
-    emissiveIntensity: 0.5,
-    flatShading: true,
-    transparent: true,
-    opacity: 1,
-    side: DoubleSide,
-  }),
+const creepSizes = {
+  normal: [0.8, 0.8, 0.8],     // Mushroom
+  fast: [0.6, 0.6, 0.6],       // Allay
+  spider: [1.0, 0.5, 1.0],     // Spider
+  wither: [2.0, 2.0, 2.0],     // Wither Boss
+  bee: [0.5, 0.5, 0.5],        // Bee
+  enderman: [1.2, 2.5, 1.2],   // Enderman
+  drowned: [1.0, 2.0, 1.0],    // Drowned
+  guardian: [1.5, 1.5, 1.5],   // Guardian
+  creeper: [1.0, 2.0, 1.0],    // Creeper
+  armored: [1.2, 1.2, 1.2],    // Armored units
+  boss: [2.5, 2.5, 2.5],       // Boss units
 };
 
 interface CreepManagerProps {
@@ -94,20 +69,6 @@ interface CreepManagerProps {
 }
 
 const SPEED_MULTIPLIER = 4;
-
-const creepSizes = {
-  normal: [1.0, 1.0, 1.0], // Infantry mech
-  fast: [0.8, 0.8, 0.8], // Stealth drone
-  armored: [1.2, 1.2, 1.2], // Battle tank
-  boss: [1.8, 1.8, 1.8], // Assault walker
-};
-
-const creepColors = {
-  normal: "#2d4a1c", // Dark forest green
-  armored: "#94a3b8", // Bright steel - stands out well
-  fast: "#2dd4bf", // Bright teal - distinctive
-  boss: "#f43f5e", // Bright rose - imposing
-};
 
 const creepRewards = {
   normal: 20,
@@ -273,76 +234,36 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
         {/* Creeps */}
         {creeps.map((creep) => {
           const position = new Vector3(...creep.position);
-          const pathState = creepPaths.current.get(creep.id);
-          if (!pathState) return null;
+          const size = creepSizes[creep.type] || [1, 1, 1];
+          const angle = Math.atan2(
+            pathPoints[1].x - pathPoints[0].x,
+            pathPoints[1].z - pathPoints[0].z
+          );
 
-          const currentPoint = pathPoints[pathState.pathIndex];
-          const nextPoint = pathPoints[pathState.pathIndex + 1];
-
-          if (!currentPoint || !nextPoint) return null;
-
-          const direction = nextPoint.clone().sub(currentPoint).normalize();
-          const angle = Math.atan2(direction.x, direction.z);
-
-          if (creep.type === "normal") {
-            return (
-              <group
-                key={creep.id}
-                position={position}
-                rotation={[0, angle + Math.PI, 0]}
-              >
-                <group position={[0, 0.5, 0]}>
-                  <GoblinMobModel scale={1.5} />
-                </group>
-              </group>
-            );
-          }
-
-          if (creep.type === "fast") {
-            return (
-              <group
-                key={creep.id}
-                position={position}
-                rotation={[0, angle + Math.PI, 0]}
-              >
-                <group position={[0, 0.5, 0]}>
-                  <CreeperModel scale={1} />
-                </group>
-              </group>
-            );
-          }
-
-          if (creep.type === "armored") {
-            return (
-              <group
-                key={creep.id}
-                position={position}
-                rotation={[0, angle + Math.PI, 0]}
-              >
-                <group position={[0, 0.5, 0]}>
-                  <GoblinMobModel scale={1.5} />
-                  {/* <CrabModel scale={0.8} /> */}
-                </group>
-              </group>
-            );
-          }
-
-          // Boss type
           return (
-            <mesh
-              key={creep.id}
-              geometry={CREEP_GEOMETRIES[creep.type]}
-              material={creepMaterials[creep.type]}
-              position={position}
-              rotation={[0, angle, 0]}
-              scale={creepSizes[creep.type]}
-            >
-              <meshStandardMaterial
-                color={creepColors[creep.type]}
-                roughness={0.7}
-                metalness={0.3}
+            <group key={creep.id}>
+              <PortalEffect
+                position={position}
+                scale={1}
+                visible={creep.effects?.spawn?.duration > 0}
               />
-            </mesh>
+              <group
+                position={position}
+                rotation={[0, angle + Math.PI, 0]}
+              >
+                <group position={[0, 0.5, 0]}>
+                  {creep.type === "normal" && <MushroomModel scale={size[0]} />}
+                  {creep.type === "fast" && <AllayModel scale={size[0]} />}
+                  {creep.type === "spider" && <SpiderModel scale={size[0]} />}
+                  {creep.type === "wither" && <WitherBossModel scale={size[0]} />}
+                  {creep.type === "bee" && <BeeModel scale={size[0]} />}
+                  {creep.type === "enderman" && <EndermanModel scale={size[0]} />}
+                  {creep.type === "drowned" && <DrownedModel scale={size[0]} />}
+                  {creep.type === "guardian" && <GuardianModel scale={size[0]} />}
+                  {creep.type === "creeper" && <CreeperModel scale={size[0]} />}
+                </group>
+              </group>
+            </group>
           );
         })}
       </group>
