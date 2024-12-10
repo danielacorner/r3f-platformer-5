@@ -158,6 +158,7 @@ export interface TowerState {
 
 export interface CreepState {
   position: [number, number, number];
+  rotation?: [number, number, number];
   type: string;
   health: number;
   maxHealth: number;
@@ -607,6 +608,8 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     // Configure wave properties based on level
     let creepCount, creepSpeed, creepHealth, creepReward;
+    const creepTypes = ["normal", "spider", "wither", "enderman", "drowned", "creeper"];
+    
     switch (state.currentLevel) {
       case 1:
         creepCount = 10;
@@ -648,13 +651,38 @@ export const useGameStore = create<GameState>((set, get) => ({
         return;
       }
 
+      // Select a random creep type based on level
+      let creepType;
+      if (state.currentLevel === 4) {
+        // Boss level: more special creeps
+        creepType = creepTypes[Math.floor(Math.random() * creepTypes.length)];
+      } else if (state.currentLevel === 3) {
+        // Level 3: mix of normal and special creeps
+        creepType = Math.random() < 0.7 ? "normal" : creepTypes[Math.floor(Math.random() * creepTypes.length)];
+      } else if (state.currentLevel === 2) {
+        // Level 2: mostly normal creeps with some spiders
+        creepType = Math.random() < 0.8 ? "normal" : "spider";
+      } else {
+        // Level 1: only normal creeps
+        creepType = "normal";
+      }
+
+      // Adjust health and speed based on creep type
+      const typeSpeedMultiplier = creepSpeeds[creepType as keyof typeof creepSpeeds] || 1;
+      const adjustedSpeed = creepSpeed * typeSpeedMultiplier;
+
+      // Boss types get more health
+      const healthMultiplier = creepType === "wither" ? 2.5 : 
+                             creepType === "enderman" ? 1.8 : 
+                             creepType === "spider" ? 1.3 : 1;
+
       state.addCreep({
         id: `creep-${Date.now()}-${Math.random()}`,
         position: [...state.pathPoints[0]] as [number, number, number],
-        type: "basic",
-        health: creepHealth,
-        maxHealth: creepHealth,
-        speed: creepSpeed,
+        type: creepType,
+        health: creepHealth * healthMultiplier,
+        maxHealth: creepHealth * healthMultiplier,
+        speed: adjustedSpeed,
         size: 1,
         value: creepReward,
         waveId: state.wave,
@@ -676,3 +704,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 }));
 
+const creepSpeeds = {
+  normal: 1,
+  spider: 1.2,
+  wither: 0.8,
+  enderman: 1.1,
+  drowned: 1.3,
+  creeper: 1.4
+};

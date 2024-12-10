@@ -3,26 +3,18 @@ import { useFrame } from "@react-three/fiber";
 import {
   Vector3,
   InstancedMesh,
-  Object3D,
   Matrix4,
-  Color,
   PlaneGeometry,
   MeshBasicMaterial,
-  CylinderGeometry,
-  ConeGeometry,
-  MeshStandardMaterial,
   DoubleSide,
   Group,
 } from "three";
 import * as THREE from "three";
 import { MushroomModel } from "../models/MushroomModel";
-import { AllayModel } from "../models/AllayModel";
 import { SpiderModel } from "../models/SpiderModel";
 import { WitherBossModel } from "../models/WitherBossModel";
-import { BeeModel } from "../models/BeeModel";
 import { EndermanModel } from "../models/EndermanModel";
 import { DrownedModel } from "../models/DrownedModel";
-import { GuardianModel } from "../models/GuardianModel";
 import { CreeperModel } from "../models/CreeperModel";
 import { PortalEffect } from "../effects/PortalEffect";
 import { CreepState, useGameStore } from "../../store/gameStore";
@@ -30,29 +22,21 @@ import { CreepState, useGameStore } from "../../store/gameStore";
 // Speed multipliers for different creep types
 const creepSpeeds = {
   normal: 1.0, // Mushroom - Standard speed
-  fast: 1.5, // Allay - Fast and agile
   spider: 1.2, // Spider - Slightly faster than normal
   wither: 0.8, // Wither Boss - Slow but powerful
-  bee: 1.3, // Bee - Quick and nimble
   enderman: 1.4, // Enderman - Very fast
   drowned: 0.9, // Drowned - Slow and shambling
-  guardian: 0.7, // Guardian - Slow but tough
   creeper: 1.1, // Creeper - Standard speed
-  armored: 0.6, // Heavily armored, very slow
   boss: 0.5, // Boss enemies, extremely slow
 };
 
 const creepSizes = {
   normal: [0.8, 0.8, 0.8], // Mushroom
-  fast: [0.6, 0.6, 0.6], // Allay
   spider: [1.0, 0.5, 1.0], // Spider
   wither: [2.0, 2.0, 2.0], // Wither Boss
-  bee: [0.5, 0.5, 0.5], // Bee
   enderman: [1.2, 2.5, 1.2], // Enderman
   drowned: [1.0, 2.0, 1.0], // Drowned
-  guardian: [1.5, 1.5, 1.5], // Guardian
   creeper: [1.0, 2.0, 1.0], // Creeper
-  armored: [1.2, 1.2, 1.2], // Armored units
   boss: [2.5, 2.5, 2.5], // Boss units
 };
 
@@ -117,16 +101,20 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
         pathState.progress += speed * delta;
 
         // Calculate position along path
-        const position = new Vector3().lerpVectors(
-          currentPoint,
+        const position = currentPoint.clone().lerp(
           nextPoint,
           pathState.progress
         );
         position.y = 0.5; // Lift slightly off ground
 
-        // Update creep position in store
+        // Calculate rotation to face movement direction
+        const direction = nextPoint.clone().sub(currentPoint).normalize();
+        const angle = Math.atan2(direction.x, direction.z);
+
+        // Update creep position and rotation in store
         updateCreep(creep.id, {
           position: [position.x, position.y, position.z],
+          rotation: [0, angle + Math.PI, 0],
         });
 
         // Update health bars
@@ -200,35 +188,30 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
         {/* Creeps */}
         {creeps.map((creep: CreepState) => {
           const position = new Vector3(...creep.position);
-          // ignore next line
           const size = creepSizes[creep.type as keyof typeof creepSizes] || [
             1, 1, 1,
           ];
-          const angle = Math.atan2(
-            pathPoints[1].x - pathPoints[0].x,
-            pathPoints[1].z - pathPoints[0].z
-          );
 
           return (
             <group key={creep.id}>
-              <group position={position} rotation={[0, angle + Math.PI, 0]}>
+              <group
+                position={position}
+                rotation={creep.rotation || [0, 0, 0]}
+              >
                 <group position={[0, 0.5, 0]}>
                   {creep.type === "normal" && <MushroomModel scale={size[0]} />}
-                  {/* {creep.type === "fast" && <AllayModel scale={size[0]} />} */}
                   {creep.type === "spider" && (
                     <SpiderModel scale={size[0] * 2} />
                   )}
                   {creep.type === "wither" && (
                     <WitherBossModel scale={size[0] * 2} />
                   )}
-                  {/* {creep.type === "bee" && <BeeModel scale={size[0]} />} */}
                   {creep.type === "enderman" && (
                     <EndermanModel scale={size[0] * 2} />
                   )}
                   {creep.type === "drowned" && (
                     <DrownedModel scale={size[0] * 2} />
                   )}
-                  {/* {creep.type === "guardian" && <GuardianModel scale={size[0]*2} />} */}
                   {creep.type === "creeper" && <CreeperModel scale={size[0]} />}
                 </group>
               </group>
