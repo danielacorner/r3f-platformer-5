@@ -18,6 +18,7 @@ import { DrownedModel } from "../models/DrownedModel";
 import { CreeperModel } from "../models/CreeperModel";
 import { PortalEffect } from "../effects/PortalEffect";
 import { CreepState, useGameStore } from "../../store/gameStore";
+import { useMemo, memo } from "react";
 
 // Speed multipliers for different creep types
 const creepSpeeds = {
@@ -46,6 +47,46 @@ interface CreepManagerProps {
 
 const SPEED_MULTIPLIER = 1;
 
+// Memoized creep component to prevent unnecessary re-renders
+const CreepInstance = memo(({ creep }: { creep: CreepState }) => {
+  const position = new Vector3(...creep.position);
+  const size = creepSizes[creep.type as keyof typeof creepSizes] || [1, 1, 1];
+  const ModelComponent = {
+    normal: MushroomModel,
+    spider: SpiderModel,
+    wither: WitherBossModel,
+    enderman: EndermanModel,
+    drowned: DrownedModel,
+    creeper: CreeperModel,
+  }[creep.type];
+
+  if (!ModelComponent) return null;
+
+  return (
+    <group>
+      <group
+        position={position}
+        rotation={creep.rotation || [0, 0, 0]}
+      >
+        <group position={[0, 0.5, 0]}>
+          <ModelComponent 
+            scale={size[0] * (creep.type === "spider" || creep.type === "wither" || creep.type === "enderman" || creep.type === "drowned" ? 2 : 1)} 
+          />
+        </group>
+      </group>
+    </group>
+  );
+}, (prev, next) => {
+  // Only re-render if position, rotation, or health changed
+  return (
+    prev.creep.position[0] === next.creep.position[0] &&
+    prev.creep.position[1] === next.creep.position[1] &&
+    prev.creep.position[2] === next.creep.position[2] &&
+    prev.creep.rotation?.[1] === next.creep.rotation?.[1] &&
+    prev.creep.health === next.creep.health
+  );
+});
+
 export function CreepManager({ pathPoints }: CreepManagerProps) {
   const groupRef = useRef<Group>(null);
   const healthBarBackgroundRef = useRef<InstancedMesh>(null);
@@ -57,6 +98,24 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
   const removeCreep = useGameStore((state) => state.removeCreep);
   const loseLife = useGameStore((state) => state.loseLife);
   const updateCreep = useGameStore((state) => state.updateCreep);
+
+  // Initialize matrices and vectors outside frame loop for reuse
+  const matrix = new Matrix4();
+  const tempMatrix = new Matrix4();
+  const tempScaleMatrix = new Matrix4();
+  const tempTranslateMatrix = new Matrix4();
+  const tempPosition = new Vector3();
+  const tempDirection = new Vector3();
+  const tempCameraQuaternion = new THREE.Quaternion();
+  const tempCameraRotationMatrix = new Matrix4();
+
+  // Pre-allocate health bar matrices
+  const healthBarMatrices = useMemo(() => {
+    return {
+      background: Array(100).fill(0).map(() => new Matrix4()),
+      foreground: Array(100).fill(0).map(() => new Matrix4())
+    };
+  }, []);
 
   // Initialize new creeps
   useEffect(() => {
@@ -79,11 +138,11 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
     )
       return;
 
-    const matrix = new Matrix4();
-    const tempMatrix = new Matrix4();
-    const tempScaleMatrix = new Matrix4();
-    const tempTranslateMatrix = new Matrix4();
-    const cameraQuaternion = state.camera.quaternion;
+    // Only update camera quaternion if it changed
+    if (!tempCameraQuaternion.equals(state.camera.quaternion)) {
+      tempCameraQuaternion.copy(state.camera.quaternion);
+      tempCameraRotationMatrix.makeRotationFromQuaternion(tempCameraQuaternion);
+    }
 
     creeps.forEach((creep, index) => {
       const pathState = creepPaths.current.get(creep.id);
@@ -101,19 +160,16 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
         pathState.progress += speed * delta;
 
         // Calculate position along path
-        const position = currentPoint.clone().lerp(
-          nextPoint,
-          pathState.progress
-        );
-        position.y = 0.5; // Lift slightly off ground
+        tempPosition.copy(currentPoint).lerp(nextPoint, pathState.progress);
+        tempPosition.y = 0.5; // Lift slightly off ground
 
         // Calculate rotation to face movement direction
-        const direction = nextPoint.clone().sub(currentPoint).normalize();
-        const angle = Math.atan2(direction.x, direction.z);
+        tempDirection.copy(nextPoint).sub(currentPoint).normalize();
+        const angle = Math.atan2(tempDirection.x, tempDirection.z);
 
         // Update creep position and rotation in store
         updateCreep(creep.id, {
-          position: [position.x, position.y, position.z],
+          position: [tempPosition.x, tempPosition.y, tempPosition.z],
           rotation: [0, angle + Math.PI, 0],
         });
 
@@ -121,26 +177,19 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
         const healthPercent = creep.health / creep.maxHealth;
         const barWidth = 1.3;
         const barHeight = 0.2;
-        const healthColor =
-          healthPercent > 0.5
-            ? "#22c55e"
-            : healthPercent > 0.25
-            ? "#eab308"
-            : "#ef4444";
-        const barY = position.y + 1.5;
+        const barY = tempPosition.y + 1.5;
 
         // Base matrix for both bars
-        matrix.identity();
-        matrix.makeTranslation(position.x, barY, position.z);
-        matrix.multiply(
-          new Matrix4().makeRotationFromQuaternion(cameraQuaternion)
-        );
+        matrix.identity()
+          .makeTranslation(tempPosition.x, barY, tempPosition.z)
+          .multiply(tempCameraRotationMatrix);
 
         // Background bar
         tempMatrix.copy(matrix);
         tempScaleMatrix.makeScale(barWidth, barHeight, 1);
         tempMatrix.multiply(tempScaleMatrix);
-        healthBarBackgroundRef.current?.setMatrixAt(index, tempMatrix);
+        healthBarMatrices.background[index].copy(tempMatrix);
+        healthBarBackgroundRef.current.setMatrixAt(index, tempMatrix);
 
         // Health bar
         const healthBarWidth = barWidth * healthPercent;
@@ -151,10 +200,19 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
         tempMatrix.multiply(tempTranslateMatrix);
         tempScaleMatrix.makeScale(healthBarWidth, barHeight, 1);
         tempMatrix.multiply(tempScaleMatrix);
-        healthBarForegroundRef.current?.setMatrixAt(index, tempMatrix);
+        healthBarMatrices.foreground[index].copy(tempMatrix);
+        healthBarForegroundRef.current.setMatrixAt(index, tempMatrix);
+
+        // Set health bar color
+        const healthColor =
+          healthPercent > 0.5
+            ? "#22c55e"
+            : healthPercent > 0.25
+            ? "#eab308"
+            : "#ef4444";
         (
-          healthBarForegroundRef.current?.material as MeshBasicMaterial
-        )?.color.set(healthColor);
+          healthBarForegroundRef.current.material as MeshBasicMaterial
+        ).color.set(healthColor);
 
         // Move to next path segment if needed
         if (pathState.progress >= 1) {
@@ -165,13 +223,12 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
             loseLife();
             removeCreep(creep.id);
             creepPaths.current.delete(creep.id);
-            console.log(`Creep ${creep.id} reached end of path. Paths remaining: ${creepPaths.current.size}`);
           }
         }
       }
     });
 
-    // Update matrices
+    // Batch update matrices
     healthBarBackgroundRef.current.instanceMatrix.needsUpdate = true;
     healthBarForegroundRef.current.instanceMatrix.needsUpdate = true;
   });
@@ -187,38 +244,9 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
           />
         )}
         {/* Creeps */}
-        {creeps.map((creep: CreepState) => {
-          const position = new Vector3(...creep.position);
-          const size = creepSizes[creep.type as keyof typeof creepSizes] || [
-            1, 1, 1,
-          ];
-
-          return (
-            <group key={creep.id}>
-              <group
-                position={position}
-                rotation={creep.rotation || [0, 0, 0]}
-              >
-                <group position={[0, 0.5, 0]}>
-                  {creep.type === "normal" && <MushroomModel scale={size[0]} />}
-                  {creep.type === "spider" && (
-                    <SpiderModel scale={size[0] * 2} />
-                  )}
-                  {creep.type === "wither" && (
-                    <WitherBossModel scale={size[0] * 2} />
-                  )}
-                  {creep.type === "enderman" && (
-                    <EndermanModel scale={size[0] * 2} />
-                  )}
-                  {creep.type === "drowned" && (
-                    <DrownedModel scale={size[0] * 2} />
-                  )}
-                  {creep.type === "creeper" && <CreeperModel scale={size[0]} />}
-                </group>
-              </group>
-            </group>
-          );
-        })}
+        {creeps.map((creep: CreepState) => (
+          <CreepInstance key={creep.id} creep={creep} />
+        ))}
       </group>
 
       <instancedMesh
