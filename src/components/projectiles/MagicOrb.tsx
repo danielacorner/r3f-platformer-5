@@ -193,7 +193,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
       const phase = (index * Math.PI) / 3;
 
       // Main orbit
-      const mainRadius = BASE_ORB_RADIUS * (1 + range / 1.5);
+      const mainRadius = BASE_ORB_RADIUS * (1 + range / 4);
 
       // Add secondary movements
       const radiusModulation = Math.sin(time * frequency2 + phase) * 0.3;
