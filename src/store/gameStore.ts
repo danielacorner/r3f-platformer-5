@@ -611,8 +611,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     const creepTypes = ["normal", "spider", "wither", "enderman", "drowned", "creeper"];
     
     switch (state.currentLevel) {
+      // ! ? magic orb attack seems to stop working after 9+ creeps spawned
       case 1:
-        creepCount = 10;
+        creepCount = 8;
         creepSpeed = 2;
         creepHealth = 100;
         creepReward = 10;
