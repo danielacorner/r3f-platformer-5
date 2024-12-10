@@ -1,6 +1,15 @@
 import { useRef, useState, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Vector3, Group, BufferGeometry, Line, Mesh, SphereGeometry, MeshBasicMaterial } from "three";
+import {
+  Vector3,
+  Group,
+  BufferGeometry,
+  Line,
+  Mesh,
+  SphereGeometry,
+  MeshBasicMaterial,
+  DoubleSide,
+} from "three";
 import { RigidBody } from "@react-three/rapier";
 import { OrbTrail } from "./OrbTrail";
 import { HitSparks } from "../effects/HitSparks";
@@ -279,8 +288,9 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
                 if (splashDistance < splashRadius) {
                   // Calculate damage falloff based on distance
-                  const falloff = 1 - (splashDistance / splashRadius);
-                  const splashDamage = actualDamage * splashDamageMultiplier * falloff;
+                  const falloff = 1 - splashDistance / splashRadius;
+                  const splashDamage =
+                    actualDamage * splashDamageMultiplier * falloff;
                   damageCreep(nearbyCreep.id, splashDamage);
                 }
               }

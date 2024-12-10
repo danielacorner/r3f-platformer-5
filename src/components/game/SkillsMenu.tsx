@@ -68,7 +68,14 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
   return createPortal(
     <>
       <div className="skills-menu-overlay" onClick={handleBackdropClick} />
-      <div className="skills-menu" onClick={handleMenuClick}>
+      <div
+        className="skills-menu"
+        onClick={handleMenuClick}
+        onMouseMove={(e) => e.stopPropagation()}
+        onPointerMove={(e) => e.stopPropagation()}
+        onDrag={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
+      >
         <div className="skills-header">
           <h2>Magic Skills</h2>
           <div className="header-right">
@@ -112,14 +119,17 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
               } else if (key === "multishot") {
                 effectText = `+${level * 15}% Multi Orb`;
               } else if (key === "splash") {
-                effectText = `${2 + level * 0.5} Radius, ${Math.floor((0.5 + level * 0.1) * 100)}% Damage`;
+                effectText = `${2 + level * 0.5} Radius, ${Math.floor(
+                  (0.5 + level * 0.1) * 100
+                )}% Damage`;
               }
 
               // Calculate cost
-              const cost = Math.floor(
-                (key === "multishot" || key === "splash" ? 15 : 10) *
-                  Math.pow(1.5, level)
-              );
+              // const cost = Math.floor(
+              //   (key === "multishot" || key === "splash" ? 2 : 1) *
+              //     Math.pow(1.5, level)
+              // );
+              const cost = 1;
               const maxLevel = key === "multishot" || key === "splash" ? 5 : 10;
 
               return (
@@ -151,10 +161,11 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
 
                     <button
                       className="upgrade-button"
-                      onClick={() => upgradeSkill(key as keyof typeof upgrades)}
-                      disabled={
-                        skillPoints < cost || level >= maxLevel
-                      }
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        upgradeSkill(key as keyof typeof upgrades);
+                      }}
+                      disabled={skillPoints < cost || level >= maxLevel}
                     >
                       <FaStar className="cost-icon" />
                       <span>{cost}</span>

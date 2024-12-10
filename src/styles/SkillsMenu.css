@@ -14,7 +14,7 @@
 
 .skills-menu {
   position: fixed;
-  top: 50%;
+  top: 50vh;
   left: 50%;
   transform: translate(-50%, -50%);
   background-color: #1a1a1a;
@@ -24,7 +24,7 @@
   max-width: 600px;
   max-height: 80vh;
   overflow-y: auto;
-  z-index: 1001;
+  z-index: 10001;
   color: white;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   touch-action: pan-y;
@@ -34,8 +34,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
+  margin: -24px -24px 24px -24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -156,7 +155,7 @@
   background-color: rgba(255, 255, 255, 0.1);
   border: 1px solid var(--skill-color);
   border-radius: 4px;
-  color: var(--skill-color);
+  color: white;
   cursor: pointer;
   transition: all 0.2s;
 }

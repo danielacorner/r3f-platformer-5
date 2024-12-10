@@ -731,7 +731,6 @@
 }
 
 .skills-grid {
-  overflow-y: auto;
   padding-right: 0.5rem;
   margin-right: -0.5rem;
   display: grid;

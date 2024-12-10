@@ -510,12 +510,19 @@ export const useGameStore = create<GameState>((set, get) => ({
     const state = get();
     const currentLevel = state.upgrades[skill];
     const costs = {
-      damage: Math.floor(10 * Math.pow(1.5, currentLevel)),
-      speed: Math.floor(10 * Math.pow(1.5, currentLevel)),
-      range: Math.floor(10 * Math.pow(1.5, currentLevel)),
-      multishot: Math.floor(15 * Math.pow(1.5, currentLevel)),
-      splash: Math.floor(15 * Math.pow(1.5, currentLevel)),
+      damage: 1,
+      speed: 1,
+      range: 1,
+      multishot: 1,
+      splash: 1,
     };
+    // const costs = {
+    //   damage: Math.floor(10 * Math.pow(1.5, currentLevel)),
+    //   speed: Math.floor(10 * Math.pow(1.5, currentLevel)),
+    //   range: Math.floor(10 * Math.pow(1.5, currentLevel)),
+    //   multishot: Math.floor(15 * Math.pow(1.5, currentLevel)),
+    //   splash: Math.floor(15 * Math.pow(1.5, currentLevel)),
+    // };
 
     const maxLevels = {
       damage: 10,
