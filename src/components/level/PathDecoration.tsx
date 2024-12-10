@@ -254,6 +254,12 @@ export function PathDecorations({ pathPoints }: { pathPoints: Vector3[] }) {
     [pathPoints]
   );
 
+  // Memoize crystal rotations
+  const crystalRotations = useMemo(
+    () => segments.map(() => Math.random() * Math.PI * 2),
+    [segments]
+  );
+
   return (
     <>
       {segments.map((segment, index) => (
@@ -284,7 +290,7 @@ export function PathDecorations({ pathPoints }: { pathPoints: Vector3[] }) {
                 segment.position[1] + CRYSTAL_HEIGHT,
                 segment.position[2],
               ]}
-              rotation={[0, Math.random() * Math.PI * 2, 0]}
+              rotation={[0, crystalRotations[index], 0]}
               scale={CRYSTAL_SCALE}
             >
               <octahedronGeometry args={[0.5]} />
