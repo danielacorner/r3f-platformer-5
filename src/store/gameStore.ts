@@ -109,8 +109,8 @@ export const isTowerOnPath = (position: number[] | { x: number; y: number; z: nu
   }
 
   for (const segment of pathData.segments) {
-    const [segX, _segY, segZ] = segment.position;
-    const [scaleX, _scaleY, scaleZ] = segment.scale;
+    const [segX, , segZ] = segment.position;
+    const [scaleX, , scaleZ] = segment.scale;
     const rotation = segment.rotation[1];
 
     // Transform tower position to segment's local space
@@ -156,7 +156,7 @@ export interface TowerState {
   lastAttackTime?: number;
 }
 
-interface CreepState {
+export interface CreepState {
   position: [number, number, number];
   type: string;
   health: number;
@@ -190,7 +190,7 @@ interface PathSegment {
   rotation: [number, number, number];
 }
 
-interface GameState {
+export interface GameState {
   phase: 'prep' | 'combat' | 'victory';
   currentLevel: number;
   timer: number;
@@ -255,6 +255,7 @@ interface GameState {
   updateCreep: (id: string, updates: Partial<CreepState>) => void;
   removePlacedTower: (id: number) => void;
   setPhase: (phase: GameState['phase']) => void;
+  loseLife: () => void;
 }
 
 const initialState: GameState = {
@@ -317,7 +318,8 @@ const initialState: GameState = {
     removeCreep: () => {},
     updateCreep: () => {},
     removePlacedTower: () => {},
-    setPhase: () => {}
+    setPhase: () => {},
+    loseLife: () => {},
 
 }
 
