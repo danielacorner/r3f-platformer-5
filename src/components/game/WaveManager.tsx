@@ -16,13 +16,11 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
     phase,
     currentLevel,
     setPhase,
-    setEnemiesAlive,
     addCreep,
     isSpawning,
     setIsSpawning,
     creeps,
     incrementLevel,
-    enemiesAlive,
     addMoney,
     setWave,
     isWaveInProgress,
@@ -78,7 +76,6 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
       0
     );
     console.log(`Wave ${wave.id} will have ${totalEnemies} total enemies`);
-    setEnemiesAlive(totalEnemies);
 
     waveQueue.current = wave.creeps.flatMap((creepGroup) =>
       Array(creepGroup.count)
@@ -168,7 +165,7 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
       }
     }, wave.baseDelay);
 
-    spawnTimerRef.current = interval;
+    spawnTimerRef.current = interval as unknown as number;
 
     return cleanup;
   }, [phase, currentLevel, isSpawning]);
@@ -176,6 +173,9 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
   // Check for wave completion
   useEffect(() => {
     const checkWaveCompletion = () => {
+      console.log(
+        `Checking wave completion. Phase: ${phase}, isSpawning: ${isSpawning}, creeps.length: ${creeps.length}`
+      );
       // Only proceed if we're in combat phase and all enemies are gone
       if (phase !== "combat") return;
       if (isSpawning) return;
@@ -211,7 +211,7 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
     // Check for wave completion more frequently
     const timer = setInterval(checkWaveCompletion, 1000);
     return () => clearInterval(timer);
-  }, [phase, isSpawning, enemiesAlive, creeps.length, currentLevel]);
+  }, [phase, isSpawning, creeps.length, currentLevel]);
 
   const startWave = () => {
     if (isWaveInProgress) return;
