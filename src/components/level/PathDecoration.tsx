@@ -24,6 +24,7 @@ const MIN_LENGTH = 1;
 const MAX_LENGTH = 1;
 const CRYSTAL_HEIGHT = 1;
 const CRYSTAL_SCALE = 0.5;
+const CHEVRON_SCALE = 0.6;
 
 export function generatePath(currentLevel: number) {
   const config = PATH_CONFIGS[currentLevel];
@@ -45,7 +46,7 @@ export function generatePath(currentLevel: number) {
 function generatePathSegments(pathPoints: Vector3[]): PathSegment[] {
   const segments: PathSegment[] = [];
   const curve = new CatmullRomCurve3(pathPoints, false, "catmullrom", 0.5);
-  const segmentCount = 200;
+  const segmentCount = 100;
 
   for (let i = 0; i < segmentCount; i++) {
     const t = i / segmentCount;
@@ -265,11 +266,15 @@ export function PathDecorations({ pathPoints }: { pathPoints: Vector3[] }) {
       {segments.map((segment, index) => (
         <group key={index}>
           {/* Regular or Chevron path segment */}
-          {index % 4 === 0 ? (
+          {index % 8 === 0 ? (
             <ChevronTile
               position={segment.position}
               rotation={segment.rotation}
-              scale={segment.scale}
+              scale={[
+                segment.scale[0] * CHEVRON_SCALE,
+                segment.scale[1] * CHEVRON_SCALE,
+                segment.scale[2] * CHEVRON_SCALE,
+              ]}
             />
           ) : (
             <mesh
@@ -282,8 +287,8 @@ export function PathDecorations({ pathPoints }: { pathPoints: Vector3[] }) {
             </mesh>
           )}
 
-          {/* Crystal decoration - only on every 4th segment */}
-          {index % 4 === 0 && (
+          {/* Crystal decoration - only on every 8th segment */}
+          {index % 8 === 0 && (
             <mesh
               position={[
                 segment.position[0],
