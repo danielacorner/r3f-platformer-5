@@ -1,11 +1,12 @@
 import { useRef, useState, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Vector3, Group, BufferGeometry, Line } from "three";
+import { Vector3, Group, BufferGeometry, Line, Mesh, SphereGeometry, MeshBasicMaterial } from "three";
 import { RigidBody } from "@react-three/rapier";
 import { OrbTrail } from "./OrbTrail";
 import { HitSparks } from "../effects/HitSparks";
 import { OrbEffects } from "../effects/OrbEffects";
 import { useGameStore } from "../../store/gameStore";
+import { useMemo } from "react";
 
 const BASE_ORB_RADIUS = 1.5; // Base orbit radius
 const BASE_ORB_SPEED = 2; // Base orbit speed
@@ -68,12 +69,22 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   const speed = useGameStore((state) => state.upgrades.speed);
   const orbSpeed = useGameStore((state) => state.orbSpeed);
   const multishot = useGameStore((state) => state.upgrades.multishot);
+  const splash = useGameStore((state) => state.upgrades.splash);
   // Calculate actual values based on upgrades
   const actualDamage = BASE_ATTACK_DAMAGE * (1 + damage * 0.1);
   const actualRange = BASE_ATTACK_RANGE * (1 + range * 0.1);
   const actualCooldown = BASE_ATTACK_COOLDOWN * (1 - speed * 0.12);
   const actualOrbSpeed = BASE_ORB_SPEED * orbSpeed;
   const multishotChance = multishot * 0.15; // 15% chance per level
+
+  // Calculate splash damage based on upgrade level
+  const splashRadius = useMemo(() => {
+    return 2 + splash * 0.5; // Radius increases by 0.5 units per level
+  }, [splash]);
+
+  const splashDamageMultiplier = useMemo(() => {
+    return 0.5 + splash * 0.1; // 50% base splash damage, +10% per level
+  }, [splash]);
 
   // Get multishot level and calculate number of orbs
   const numAdditionalOrbs = Math.floor(multishotChance); // Full orbs
@@ -174,6 +185,8 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
     }, actualCooldown * 1000);
   };
 
+  const splashRadiusRef = useRef<Mesh>(null);
+
   useFrame((_, delta) => {
     if (!playerRef.current) return;
 
@@ -253,6 +266,26 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
           if (newProgress >= 0.45) {
             damageCreep(target.id, actualDamage);
+
+            // Apply splash damage to nearby creeps
+            creeps.forEach((nearbyCreep) => {
+              if (nearbyCreep.id !== target.id) {
+                const nearbyPos = new Vector3(
+                  nearbyCreep.position[0],
+                  nearbyCreep.position[1],
+                  nearbyCreep.position[2]
+                );
+                const splashDistance = targetPos.distanceTo(nearbyPos);
+
+                if (splashDistance < splashRadius) {
+                  // Calculate damage falloff based on distance
+                  const falloff = 1 - (splashDistance / splashRadius);
+                  const splashDamage = actualDamage * splashDamageMultiplier * falloff;
+                  damageCreep(nearbyCreep.id, splashDamage);
+                }
+              }
+            });
+
             // Add hit effect at collision point using the new function
             const hitPosition = new Vector3(
               target.position[0],
@@ -294,6 +327,16 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
         setAttackProgress(0);
         trailPoints.current = [];
       }
+    }
+
+    // Visual effect for splash radius
+    if (splashRadiusRef.current && splash > 0) {
+      splashRadiusRef.current.scale.setScalar(splashRadius);
+      splashRadiusRef.current.position.copy(orbsRef.current[0].position);
+
+      // Pulse effect
+      const pulse = (Math.sin(Date.now() * 0.002 * 2) + 1) * 0.1;
+      splashRadiusRef.current.material.opacity = 0.1 + pulse;
     }
   });
 
@@ -339,6 +382,19 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
           }}
         />
       ))}
+      {/* Splash radius indicator */}
+      {splash > 0 && (
+        <mesh ref={splashRadiusRef}>
+          <sphereGeometry args={[1, 32, 32]} />
+          <meshBasicMaterial
+            color="#4a9eff"
+            transparent
+            opacity={0.1}
+            side={DoubleSide}
+            depthWrite={false}
+          />
+        </mesh>
+      )}
     </group>
   );
 }

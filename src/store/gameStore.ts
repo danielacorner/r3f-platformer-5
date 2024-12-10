@@ -211,6 +211,7 @@ export interface GameState {
     speed: number;
     range: number;
     multishot: number;
+    splash: number;
   };
   wave: number;
   creeps: CreepState[];
@@ -281,6 +282,7 @@ const initialState: GameState = {
     speed: 0,
     range: 0,
     multishot: 0,
+    splash: 0,
   },
   wave: process.env.NODE_ENV === 'development' ? 0 : 0,
   creeps: [],
@@ -505,51 +507,36 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   upgradeSkill: (skill: keyof GameState['upgrades']) => {
-    set(state => {
-      if (state.skillPoints <= 0) return state;
+    const state = get();
+    const currentLevel = state.upgrades[skill];
+    const costs = {
+      damage: Math.floor(10 * Math.pow(1.5, currentLevel)),
+      speed: Math.floor(10 * Math.pow(1.5, currentLevel)),
+      range: Math.floor(10 * Math.pow(1.5, currentLevel)),
+      multishot: Math.floor(15 * Math.pow(1.5, currentLevel)),
+      splash: Math.floor(15 * Math.pow(1.5, currentLevel)),
+    };
 
-      const newUpgrades = {
-        ...state.upgrades,
-        [skill]: state.upgrades[skill] + 1
-      };
+    const maxLevels = {
+      damage: 10,
+      speed: 10,
+      range: 10,
+      multishot: 5,
+      splash: 5,
+    };
 
-      // Calculate derived stats
-      const damageMultiplier = 1 + (newUpgrades.damage * 0.15); // 15% per level
-      
-      // Calculate speed stats with new mechanics
-      let cooldownReduction = 1;
-      let orbSpeedBonus = 1;
-      
-      if (skill === 'speed') {
-        const totalSpeedReduction = newUpgrades.speed * 0.12; // 12% per level
-        if (totalSpeedReduction >= 1) {
-          // Cap cooldown reduction at 100% and convert excess to orb speed
-          cooldownReduction = 0; // -100% cooldown
-          const excessReduction = totalSpeedReduction - 1;
-          orbSpeedBonus = 1 + excessReduction; // Convert excess to orb speed
-        } else {
-          cooldownReduction = 1 - totalSpeedReduction;
-          orbSpeedBonus = 1;
-        }
-      } else {
-        // For other skills, maintain current cooldown reduction
-        cooldownReduction = 1 - (newUpgrades.speed * 0.12);
-      }
-      
-      const rangeMultiplier = 1 + (newUpgrades.range * 0.12); // 12% per level
-      const multishotChance = newUpgrades.multishot * 0.15; // 15% chance per level
-
-      return {
-        skillPoints: state.skillPoints - 1,
-        upgrades: newUpgrades,
-        // Update derived stats
-        damage: damageMultiplier,
-        attackSpeed: cooldownReduction,
-        orbSpeed: orbSpeedBonus,
-        range: rangeMultiplier,
-        multishot: multishotChance
-      };
-    });
+    if (
+      state.skillPoints >= costs[skill] &&
+      currentLevel < maxLevels[skill]
+    ) {
+      set((state) => ({
+        skillPoints: state.skillPoints - costs[skill],
+        upgrades: {
+          ...state.upgrades,
+          [skill]: currentLevel + 1,
+        },
+      }));
+    }
   },
 
   incrementLevel: () => {

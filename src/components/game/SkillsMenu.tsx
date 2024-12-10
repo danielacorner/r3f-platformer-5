@@ -7,8 +7,9 @@ import {
   FaTimes,
   FaHourglassHalf,
 } from "react-icons/fa";
-import { GiMultipleTargets } from "react-icons/gi";
+import { GiMultipleTargets, GiSplash } from "react-icons/gi";
 import { useGameStore } from "../../store/gameStore";
+import "../../styles/SkillsMenu.css";
 
 interface SkillsMenuProps {
   isOpen: boolean;
@@ -40,6 +41,12 @@ const UPGRADE_DETAILS = {
     description: "Chance to cast an additional magic orb (+15%)",
     color: "#f97316",
   },
+  splash: {
+    icon: GiSplash,
+    name: "Arcane Explosion",
+    description: "Magic orbs deal splash damage to nearby enemies",
+    color: "#ec4899",
+  },
 };
 
 export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
@@ -48,8 +55,10 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
   if (!isOpen) return null;
 
   const handleBackdropClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onClose();
+    if (e.target === e.currentTarget) {
+      e.stopPropagation();
+      onClose();
+    }
   };
 
   const handleMenuClick = (e: React.MouseEvent) => {
@@ -101,44 +110,55 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
               } else if (key === "range") {
                 effectText = `+${level * 12}% Range`;
               } else if (key === "multishot") {
-                effectText = `${level * 15}% Chance`;
+                effectText = `+${level * 15}% Multi Orb`;
+              } else if (key === "splash") {
+                effectText = `${2 + level * 0.5} Radius, ${Math.floor((0.5 + level * 0.1) * 100)}% Damage`;
               }
 
+              // Calculate cost
+              const cost = Math.floor(
+                (key === "multishot" || key === "splash" ? 15 : 10) *
+                  Math.pow(1.5, level)
+              );
+              const maxLevel = key === "multishot" || key === "splash" ? 5 : 10;
+
               return (
-                <div key={key} className="skill-item">
-                  <div
-                    className="skill-icon"
-                    data-skill={key}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "1.4rem",
-                      color: "white",
-                    }}
-                  >
-                    <Icon />
-                  </div>
-                  <div className="skill-info">
-                    <div className="skill-name">{name}</div>
-                    <div className="skill-description">{description}</div>
-                    <div className="skill-effect" style={{ color }}>
-                      {effectText}
+                <div
+                  key={key}
+                  className="skill-item"
+                  style={
+                    {
+                      "--skill-color": color,
+                    } as React.CSSProperties
+                  }
+                >
+                  <div className="skill-header">
+                    <Icon className="skill-icon" />
+                    <div className="skill-info">
+                      <h3>{name}</h3>
+                      <p className="skill-description">{description}</p>
                     </div>
                   </div>
-                  <div className="skill-level-container">
-                    <div className="skill-level-display">{level}</div>
-                    {skillPoints > 0 && (
-                      <button
-                        className="skill-level-up"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          upgradeSkill(key as keyof typeof upgrades);
-                        }}
-                      >
-                        <span className="level-up-arrow">▲</span>
-                      </button>
-                    )}
+
+                  <div className="skill-footer">
+                    <div className="skill-level">
+                      <div className="level-text">
+                        Level {level}
+                        <span className="max-level">/{maxLevel}</span>
+                      </div>
+                      <div className="effect-text">{effectText}</div>
+                    </div>
+
+                    <button
+                      className="upgrade-button"
+                      onClick={() => upgradeSkill(key as keyof typeof upgrades)}
+                      disabled={
+                        skillPoints < cost || level >= maxLevel
+                      }
+                    >
+                      <FaStar className="cost-icon" />
+                      <span>{cost}</span>
+                    </button>
                   </div>
                 </div>
               );
