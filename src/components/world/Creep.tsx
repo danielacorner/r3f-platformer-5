@@ -165,6 +165,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
             loseLife();
             removeCreep(creep.id);
             creepPaths.current.delete(creep.id);
+            console.log(`Creep ${creep.id} reached end of path. Paths remaining: ${creepPaths.current.size}`);
           }
         }
       }

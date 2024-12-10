@@ -257,6 +257,10 @@ export interface GameState {
   removePlacedTower: (id: number) => void;
   setPhase: (phase: GameState['phase']) => void;
   loseLife: () => void;
+  incrementLevel: () => void;
+  isWaveInProgress:  boolean;
+  setIsWaveInProgress: (isWaveInProgress: boolean) => void;
+  setWaveStartTime: (startTime: number) => void;
 }
 
 const initialState: GameState = {
@@ -321,6 +325,10 @@ const initialState: GameState = {
     removePlacedTower: () => {},
     setPhase: () => {},
     loseLife: () => {},
+    incrementLevel: () => {},
+isWaveInProgress: false,
+    setIsWaveInProgress: () => {},
+    setWaveStartTime: () => {},
 
 }
 
@@ -441,8 +449,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     console.log(`Removing creep: ${id}`);
     set(state => {
       const remainingCreeps = state.creeps.filter(c => c.id !== id);
-      const newEnemiesAlive = remainingCreeps.length;
-      console.log(`Enemies alive after removal: ${newEnemiesAlive} (based on ${remainingCreeps.length} remaining creeps)`);
+      const newEnemiesAlive = Math.max(0, state.enemiesAlive - 1);
+      console.log(`Enemies alive after removal: ${newEnemiesAlive}`);
       
       return {
         creeps: remainingCreeps,
@@ -613,7 +621,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     switch (state.currentLevel) {
       // ! ? magic orb attack seems to stop working after 9+ creeps spawned
       case 1:
-        creepCount = 8;
+        creepCount = 6;
         creepSpeed = 2;
         creepHealth = 100;
         creepReward = 10;
