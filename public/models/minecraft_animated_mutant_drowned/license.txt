@@ -1,0 +1,11 @@
+Model Information:
+* title:	Minecraft Animated Mutant Drowned
+* source:	https://sketchfab.com/3d-models/minecraft-animated-mutant-drowned-cd8802db6b2b4ad6a9596f87dc0f41b7
+* author:	CanYuTsai (https://sketchfab.com/canyutsai1)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Minecraft Animated Mutant Drowned" (https://sketchfab.com/3d-models/minecraft-animated-mutant-drowned-cd8802db6b2b4ad6a9596f87dc0f41b7) by CanYuTsai (https://sketchfab.com/canyutsai1) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
