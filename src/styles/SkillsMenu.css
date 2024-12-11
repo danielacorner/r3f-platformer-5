@@ -1,98 +1,206 @@
 .skills-menu-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.75);
   display: flex;
-  align-items: center;
   justify-content: center;
-  touch-action: none;
+  align-items: center;
+  z-index: 100000;
 }
 
 .skills-menu {
-  position: fixed;
-  top: 50vh;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: #1a1a1a;
+  background: rgba(15, 23, 42, 0.95);
   border-radius: 12px;
   padding: 24px;
   width: 90%;
-  max-width: 600px;
+  max-width: 900px;
   max-height: 80vh;
-  overflow-y: auto;
-  z-index: 10001;
+  overflow: auto;
+  z-index: 100001;
   color: white;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  touch-action: pan-y;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
 }
 
 .skills-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: -24px -24px 24px -24px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .skills-header h2 {
+  margin: 0;
   font-size: 1.5rem;
   font-weight: bold;
-  margin: 0;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.skill-points {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #fbbf24;
 }
 
 .close-icon-button {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.6);
+  color: white;
   cursor: pointer;
   padding: 8px;
-  transition: color 0.2s;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+.close-button{
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+
+}
+.close-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .close-icon-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100000;
+}
+
+.modal-content {
+  background: rgba(15, 23, 42, 0.95);
+  border-radius: 12px;
+  padding: 24px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 80vh;
+  overflow: auto;
+  z-index: 100001;
   color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
 }
 
 .skills-grid {
-  display: grid;
-  gap: 16px;
-  grid-template-columns: 1fr;
+  display: flex;
+  gap: 24px;
+  padding: 16px;
+  justify-content: center;
 }
 
-@media (min-width: 640px) {
-  .skills-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.skill-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 200px;
+  position: relative;
+  align-items: center;
+}
+
+.skill-tree-title {
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #e2e8f0;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .skill-item {
-  background-color: rgba(255, 255, 255, 0.05);
+  background: rgba(30, 41, 59, 0.95);
   border-radius: 8px;
-  padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 12px;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255, 255, 255, 0.1);
   transition: all 0.2s;
+  position: relative;
+  cursor: pointer;
 }
 
-.skill-item:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-  border-color: var(--skill-color);
+.skill-item svg {
+  width: 24px;
+  height: 24px;
+  color: var(--skill-color, white);
+}
+
+.skill-item.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.skill-item:not(.disabled):hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.skill-tooltip {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(15, 23, 42, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+  width: 240px;
+  z-index: 100002;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  margin-left: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.skill-item:hover .skill-tooltip {
+  opacity: 1;
+}
+
+.skill-tooltip-title {
+  font-weight: bold;
+  margin-bottom: 4px;
+  color: var(--skill-color, #e2e8f0);
+  font-size: 1.1rem;
+}
+
+.skill-tooltip-description {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.skill-tooltip-status {
+  font-size: 0.9rem;
+  color: #60a5fa;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.skill-connector {
+  position: absolute;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  left: 50%;
+  transform: translateX(-50%);
+  height: 12px;
+  bottom: -12px;
 }
 
 .skill-header {
@@ -174,4 +282,99 @@
 
 .cost-icon {
   font-size: 0.8rem;
+}
+
+/* Tablet styles */
+@media screen and (max-width: 768px) {
+  .modal-content {
+    width: 95%;
+    padding: 16px;
+  }
+
+  .skills-grid {
+    gap: 16px;
+    padding: 12px;
+  }
+
+  .skill-tree {
+    min-width: 160px;
+  }
+
+  .skill-tooltip {
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 8px);
+    transform: translateX(-50%);
+    margin-left: 0;
+    width: 200px;
+  }
+}
+
+/* Mobile styles */
+@media screen and (max-width: 480px) {
+  .modal-content {
+    width: 100%;
+    height: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+    padding: 12px;
+  }
+
+  .skills-grid {
+    flex-direction: column;
+    gap: 24px;
+    padding: 8px;
+    height: calc(100vh - 100px);
+    overflow-y: auto;
+  }
+
+  .skill-tree {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px;
+    padding: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .skill-tree:last-child {
+    border-bottom: none;
+  }
+
+  .skill-tree-title {
+    width: 100%;
+    margin-bottom: 12px;
+  }
+
+  .skill-item {
+    width: 56px;
+    height: 56px;
+    padding: 8px;
+  }
+
+  .skill-tooltip {
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    top: auto;
+    transform: none;
+    width: auto;
+    background: rgba(15, 23, 42, 0.98);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 100003;
+  }
+
+  .skill-connector {
+    display: none;
+  }
+
+  .modal-header {
+    position: sticky;
+    top: 0;
+    background: rgba(15, 23, 42, 0.98);
+    z-index: 100002;
+    margin: -12px -12px 12px -12px;
+    padding: 12px;
+  }
 }

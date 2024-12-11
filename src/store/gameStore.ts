@@ -212,6 +212,9 @@ export interface GameState {
     range: number;
     multishot: number;
     splash: number;
+    pierce: number;
+    chain: number;
+    crit: number;
   };
   wave: number;
   creeps: CreepState[];
@@ -283,6 +286,9 @@ const initialState: GameState = {
     range: 0,
     multishot: 0,
     splash: 0,
+    pierce: 0,
+    chain: 0,
+    crit: 0,
   },
   wave: process.env.NODE_ENV === 'development' ? 0 : 0,
   creeps: [],
@@ -515,6 +521,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       range: 1,
       multishot: 1,
       splash: 1,
+      pierce: 1,
+      chain: 1,
+      crit: 1,
     };
     // const costs = {
     //   damage: Math.floor(10 * Math.pow(1.5, currentLevel)),
@@ -530,6 +539,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       range: 10,
       multishot: 5,
       splash: 5,
+      pierce: 5,
+      chain: 5,
+      crit: 5,
     };
 
     if (

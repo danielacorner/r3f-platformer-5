@@ -86,12 +86,26 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   const orbSpeed = useGameStore((state) => state.orbSpeed);
   const multishot = useGameStore((state) => state.upgrades.multishot);
   const splash = useGameStore((state) => state.upgrades.splash);
+  const pierce = useGameStore((state) => state.upgrades.pierce);
+  const chain = useGameStore((state) => state.upgrades.chain);
+  const crit = useGameStore((state) => state.upgrades.crit);
+  const fireRing = useGameStore((state) => state.upgrades.fireRing);
+  const frostfire = useGameStore((state) => state.upgrades.frostfire);
+  const meteor = useGameStore((state) => state.upgrades.meteor);
+
   // Calculate actual values based on upgrades
   const actualDamage = BASE_ATTACK_DAMAGE * (1 + damage * 0.1);
   const actualRange = BASE_ATTACK_RANGE * (1 + range * 0.1);
   const actualCooldown = BASE_ATTACK_COOLDOWN * (1 - speed * 0.12);
   const actualOrbSpeed = BASE_ORB_SPEED * orbSpeed;
   const multishotChance = multishot * 0.15; // 15% chance per level
+  const pierceDamageMultiplier = 0.5 + pierce * 0.05; // 50% base pierce damage, +5% per level
+  const chainDamageMultiplier = 0.4 + chain * 0.04; // 40% base chain damage, +4% per level
+  const critChance = crit * 0.15; // 15% chance per level
+  const fireRingDamage = actualDamage * 0.3 * fireRing;
+  const frostfireSlowAmount = frostfire * 0.3;
+  const meteorChance = meteor * 0.1;
+  const meteorDamage = actualDamage * 3;
 
   // Calculate splash damage based on upgrade level
   const splashRadius = useMemo(() => {
@@ -199,6 +213,110 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
   const splashRadiusRef = useRef<Mesh>(null);
 
+  const applyDamage = (creepId: string, baseDamage: number, pierceCount = 0, chainCount = 0) => {
+    // Calculate critical strike
+    const isCrit = Math.random() < critChance;
+    const damageMultiplier = isCrit ? 2 : 1;
+    let finalDamage = baseDamage * damageMultiplier;
+
+    // Apply pierce or chain damage reduction if applicable
+    if (pierceCount > 0) {
+      finalDamage *= Math.pow(pierceDamageMultiplier, pierceCount);
+    }
+    if (chainCount > 0) {
+      finalDamage *= Math.pow(chainDamageMultiplier, chainCount);
+    }
+
+    // Apply damage to the target
+    damageCreep(creepId, finalDamage);
+
+    // Get hit position
+    const hitPos = new Vector3(
+      creeps.find(c => c.id === creepId)?.position[0] || 0,
+      creeps.find(c => c.id === creepId)?.position[1] || 0,
+      creeps.find(c => c.id === creepId)?.position[2] || 0
+    );
+
+    // Add hit effect
+    addHitEffect(hitPos);
+
+    // Check for meteor proc
+    if (meteor > 0 && Math.random() < meteorChance) {
+      spawnMeteor(hitPos);
+    }
+
+    // Create fire ring if skilled
+    if (fireRing > 0) {
+      setActiveFireRings(prev => [
+        ...prev,
+        { position: hitPos.clone(), timeLeft: 3 } // 3 second duration
+      ]);
+    }
+
+    // Create frostfire if skilled
+    if (frostfire > 0) {
+      setActiveFrostfires(prev => [
+        ...prev,
+        { position: hitPos.clone(), timeLeft: 4 } // 4 second duration
+      ]);
+    }
+
+    // Handle pierce
+    if (pierceCount < pierce) {
+      const nextTarget = creeps.find(c => 
+        c.id !== creepId && 
+        c.health > 0 &&
+        new Vector3(...c.position).distanceTo(hitPos) <= actualRange
+      );
+      if (nextTarget) {
+        applyDamage(nextTarget.id, baseDamage, pierceCount + 1, 0);
+      }
+    }
+
+    // Handle chain
+    if (chainCount < chain) {
+      const nextTarget = creeps.find(c => 
+        c.id !== creepId && 
+        c.health > 0 &&
+        new Vector3(...c.position).distanceTo(hitPos) <= actualRange * 0.6
+      );
+      if (nextTarget) {
+        applyDamage(nextTarget.id, baseDamage, 0, chainCount + 1);
+      }
+    }
+  };
+
+  // Store active effects
+  const [activeFireRings, setActiveFireRings] = useState<{
+    position: Vector3;
+    timeLeft: number;
+  }[]>([]);
+  const [activeFrostfires, setActiveFrostfires] = useState<{
+    position: Vector3;
+    timeLeft: number;
+  }[]>([]);
+
+  const spawnMeteor = (position: Vector3) => {
+    // Create meteor effect
+    const meteorPos = position.clone().add(new Vector3(0, 10, 0));
+    const meteorTarget = position.clone();
+    
+    // Add visual effect for meteor (you'll need to implement this)
+    // addMeteorEffect(meteorPos, meteorTarget);
+
+    // After a short delay, apply meteor damage
+    setTimeout(() => {
+      creeps.forEach(creep => {
+        const creepPos = new Vector3(...creep.position);
+        const distance = creepPos.distanceTo(meteorTarget);
+        if (distance <= 5) { // Large area of effect
+          const falloff = 1 - (distance / 5);
+          damageCreep(creep.id, meteorDamage * falloff);
+        }
+      });
+    }, 1000); // 1 second delay for meteor to land
+  };
+
   useFrame((_, delta) => {
     if (!playerRef.current) return;
 
@@ -291,35 +409,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
           orb.position.copy(pos);
 
           if (newProgress >= 0.45) {
-            damageCreep(target.id, actualDamage);
-
-            // Apply splash damage to nearby creeps
-            creeps.forEach((nearbyCreep) => {
-              if (nearbyCreep.id !== target.id) {
-                const nearbyPos = new Vector3(
-                  nearbyCreep.position[0],
-                  nearbyCreep.position[1],
-                  nearbyCreep.position[2]
-                );
-                const splashDistance = tempTargetPos.current.distanceTo(nearbyPos);
-
-                if (splashDistance < splashRadius) {
-                  // Calculate damage falloff based on distance
-                  const falloff = 1 - splashDistance / splashRadius;
-                  const splashDamage =
-                    actualDamage * splashDamageMultiplier * falloff;
-                  damageCreep(nearbyCreep.id, splashDamage);
-                }
-              }
-            });
-
-            // Add hit effect at collision point using the new function
-            const hitPosition = new Vector3(
-              target.position[0],
-              target.position[1] + 0.5,
-              target.position[2]
-            );
-            addHitEffect(hitPosition);
+            applyDamage(target.id, actualDamage);
           }
         } else {
           // Returning to orbit
@@ -364,6 +454,48 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
       // Pulse effect
       const pulse = (Math.sin(Date.now() * 0.002 * 2) + 1) * 0.1;
       splashRadiusRef.current.material.opacity = 0.1 + pulse;
+    }
+
+    // Update fire rings
+    if (fireRing > 0) {
+      setActiveFireRings(prev => 
+        prev.map(ring => {
+          const newTimeLeft = ring.timeLeft - delta;
+          if (newTimeLeft <= 0) return null;
+
+          // Deal damage to enemies in range
+          creeps.forEach(creep => {
+            const creepPos = new Vector3(...creep.position);
+            if (creepPos.distanceTo(ring.position) <= 2) {
+              damageCreep(creep.id, fireRingDamage * delta);
+            }
+          });
+
+          return { ...ring, timeLeft: newTimeLeft };
+        }).filter(Boolean) as typeof activeFireRings
+      );
+    }
+
+    // Update frostfire patches
+    if (frostfire > 0) {
+      setActiveFrostfires(prev =>
+        prev.map(frost => {
+          const newTimeLeft = frost.timeLeft - delta;
+          if (newTimeLeft <= 0) return null;
+
+          // Apply slow and damage to enemies in range
+          creeps.forEach(creep => {
+            const creepPos = new Vector3(...creep.position);
+            if (creepPos.distanceTo(frost.position) <= 3) {
+              damageCreep(creep.id, fireRingDamage * 0.5 * delta);
+              // Apply slow effect (this would need to be implemented in the creep movement logic)
+              // slowCreep(creep.id, frostfireSlowAmount);
+            }
+          });
+
+          return { ...frost, timeLeft: newTimeLeft };
+        }).filter(Boolean) as typeof activeFrostfires
+      );
     }
   });
 
@@ -422,6 +554,34 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
           />
         </mesh>
       )}
+      {/* Fire Rings */}
+      {activeFireRings.map((ring, index) => (
+        <mesh key={index}>
+          <sphereGeometry args={[2, 32, 32]} />
+          <meshBasicMaterial
+            color="#ff9900"
+            transparent
+            opacity={0.5}
+            side={DoubleSide}
+            depthWrite={false}
+          />
+          <OrbEffects position={ring.position} />
+        </mesh>
+      ))}
+      {/* Frostfire Patches */}
+      {activeFrostfires.map((frost, index) => (
+        <mesh key={index}>
+          <sphereGeometry args={[3, 32, 32]} />
+          <meshBasicMaterial
+            color="#66ccff"
+            transparent
+            opacity={0.5}
+            side={DoubleSide}
+            depthWrite={false}
+          />
+          <OrbEffects position={frost.position} />
+        </mesh>
+      ))}
     </group>
   );
 }

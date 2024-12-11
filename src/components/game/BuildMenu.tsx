@@ -403,7 +403,10 @@ export function BuildMenu() {
         <div className="player-stats">
           <button
             className="player-icon"
-            onClick={() => setShowSkillsMenu(true)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowSkillsMenu(true);
+            }}
             data-has-skillpoints={skillPoints > 0}
           >
             <FaUser />

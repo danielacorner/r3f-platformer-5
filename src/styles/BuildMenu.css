@@ -38,52 +38,50 @@
 }
 
 .player-icon {
-  position: relative;
-  width: 2rem;
-  height: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(to bottom, #1e293b, #1e2837);
-  border: 1px solid #3b5998;
-  border-radius: 50%;
-  color: #60a5fa;
-  font-size: 1rem;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  padding: 8px;
+  position: relative;
+  transition: transform 0.2s;
 }
 
 .player-icon:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 15px rgba(96, 165, 250, 0.3);
+  transform: scale(1.1);
 }
 
-.skill-points-badge {
+.player-icon[data-has-skillpoints="true"] {
+  color: #fbbf24;
+  animation: pulse 2s infinite;
+}
+
+.skill-points-indicator {
   position: absolute;
-  top: -0.25rem;
-  right: -0.25rem;
-  width: 1rem;
-  height: 1rem;
-  background-color: #fbbf24;
-  color: #1e293b;
+  top: -4px;
+  right: -4px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.75rem;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  font-size: 0.7rem;
-  font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: pulse 2s infinite;
+  font-weight: bold;
 }
 
 @keyframes pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.4);
+    transform: scale(1);
   }
-  70% {
-    box-shadow: 0 0 0 4px rgba(251, 191, 36, 0);
+  50% {
+    transform: scale(1.1);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(251, 191, 36, 0);
+    transform: scale(1);
   }
 }
 
@@ -907,257 +905,11 @@
     rgba(59, 130, 246, 0.1),
     rgba(59, 130, 246, 0.2)
   );
-  padding: 1rem;
-  margin: -1rem -1rem 1rem -1rem;
-  border-bottom: 2px solid rgba(59, 130, 246, 0.3);
-  position: relative;
-  overflow: hidden;
-}
-
-.skills-header h2 {
-  font-size: 1.75rem;
-  background: linear-gradient(to right, #60a5fa, #3b82f6);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-@media screen and (max-width: 640px) {
-  .skills-menu {
-    width: 95%;
-    padding: 0.5rem;
-    max-height: 90vh;
-    overflow-y: auto;
-  }
-
-  .skills-header {
-    padding-bottom: 1rem !important;
-    margin-bottom: 0.5rem !important;
-  }
-
-  .skill-icon {
-    width: 2.25rem;
-    height: 2.25rem;
-    border-radius: 0.5rem;
-    flex-shrink: 0;
-  }
-
-  .skill-points {
-    font-size: 0.85rem;
-  }
-
-  .skill-description {
-    font-size: 0.8rem;
-    opacity: 0.8;
-    margin: 0;
-  }
-
-  .skill-name {
-    font-size: 0.85rem;
-    margin: 0;
-  }
-
-  .skill-grid {
-    gap: 0.25rem;
-    padding: 0.25rem;
-  }
-
-  .skill-item {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    gap: 0.5rem;
-    align-items: center;
-    padding: 1rem 0.5rem 0.5rem;
-    min-height: 0;
-    height: fit-content;
-  }
-
-  .upgrade-button {
-    padding: 0.25rem;
-    font-size: 1rem;
-    min-width: 2rem;
-    /* height: 2rem; */
-    margin: 0;
-  }
-  .skill-level {
-    position: absolute;
-    top: 1px;
-    right: 12px;
-  }
-
-  .close-icon-button {
-    width: 1.75rem;
-    height: 1.75rem;
-    padding: 0.25rem;
-  }
-
-  .header-right {
-    gap: 0.5rem;
-  }
-}
-
-@media screen and (max-width: 432px) {
-  .stats-display {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .xp-display {
-    width: 100%;
-    padding: 0.25rem 0.5rem;
-  }
-
-  .xp-level {
-    font-size: 0.9rem;
-    min-width: 3rem;
-  }
-
-  .xp-text {
-    font-size: 0.7rem;
-    min-width: 3.5rem;
-  }
-
-  .element-name {
-    display: none;
-  }
-
-  .element-preview {
-    width: 36px;
-  }
-
-  .tower-groups {
-    padding: 0;
-    border: none;
-  }
-
-  .build-menu {
-    padding: 8px;
-    gap: 8px;
-  }
-
-  .money-display {
-    padding: 4px;
-  }
-}
-
-/* Add smooth scrollbar for the skills menu */
-.skills-menu::-webkit-scrollbar {
-  width: 8px;
-}
-
-.skills-menu::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
-}
-
-.skills-menu::-webkit-scrollbar-thumb {
-  background: rgba(59, 89, 152, 0.5);
-  border-radius: 4px;
-}
-
-.skills-menu::-webkit-scrollbar-thumb:hover {
-  background: rgba(59, 89, 152, 0.7);
-}
-
-/* High-end Skills Menu Design */
-.skills-menu {
-  background: linear-gradient(135deg, #1e293b, #0f172a);
-  border: 2px solid rgba(59, 130, 246, 0.3);
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5), 0 0 60px rgba(59, 130, 246, 0.1),
-    inset 0 0 100px rgba(59, 130, 246, 0.05);
-  animation: slideIn 0.3s ease-out, borderGlow 4s infinite alternate;
-  position: relative;
-  overflow: hidden;
-}
-
-.skills-menu::before {
-  content: "";
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(
-    circle at center,
-    transparent 30%,
-    rgba(59, 130, 246, 0.03) 60%,
-    transparent 70%
-  );
-  animation: rotate 20s linear infinite;
-  pointer-events: none;
-}
-
-.skills-menu::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(59, 130, 246, 0.1) 0%,
-    transparent 50%,
-    rgba(59, 130, 246, 0.1) 100%
-  );
-  pointer-events: none;
-}
-
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes borderGlow {
-  0% {
-    border-color: rgba(59, 130, 246, 0.3);
-  }
-  50% {
-    border-color: rgba(59, 130, 246, 0.5);
-  }
-  100% {
-    border-color: rgba(59, 130, 246, 0.3);
-  }
-}
-
-.skills-header {
-  background: linear-gradient(
-    to right,
-    rgba(59, 130, 246, 0.1),
-    rgba(59, 130, 246, 0.2)
-  );
   padding: 1.5rem;
   margin: -1rem -1rem 1.5rem -1rem;
   border-bottom: 2px solid rgba(59, 130, 246, 0.3);
   position: relative;
   overflow: hidden;
-}
-
-.skills-header::before {
-  content: "";
-  position: absolute;
-  pointer-events: none;
-  top: 0;
-  left: -100%;
-  width: 200%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.1),
-    transparent
-  );
-  animation: shimmer 3s infinite;
-}
-
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
 }
 
 .skills-header h2 {
