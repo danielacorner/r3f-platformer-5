@@ -16,6 +16,7 @@ import { HitSparks } from "../effects/HitSparks";
 import { OrbEffects } from "../effects/OrbEffects";
 import { useGameStore } from "../../store/gameStore";
 import { useMemo } from "react";
+import { isMobile } from "react-device-detect";
 
 const BASE_ORB_RADIUS = 1.5; // Base orbit radius
 const BASE_ORB_SPEED = 2; // Base orbit speed
@@ -23,6 +24,8 @@ const BASE_ATTACK_RANGE = 5; // Base range to detect enemies
 const BASE_ATTACK_DAMAGE = 25; // Base damage
 const BASE_ATTACK_COOLDOWN = 1.5; // Base time between attacks in seconds
 const DAMAGE_RADIUS = 1; // Radius for area damage
+const MOBILE_ORB_SPEED_MULTIPLIER = 0.8;
+const MOBILE_PATTERN_SIMPLIFICATION = 0.5;
 
 interface MagicOrbProps {
   playerRef: React.RefObject<RigidBody>;
@@ -47,6 +50,10 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   const midPoints = useRef<{ [key: number]: Vector3 }>({});
   const frameCount = useRef(0);
   const trailPoints = useRef<Vector3[]>([]);
+  const tempVec3 = useRef(new Vector3());
+  const tempTargetPos = useRef(new Vector3());
+  const tempMidPoint = useRef(new Vector3());
+  const tempReturnTarget = useRef(new Vector3());
 
   // Add a UUID generator for truly unique keys
   const generateUUID = () => {
@@ -106,19 +113,15 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
     return creeps
       .filter((enemy) => {
         if (!enemy || enemy.health <= 0) return false;
-        const enemyPos = new Vector3(
-          enemy.position[0],
-          enemy.position[1],
-          enemy.position[2]
-        );
-        const dist = enemyPos.distanceTo(orbsRef.current[0].position);
+        tempVec3.current.set(enemy.position[0], enemy.position[1], enemy.position[2]);
+        const dist = tempVec3.current.distanceTo(orbsRef.current[0].position);
         return dist <= actualRange;
       })
       .sort((a, b) => {
-        const aPos = new Vector3(a.position[0], a.position[1], a.position[2]);
-        const bPos = new Vector3(b.position[0], b.position[1], b.position[2]);
-        const distA = aPos.distanceTo(orbsRef.current[0].position);
-        const distB = bPos.distanceTo(orbsRef.current[0].position);
+        tempVec3.current.set(a.position[0], a.position[1], a.position[2]);
+        const distA = tempVec3.current.distanceTo(orbsRef.current[0].position);
+        tempVec3.current.set(b.position[0], b.position[1], b.position[2]);
+        const distB = tempVec3.current.distanceTo(orbsRef.current[0].position);
         return distA - distB;
       });
   };
@@ -201,15 +204,29 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
     const position = playerRef.current.translation();
     const playerPos = new Vector3(position.x, position.y, position.z);
-    const time = Date.now() * 0.002 * actualOrbSpeed * (1 + speed * 0.12);
+    const speedMultiplier = isMobile ? MOBILE_ORB_SPEED_MULTIPLIER : 1;
+    const time = Date.now() * 0.002 * actualOrbSpeed * (1 + speed * 0.12) * speedMultiplier;
 
     // Complex orbit pattern for non-attacking orbs
     orbsRef.current.forEach((orb, index) => {
-      if (!orb || attackingOrbs[index]) return; // Skip if orb is attacking
+      if (!orb || attackingOrbs[index]) return;
 
       const baseAngle = time + (Math.PI * 2 * index) / orbsRef.current.length;
+      
+      // Simplified pattern for mobile
+      if (isMobile) {
+        const simpleRadius = BASE_ORB_RADIUS * (1 + range / 4);
+        const orbitX = Math.cos(baseAngle) * simpleRadius;
+        const orbitZ = Math.sin(baseAngle) * simpleRadius;
+        orb.position.set(
+          playerPos.x + orbitX,
+          playerPos.y + 1,
+          playerPos.z + orbitZ
+        );
+        return;
+      }
 
-      // Create a complex pattern using multiple sine waves
+      // Original complex pattern for desktop
       const frequency1 = 1;
       const frequency2 = 0.5;
       const phase = (index * Math.PI) / 3;
@@ -259,7 +276,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
         const startPos = startPositions.current[orbIndex];
         const midPoint = midPoints.current[orbIndex];
-        const targetPos = new Vector3(
+        tempTargetPos.current.set(
           target.position[0],
           target.position[1] + 1,
           target.position[2]
@@ -268,9 +285,9 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
         if (newProgress < 0.5) {
           // Moving to enemy
           const t = newProgress * 2;
-          const p1 = new Vector3().lerpVectors(startPos, midPoint, t);
-          const p2 = new Vector3().lerpVectors(midPoint, targetPos, t);
-          const pos = new Vector3().lerpVectors(p1, p2, t);
+          tempMidPoint.current.lerpVectors(startPos, midPoint, t);
+          tempReturnTarget.current.lerpVectors(midPoint, tempTargetPos.current, t);
+          const pos = new Vector3().lerpVectors(tempMidPoint.current, tempReturnTarget.current, t);
           orb.position.copy(pos);
 
           if (newProgress >= 0.45) {
@@ -284,7 +301,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
                   nearbyCreep.position[1],
                   nearbyCreep.position[2]
                 );
-                const splashDistance = targetPos.distanceTo(nearbyPos);
+                const splashDistance = tempTargetPos.current.distanceTo(nearbyPos);
 
                 if (splashDistance < splashRadius) {
                   // Calculate damage falloff based on distance
@@ -307,7 +324,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
         } else {
           // Returning to orbit
           const t = (newProgress - 0.5) * 2;
-          const returnTarget = new Vector3(
+          tempReturnTarget.current.set(
             playerPos.x +
               Math.cos(
                 time +
@@ -324,7 +341,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
               ) *
                 BASE_ORB_RADIUS
           );
-          orb.position.lerp(returnTarget, t);
+          orb.position.lerp(tempReturnTarget.current, t);
         }
 
         updateTrail(orb.position);
