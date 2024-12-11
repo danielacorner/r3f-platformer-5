@@ -16,6 +16,7 @@ import { GameUI } from "./components/game/GameUI";
 import { WaveIndicator } from "./components/game/WaveIndicator";
 import { useGameStore } from "./store/gameStore";
 import { useEffect, useRef } from "react";
+import { MantineProvider } from '@mantine/core';
 import "./styles/BuildMenu.css";
 import "./styles/TowerConfirmation.css";
 import "./styles/TowerSellMenu.css";
@@ -106,7 +107,12 @@ function Effects() {
 
 export default function App() {
   return (
-    <>
+    <MantineProvider
+      theme={{
+        colorScheme: 'dark',
+        primaryColor: 'blue',
+      }}
+    >
       <div
         style={{
           width: "100vw",
@@ -163,6 +169,6 @@ export default function App() {
         </Canvas>
         <Loader />
       </div>
-    </>
+    </MantineProvider>
   );
 }
