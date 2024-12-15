@@ -37,6 +37,8 @@ export function Player({ moveTargetRef }: PlayerProps) {
   const lastTouchY = useRef<number | null>(null);
   const lastTouchX = useRef<number | null>(null);
   const cameraRotation = useRef(0);
+  const cameraZoom = useRef(1);
+  const cameraAngle = useRef(0.5);
   const introStartTime = useRef<number | null>(null);
   const { camera } = useThree();
   const [showLevelUpEffect, setShowLevelUpEffect] = useState(false);
@@ -44,10 +46,6 @@ export function Player({ moveTargetRef }: PlayerProps) {
   const level = useGameStore((state) => state.level);
   const range = useGameStore((state) => state.upgrades.range);
   const damage = useGameStore((state) => state.upgrades.damage);
-  const cameraZoom = useGameStore((state) => state.cameraZoom);
-  const cameraAngle = useGameStore((state) => state.cameraAngle);
-  const adjustCameraZoom = useGameStore((state) => state.adjustCameraZoom);
-  const adjustCameraAngle = useGameStore((state) => state.adjustCameraAngle);
   const [rigidBodyKey, setRigidBodyKey] = useState(0);
   const floatOffset = useRef(0);
 
@@ -84,10 +82,12 @@ export function Player({ moveTargetRef }: PlayerProps) {
 
       if (e.shiftKey) {
         // Adjust vertical angle with shift + wheel
-        adjustCameraAngle(delta);
+        const newAngle = Math.max(0.2, Math.min(0.8, cameraAngle.current + delta));
+        cameraAngle.current = newAngle;
       } else {
         // Regular zoom without shift
-        adjustCameraZoom(delta);
+        const newZoom = Math.max(0.5, Math.min(2, cameraZoom.current + delta));
+        cameraZoom.current = newZoom;
       }
     };
 
@@ -105,7 +105,8 @@ export function Player({ moveTargetRef }: PlayerProps) {
 
       // Vertical movement controls camera angle
       const deltaY = (touchY - lastTouchY.current) * 0.002;
-      adjustCameraAngle(deltaY);
+      const newAngle = Math.max(0.2, Math.min(0.8, cameraAngle.current + deltaY));
+      cameraAngle.current = newAngle;
 
       // Horizontal movement controls rotation
       const deltaX = (touchX - lastTouchX.current) * 0.1;
@@ -138,7 +139,7 @@ export function Player({ moveTargetRef }: PlayerProps) {
       window.removeEventListener("touchmove", handleTouchMove);
       window.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [camera, adjustCameraZoom, adjustCameraAngle, rigidBodyKey]);
+  }, [camera, rigidBodyKey]);
 
   // Check for level up
   useEffect(() => {
@@ -270,8 +271,8 @@ export function Player({ moveTargetRef }: PlayerProps) {
     });
 
     // Update camera position
-    const verticalOffset = CAMERA_HEIGHT * cameraZoom * cameraAngle;
-    const horizontalOffset = CAMERA_HEIGHT * cameraZoom * (1 - cameraAngle);
+    const verticalOffset = CAMERA_HEIGHT * cameraZoom.current * cameraAngle.current;
+    const horizontalOffset = CAMERA_HEIGHT * cameraZoom.current * (1 - cameraAngle.current);
 
     // Apply rotation to camera position
     const rotationRad = (cameraRotation.current * Math.PI) / 180;
