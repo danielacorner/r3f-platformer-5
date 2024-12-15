@@ -1,16 +1,9 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo, } from "react";
 import {
   Vector3,
   CatmullRomCurve3,
-  InstancedMesh,
-  Object3D,
-  Matrix4,
-  Euler,
-  Shape,
-  DoubleSide,
-  ExtrudeGeometry,
+
 } from "three";
-import { useGameStore } from "../../store/gameStore";
 import { PATH_CONFIGS } from "../../config/pathConfigs";
 
 export interface PathSegment {
@@ -26,6 +19,71 @@ const CRYSTAL_HEIGHT = 1;
 const CRYSTAL_SCALE = 0.5;
 const CHEVRON_SCALE = 0.6;
 
+export function PathDecorations({ pathPoints, segmentCount }: { pathPoints: Vector3[], segmentCount?: number }) {
+  const segments = useMemo(
+    () => generatePathSegments(pathPoints, segmentCount),
+    [pathPoints]
+  );
+
+  // Memoize crystal rotations
+  const crystalRotations = useMemo(
+    () => segments.map(() => Math.random() * Math.PI * 2),
+    [segments]
+  );
+
+  return (
+    <>
+      {segments.map((segment, index) => (
+        <group key={index}>
+          {/* Regular or Chevron path segment */}
+          {index % 8 === 0 ? (
+            <ChevronTile
+              position={segment.position}
+              rotation={segment.rotation}
+              scale={[
+                segment.scale[0] * CHEVRON_SCALE,
+                segment.scale[1] * CHEVRON_SCALE,
+                segment.scale[2] * CHEVRON_SCALE,
+              ]}
+            />
+          ) : (
+            <mesh
+              position={segment.position}
+              rotation={segment.rotation}
+              scale={segment.scale}
+            >
+              <boxGeometry />
+              <meshStandardMaterial color="#444" />
+            </mesh>
+          )}
+
+          {/* Crystal decoration - only on every 8th segment */}
+          {index % 8 === 0 && (
+            <mesh
+              position={[
+                segment.position[0],
+                segment.position[1] + CRYSTAL_HEIGHT,
+                segment.position[2],
+              ]}
+              rotation={[0, crystalRotations[index], 0]}
+              scale={CRYSTAL_SCALE}
+            >
+              <octahedronGeometry args={[0.5]} />
+              <meshStandardMaterial
+                color="#60a5fa"
+                emissive="#60a5fa"
+                emissiveIntensity={0.5}
+                roughness={0.2}
+                metalness={0.8}
+              />
+            </mesh>
+          )}
+        </group>
+      ))}
+    </>
+  );
+}
+
 export function generatePath(currentLevel: number) {
   const config = PATH_CONFIGS[currentLevel];
   if (!config) {
@@ -34,19 +92,20 @@ export function generatePath(currentLevel: number) {
     );
     return {
       points: PATH_CONFIGS[1].pathPoints,
-      segments: generatePathSegments(PATH_CONFIGS[1].pathPoints),
+      segments: generatePathSegments(PATH_CONFIGS[1].pathPoints, PATH_CONFIGS[1].segmentCount),
     };
   }
   return {
     points: config.pathPoints,
-    segments: generatePathSegments(config.pathPoints),
+    segments: generatePathSegments(config.pathPoints, config.segmentCount),
+    segmentCount: config.segmentCount,
   };
 }
 
-function generatePathSegments(pathPoints: Vector3[]): PathSegment[] {
+function generatePathSegments(pathPoints: Vector3[], segmentCount = 100): PathSegment[] {
   const segments: PathSegment[] = [];
   const curve = new CatmullRomCurve3(pathPoints, false, "catmullrom", 0.5);
-  const segmentCount = 100;
+
 
   for (let i = 0; i < segmentCount; i++) {
     const t = i / segmentCount;
@@ -246,70 +305,5 @@ function ChevronTile({
         metalness={0.8}
       />
     </mesh>
-  );
-}
-
-export function PathDecorations({ pathPoints }: { pathPoints: Vector3[] }) {
-  const segments = useMemo(
-    () => generatePathSegments(pathPoints),
-    [pathPoints]
-  );
-
-  // Memoize crystal rotations
-  const crystalRotations = useMemo(
-    () => segments.map(() => Math.random() * Math.PI * 2),
-    [segments]
-  );
-
-  return (
-    <>
-      {segments.map((segment, index) => (
-        <group key={index}>
-          {/* Regular or Chevron path segment */}
-          {index % 8 === 0 ? (
-            <ChevronTile
-              position={segment.position}
-              rotation={segment.rotation}
-              scale={[
-                segment.scale[0] * CHEVRON_SCALE,
-                segment.scale[1] * CHEVRON_SCALE,
-                segment.scale[2] * CHEVRON_SCALE,
-              ]}
-            />
-          ) : (
-            <mesh
-              position={segment.position}
-              rotation={segment.rotation}
-              scale={segment.scale}
-            >
-              <boxGeometry />
-              <meshStandardMaterial color="#444" />
-            </mesh>
-          )}
-
-          {/* Crystal decoration - only on every 8th segment */}
-          {index % 8 === 0 && (
-            <mesh
-              position={[
-                segment.position[0],
-                segment.position[1] + CRYSTAL_HEIGHT,
-                segment.position[2],
-              ]}
-              rotation={[0, crystalRotations[index], 0]}
-              scale={CRYSTAL_SCALE}
-            >
-              <octahedronGeometry args={[0.5]} />
-              <meshStandardMaterial
-                color="#60a5fa"
-                emissive="#60a5fa"
-                emissiveIntensity={0.5}
-                roughness={0.2}
-                metalness={0.8}
-              />
-            </mesh>
-          )}
-        </group>
-      ))}
-    </>
   );
 }

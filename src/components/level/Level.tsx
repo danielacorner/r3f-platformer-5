@@ -320,7 +320,7 @@ export function Level() {
   }, [selectedObjectType]);
 
   // Path Generation
-  const { segments, points: pathPoints } = useMemo(
+  const { segments, points: pathPoints, segmentCount } = useMemo(
     () => generatePath(currentLevel),
     [currentLevel]
   );
@@ -520,7 +520,7 @@ export function Level() {
       <OptimizedCrystal position={[20, 1.5, 20]} scale={2} color="#ef4444" />
 
       {/* Path Decoration Crystals */}
-      <PathDecorations pathPoints={pathPoints} />
+      <PathDecorations pathPoints={pathPoints} segmentCount={segmentCount} />
 
       {/* Path segments */}
       {segments.map((segment, index) => (

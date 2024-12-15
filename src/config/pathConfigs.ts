@@ -6,6 +6,8 @@ export interface PathConfig {
   spawnerPosition: [number, number, number];
   portalPosition: [number, number, number];
   pathPoints: Vector3[];
+  /** path segments count */
+  segmentCount?: number
 }
 
 const PLATFORM_SIZE = 60;
@@ -44,8 +46,9 @@ export const PATH_CONFIGS: Record<number, PathConfig> = {
       new Vector3(15, baseHeight, 18),     // Near end
       new Vector3(20, baseHeight, 20)      // End
     ],
+    segmentCount: 100,
     spawnerPosition: [-20, baseHeight, -20],
-    portalPosition: [20, baseHeight, 20]
+    portalPosition: [20, baseHeight, 20],
   },
 
   // Level 2: Overlapping loops path
@@ -54,31 +57,31 @@ export const PATH_CONFIGS: Record<number, PathConfig> = {
     pathPoints: [
       // Starting point
       new Vector3(-20, baseHeight, 0),
-      
+
       // First large loop (left)
       new Vector3(-15, baseHeight, -15),
       new Vector3(-5, baseHeight, -20),
       new Vector3(5, baseHeight, -15),
       new Vector3(0, baseHeight, -5),
       new Vector3(-15, baseHeight, -15),
-      
+
       // Second large loop (right)
       new Vector3(5, baseHeight, -20),
       new Vector3(15, baseHeight, -15),
       new Vector3(20, baseHeight, -5),
       new Vector3(15, baseHeight, 5),
       new Vector3(5, baseHeight, -20),
-      
+
       // Connecting path
       new Vector3(0, baseHeight, 0),
-      
+
       // Third large loop (bottom)
       new Vector3(-15, baseHeight, 15),
       new Vector3(0, baseHeight, 20),
       new Vector3(15, baseHeight, 15),
       new Vector3(0, baseHeight, 5),
       new Vector3(-15, baseHeight, 15),
-      
+
       // Back to start
       new Vector3(-20, baseHeight, 0)
     ],
