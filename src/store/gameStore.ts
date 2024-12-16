@@ -21,7 +21,7 @@ interface TowerStats {
   color?: string;
   emissive?: string;
   special?: {
-    type: 'slow' | 'chain_lightning' | 'thunder_strike' | 'static_field' | 'overload' | 'poison' | 'splash' | 'armor_reduction' | 'chain_amplify' | 'aura_amplify' | 'purify' | 'burn' | 'meteor' | 'inferno' | 'phoenix' | 'apocalypse' | 'frozen_ground' | 'shatter' | 'blizzard' | 'absolute_zero' | 'spores' | 'thorns' | 'plague' | 'pandemic' | 'tsunami' | 'whirlpool' | 'flood' | 'maelstrom' | 'curse' | 'void' | 'nightmare' | 'oblivion' | 'fireball' | 'inferno_blast' | 'meteor_strike' | 'volcanic_burst' | 'armageddon';
+    type: 'slow' | 'chain_lightning' | 'thunder_strike' | 'static_field' | 'overload' | 'poison' | 'splash' | 'armor_reduction' | 'chain_amplify' | 'aura_amplify' | 'purify' | 'burn' | 'meteor' | 'inferno' | 'phoenix' | 'apocalypse' | 'frozen_ground' | 'shatter' | 'blizzard' | 'absolute_zero' | 'spores' | 'thorns' | 'plague' | 'pandemic' | 'tsunami' | 'whirlpool' | 'flood' | 'maelstrom' | 'curse' | 'void' | 'nightmare' | 'oblivion' | 'fireball' | 'inferno_blast' | 'meteor_strike' | 'volcanic_burst' | 'armageddon' | 'inferno_blast' | 'storm_fury';
     value: number;
     bounces?: number;
     radius?: number;
@@ -45,6 +45,12 @@ interface TowerStats {
     fork_chance?: number;
     splash_radius?: number;
     burn_duration?: number;
+    freeze_chance?: number;
+    freeze_duration?: number;
+    spread_chance?: number;
+    thorns_damage?: number;
+    multiplier?: number;
+    evolve_time?: number;
   };
   description?: string;
 }
@@ -93,8 +99,8 @@ export const TOWER_STATS: Record<ElementType, TowerStats> = {
   dark5: { damage: 200, range: 9, attackSpeed: 1.4, cost: 2000, special: { type: 'oblivion', value: 0.60, soul_harvest: true }, color: '#f3e8ff', emissive: '#a855f7', description: "Oblivion - Harvests souls of fallen enemies for bonus effects" }
 }
 
-export const isTowerOnPath = (position: number[] | { x: number; y: number; z: number }) => {
-  const pathData = generatePath();
+export const isTowerOnPath = (position: number[] | { x: number; y: number; z: number }, currentLevel: number) => {
+  const pathData = generatePath(currentLevel);
   const towerRadius = 0.35; // Reduced from 0.5 to allow closer placement
   const pathMargin = 0.2; // Added margin to make path hitbox smaller than visual
 
@@ -122,9 +128,9 @@ export const isTowerOnPath = (position: number[] | { x: number; y: number; z: nu
     // Check if tower overlaps with segment bounds, using reduced path size
     const effectiveScaleX = scaleX - pathMargin;
     const effectiveScaleZ = scaleZ - pathMargin;
-    
-    if (Math.abs(localX) <= (effectiveScaleX / 2 + towerRadius) && 
-        Math.abs(localZ) <= (effectiveScaleZ / 2 + towerRadius)) {
+
+    if (Math.abs(localX) <= (effectiveScaleX / 2 + towerRadius) &&
+      Math.abs(localZ) <= (effectiveScaleZ / 2 + towerRadius)) {
       return segment;
     }
   }
@@ -231,10 +237,39 @@ interface GameState {
   ) => void;
   cameraZoom: number;
   cameraAngle: number;
+  setPhase: (phase: 'prep' | 'combat' | 'victory') => void;
+  setCurrentLevel: (level: number) => void;
+  setTimer: (timer: number) => void;
+  setEnemiesAlive: (count: number) => void;
+  setIsSpawning: (isSpawning: boolean) => void;
+  setLevelComplete: (complete: boolean) => void;
+  setWave: (wave: number) => void;
+  addCreep: (creep: CreepState) => void;
+  incrementLevel: () => void;
+  addMoney: (amount: number) => void;
+  updateTowerState: (id: string, updates: Partial<TowerState>) => void;
+  removeTowerState: (id: string) => void;
+  setWaveStartTime: (startTime: number) => void;
+  removeCreep: (creepId: string) => void;
+  addProjectile: (projectile: Projectile) => void;
+  removeProjectile: (projectileId: number) => void;
+  setPlayerRef: (ref: RapierRigidBody) => void;
+  setOrbSpeed: (speed: number) => void;
+  setHighlightedPathSegment: (segment: PathSegment | null) => void;
+  setShowWaveIndicator: (show: boolean) => void;
+  setShowTowerConfirmation: (show: boolean) => void;
+  setPendingTowerPosition: (position: { x: number; y: number; z: number } | null) => void;
+  setCameraZoom: (zoom: number) => void;
+  setCameraAngle: (angle: number) => void;
+  loseLife: () => void;
+  reset: () => void;
+  addExperience: (amount: number) => void;
+  addScore: (amount: number) => void;
+  updateCreep: (creepId: string, updates: Partial<CreepState>) => void;
 }
 
 const initialState: GameState = {
-  phase: 'prep',
+  phase: 'prep' as 'prep' | 'combat' | 'victory',
   currentLevel: 1,
   timer: 0,
   enemiesAlive: 0,
@@ -269,6 +304,36 @@ const initialState: GameState = {
   pendingTowerPosition: null,
   cameraZoom: 1,
   cameraAngle: 0.5, // Default angle (0 is horizontal, 1 is vertical)
+  addPlacedTower: () => { },
+  setPhase: () => { },
+  setCurrentLevel: () => { },
+  setTimer: () => { },
+  setEnemiesAlive: () => { },
+  setIsSpawning: () => { },
+  setLevelComplete: () => { },
+  setWave: () => { },
+  addCreep: () => { },
+  incrementLevel: () => { },
+  addMoney: () => { },
+  updateTowerState: () => { },
+  removeTowerState: () => { },
+  setWaveStartTime: () => { },
+  removeCreep: () => { },
+  addProjectile: () => { },
+  removeProjectile: () => { },
+  setPlayerRef: () => { },
+  setOrbSpeed: () => { },
+  setHighlightedPathSegment: () => { },
+  setShowWaveIndicator: () => { },
+  setShowTowerConfirmation: () => { },
+  setPendingTowerPosition: () => { },
+  setCameraZoom: () => { },
+  setCameraAngle: () => { },
+  loseLife: () => { },
+  reset: () => { },
+  addExperience: () => { },
+  addScore: () => { },
+  updateCreep: () => { },
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -308,19 +373,19 @@ export const useGameStore = create<GameState>((set, get) => ({
   addPlacedTower: (position, type, level = 1) => {
     const state = get();
     const cost = TOWER_STATS[type]?.cost ?? 0;
-    
+
     // Convert position to array format if it's a Vector3
-    const positionArray = position instanceof Vector3 
+    const positionArray = position instanceof Vector3
       ? position.toArray()
-      : Array.isArray(position) 
-        ? position 
+      : Array.isArray(position)
+        ? position
         : [position.x, position.y, position.z];
 
     if (state.money >= cost) {
       set(state => ({
         placedTowers: [...state.placedTowers, {
           id: Date.now(),
-          position: positionArray,
+          position: new Vector3(...positionArray),
           type,
           level,
           kills: 0
@@ -389,7 +454,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       const remainingCreeps = state.creeps.filter(c => c.id !== id);
       const newEnemiesAlive = remainingCreeps.length;
       console.log(`Enemies alive after removal: ${newEnemiesAlive} (based on ${remainingCreeps.length} remaining creeps)`);
-      
+
       return {
         creeps: remainingCreeps,
         enemiesAlive: newEnemiesAlive
@@ -412,7 +477,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const newHealth = creep.health - damage;
     console.log(`Creep ${id} damaged. Health: ${creep.health} -> ${newHealth}. Enemies alive: ${state.enemiesAlive}`);
-    
+
     if (newHealth <= 0) {
       console.log(`Creep ${id} died. Enemies alive before: ${state.enemiesAlive}`);
       state.addExperience(10 + creep.waveId * 2);
@@ -453,11 +518,11 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       // Calculate derived stats
       const damageMultiplier = 1 + (newUpgrades.damage * 0.15); // 15% per level
-      
+
       // Calculate speed stats with new mechanics
       let cooldownReduction = 1;
       let orbSpeedBonus = 1;
-      
+
       if (skill === 'speed') {
         const totalSpeedReduction = newUpgrades.speed * 0.12; // 12% per level
         if (totalSpeedReduction >= 1) {
@@ -473,7 +538,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         // For other skills, maintain current cooldown reduction
         cooldownReduction = 1 - (newUpgrades.speed * 0.12);
       }
-      
+
       const rangeMultiplier = 1 + (newUpgrades.range * 0.12); // 12% per level
       const multishotChance = newUpgrades.multishot * 0.15; // 15% chance per level
 
@@ -538,7 +603,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   startWave: () => {
     const state = get();
     console.log('Starting wave, current state:', state);
-    
+
     set((state) => ({
       currentWave: state.currentWave + 1,
       wave: state.currentWave + 1, // Keep wave and currentWave in sync
@@ -567,66 +632,3 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 }));
 
-const handleProjectileHit = (projectile: Projectile, creep: Creep) => {
-  const tower = towers.find(t => t.id === projectile.towerId);
-  if (!tower) return;
-
-  const stats = TOWER_STATS[tower.type];
-  const special = stats.special;
-
-  // Calculate base damage
-  let damage = stats.damage;
-
-  // Apply special effects
-  if (special) {
-    if (special.type.startsWith('fireball') || special.type.startsWith('inferno_blast') || 
-        special.type.startsWith('meteor_strike') || special.type.startsWith('volcanic_burst') || 
-        special.type.startsWith('armageddon')) {
-      // Apply splash damage to nearby creeps
-      const splashRadius = special.splash_radius || 1.5;
-      const splashDamage = special.value;
-      const burnDuration = special.burn_duration || 0;
-
-      // Find creeps in splash radius
-      creeps.forEach(nearbyCreep => {
-        if (nearbyCreep.id !== creep.id) {
-          const distance = new Vector3(...nearbyCreep.position)
-            .distanceTo(new Vector3(...creep.position));
-          
-          if (distance <= splashRadius) {
-            // Calculate damage falloff based on distance
-            const falloff = 1 - (distance / splashRadius);
-            const totalSplashDamage = splashDamage * falloff;
-            
-            // Apply splash damage
-            nearbyCreep.health -= totalSplashDamage;
-            
-            // Apply burn effect if applicable
-            if (burnDuration > 0) {
-              nearbyCreep.effects.push({
-                type: 'burn',
-                damage: totalSplashDamage * 0.2,
-                duration: burnDuration,
-                tickRate: 1
-              });
-            }
-          }
-        }
-      });
-
-      // Apply burn effect to main target
-      if (burnDuration > 0) {
-        creep.effects.push({
-          type: 'burn',
-          damage: splashDamage * 0.2,
-          duration: burnDuration,
-          tickRate: 1
-        });
-      }
-    }
-    // Handle other special effects...
-  }
-
-  // Apply damage to main target
-  creep.health -= damage;
-}

@@ -1,10 +1,26 @@
-import { useRef, useEffect, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { Vector3, InstancedMesh, Object3D, Matrix4, BufferGeometry, BufferAttribute, BoxGeometry, Color, PlaneGeometry, MeshBasicMaterial, SphereGeometry, CylinderGeometry, TorusGeometry, IcosahedronGeometry, ConeGeometry, MeshStandardMaterial, DoubleSide, Group, OctahedronGeometry, DodecahedronGeometry } from 'three';
-import { useGameStore } from '../store/gameStore';
-import { createShaderMaterial } from '../utils/shaders';
-import * as THREE from 'three'
-import { BufferGeometryUtils } from 'three/examples/jsm/Addons.js';
+import { useRef, useEffect } from "react";
+import { useFrame } from "@react-three/fiber";
+import {
+  Vector3,
+  InstancedMesh,
+  Object3D,
+  Matrix4,
+  Color,
+  PlaneGeometry,
+  MeshBasicMaterial,
+  CylinderGeometry,
+  ConeGeometry,
+  MeshStandardMaterial,
+  DoubleSide,
+  Group,
+} from "three";
+import * as THREE from "three";
+import { GoblinMobModel } from "../models/GoblinMobModel";
+import { CreeperModel } from "../models/CreeperModel";
+import { PortalEffect } from "./effects/PortalEffect";
+import { CrabModel } from "../models/CrabModel";
+import { useGameStore } from "../store/gameStore";
+
 
 // Create geometries for different creep types
 const CREEP_GEOMETRIES = {
@@ -207,6 +223,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
       100
     );
     backgroundMesh.renderOrder = 10;
+
     healthBarBackgroundRef.current = backgroundMesh;
 
     // Create foreground bar mesh
@@ -327,22 +344,28 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
         matrix.multiply(new Matrix4().makeRotationFromQuaternion(cameraQuaternion));
 
         // Background bar
-        tempMatrix.copy(matrix);
-        tempScaleMatrix.makeScale(barWidth, barHeight, 1);
-        tempMatrix.multiply(tempScaleMatrix);
-        healthBarBackgroundRef.current.setMatrixAt(index, tempMatrix);
+        if (healthBarBackgroundRef.current) {
+
+          tempMatrix.copy(matrix);
+          tempScaleMatrix.makeScale(barWidth, barHeight, 1);
+          tempMatrix.multiply(tempScaleMatrix);
+          healthBarBackgroundRef.current.setMatrixAt(index, tempMatrix);
+        }
 
         // Health bar
         const healthBarWidth = barWidth * healthPercent;
         const offsetX = (barWidth - healthBarWidth) / 2;
 
-        tempMatrix.copy(matrix);
-        tempTranslateMatrix.makeTranslation(-offsetX, 0, 0.001);
-        tempMatrix.multiply(tempTranslateMatrix);
-        tempScaleMatrix.makeScale(healthBarWidth, barHeight, 1);
-        tempMatrix.multiply(tempScaleMatrix);
-        healthBarForegroundRef.current.setMatrixAt(index, tempMatrix);
-        (healthBarForegroundRef.current.material as MeshBasicMaterial).color.set(healthColor);
+        if (healthBarForegroundRef.current) {
+
+          tempMatrix.copy(matrix);
+          tempTranslateMatrix.makeTranslation(-offsetX, 0, 0.001);
+          tempMatrix.multiply(tempTranslateMatrix);
+          tempScaleMatrix.makeScale(healthBarWidth, barHeight, 1);
+          tempMatrix.multiply(tempScaleMatrix);
+          healthBarForegroundRef.current.setMatrixAt(index, tempMatrix);
+          (healthBarForegroundRef.current.material as MeshBasicMaterial).color.set(healthColor);
+        }
 
         // Move to next path segment if needed
         if (pathState.progress >= 1) {

@@ -176,8 +176,8 @@ export function Level() {
     money,
     creeps,
     addPlacedTower,
-    setSelectedObjectType, 
-    selectedObjectType, 
+    setSelectedObjectType,
+    selectedObjectType,
     selectedObjectLevel,
     updateCreep,
     damageCreep,
@@ -281,7 +281,7 @@ export function Level() {
   }, [selectedObjectType]);
 
   // Path Generation
-  const { segments, points: pathPoints } = useMemo(() => generatePath(), []);
+  const { segments, points: pathPoints } = useMemo(() => generatePath(currentLevel), [currentLevel]);
 
   // Tower Placement Logic
   const handleTowerPointerMove = (event: any) => {
@@ -301,7 +301,7 @@ export function Level() {
 
   const handlePlaceTower = (event: any) => {
     event.stopPropagation();
-    
+
     if (selectedObjectType && event.point) {
       // Snap to grid
       const snappedPosition = new Vector3(
@@ -312,14 +312,14 @@ export function Level() {
 
       // Check if position is already occupied by another tower
       const isOccupied = placedTowers.some(tower => {
-        const towerPos = tower.position instanceof Vector3 
-          ? tower.position 
+        const towerPos = tower.position instanceof Vector3
+          ? tower.position
           : new Vector3(...tower.position);
         return towerPos.distanceTo(snappedPosition) < 0.5;
       });
 
       // Check if tower would collide with path
-      const collidesWithPath = isTowerOnPath(snappedPosition.toArray());
+      const collidesWithPath = isTowerOnPath(snappedPosition.toArray(), currentLevel);
 
       if (!isOccupied && !collidesWithPath) {
         if (window.innerWidth < 640) {
@@ -361,7 +361,7 @@ export function Level() {
 
   const handleTowerPreview = (event: any) => {
     event.stopPropagation();
-    
+
     if (selectedObjectType && event.point) {
       // Snap preview position to grid
       const snappedPosition = new Vector3(
@@ -372,8 +372,8 @@ export function Level() {
 
       // Check if position is already occupied
       const isOccupied = placedTowers.some(tower => {
-        const towerPos = tower.position instanceof Vector3 
-          ? tower.position 
+        const towerPos = tower.position instanceof Vector3
+          ? tower.position
           : new Vector3(...tower.position);
         return towerPos.distanceTo(snappedPosition) < 0.5;  // Slightly more forgiving
       });
@@ -455,7 +455,7 @@ export function Level() {
       <RockInstances count={30} radius={20} />
       <CrystalInstances count={8} radius={15} />
       <MushroomInstances count={16} radius={18} />
-      <FirefliesInstances count={24}/>
+      <FirefliesInstances count={24} />
       <GrassInstances count={100} />
 
       {/* Special Crystals */}
