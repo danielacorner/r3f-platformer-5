@@ -165,7 +165,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
   // Set up meshes for each creep type
   useEffect(() => {
     if (!groupRef.current) return;
-    
+
     Object.entries(CREEP_GEOMETRIES).forEach(([type, geometry]) => {
       const mesh = new InstancedMesh(
         geometry,
@@ -307,7 +307,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
         tempObject.rotation.y = angle;
         tempObject.scale.set(1, 1, 1); // Ensure scale is set
         tempObject.updateMatrix();
-        
+
         mesh.setMatrixAt(instanceIndex, tempObject.matrix);
         mesh.instanceMatrix.needsUpdate = true;
 
@@ -335,7 +335,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
         // Health bar
         const healthBarWidth = barWidth * healthPercent;
         const offsetX = (barWidth - healthBarWidth) / 2;
-        
+
         tempMatrix.copy(matrix);
         tempTranslateMatrix.makeTranslation(-offsetX, 0, 0.001);
         tempMatrix.multiply(tempTranslateMatrix);
@@ -388,7 +388,7 @@ export function CreepManager({ pathPoints }: CreepManagerProps) {
   return (
     <group>
       <group ref={groupRef} />
-      <instancedMesh 
+      <instancedMesh
         ref={healthBarBackgroundRef}
         args={[new PlaneGeometry(1, 1), new MeshBasicMaterial({
           color: "#1a1a1a",

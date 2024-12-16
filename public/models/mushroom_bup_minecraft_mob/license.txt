@@ -1,0 +1,11 @@
+Model Information:
+* title:	Mushroom Bup (Minecraft Mob)
+* source:	https://sketchfab.com/3d-models/mushroom-bup-minecraft-mob-419123b9fc56403fb7f11c056515b64c
+* author:	Bdog / Brandon (https://sketchfab.com/01bdog20)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Mushroom Bup (Minecraft Mob)" (https://sketchfab.com/3d-models/mushroom-bup-minecraft-mob-419123b9fc56403fb7f11c056515b64c) by Bdog / Brandon (https://sketchfab.com/01bdog20) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
