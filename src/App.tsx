@@ -11,12 +11,11 @@ import { EffectComposer, Bloom, SMAA } from "@react-three/postprocessing";
 import * as THREE from "three";
 import { Physics } from "@react-three/rapier";
 import { Level } from "./components/level/Level/Level";
-import { BuildMenu } from "./components/BuildMenu";
+import { BottomMenu } from "./components/BottomMenu";
 import { GameUI } from "./components/GameUI";
 import { WaveIndicator } from "./components/WaveIndicator";
 import { useGameStore } from "./store/gameStore";
 import { useEffect, useRef } from "react";
-import "./styles/BuildMenu.css";
 
 function TDCamera() {
   const { playerRef } = useGameStore();
@@ -112,7 +111,7 @@ export default function App() {
           position: "relative",
         }}
       >
-        <BuildMenu />
+        <BottomMenu />
         <GameUI />
         <WaveIndicator />
         <Canvas

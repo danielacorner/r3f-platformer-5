@@ -3,13 +3,13 @@ import { useGameStore } from "../store/gameStore";
 
 import { FaUser } from "react-icons/fa";
 
-import "../styles/BuildMenu.css";
+import "../styles/BottomMenu.css";
 
 import { SkillsMenu } from "./SkillsMenu";
 
 
 
-export function BuildMenu() {
+export function BottomMenu() {
   const {
     money,
     experience,
@@ -26,7 +26,7 @@ export function BuildMenu() {
   const progress = (experience / expForNextLevel) * 100;
 
   return (
-    <div className="build-menu" onClick={(e) => e.stopPropagation()}>
+    <div className="bottom-menu" onClick={(e) => e.stopPropagation()}>
       <div className="stats-display">
         <div className="player-stats">
           <button
