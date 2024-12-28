@@ -1,73 +1,70 @@
-import { Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Suspense } from "react";
+import { Canvas } from "@react-three/fiber";
 import {
   SoftShadows,
   OrbitControls,
   BakeShadows,
   Environment,
   Loader,
-} from '@react-three/drei';
-import {
-  EffectComposer,
-  Bloom,
-  SMAA
-} from '@react-three/postprocessing';
-import * as THREE from 'three';
-import { Physics } from '@react-three/rapier';
-import { Level } from './components/level/Level/Level';
-import { BuildMenu } from './components/BuildMenu';
-import { GameUI } from './components/GameUI';
-import { WaveIndicator } from './components/WaveIndicator';
-import { useGameStore } from './store/gameStore';
-import { useEffect, useRef } from 'react';
-import './styles/BuildMenu.css';
-import './styles/TowerConfirmation.css';
-import './styles/TowerSellMenu.css';
+} from "@react-three/drei";
+import { EffectComposer, Bloom, SMAA } from "@react-three/postprocessing";
+import * as THREE from "three";
+import { Physics } from "@react-three/rapier";
+import { Level } from "./components/level/Level/Level";
+import { BuildMenu } from "./components/BuildMenu";
+import { GameUI } from "./components/GameUI";
+import { WaveIndicator } from "./components/WaveIndicator";
+import { useGameStore } from "./store/gameStore";
+import { useEffect, useRef } from "react";
+import "./styles/BuildMenu.css";
 
 function TDCamera() {
   const { playerRef } = useGameStore();
   const isPanning = useRef(false);
   const lastPanPosition = useRef({ x: 0, y: 0 });
 
-  const handlePointerDown = (e) => {
-    if (e.button === 2 || e.button === 1) { // Right click or middle click
+  const handlePointerDown = (e: PointerEvent) => {
+    if (e.button === 2 || e.button === 1) {
       isPanning.current = true;
       lastPanPosition.current = { x: e.clientX, y: e.clientY };
     }
   };
 
-  const handlePointerUp = (e) => {
+  const handlePointerUp = (e: PointerEvent) => {
     if (e.button === 2 || e.button === 1) {
       isPanning.current = false;
     }
   };
 
-  const handlePointerMove = (e) => {
-    if (!isPanning.current || !playerRef?.current) return;
+  const handlePointerMove = (e: PointerEvent) => {
+    if (!isPanning.current || !playerRef) return;
 
     const dx = (e.clientX - lastPanPosition.current.x) * 0.1;
     const dy = (e.clientY - lastPanPosition.current.y) * 0.1;
 
     const movement = new THREE.Vector3(-dx, 0, -dy);
-    const currentPos = playerRef.current.translation();
-    playerRef.current.setTranslation({
-      x: currentPos.x + movement.x,
-      y: currentPos.y,
-      z: currentPos.z + movement.z
-    });
+    const currentPos = playerRef.translation();
+    playerRef.setTranslation(
+      {
+        x: currentPos.x + movement.x,
+        y: currentPos.y,
+        z: currentPos.z + movement.z,
+      },
+      true
+    );
 
     lastPanPosition.current = { x: e.clientX, y: e.clientY };
   };
 
   useEffect(() => {
-    document.addEventListener('pointerdown', handlePointerDown);
-    document.addEventListener('pointerup', handlePointerUp);
-    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("pointerup", handlePointerUp);
+    document.addEventListener("pointermove", handlePointerMove);
 
     return () => {
-      document.removeEventListener('pointerdown', handlePointerDown);
-      document.removeEventListener('pointerup', handlePointerUp);
-      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("pointerup", handlePointerUp);
+      document.removeEventListener("pointermove", handlePointerMove);
     };
   }, []);
 
@@ -88,7 +85,11 @@ function TDCamera() {
 
 function Effects() {
   return (
-    <EffectComposer multisampling={0} disableNormalPass frameBufferType={THREE.HalfFloatType}>
+    <EffectComposer
+      multisampling={0}
+      enabled
+      frameBufferType={THREE.HalfFloatType}
+    >
       <Bloom
         intensity={0.5}
         luminanceThreshold={0.8}
@@ -103,64 +104,62 @@ function Effects() {
 export default function App() {
   return (
     <>
-    <div style={{ width: '100vw', height: '100vh', background: '#000913', position: 'relative' }}>
-      <BuildMenu />
-      <GameUI />
-      <WaveIndicator />
-      <Canvas
-        shadows="soft"
-        camera={{ fov: 50 }}
-        dpr={[1, 2]}
-        gl={{
-          powerPreference: "high-performance",
-          antialias: true,
-          stencil: false,
-          depth: true,
-          alpha: false
+      <div
+        style={{
+          width: "100vw",
+          height: "100vh",
+          background: "#000913",
+          position: "relative",
         }}
       >
-        <color attach="background" args={['#000913']} />
-        <fog attach="fog" args={['#000913', 30, 100]} />
+        <BuildMenu />
+        <GameUI />
+        <WaveIndicator />
+        <Canvas
+          shadows="soft"
+          camera={{ fov: 50 }}
+          dpr={[1, 2]}
+          gl={{
+            powerPreference: "high-performance",
+            antialias: true,
+            stencil: false,
+            depth: true,
+            alpha: false,
+          }}
+        >
+          <color attach="background" args={["#000913"]} />
+          <fog attach="fog" args={["#000913", 30, 100]} />
 
-        <Suspense fallback={null}>
-          <SoftShadows
-            size={35}
-            samples={16}
-            focus={0.5}
-            blur={3}
-          />
+          <Suspense fallback={null}>
+            <SoftShadows size={35} samples={16} focus={0.5} />
 
-          <Environment
-            preset="sunset"
-            background={false}
-            intensity={0.5}
-          />
+            <Environment preset="sunset" background={false} />
 
-          <ambientLight intensity={0.2} />
-          <directionalLight
-            castShadow
-            intensity={2}
-            position={[10, 15, 10]}
-            shadow-mapSize={[2048, 2048]}
-            shadow-camera-left={-30}
-            shadow-camera-right={30}
-            shadow-camera-top={30}
-            shadow-camera-bottom={-30}
-            shadow-camera-near={0.1}
-            shadow-camera-far={200}
-            shadow-bias={-0.001}
-          />
+            <ambientLight intensity={0.2} />
+            <directionalLight
+              castShadow
+              intensity={2}
+              position={[10, 15, 10]}
+              shadow-mapSize={[2048, 2048]}
+              shadow-camera-left={-30}
+              shadow-camera-right={30}
+              shadow-camera-top={30}
+              shadow-camera-bottom={-30}
+              shadow-camera-near={0.1}
+              shadow-camera-far={200}
+              shadow-bias={-0.001}
+            />
 
-          <Physics debug={false}>
-            <Level />
-          </Physics>
-          <TDCamera />
-          <Effects />
-          <BakeShadows />
-        </Suspense>
-      </Canvas>
-      <Loader />
-    </div>
+            <Physics debug={false}>
+              <Level />
+            </Physics>
+            <TDCamera />
+            <Effects />
+            <BakeShadows />
+          </Suspense>
+        </Canvas>
+        <Loader />
+      </div>
     </>
   );
 }

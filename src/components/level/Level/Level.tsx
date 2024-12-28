@@ -6,13 +6,10 @@ import { Vector3, Raycaster, Color, DoubleSide, Plane, Vector2, InstancedMesh, O
 import { useGameStore, isTowerOnPath, TOWER_STATS } from '../../../store/gameStore';
 import { Edges, MeshTransmissionMaterial, Float as FloatDrei } from '@react-three/drei';
 import { WaveManager } from '../../WaveManager';
-import { Tower } from '../../Tower';
 import { createShaderMaterial } from '../../../utils/shaders';
-import { ObjectPool } from '../../../utils/objectPool';
 import { CreepManager } from '../../Creep';
 import { Player } from '../../Player';
 import { ClickIndicator } from '../../ClickIndicator';
-import { TowerConfirmation } from '../../TowerConfirmation';
 import { TreeInstances } from './TreeInstances';
 import { glowColor, grassColor, platformColor } from '../../../utils/constants';
 import { MushroomInstances } from './MushroomInstances';
@@ -176,7 +173,6 @@ export function Level() {
     money,
     creeps,
     addPlacedTower,
-    setSelectedObjectType,
     selectedObjectType,
     selectedObjectLevel,
     updateCreep,
@@ -283,106 +279,6 @@ export function Level() {
   // Path Generation
   const { segments, points: pathPoints } = useMemo(() => generatePath(currentLevel), [currentLevel]);
 
-  // Tower Placement Logic
-  const handleTowerPointerMove = (event: any) => {
-    if (!selectedObjectType || pendingTowerPosition) return;
-
-    // Snap to grid
-    const snappedPosition: [number, number, number] = [
-      Math.round(event.point.x),
-      0.5,
-      Math.round(event.point.z)
-    ];
-
-    setPreviewPosition(snappedPosition);
-    setShowPreview(true);
-    setCanAffordTower(money >= (TOWER_STATS[selectedObjectType]?.cost ?? 0));
-  };
-
-  const handlePlaceTower = (event: any) => {
-    event.stopPropagation();
-
-    if (selectedObjectType && event.point) {
-      // Snap to grid
-      const snappedPosition = new Vector3(
-        Math.round(event.point.x),
-        0.5,
-        Math.round(event.point.z)
-      );
-
-      // Check if position is already occupied by another tower
-      const isOccupied = placedTowers.some(tower => {
-        const towerPos = tower.position instanceof Vector3
-          ? tower.position
-          : new Vector3(...tower.position);
-        return towerPos.distanceTo(snappedPosition) < 0.5;
-      });
-
-      // Check if tower would collide with path
-      const collidesWithPath = isTowerOnPath(snappedPosition.toArray(), currentLevel);
-
-      if (!isOccupied && !collidesWithPath) {
-        if (window.innerWidth < 640) {
-          setPendingTowerPosition(snappedPosition.toArray());
-        } else {
-          const stats = TOWER_STATS[selectedObjectType];
-          if (money >= stats.cost) {
-            addPlacedTower(
-              snappedPosition.toArray(),
-              selectedObjectType,
-              selectedObjectLevel
-            );
-            setSelectedObjectType(null);
-          }
-        }
-      }
-    }
-  };
-
-  const handleConfirmTower = () => {
-    if (pendingTowerPosition && selectedObjectType) {
-      const stats = TOWER_STATS[selectedObjectType];
-      if (money >= stats.cost) {
-        addPlacedTower(
-          pendingTowerPosition,
-          selectedObjectType,
-          selectedObjectLevel
-        );
-        setSelectedObjectType(null);
-        setPendingTowerPosition(null);
-      }
-    }
-  };
-
-  const handleCancelTower = () => {
-    setPendingTowerPosition(null);
-    // setSelectedObjectType(null);
-  };
-
-  const handleTowerPreview = (event: any) => {
-    event.stopPropagation();
-
-    if (selectedObjectType && event.point) {
-      // Snap preview position to grid
-      const snappedPosition = new Vector3(
-        Math.round(event.point.x),
-        0.5,
-        Math.round(event.point.z)
-      );
-
-      // Check if position is already occupied
-      const isOccupied = placedTowers.some(tower => {
-        const towerPos = tower.position instanceof Vector3
-          ? tower.position
-          : new Vector3(...tower.position);
-        return towerPos.distanceTo(snappedPosition) < 0.5;  // Slightly more forgiving
-      });
-
-      if (!isOccupied) {
-        setPreviewPosition(snappedPosition);
-      }
-    }
-  };
 
   // Instance Matrices for Path
   const matrices = useMemo(() => {
@@ -435,8 +331,6 @@ export function Level() {
         <mesh
           position={[0, -0.5, 0]}
           receiveShadow
-          onPointerMove={handleTowerPointerMove}
-          onClick={handlePlaceTower}
         >
           <boxGeometry args={[60, 1, 60]} />
           <meshStandardMaterial
@@ -533,23 +427,6 @@ export function Level() {
         />
       )}
 
-      {/* Tower preview and confirmation */}
-      {showPreview && selectedObjectType && (
-        <Tower
-          position={previewPosition}
-          type={selectedObjectType}
-          level={selectedObjectLevel}
-          preview={true}
-          canAfford={canAffordTower}
-        />
-      )}
-      {pendingTowerPosition && (
-        <TowerConfirmation
-          position={[pendingTowerPosition[0], pendingTowerPosition[1] + 0.5, pendingTowerPosition[2]]}
-          onConfirm={handleConfirmTower}
-          onCancel={handleCancelTower}
-        />
-      )}
     </group>
   );
 }
