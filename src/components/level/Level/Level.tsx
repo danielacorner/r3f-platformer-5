@@ -207,7 +207,8 @@ export function Level() {
     // Don't handle clicks if:
     // 1. We're in tower placement mode
     // 2. We're dragging/have dragged
-    if (selectedObjectType || isDragging.current) return;
+    // 3. Click originated from UI elements
+    if (selectedObjectType || isDragging.current || (event.target as HTMLElement).closest('.bottom-menu')) return;
 
     // Convert mouse position to normalized device coordinates
     const mouse = new Vector2(
@@ -278,7 +279,6 @@ export function Level() {
 
   // Path Generation
   const { segments, points: pathPoints } = useMemo(() => generatePath(currentLevel), [currentLevel]);
-
 
   // Instance Matrices for Path
   const matrices = useMemo(() => {

@@ -107,7 +107,7 @@ export function BottomMenu() {
     const skill = skills[index];
     if (skill.level === 0 || skill.currentCooldown > 0) return;
 
-    setSkills(prev => prev.map((s, i) => 
+    setSkills(prev => prev.map((s, i) =>
       i === index ? { ...s, currentCooldown: s.cooldown } : s
     ));
 
@@ -137,24 +137,56 @@ export function BottomMenu() {
   const xpProgress = (experience / xpForNextLevel) * 100;
 
   return (
-    <div className="bottom-menu">
+    <div
+      className="bottom-menu"
+      onPointerDown={(e) => { 
+        e.stopPropagation(); 
+        e.preventDefault();
+      }}
+      onMouseDown={(e) => { 
+        e.stopPropagation(); 
+        e.preventDefault();
+      }}
+    >
       <div className="status-section">
         <div className="player-info">
-          <div className="player-icon">
+          <div
+            className="player-icon"
+            onPointerDown={(e) => { 
+              e.stopPropagation(); 
+              e.preventDefault();
+            }}
+            onMouseDown={(e) => { 
+              e.stopPropagation(); 
+              e.preventDefault();
+            }}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation() }}
+            title="Click to open Skills Menu"
+          >
             <FaUser />
+            {skillPoints > 0 && (
+              <div className="skill-points-badge">
+                {skillPoints}
+              </div>
+            )}
           </div>
           <div className="level-info">
             <div className="level-number">Level {level}</div>
             <div className="xp-bar">
-              <div className="xp-progress" style={{ width: `${xpProgress}%` }} />
+              <div
+                className="xp-progress"
+                style={{ width: `${xpProgress}%` }}
+                title={`${experience.toLocaleString()}/${xpForNextLevel.toLocaleString()} XP`}
+              />
             </div>
-            <div className="xp-text">{experience}/{xpForNextLevel} XP</div>
+            <div className="xp-text">
+              {experience.toLocaleString()}/{xpForNextLevel.toLocaleString()} XP
+            </div>
           </div>
         </div>
         <div className="resources">
-          <div className="money">💰 {money}</div>
-          <div className="skill-points" onClick={() => setShowSkillsMenu(true)}>
-            ✨ {skillPoints} SP
+          <div className="money" title="Gold">
+            {money.toLocaleString()}
           </div>
         </div>
       </div>
@@ -164,7 +196,11 @@ export function BottomMenu() {
           <div
             key={skill.name}
             className={`skill-button ${skill.level === 0 ? 'locked' : ''} ${skill.currentCooldown > 0 ? 'on-cooldown' : ''}`}
-            onClick={() => handleSkillClick(index)}
+            onPointerDown={(e) => { 
+              e.stopPropagation(); 
+              e.preventDefault();
+              handleSkillClick(index);
+            }}
             style={{ borderColor: skill.color }}
           >
             <skill.icon />

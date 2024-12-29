@@ -1,22 +1,14 @@
 /* Warcraft 3 style UI */
 .bottom-menu {
   position: fixed;
-  bottom: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: linear-gradient(to bottom, #1e2837, #0d1321);
-  padding: 0.5rem;
-  border-radius: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  z-index: 10000;
-  border: 2px solid #3b5998;
-  box-shadow:
-    0 0 0 1px #000,
-    0 0 20px rgba(0, 0, 0, 0.5),
-    inset 0 0 20px rgba(73, 156, 255, 0.15);
-  color: #bfd4ff;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: rgba(15, 23, 42, 0.95);
+  pointer-events: auto;
+  user-select: none;
+  backdrop-filter: blur(8px);
 }
 
 .stats-display {
@@ -41,55 +33,182 @@
 }
 
 .player-icon {
-  position: relative;
-  width: 2rem;
-  height: 2rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid #3b82f6;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(to bottom, #1e293b, #1e2837);
-  border: 1px solid #3b5998;
-  border-radius: 50%;
-  color: #60a5fa;
-  font-size: 1rem;
+  color: white;
+  font-size: 1.2rem;
+  position: relative;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .player-icon:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 15px rgba(96, 165, 250, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.player-icon::after {
+  content: "Click for Skills";
+  position: absolute;
+  top: -1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.7rem;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.player-icon:hover::after {
+  opacity: 1;
 }
 
 .skill-points-badge {
   position: absolute;
-  top: -0.25rem;
-  right: -0.25rem;
-  width: 1rem;
-  height: 1rem;
-  background-color: #fbbf24;
-  color: #1e293b;
-  border-radius: 50%;
+  top: -0.4rem;
+  right: -0.4rem;
+  background: #fbbf24;
+  color: black;
+  border: 2px solid #000;
+  border-radius: 1rem;
+  min-width: 1.2rem;
+  height: 1.2rem;
   font-size: 0.7rem;
   font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0 0.2rem;
   animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.4);
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
   }
-
   70% {
-    box-shadow: 0 0 0 4px rgba(251, 191, 36, 0);
+    transform: scale(1.1);
+    box-shadow: 0 0 0 6px rgba(251, 191, 36, 0);
   }
-
   100% {
+    transform: scale(1);
     box-shadow: 0 0 0 0 rgba(251, 191, 36, 0);
   }
+}
+
+.level-info {
+  margin-left: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.level-number {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #f0f9ff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.xp-bar {
+  width: 200px;
+  height: 0.6rem;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.3rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.xp-progress {
+  height: 100%;
+  background: linear-gradient(to right, #3b82f6, #60a5fa);
+  border-radius: 0.3rem;
+  transition: width 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.xp-progress::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    45deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 100%
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.xp-text {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.resources {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: auto;
+  padding-right: 1rem;
+}
+
+.money {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid #fbbf24;
+  border-radius: 1rem;
+  padding: 0.3rem 0.8rem;
+  color: #fbbf24;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 1.1rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.money::before {
+  content: '💰';
+  font-size: 1.2rem;
+}
+
+.status-section {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.7);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.player-info {
+  display: flex;
+  align-items: center;
 }
 
 .money-display {
@@ -367,9 +486,12 @@
 }
 
 .skills-section {
+  position: relative;
+  z-index: 1001;
   display: flex;
   gap: 1rem;
   padding: 1rem;
+  pointer-events: auto;
 }
 
 .skill-button {
@@ -386,6 +508,8 @@
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 1.5rem;
+  pointer-events: auto;
+  user-select: none;
 }
 
 .skill-button:hover:not(.locked):not(.on-cooldown) {
@@ -742,5 +866,28 @@
 
   .header-right {
     gap: 0.5rem;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .xp-bar {
+    width: 150px;
+  }
+  
+  .level-number {
+    font-size: 1rem;
+  }
+  
+  .xp-text {
+    font-size: 0.75rem;
+  }
+  
+  .money {
+    font-size: 1rem;
+    padding: 0.2rem 0.6rem;
+  }
+  
+  .money::before {
+    font-size: 1.1rem;
   }
 }

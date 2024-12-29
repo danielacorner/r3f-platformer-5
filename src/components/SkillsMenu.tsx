@@ -11,8 +11,8 @@ import {
   FaPlus,
 } from "react-icons/fa";
 import { GiMultipleTargets } from "react-icons/gi";
-import { GiFireBowl, GiSpeedometer, GiMagicSwirl, GiCrystalBall } from 'react-icons/gi';
-import { RiShieldFlashFill, RiThunderstormsFill, RiFireFill, RiContrastDrop2Fill } from 'react-icons/ri';
+import { GiFireBowl, GiSpeedometer, GiMagicSwirl, GiCrystalBall, GiInfinityLoop } from 'react-icons/gi';
+import { RiShieldFlashFill, RiThunderstormsFill, RiFireFill, RiContrastDrop2Fill, RiSwordFill } from 'react-icons/ri';
 import { useGameStore } from "../store/gameStore";
 import { Tabs, Tab, Box } from "@mui/material";
 
@@ -75,7 +75,7 @@ const activeSkills = [
     maxLevel: 3,
     cooldown: 15,
     duration: 5,
-    effect: (level: number) => ({ 
+    effect: (level: number) => ({
       shieldDuration: 3 + level * 1,
       shieldStrength: 100 + level * 50
     }),
@@ -89,7 +89,7 @@ const activeSkills = [
     priceMultiplier: 1.5,
     maxLevel: 3,
     cooldown: 20,
-    effect: (level: number) => ({ 
+    effect: (level: number) => ({
       strikeDamage: 50 + level * 25,
       strikeCount: 3 + level * 1,
       radius: 5 + level * 1
@@ -105,7 +105,7 @@ const activeSkills = [
     maxLevel: 3,
     cooldown: 25,
     duration: 8,
-    effect: (level: number) => ({ 
+    effect: (level: number) => ({
       burnDamage: 20 + level * 15,
       radius: 4 + level * 0.5,
       burnDuration: 3 + level * 1
@@ -126,7 +126,7 @@ const activeSkills = [
 ];
 
 export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
-  const [activeTab, setActiveTab] = useState<'passive' | 'active'>('passive');
+  const [activeTab, setActiveTab] = useState<'passive' | 'active'>('active');
   const { skillPoints, upgrades, upgradeSkill, skillLevels } = useGameStore();
 
   const handleUpgrade = (skillName: string) => {
@@ -168,13 +168,13 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
               const formattedKey = key
                 .replace(/([A-Z])/g, ' $1')
                 .replace(/^./, str => str.toUpperCase());
-              
+
               // Format the value based on if it's a percentage or not
-              const formattedValue = key.toLowerCase().includes('chance') || 
-                                   key.toLowerCase().includes('reduction')
+              const formattedValue = key.toLowerCase().includes('chance') ||
+                key.toLowerCase().includes('reduction')
                 ? `${Math.round(value * 100)}%`
                 : Math.round(value * 10) / 10;
-              
+
               return `${formattedKey}: ${formattedValue}`;
             })
             .join(' | ');
@@ -203,7 +203,7 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
               </div>
             </div>
             {currentLevel < skill.maxLevel ? (
-              <button 
+              <button
                 className="skill-upgrade-btn"
                 onClick={() => handleUpgrade(skill.name)}
                 disabled={!canAfford}
@@ -242,12 +242,12 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
       </div>
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs 
-          value={activeTab} 
+        <Tabs
+          value={activeTab}
           onChange={(_, newValue) => setActiveTab(newValue)}
           sx={{
             '& .MuiTab-root': {
-              color: '#94a3b8',
+              color: 'rgba(255, 255, 255, 0.7)',
               '&.Mui-selected': {
                 color: '#3b82f6',
               }
@@ -257,8 +257,24 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
             }
           }}
         >
-          <Tab label="Passive Skills" value="passive" />
-          <Tab label="Active Skills" value="active" />
+          <Tab 
+            label={
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <RiSwordFill />
+                Active Skills
+              </div>
+            } 
+            value="active" 
+          />
+          <Tab 
+            label={
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <GiInfinityLoop />
+                Passive Skills
+              </div>
+            } 
+            value="passive" 
+          />
         </Tabs>
       </Box>
 
