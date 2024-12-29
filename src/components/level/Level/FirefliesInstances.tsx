@@ -34,7 +34,7 @@ export function FirefliesInstances({ count = 50, radius = 25 }) {
   const opacities = useRef<Float32Array>(new Float32Array(count));
   const nextBlinkTimes = useRef<Float32Array>(new Float32Array(count));
   const blinkDurations = useRef<Float32Array>(new Float32Array(count));
-  
+
   // Store movement data for each firefly
   const fireflyData = useRef<FireflyData[]>([]);
 
@@ -88,8 +88,9 @@ export function FirefliesInstances({ count = 50, radius = 25 }) {
       opacityAttribute[i] = 0.05;
     }
     meshRef.current.geometry.setAttribute('opacity', new InstancedBufferAttribute(opacityAttribute, 1));
-
-    meshRef.current.instanceMatrix.needsUpdate = true;
+    if (meshRef.current.instanceMatrix) {
+      meshRef.current.instanceMatrix.needsUpdate = true;
+    }
   }, [count, radius]);
 
   useFrame((state, delta) => {
@@ -102,7 +103,7 @@ export function FirefliesInstances({ count = 50, radius = 25 }) {
       // Update movement
       if (time - data.lastRestTime >= data.restTime) {
         data.progress += delta * data.speed;
-        
+
         if (data.progress >= 1) {
           // Reached target, set up next movement
           data.currentTarget.copy(data.nextTarget);
@@ -125,13 +126,13 @@ export function FirefliesInstances({ count = 50, radius = 25 }) {
         const wobbleX = Math.sin(time * 2 + i) * 0.05;
         const wobbleY = Math.cos(time * 1.5 + i) * 0.05;
         const wobbleZ = Math.sin(time * 1.7 + i) * 0.05;
-        
+
         tempObject.position.copy(newPosition).add(new Vector3(wobbleX, wobbleY, wobbleZ));
 
         // Handle blinking
         if (time >= nextBlinkTimes.current[i]) {
           const blinkProgress = (time - nextBlinkTimes.current[i]) / blinkDurations.current[i];
-          
+
           if (blinkProgress >= 1) {
             nextBlinkTimes.current[i] = time + 3 + Math.random() * 4;
             opacityAttribute.setX(i, 0.05);
@@ -155,8 +156,12 @@ export function FirefliesInstances({ count = 50, radius = 25 }) {
       }
     });
 
-    opacityAttribute.needsUpdate = true;
-    meshRef.current.instanceMatrix.needsUpdate = true;
+    if (opacityAttribute) {
+      opacityAttribute.needsUpdate = true;
+    }
+    if (meshRef.current.instanceMatrix) {
+      meshRef.current.instanceMatrix.needsUpdate = true;
+    }
   });
 
   return (

@@ -97,7 +97,7 @@ export const TOWER_STATS: Record<ElementType, TowerStats> = {
   dark3: { damage: 90, range: 8, attackSpeed: 1.2, cost: 500, special: { type: 'void', value: 0.35, mana_burn: 0.3 }, color: '#f3e8ff', emissive: '#a855f7', description: "Void - Drains special abilities from enemies" },
   dark4: { damage: 140, range: 8.5, attackSpeed: 1.3, cost: 1000, special: { type: 'nightmare', value: 0.45, fear_chance: 0.2 }, color: '#f3e8ff', emissive: '#a855f7', description: "Nightmare - Chance to fear enemies, making them retreat" },
   dark5: { damage: 200, range: 9, attackSpeed: 1.4, cost: 2000, special: { type: 'oblivion', value: 0.60, soul_harvest: true }, color: '#f3e8ff', emissive: '#a855f7', description: "Oblivion - Harvests souls of fallen enemies for bonus effects" }
-}
+};
 
 export const isTowerOnPath = (position: number[] | { x: number; y: number; z: number }, currentLevel: number) => {
   const pathData = generatePath(currentLevel);
@@ -206,6 +206,9 @@ interface GameState {
   placedTowers: PlacedTower[];
   selectedObjectType: PlaceableObjectType | null;
   selectedObjectLevel: number | null;
+  skillLevels: {
+    [key: string]: number;
+  };
   money: number;
   score: number;
   lives: number;
@@ -278,12 +281,13 @@ const initialState: GameState = {
   placedTowers: [],
   selectedObjectType: null,
   selectedObjectLevel: null,
-  money: process.env.NODE_ENV === 'development' ? 9999 : 200,
+  skillLevels: {},
+  money: 1000,
   score: 0,
   lives: 20,
-  experience: process.env.NODE_ENV === 'development' ? 90 : 0,
+  experience: 0,
   level: 1,
-  skillPoints: process.env.NODE_ENV === 'development' ? 90 : 9,
+  skillPoints: 9,
   upgrades: {
     damage: 0,
     speed: 0,
@@ -507,52 +511,17 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
   },
 
-  upgradeSkill: (skill) => {
-    set(state => {
-      if (state.skillPoints <= 0) return state;
-
-      const newUpgrades = {
-        ...state.upgrades,
-        [skill]: state.upgrades[skill] + 1
-      };
-
-      // Calculate derived stats
-      const damageMultiplier = 1 + (newUpgrades.damage * 0.15); // 15% per level
-
-      // Calculate speed stats with new mechanics
-      let cooldownReduction = 1;
-      let orbSpeedBonus = 1;
-
-      if (skill === 'speed') {
-        const totalSpeedReduction = newUpgrades.speed * 0.12; // 12% per level
-        if (totalSpeedReduction >= 1) {
-          // Cap cooldown reduction at 100% and convert excess to orb speed
-          cooldownReduction = 0; // -100% cooldown
-          const excessReduction = totalSpeedReduction - 1;
-          orbSpeedBonus = 1 + excessReduction; // Convert excess to orb speed
-        } else {
-          cooldownReduction = 1 - totalSpeedReduction;
-          orbSpeedBonus = 1;
-        }
-      } else {
-        // For other skills, maintain current cooldown reduction
-        cooldownReduction = 1 - (newUpgrades.speed * 0.12);
-      }
-
-      const rangeMultiplier = 1 + (newUpgrades.range * 0.12); // 12% per level
-      const multishotChance = newUpgrades.multishot * 0.15; // 15% chance per level
-
-      return {
-        skillPoints: state.skillPoints - 1,
-        upgrades: newUpgrades,
-        // Update derived stats
-        damage: damageMultiplier,
-        attackSpeed: cooldownReduction,
-        orbSpeed: orbSpeedBonus,
-        range: rangeMultiplier,
-        multishot: multishotChance
-      };
-    });
+  upgradeSkill: (skillName: string, cost: number) => {
+    const state = get();
+    if (state.money >= cost) {
+      set((state) => ({
+        skillLevels: {
+          ...state.skillLevels,
+          [skillName]: (state.skillLevels[skillName] || 0) + 1,
+        },
+        money: state.money - cost,
+      }));
+    }
   },
 
   incrementLevel: () => set(state => ({
@@ -631,4 +600,3 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ cameraAngle: newAngle });
   },
 }));
-

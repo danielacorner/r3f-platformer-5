@@ -295,6 +295,12 @@
     inset 0 0 20px rgba(59, 130, 246, 0.1);
 }
 
+.skill-card {
+  color: #94a3b8;
+  display: flex;
+  gap: 1rem;
+}
+
 .skill-icon {
   width: 2.5rem;
   height: 2.5rem;
@@ -322,6 +328,8 @@
 .skill-icon svg {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
   transition: all 0.3s ease;
+  width: 100%;
+  height: 100%;
 }
 
 .skill-item:hover .skill-icon svg {
@@ -401,6 +409,10 @@
 .skill-icon[data-skill="multishot"] {
   border-color: #f97316;
   background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(249, 115, 22, 0.1));
+}
+
+.skills-tabs {
+  color: #94a3b8;
 }
 
 .skills-menu {
