@@ -6,7 +6,7 @@ import {
   FaPlus,
 } from "react-icons/fa";
 import { GiFireBowl, GiSpeedometer, GiMagicSwirl, GiCrystalBall, GiInfinity } from 'react-icons/gi';
-import { RiShieldFlashFill, RiThunderstormsFill, RiFireFill, RiContrastDrop2Fill, RiSwordFill } from 'react-icons/ri';
+import { RiShieldFlashFill, RiThunderstormsFill, RiFireFill, RiContrastDrop2Fill, RiSwordFill, RiMagicFill } from 'react-icons/ri';
 import { useGameStore } from "../store/gameStore";
 import { Tabs, Tab, Box } from "@mui/material";
 
@@ -72,6 +72,20 @@ const passiveSkills: Skill[] = [
 ];
 
 const activeSkills = [
+  {
+    name: 'Magic Missiles',
+    description: 'Launch multiple homing missiles that deal damage to enemies',
+    icon: RiMagicFill,
+    color: '#8b5cf6',
+    basePrice: 250,
+    priceMultiplier: 1.5,
+    maxLevel: 5,
+    cooldown: 12,
+    effect: (level: number) => ({
+      missileCount: 3 + level * 2,
+      missileDamage: 30 + level * 5
+    }),
+  },
   {
     name: 'Shield Burst',
     description: 'Creates a protective barrier that blocks projectiles',

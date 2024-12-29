@@ -12,6 +12,8 @@ interface SkillEffect {
   radius: number;
   damage?: number;
   color: string;
+  velocity?: Vector3;  // Added for magic missiles
+  target?: Vector3;    // Added for magic missiles
 }
 
 // Store for active skill effects
@@ -83,6 +85,46 @@ export function castTimeDilation(position: Vector3, level: number) {
   activeEffects.push(effect);
 }
 
+export function castMagicMissiles(position: Vector3, level: number) {
+  const missileCount = Math.floor(3 + level * 2); // Scales from 3 to 23 missiles from level 0 to 10
+  const baseDamage = 30;
+  const damagePerLevel = 5;
+  const damage = baseDamage + (level * damagePerLevel);
+  const missileSpeed = 0.5;
+  const radius = 0.3;
+
+  for (let i = 0; i < missileCount; i++) {
+    // Distribute missiles in a circular pattern
+    const angle = (i / missileCount) * Math.PI * 2;
+    const direction = new Vector3(
+      Math.cos(angle),
+      0,
+      Math.sin(angle)
+    ).normalize();
+
+    // Calculate target position (8 units away in the direction)
+    const target = position.clone().add(direction.multiplyScalar(8));
+
+    const effect = {
+      id: Math.random().toString(),
+      type: 'magicMissile',
+      position: position.clone(),
+      startTime: Date.now(),
+      duration: 3,
+      radius,
+      damage,
+      color: '#8b5cf6',
+      velocity: direction.multiplyScalar(missileSpeed),
+      target
+    };
+    
+    // Stagger missile launches slightly
+    setTimeout(() => {
+      activeEffects.push(effect);
+    }, i * 50);
+  }
+}
+
 export function SkillEffects() {
   const { creeps, updateCreep, damageCreep } = useGameStore();
   const materialRef = useRef<MeshBasicMaterial>();
@@ -94,6 +136,17 @@ export function SkillEffects() {
     for (const effect of activeEffects) {
       const age = (now - effect.startTime) / 1000;
       if (age > effect.duration) continue;
+
+      // Update magic missile positions
+      if (effect.type === 'magicMissile' && effect.velocity && effect.target) {
+        effect.position.add(effect.velocity);
+        
+        // Check if missile has reached its target
+        const distanceToTarget = effect.position.distanceTo(effect.target);
+        if (distanceToTarget < effect.velocity.length()) {
+          continue; // Remove missile if it reached target
+        }
+      }
 
       // Process effect based on type
       for (const creep of creeps) {
@@ -123,6 +176,11 @@ export function SkillEffects() {
                 }
               });
               break;
+
+            case 'magicMissile':
+              damageCreep(creep.id, effect.damage || 0);
+              continue; // Remove missile after hitting a creep
+              break;
           }
         }
       }
@@ -135,27 +193,46 @@ export function SkillEffects() {
 
   return (
     <>
-      {activeEffects.map(effect => (
-        <group key={effect.id} position={[effect.position.x, 0.1, effect.position.z]}>
-          <mesh>
-            <cylinderGeometry args={[effect.radius, effect.radius, 0.1, 32]} />
-            <meshBasicMaterial
-              ref={materialRef}
-              color={effect.color}
-              transparent
-              opacity={0.3}
-            />
-          </mesh>
-          <mesh position={[0, 2, 0]}>
-            <cylinderGeometry args={[0.1, effect.radius, 4, 32]} />
-            <meshBasicMaterial
-              color={effect.color}
-              transparent
-              opacity={0.1}
-            />
-          </mesh>
-        </group>
-      ))}
+      {activeEffects.map(effect => {
+        if (effect.type === 'magicMissile') {
+          return (
+            <group key={effect.id} position={[effect.position.x, 1, effect.position.z]}>
+              {/* Missile body */}
+              <mesh>
+                <sphereGeometry args={[effect.radius, 8, 8]} />
+                <meshBasicMaterial color={effect.color} />
+              </mesh>
+              {/* Missile trail */}
+              <mesh rotation={[Math.PI / 2, 0, 0]}>
+                <coneGeometry args={[effect.radius * 0.5, 1, 8]} />
+                <meshBasicMaterial color={effect.color} transparent opacity={0.3} />
+              </mesh>
+            </group>
+          );
+        }
+        
+        return (
+          <group key={effect.id} position={[effect.position.x, 0.1, effect.position.z]}>
+            <mesh>
+              <cylinderGeometry args={[effect.radius, effect.radius, 0.1, 32]} />
+              <meshBasicMaterial
+                ref={materialRef}
+                color={effect.color}
+                transparent
+                opacity={0.3}
+              />
+            </mesh>
+            <mesh position={[0, 2, 0]}>
+              <cylinderGeometry args={[0.1, effect.radius, 4, 32]} />
+              <meshBasicMaterial
+                color={effect.color}
+                transparent
+                opacity={0.1}
+              />
+            </mesh>
+          </group>
+        );
+      })}
     </>
   );
 }

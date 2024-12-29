@@ -1,15 +1,22 @@
 import { useState, useEffect } from "react";
 import { useGameStore } from "../store/gameStore";
 import { FaUser } from "react-icons/fa";
-import { RiShieldFlashFill, RiThunderstormsFill, RiFireFill, RiContrastDrop2Fill } from "react-icons/ri";
+import { RiShieldFlashFill, RiThunderstormsFill, RiFireFill, RiContrastDrop2Fill, RiMagicFill } from "react-icons/ri";
 import "../styles/BottomMenu.css";
 import { SkillsMenu } from "./SkillsMenu";
-import { castShieldBurst, castLightningStorm, castInferno, castTimeDilation } from './skills/SkillEffects';
+import { castShieldBurst, castLightningStorm, castInferno, castTimeDilation, castMagicMissiles } from './skills/SkillEffects';
 import { Vector3 } from "three";
 
-const SKILL_KEYS = ["1", "2", "3", "4"];
+const SKILL_KEYS = ["1", "2", "3", "4", "5"];
 
 const activeSkills = [
+  {
+    name: 'Magic Missiles',
+    description: 'Launch multiple homing missiles that deal damage to enemies',
+    icon: RiMagicFill,
+    color: '#8b5cf6',
+    cooldown: 12,
+  },
   {
     name: 'Shield Burst',
     description: 'Creates a protective barrier that blocks projectiles',
@@ -64,13 +71,11 @@ export function BottomMenu() {
   } = useGameStore();
 
   const [showSkillsMenu, setShowSkillsMenu] = useState(false);
-  const [skills, setSkills] = useState<ActiveSkill[]>(
-    activeSkills.map(skill => ({
-      ...skill,
-      currentCooldown: 0,
-      level: 0,
-    }))
-  );
+  const [skills, setSkills] = useState<ActiveSkill[]>(activeSkills.map(skill => ({
+    ...skill,
+    currentCooldown: 0,
+    level: 0,
+  })));
 
   // Update skills based on levels
   useEffect(() => {
@@ -132,6 +137,9 @@ export function BottomMenu() {
         break;
       case 'Time Dilation':
         castTimeDilation(position, skill.level);
+        break;
+      case 'Magic Missiles':
+        castMagicMissiles(position, skill.level);
         break;
     }
   };

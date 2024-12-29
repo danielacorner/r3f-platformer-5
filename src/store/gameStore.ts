@@ -30,7 +30,6 @@ interface CreepState {
   };
 }
 
-
 interface PathSegment {
   position: [number, number, number];
   scale: [number, number, number];
@@ -107,13 +106,15 @@ const initialState: GameState = {
   levelComplete: false,
   selectedObjectType: null,
   selectedObjectLevel: null,
-  skillLevels: {},
+  skillLevels: {
+    'Magic Missiles': 1
+  },
   money: 1000,
   score: 0,
   lives: 20,
   experience: 0,
   level: 1,
-  skillPoints: process.env.NODE_ENV === 'development' ? 99 : 9,
+  skillPoints: process.env.NODE_ENV === 'development' ? 99 : 8,
   upgrades: {
     damage: 0,
     speed: 0,
@@ -129,7 +130,7 @@ const initialState: GameState = {
   totalWaves: 12,
   showWaveIndicator: false,
   cameraZoom: 1,
-  cameraAngle: 0.5, // Default angle (0 is horizontal, 1 is vertical)
+  cameraAngle: 0.5,
   setPhase: () => { },
   setCurrentLevel: () => { },
   setTimer: () => { },
