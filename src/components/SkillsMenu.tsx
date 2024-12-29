@@ -2,15 +2,9 @@ import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import {
   FaStar,
-  FaBolt,
-  FaRunning,
-  FaBullseye,
-  FaShieldAlt,
   FaTimes,
-  FaHourglassHalf,
   FaPlus,
 } from "react-icons/fa";
-import { GiMultipleTargets } from "react-icons/gi";
 import { GiFireBowl, GiSpeedometer, GiMagicSwirl, GiCrystalBall, GiInfinity } from 'react-icons/gi';
 import { RiShieldFlashFill, RiThunderstormsFill, RiFireFill, RiContrastDrop2Fill, RiSwordFill } from 'react-icons/ri';
 import { useGameStore } from "../store/gameStore";
@@ -21,7 +15,20 @@ interface SkillsMenuProps {
   onClose: () => void;
 }
 
-const passiveSkills = [
+type Skill = {
+  name: string;
+  description: string;
+  icon: any;
+  color: string;
+  basePrice: number;
+  priceMultiplier: number;
+  maxLevel: number;
+  cooldown?: number;
+  duration?: number;
+  effect?: (level: number) => any;
+};
+
+const passiveSkills: Skill[] = [
   {
     name: 'Arcane Power',
     description: 'Increases magic damage by 20% per level',
@@ -127,7 +134,7 @@ const activeSkills = [
 
 export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
   const [activeTab, setActiveTab] = useState<'passive' | 'active'>('active');
-  const { skillPoints, upgrades, upgradeSkill, skillLevels } = useGameStore();
+  const { skillPoints, upgrades, upgradeSkill, skillLevels, } = useGameStore();
 
   const handleUpgrade = (skillName: string) => {
     const skills = activeTab === 'passive' ? passiveSkills : activeSkills;
@@ -161,7 +168,7 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
 
         let effectText = '';
         if ('effect' in skill) {
-          const effects = skill.effect(currentLevel);
+          const effects = skill.effect?.(currentLevel);
           effectText = Object.entries(effects)
             .map(([key, value]) => {
               // Format the key by converting camelCase to Title Case with spaces

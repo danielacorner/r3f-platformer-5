@@ -60,7 +60,7 @@ export function BottomMenu() {
     experience,
     level,
     skillPoints,
-    skillLevels,
+    skillLevels, playerRef
   } = useGameStore();
 
   const [showSkillsMenu, setShowSkillsMenu] = useState(false);
@@ -144,12 +144,12 @@ export function BottomMenu() {
     <>
       <div
         className="bottom-menu"
-        onPointerDown={(e) => { 
-          e.stopPropagation(); 
+        onPointerDown={(e) => {
+          e.stopPropagation();
           e.preventDefault();
         }}
-        onMouseDown={(e) => { 
-          e.stopPropagation(); 
+        onMouseDown={(e) => {
+          e.stopPropagation();
           e.preventDefault();
         }}
       >
@@ -157,8 +157,8 @@ export function BottomMenu() {
           <div className="player-info">
             <div
               className="player-icon"
-              onClick={(e) => { 
-                e.preventDefault(); 
+              onClick={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 setShowSkillsMenu(true);
               }}
@@ -197,8 +197,8 @@ export function BottomMenu() {
             <div
               key={skill.name}
               className={`skill-button ${skill.level === 0 ? 'locked' : ''} ${skill.currentCooldown > 0 ? 'on-cooldown' : ''}`}
-              onPointerDown={(e) => { 
-                e.stopPropagation(); 
+              onPointerDown={(e) => {
+                e.stopPropagation();
                 e.preventDefault();
                 handleSkillClick(index);
               }}
@@ -218,9 +218,9 @@ export function BottomMenu() {
         </div>
       </div>
       {showSkillsMenu && (
-        <SkillsMenu 
-          isOpen={showSkillsMenu} 
-          onClose={() => setShowSkillsMenu(false)} 
+        <SkillsMenu
+          isOpen={showSkillsMenu}
+          onClose={() => setShowSkillsMenu(false)}
         />
       )}
     </>

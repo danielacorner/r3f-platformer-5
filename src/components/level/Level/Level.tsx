@@ -3,7 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { Environment, useGLTF, Stars, Float, useTexture } from '@react-three/drei';
 import { Vector3, Raycaster, Color, DoubleSide, Plane, Vector2, InstancedMesh, Object3D, Matrix4, BoxGeometry, Mesh, Euler, Float32BufferAttribute } from 'three';
-import { useGameStore, isTowerOnPath, TOWER_STATS } from '../../../store/gameStore';
+import { useGameStore, } from '../../../store/gameStore';
 import { Edges, MeshTransmissionMaterial, Float as FloatDrei } from '@react-three/drei';
 import { WaveManager } from '../../WaveManager';
 import { createShaderMaterial } from '../../../utils/shaders';
@@ -170,10 +170,8 @@ export function Level() {
   // Game State
   const {
     phase,
-    placedTowers,
     money,
     creeps,
-    addPlacedTower,
     selectedObjectType,
     selectedObjectLevel,
     updateCreep,
@@ -389,31 +387,6 @@ export function Level() {
 
       {/* Game Elements */}
       <WaveManager pathPoints={pathPoints} />
-
-      {/* Towers */}
-      {placedTowers.map((tower) => (
-        <Tower
-          key={tower.id}
-          {...tower}
-          onDamageEnemy={(creepId: number, damage: number, effects: any) => {
-            // Apply damage to the creep
-            damageCreep(creepId, damage);
-
-            // Find the creep and apply effects
-            const creep = creeps.find(c => c.id === creepId);
-            if (creep && creep.health > 0) {
-              const updatedCreep = {
-                ...creep,
-                effects: {
-                  ...creep.effects,
-                  ...effects
-                }
-              };
-              updateCreep(updatedCreep);
-            }
-          }}
-        />
-      ))}
 
       <CreepManager pathPoints={pathPoints} />
 
