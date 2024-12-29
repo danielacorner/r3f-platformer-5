@@ -13,6 +13,7 @@ import { GiMultipleTargets } from "react-icons/gi";
 import { GiFireBowl, GiSpeedometer, GiMagicSwirl, GiCrystalBall } from 'react-icons/gi';
 import { RiShieldFlashFill, RiThunderstormsFill, RiFireFill, RiContrastDrop2Fill } from 'react-icons/ri';
 import { useGameStore } from "../store/gameStore";
+import { Tabs, Tab, Box } from "@mui/material";
 
 interface SkillsMenuProps {
   isOpen: boolean;
@@ -206,25 +207,31 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
         </div>
       </div>
 
-      <div className="skills-tabs">
-        <button
-          className={`tab ${activeTab === 'passive' ? 'active' : ''}`}
-          onClick={() => setActiveTab('passive')}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Tabs 
+          value={activeTab} 
+          onChange={(_, newValue) => setActiveTab(newValue)}
+          sx={{
+            '& .MuiTab-root': {
+              color: '#94a3b8',
+              '&.Mui-selected': {
+                color: '#3b82f6',
+              }
+            },
+            '& .MuiTabs-indicator': {
+              backgroundColor: '#3b82f6',
+            }
+          }}
         >
-          Passive Skills
-        </button>
-        <button
-          className={`tab ${activeTab === 'active' ? 'active' : ''}`}
-          onClick={() => setActiveTab('active')}
-        >
-          Active Skills
-        </button>
-      </div >
+          <Tab label="Passive Skills" value="passive" />
+          <Tab label="Active Skills" value="active" />
+        </Tabs>
+      </Box>
 
       <div className="skills-content">
         {activeTab === 'passive' ? renderSkillList(passiveSkills) : renderSkillList(activeSkills)}
       </div>
-    </div >,
+    </div>,
     document.body
   );
 }
