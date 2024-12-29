@@ -8,6 +8,7 @@ import {
   FaShieldAlt,
   FaTimes,
   FaHourglassHalf,
+  FaPlus,
 } from "react-icons/fa";
 import { GiMultipleTargets } from "react-icons/gi";
 import { GiFireBowl, GiSpeedometer, GiMagicSwirl, GiCrystalBall } from 'react-icons/gi';
@@ -23,7 +24,7 @@ interface SkillsMenuProps {
 const passiveSkills = [
   {
     name: 'Arcane Power',
-    description: 'Increases magic damage',
+    description: 'Increases magic damage by 20% per level',
     icon: GiFireBowl,
     color: '#9333ea',
     basePrice: 100,
@@ -33,7 +34,7 @@ const passiveSkills = [
   },
   {
     name: 'Swift Cast',
-    description: 'Reduces spell cooldown',
+    description: 'Reduces spell cooldown by 10% per level',
     icon: GiSpeedometer,
     color: '#06b6d4',
     basePrice: 150,
@@ -43,7 +44,7 @@ const passiveSkills = [
   },
   {
     name: 'Mystic Reach',
-    description: 'Increases spell range',
+    description: 'Increases spell range by 15% per level',
     icon: GiMagicSwirl,
     color: '#2563eb',
     basePrice: 200,
@@ -53,7 +54,7 @@ const passiveSkills = [
   },
   {
     name: 'Multi Orb',
-    description: 'Chance to cast an additional orb',
+    description: 'Adds 15% chance per level to cast an additional orb',
     icon: GiCrystalBall,
     color: '#ea580c',
     basePrice: 300,
@@ -115,7 +116,7 @@ const activeSkills = [
 
 export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
   const [activeTab, setActiveTab] = useState<'passive' | 'active'>('passive');
-  const { skillPoints, upgrades, upgradeSkill, money, skillLevels } = useGameStore();
+  const { skillPoints, upgrades, upgradeSkill, skillLevels } = useGameStore();
 
   const handleUpgrade = (skillName: string) => {
     const skills = activeTab === 'passive' ? passiveSkills : activeSkills;
@@ -125,9 +126,8 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
     const currentLevel = skillLevels[skillName] || 0;
     if (currentLevel >= skill.maxLevel) return;
 
-    const price = Math.floor(skill.basePrice * Math.pow(skill.priceMultiplier, currentLevel));
-    if (money >= price) {
-      upgradeSkill(skillName, price);
+    if (skillPoints >= 1) {
+      upgradeSkill(skillName, 1); // Using 1 skill point instead of money
     }
   };
 
@@ -146,16 +146,27 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
     <div className="skills-grid">
       {skills.map((skill) => {
         const currentLevel = skillLevels[skill.name] || 0;
-        const price = Math.floor(
-          skill.basePrice * Math.pow(skill.priceMultiplier, currentLevel)
-        );
-        const canAfford = money >= price && currentLevel < skill.maxLevel;
+        const canAfford = skillPoints >= 1 && currentLevel < skill.maxLevel;
+
+        // Calculate cumulative effect
+        let effectText = '';
+        if (currentLevel > 0) {
+          const effect = skill.effect(currentLevel);
+          if ('damage' in effect) {
+            effectText = `Current: +${Math.round((effect.damage - 1) * 100)}% damage`;
+          } else if ('cooldownReduction' in effect) {
+            effectText = `Current: ${Math.round(effect.cooldownReduction * 100)}% cooldown reduction`;
+          } else if ('range' in effect) {
+            effectText = `Current: +${Math.round((effect.range - 1) * 100)}% range`;
+          } else if ('multiCast' in effect) {
+            effectText = `Current: ${Math.round(effect.multiCast * 100)}% multi-cast chance`;
+          }
+        }
 
         return (
           <div
             key={skill.name}
-            className={`skill-card ${canAfford ? 'can-afford' : ''}`}
-            onClick={() => handleUpgrade(skill.name)}
+            className="skill-item"
           >
             <div className="skill-icon" style={{ borderColor: skill.color }}>
               <skill.icon />
@@ -163,6 +174,7 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
             <div className="skill-info">
               <h3>{skill.name}</h3>
               <p>{skill.description}</p>
+              {effectText && <p className="skill-effect">{effectText}</p>}
               {'duration' in skill && (
                 <p className="skill-duration">Duration: {skill.duration}s</p>
               )}
@@ -172,18 +184,23 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
               <div className="skill-level">
                 Level {currentLevel}/{skill.maxLevel}
               </div>
-              {currentLevel < skill.maxLevel ? (
-                <div className={`skill-price ${canAfford ? 'can-afford' : ''}`}>
-                  {price}
-                </div>
-              ) : (
-                <div className="skill-maxed">MAXED</div>
-              )}
             </div>
+            {currentLevel < skill.maxLevel ? (
+              <button 
+                className="skill-upgrade-btn"
+                onClick={() => handleUpgrade(skill.name)}
+                disabled={!canAfford}
+                title={`Upgrade (1 SP)`}
+              >
+                <FaPlus />
+              </button>
+            ) : (
+              <div className="skill-maxed">MAX</div>
+            )}
           </div>
         );
       })}
-    </div >
+    </div>
   );
 
   return createPortal(

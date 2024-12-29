@@ -513,13 +513,13 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   upgradeSkill: (skillName: string, cost: number) => {
     const state = get();
-    if (state.money >= cost) {
+    if (state.skillPoints >= cost) {
       set((state) => ({
+        skillPoints: state.skillPoints - cost,
         skillLevels: {
           ...state.skillLevels,
           [skillName]: (state.skillLevels[skillName] || 0) + 1,
         },
-        money: state.money - cost,
       }));
     }
   },
