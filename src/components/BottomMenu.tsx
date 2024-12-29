@@ -1,20 +1,55 @@
 import { useState, useEffect } from "react";
 import { useGameStore } from "../store/gameStore";
-import { FaUser, FaBolt, FaHourglassHalf, FaBullseye } from "react-icons/fa";
-import { GiMultipleTargets } from "react-icons/gi";
+import { FaUser } from "react-icons/fa";
+import { RiShieldFlashFill, RiThunderstormsFill, RiFireFill, RiContrastDrop2Fill } from "react-icons/ri";
 import "../styles/BottomMenu.css";
 import { SkillsMenu } from "./SkillsMenu";
 
 const SKILL_KEYS = ["1", "2", "3", "4"];
 
-interface Skill {
+const activeSkills = [
+  {
+    name: 'Shield Burst',
+    description: 'Creates a protective barrier that blocks projectiles',
+    icon: RiShieldFlashFill,
+    color: '#2563eb',
+    cooldown: 15,
+    duration: 5,
+  },
+  {
+    name: 'Lightning Storm',
+    description: 'Summons lightning strikes on nearby enemies',
+    icon: RiThunderstormsFill,
+    color: '#7c3aed',
+    cooldown: 20,
+  },
+  {
+    name: 'Inferno',
+    description: 'Creates a ring of fire damaging nearby enemies',
+    icon: RiFireFill,
+    color: '#dc2626',
+    cooldown: 25,
+    duration: 8,
+  },
+  {
+    name: 'Time Dilation',
+    description: 'Slows down enemies in an area',
+    icon: RiContrastDrop2Fill,
+    color: '#0891b2',
+    cooldown: 30,
+    duration: 6,
+  },
+];
+
+interface ActiveSkill {
   name: string;
   icon: any;
   cooldown: number;
   currentCooldown: number;
   color: string;
-  unlocked: boolean;
   level: number;
+  description: string;
+  duration?: number;
 }
 
 export function BottomMenu() {
@@ -23,57 +58,25 @@ export function BottomMenu() {
     experience,
     level,
     skillPoints,
-    upgrades,
+    skillLevels,
   } = useGameStore();
 
   const [showSkillsMenu, setShowSkillsMenu] = useState(false);
-  const [skills, setSkills] = useState<Skill[]>([
-    {
-      name: "Arcane Power",
-      icon: FaBolt,
-      cooldown: 5,
-      currentCooldown: 0,
-      color: "#9333ea",
-      unlocked: false,
-      level: 0,
-    },
-    {
-      name: "Swift Cast",
-      icon: FaHourglassHalf,
-      cooldown: 8,
-      currentCooldown: 0,
-      color: "#22d3ee",
-      unlocked: false,
-      level: 0,
-    },
-    {
-      name: "Mystic Reach",
-      icon: FaBullseye,
-      cooldown: 12,
-      currentCooldown: 0,
-      color: "#3b82f6",
-      unlocked: false,
-      level: 0,
-    },
-    {
-      name: "Multi Orb",
-      icon: GiMultipleTargets,
-      cooldown: 15,
-      currentCooldown: 0,
-      color: "#f97316",
-      unlocked: false,
-      level: 0,
-    },
-  ]);
-
-  // Update skills based on upgrades
-  useEffect(() => {
-    setSkills(prev => prev.map((skill, index) => ({
+  const [skills, setSkills] = useState<ActiveSkill[]>(
+    activeSkills.map(skill => ({
       ...skill,
-      unlocked: upgrades[Object.keys(upgrades)[index] as keyof typeof upgrades] > 0,
-      level: upgrades[Object.keys(upgrades)[index] as keyof typeof upgrades],
+      currentCooldown: 0,
+      level: 0,
+    }))
+  );
+
+  // Update skills based on levels
+  useEffect(() => {
+    setSkills(prev => prev.map(skill => ({
+      ...skill,
+      level: skillLevels[skill.name] || 0,
     })));
-  }, [upgrades]);
+  }, [skillLevels]);
 
   // Handle cooldowns
   useEffect(() => {
@@ -87,84 +90,98 @@ export function BottomMenu() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleSkillClick = (index: number) => {
-    if (!skills[index].unlocked || skills[index].currentCooldown > 0) return;
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      const index = SKILL_KEYS.indexOf(e.key);
+      if (index !== -1) {
+        handleSkillClick(index);
+      }
+    };
 
-    setSkills(prev => prev.map((skill, i) => 
-      i === index ? { ...skill, currentCooldown: skill.cooldown } : skill
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [skills]);
+
+  const handleSkillClick = (index: number) => {
+    const skill = skills[index];
+    if (skill.level === 0 || skill.currentCooldown > 0) return;
+
+    setSkills(prev => prev.map((s, i) => 
+      i === index ? { ...s, currentCooldown: s.cooldown } : s
     ));
 
-    // TODO: Implement skill effect
-    console.log(`Activated skill: ${skills[index].name}`);
+    // Cast the skill
+    switch (skill.name) {
+      case 'Shield Burst':
+        console.log('Casting Shield Burst');
+        // TODO: Implement shield effect
+        break;
+      case 'Lightning Storm':
+        console.log('Casting Lightning Storm');
+        // TODO: Implement lightning strikes
+        break;
+      case 'Inferno':
+        console.log('Casting Inferno');
+        // TODO: Implement fire ring
+        break;
+      case 'Time Dilation':
+        console.log('Casting Time Dilation');
+        // TODO: Implement slow effect
+        break;
+    }
   };
 
   // Calculate XP progress
-  const expForNextLevel = level * 100;
-  const progress = (experience / expForNextLevel) * 100;
+  const xpForNextLevel = Math.floor(100 * Math.pow(1.5, level - 1));
+  const xpProgress = (experience / xpForNextLevel) * 100;
 
   return (
-    <div className="bottom-menu" onClick={(e) => e.stopPropagation()}>
-      <div className="menu-content">
-        <div className="menu-top">
-          <div className="player-info">
-            <button
-              className="player-icon"
-              onClick={() => setShowSkillsMenu(true)}
-            >
-              <FaUser />
-              {skillPoints > 0 && (
-                <div className="skill-points-indicator">{skillPoints}</div>
-              )}
-            </button>
-
-            <div className="player-stats">
-              <div className="xp-display">
-                <div className="xp-bar">
-                  <div
-                    className="xp-fill"
-                    style={{
-                      width: `${progress}%`,
-                    }}
-                  />
-                  <div className="xp-text">
-                    Lvl {level} • {experience}/{expForNextLevel}
-                  </div>
-                </div>
-              </div>
-
-              <div className="money-display">
-                {money}<span>🪙</span>
-              </div>
+    <div className="bottom-menu">
+      <div className="status-section">
+        <div className="player-info">
+          <div className="player-icon">
+            <FaUser />
+          </div>
+          <div className="level-info">
+            <div className="level-number">Level {level}</div>
+            <div className="xp-bar">
+              <div className="xp-progress" style={{ width: `${xpProgress}%` }} />
             </div>
+            <div className="xp-text">{experience}/{xpForNextLevel} XP</div>
           </div>
         </div>
-
-        <div className="skill-slots">
-          {skills.map((skill, index) => (
-            <button
-              key={index}
-              className={`skill-slot ${!skill.unlocked ? 'locked' : ''}`}
-              onClick={() => handleSkillClick(index)}
-              disabled={!skill.unlocked || skill.currentCooldown > 0}
-              style={{
-                borderColor: skill.unlocked ? skill.color : undefined,
-              }}
-            >
-              <skill.icon className="skill-icon" />
-              {skill.currentCooldown > 0 && (
-                <div className="cooldown-overlay">{skill.currentCooldown}s</div>
-              )}
-              <div className="key-hint">{SKILL_KEYS[index]}</div>
-            </button>
-          ))}
+        <div className="resources">
+          <div className="money">💰 {money}</div>
+          <div className="skill-points" onClick={() => setShowSkillsMenu(true)}>
+            ✨ {skillPoints} SP
+          </div>
         </div>
       </div>
 
+      <div className="skills-section">
+        {skills.map((skill, index) => (
+          <div
+            key={skill.name}
+            className={`skill-button ${skill.level === 0 ? 'locked' : ''} ${skill.currentCooldown > 0 ? 'on-cooldown' : ''}`}
+            onClick={() => handleSkillClick(index)}
+            style={{ borderColor: skill.color }}
+          >
+            <skill.icon />
+            {skill.currentCooldown > 0 && (
+              <div className="cooldown-overlay" style={{ height: `${(skill.currentCooldown / skill.cooldown) * 100}%` }} />
+            )}
+            <div className="skill-key">{SKILL_KEYS[index]}</div>
+            {skill.level > 0 && <div className="skill-level">{skill.level}</div>}
+            {skill.currentCooldown > 0 && (
+              <div className="cooldown-text">{skill.currentCooldown}s</div>
+            )}
+          </div>
+        ))}
+      </div>
+
       {showSkillsMenu && (
-        <SkillsMenu
-          isOpen={showSkillsMenu}
-          onClose={() => setShowSkillsMenu(false)}
-        />
+        <SkillsMenu isOpen={showSkillsMenu} onClose={() => setShowSkillsMenu(false)} />
       )}
     </div>
   );

@@ -75,7 +75,10 @@ const activeSkills = [
     maxLevel: 3,
     cooldown: 15,
     duration: 5,
-    effect: (level: number) => ({ shieldDuration: 3 + level * 1 }),
+    effect: (level: number) => ({ 
+      shieldDuration: 3 + level * 1,
+      shieldStrength: 100 + level * 50
+    }),
   },
   {
     name: 'Lightning Storm',
@@ -86,7 +89,11 @@ const activeSkills = [
     priceMultiplier: 1.5,
     maxLevel: 3,
     cooldown: 20,
-    effect: (level: number) => ({ strikeDamage: 50 + level * 25 }),
+    effect: (level: number) => ({ 
+      strikeDamage: 50 + level * 25,
+      strikeCount: 3 + level * 1,
+      radius: 5 + level * 1
+    }),
   },
   {
     name: 'Inferno',
@@ -98,7 +105,11 @@ const activeSkills = [
     maxLevel: 3,
     cooldown: 25,
     duration: 8,
-    effect: (level: number) => ({ burnDamage: 20 + level * 15 }),
+    effect: (level: number) => ({ 
+      burnDamage: 20 + level * 15,
+      radius: 4 + level * 0.5,
+      burnDuration: 3 + level * 1
+    }),
   },
   {
     name: 'Time Dilation',
@@ -148,19 +159,25 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
         const currentLevel = skillLevels[skill.name] || 0;
         const canAfford = skillPoints >= 1 && currentLevel < skill.maxLevel;
 
-        // Calculate cumulative effect
         let effectText = '';
-        if (currentLevel > 0) {
-          const effect = skill.effect(currentLevel);
-          if ('damage' in effect) {
-            effectText = `Current: +${Math.round((effect.damage - 1) * 100)}% damage`;
-          } else if ('cooldownReduction' in effect) {
-            effectText = `Current: ${Math.round(effect.cooldownReduction * 100)}% cooldown reduction`;
-          } else if ('range' in effect) {
-            effectText = `Current: +${Math.round((effect.range - 1) * 100)}% range`;
-          } else if ('multiCast' in effect) {
-            effectText = `Current: ${Math.round(effect.multiCast * 100)}% multi-cast chance`;
-          }
+        if ('effect' in skill) {
+          const effects = skill.effect(currentLevel);
+          effectText = Object.entries(effects)
+            .map(([key, value]) => {
+              // Format the key by converting camelCase to Title Case with spaces
+              const formattedKey = key
+                .replace(/([A-Z])/g, ' $1')
+                .replace(/^./, str => str.toUpperCase());
+              
+              // Format the value based on if it's a percentage or not
+              const formattedValue = key.toLowerCase().includes('chance') || 
+                                   key.toLowerCase().includes('reduction')
+                ? `${Math.round(value * 100)}%`
+                : Math.round(value * 10) / 10;
+              
+              return `${formattedKey}: ${formattedValue}`;
+            })
+            .join(' | ');
         }
 
         return (

@@ -366,6 +366,104 @@
   }
 }
 
+.skills-section {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.skill-button {
+  position: relative;
+  width: 3.5rem;
+  height: 3.5rem;
+  border: 2px solid;
+  border-radius: 0.5rem;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1.5rem;
+}
+
+.skill-button:hover:not(.locked):not(.on-cooldown) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.skill-button.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(1);
+}
+
+.skill-button.on-cooldown {
+  cursor: not-allowed;
+}
+
+.cooldown-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.7);
+  transition: height 1s linear;
+}
+
+.cooldown-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1rem;
+  font-weight: bold;
+  text-shadow: 0 0 4px black;
+}
+
+.skill-key {
+  position: absolute;
+  top: -0.5rem;
+  left: -0.5rem;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid currentColor;
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.3rem;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.skill-level {
+  position: absolute;
+  bottom: -0.5rem;
+  right: -0.5rem;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid currentColor;
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.3rem;
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #fbbf24;
+}
+
+@media screen and (max-width: 640px) {
+  .skill-button {
+    width: 3rem;
+    height: 3rem;
+    font-size: 1.25rem;
+  }
+  
+  .cooldown-text {
+    font-size: 0.9rem;
+  }
+  
+  .skill-key,
+  .skill-level {
+    font-size: 0.7rem;
+  }
+}
+
 .skill-icon svg {
   width: 100%;
   height: 100%;
