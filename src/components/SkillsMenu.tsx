@@ -11,7 +11,7 @@ import {
   FaPlus,
 } from "react-icons/fa";
 import { GiMultipleTargets } from "react-icons/gi";
-import { GiFireBowl, GiSpeedometer, GiMagicSwirl, GiCrystalBall, GiInfinityLoop } from 'react-icons/gi';
+import { GiFireBowl, GiSpeedometer, GiMagicSwirl, GiCrystalBall, GiInfinity } from 'react-icons/gi';
 import { RiShieldFlashFill, RiThunderstormsFill, RiFireFill, RiContrastDrop2Fill, RiSwordFill } from 'react-icons/ri';
 import { useGameStore } from "../store/gameStore";
 import { Tabs, Tab, Box } from "@mui/material";
@@ -257,23 +257,23 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
             }
           }}
         >
-          <Tab 
+          <Tab
             label={
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <RiSwordFill />
                 Active Skills
               </div>
-            } 
-            value="active" 
+            }
+            value="active"
           />
-          <Tab 
+          <Tab
             label={
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <GiInfinityLoop />
+                <GiInfinity />
                 Passive Skills
               </div>
-            } 
-            value="passive" 
+            }
+            value="passive"
           />
         </Tabs>
       </Box>

@@ -15,6 +15,7 @@ import { glowColor, grassColor, platformColor } from '../../../utils/constants';
 import { MushroomInstances } from './MushroomInstances';
 import { generatePath, PathDecorations } from './PathDecoration';
 import { FirefliesInstances } from './FirefliesInstances';
+import { SkillEffects } from '../../skills/SkillEffects';
 
 const pathMaterial = createShaderMaterial('path', {
   color: { value: new Vector3(0.26, 0.22, 0.79) },
@@ -426,7 +427,7 @@ export function Level() {
           onComplete={() => setClickPosition(null)}
         />
       )}
-
+      <SkillEffects />
     </group>
   );
 }

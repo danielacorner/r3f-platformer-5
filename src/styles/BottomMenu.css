@@ -35,22 +35,23 @@
 .player-icon {
   width: 2.5rem;
   height: 2.5rem;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.6);
   border: 2px solid #3b82f6;
-  border-radius: 50%;
+  border-radius: 0.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-size: 1.2rem;
+  font-size: 1.25rem;
+  color: #f0f9ff;
   position: relative;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
+  z-index: 1001;
 }
 
 .player-icon:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  border-color: #60a5fa;
+  transform: scale(1.05);
 }
 
 .player-icon::after {
@@ -97,10 +98,12 @@
     transform: scale(1);
     box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
   }
+
   70% {
     transform: scale(1.1);
     box-shadow: 0 0 0 6px rgba(251, 191, 36, 0);
   }
+
   100% {
     transform: scale(1);
     box-shadow: 0 0 0 0 rgba(251, 191, 36, 0);
@@ -147,12 +150,10 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(
-    45deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.2) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(45deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.2) 50%,
+      transparent 100%);
   animation: shimmer 2s infinite;
 }
 
@@ -160,6 +161,7 @@
   0% {
     transform: translateX(-100%);
   }
+
   100% {
     transform: translateX(100%);
   }
@@ -426,6 +428,7 @@
   align-items: center;
   gap: 1rem;
   transition: all 0.3s ease;
+  position: relative;
 }
 
 .skill-upgrade-btn {
@@ -461,7 +464,7 @@
   border: none;
   border-radius: 0.5rem;
   color: white;
-  width: 2rem;
+  min-width: 2rem;
   height: 2rem;
   display: flex;
   align-items: center;
@@ -577,11 +580,11 @@
     height: 3rem;
     font-size: 1.25rem;
   }
-  
+
   .cooldown-text {
     font-size: 0.9rem;
   }
-  
+
   .skill-key,
   .skill-level {
     font-size: 0.7rem;
@@ -873,20 +876,20 @@
   .xp-bar {
     width: 150px;
   }
-  
+
   .level-number {
     font-size: 1rem;
   }
-  
+
   .xp-text {
     font-size: 0.75rem;
   }
-  
+
   .money {
     font-size: 1rem;
     padding: 0.2rem 0.6rem;
   }
-  
+
   .money::before {
     font-size: 1.1rem;
   }

@@ -4,6 +4,8 @@ import { FaUser } from "react-icons/fa";
 import { RiShieldFlashFill, RiThunderstormsFill, RiFireFill, RiContrastDrop2Fill } from "react-icons/ri";
 import "../styles/BottomMenu.css";
 import { SkillsMenu } from "./SkillsMenu";
+import { castShieldBurst, castLightningStorm, castInferno, castTimeDilation } from './skills/SkillEffects';
+import { Vector3 } from "three";
 
 const SKILL_KEYS = ["1", "2", "3", "4"];
 
@@ -111,23 +113,25 @@ export function BottomMenu() {
       i === index ? { ...s, currentCooldown: s.cooldown } : s
     ));
 
-    // Cast the skill
+    // Get player position
+    const playerPosition = playerRef?.translation();
+    if (!playerPosition) return;
+
+    const position = new Vector3(playerPosition.x, playerPosition.y, playerPosition.z);
+
+    // Cast the appropriate skill
     switch (skill.name) {
       case 'Shield Burst':
-        console.log('Casting Shield Burst');
-        // TODO: Implement shield effect
+        castShieldBurst(position, skill.level);
         break;
       case 'Lightning Storm':
-        console.log('Casting Lightning Storm');
-        // TODO: Implement lightning strikes
+        castLightningStorm(position, skill.level);
         break;
       case 'Inferno':
-        console.log('Casting Inferno');
-        // TODO: Implement fire ring
+        castInferno(position, skill.level);
         break;
       case 'Time Dilation':
-        console.log('Casting Time Dilation');
-        // TODO: Implement slow effect
+        castTimeDilation(position, skill.level);
         break;
     }
   };
@@ -137,88 +141,88 @@ export function BottomMenu() {
   const xpProgress = (experience / xpForNextLevel) * 100;
 
   return (
-    <div
-      className="bottom-menu"
-      onPointerDown={(e) => { 
-        e.stopPropagation(); 
-        e.preventDefault();
-      }}
-      onMouseDown={(e) => { 
-        e.stopPropagation(); 
-        e.preventDefault();
-      }}
-    >
-      <div className="status-section">
-        <div className="player-info">
-          <div
-            className="player-icon"
-            onPointerDown={(e) => { 
-              e.stopPropagation(); 
-              e.preventDefault();
-            }}
-            onMouseDown={(e) => { 
-              e.stopPropagation(); 
-              e.preventDefault();
-            }}
-            onClick={(e) => { e.preventDefault(); e.stopPropagation() }}
-            title="Click to open Skills Menu"
-          >
-            <FaUser />
-            {skillPoints > 0 && (
-              <div className="skill-points-badge">
-                {skillPoints}
+    <>
+      <div
+        className="bottom-menu"
+        onPointerDown={(e) => { 
+          e.stopPropagation(); 
+          e.preventDefault();
+        }}
+        onMouseDown={(e) => { 
+          e.stopPropagation(); 
+          e.preventDefault();
+        }}
+      >
+        <div className="status-section">
+          <div className="player-info">
+            <div
+              className="player-icon"
+              onClick={(e) => { 
+                e.preventDefault(); 
+                e.stopPropagation();
+                setShowSkillsMenu(true);
+              }}
+              title="Click to open Skills Menu"
+            >
+              <FaUser />
+              {skillPoints > 0 && (
+                <div className="skill-points-badge">
+                  {skillPoints}
+                </div>
+              )}
+            </div>
+            <div className="level-info">
+              <div className="level-number">Level {level}</div>
+              <div className="xp-bar">
+                <div
+                  className="xp-progress"
+                  style={{ width: `${xpProgress}%` }}
+                  title={`${experience.toLocaleString()}/${xpForNextLevel.toLocaleString()} XP`}
+                />
               </div>
-            )}
-          </div>
-          <div className="level-info">
-            <div className="level-number">Level {level}</div>
-            <div className="xp-bar">
-              <div
-                className="xp-progress"
-                style={{ width: `${xpProgress}%` }}
-                title={`${experience.toLocaleString()}/${xpForNextLevel.toLocaleString()} XP`}
-              />
+              <div className="xp-text">
+                {experience.toLocaleString()}/{xpForNextLevel.toLocaleString()} XP
+              </div>
             </div>
-            <div className="xp-text">
-              {experience.toLocaleString()}/{xpForNextLevel.toLocaleString()} XP
+          </div>
+          <div className="resources">
+            <div className="money" title="Gold">
+              {money.toLocaleString()}
             </div>
           </div>
         </div>
-        <div className="resources">
-          <div className="money" title="Gold">
-            {money.toLocaleString()}
-          </div>
+
+        <div className="skills-section">
+          {skills.map((skill, index) => (
+            <div
+              key={skill.name}
+              className={`skill-button ${skill.level === 0 ? 'locked' : ''} ${skill.currentCooldown > 0 ? 'on-cooldown' : ''}`}
+              onPointerDown={(e) => { 
+                e.stopPropagation(); 
+                e.preventDefault();
+                handleSkillClick(index);
+              }}
+              style={{ borderColor: skill.color }}
+            >
+              <skill.icon />
+              {skill.currentCooldown > 0 && (
+                <div className="cooldown-overlay" style={{ height: `${(skill.currentCooldown / skill.cooldown) * 100}%` }} />
+              )}
+              <div className="skill-key">{SKILL_KEYS[index]}</div>
+              {skill.level > 0 && <div className="skill-level">{skill.level}</div>}
+              {skill.currentCooldown > 0 && (
+                <div className="cooldown-text">{skill.currentCooldown}s</div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
-
-      <div className="skills-section">
-        {skills.map((skill, index) => (
-          <div
-            key={skill.name}
-            className={`skill-button ${skill.level === 0 ? 'locked' : ''} ${skill.currentCooldown > 0 ? 'on-cooldown' : ''}`}
-            onPointerDown={(e) => { 
-              e.stopPropagation(); 
-              e.preventDefault();
-              handleSkillClick(index);
-            }}
-            style={{ borderColor: skill.color }}
-          >
-            <skill.icon />
-            {skill.currentCooldown > 0 && (
-              <div className="cooldown-overlay" style={{ height: `${(skill.currentCooldown / skill.cooldown) * 100}%` }} />
-            )}
-            <div className="skill-key">{SKILL_KEYS[index]}</div>
-            {skill.level > 0 && <div className="skill-level">{skill.level}</div>}
-            {skill.currentCooldown > 0 && (
-              <div className="cooldown-text">{skill.currentCooldown}s</div>
-            )}
-          </div>
-        ))}
-      </div>
-
       {showSkillsMenu && (
-        <SkillsMenu isOpen={showSkillsMenu} onClose={() => setShowSkillsMenu(false)} />
+        <SkillsMenu 
+          isOpen={showSkillsMenu} 
+          onClose={() => setShowSkillsMenu(false)} 
+        />
       )}
-    </div>
+    </>
   );
 }
