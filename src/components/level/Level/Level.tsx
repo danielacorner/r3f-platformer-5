@@ -386,11 +386,10 @@ export function Level() {
       )}
 
       {/* Game Elements */}
-      <WaveManager pathPoints={pathPoints} />
-
-      <CreepManager pathPoints={pathPoints} />
-
       <Player moveTargetRef={moveTargetRef} />
+      <WaveManager pathPoints={pathPoints} />
+      <CreepManager pathPoints={pathPoints} />
+      <SkillEffects />
 
       {/* Click indicator */}
       {clickPosition && (
@@ -400,7 +399,6 @@ export function Level() {
           onComplete={() => setClickPosition(null)}
         />
       )}
-      <SkillEffects />
     </group>
   );
 }

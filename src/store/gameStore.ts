@@ -305,6 +305,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   setPlayerRef: (ref) => set(state => {
     // Only update if the ref has actually changed
     if (state.playerRef !== ref) {
+      console.log('Setting player ref:', ref);
       return { playerRef: ref };
     }
     return state;

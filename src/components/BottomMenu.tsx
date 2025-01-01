@@ -15,7 +15,7 @@ const activeSkills = [
     description: 'Launch multiple homing missiles that deal damage to enemies',
     icon: RiMagicFill,
     color: '#8b5cf6',
-    cooldown: 12,
+    cooldown: process.eng.NODE_ENV === 'development' ? 1 : 12,
   },
   {
     name: 'Shield Burst',
@@ -67,7 +67,6 @@ export function BottomMenu() {
     experience,
     level,
     skillPoints,
-    skillLevels, playerRef
   } = useGameStore();
 
   const [showSkillsMenu, setShowSkillsMenu] = useState(false);
@@ -81,9 +80,9 @@ export function BottomMenu() {
   useEffect(() => {
     setSkills(prev => prev.map(skill => ({
       ...skill,
-      level: skillLevels[skill.name] || 0,
+      level: useGameStore.getState().skillLevels[skill.name] || 0,
     })));
-  }, [skillLevels]);
+  }, [useGameStore.getState().skillLevels]);
 
   // Handle cooldowns
   useEffect(() => {
@@ -112,19 +111,44 @@ export function BottomMenu() {
 
   const handleSkillClick = (index: number) => {
     const skill = skills[index];
-    if (skill.level === 0 || skill.currentCooldown > 0) return;
+    console.log("🚀 ~ file: BottomMenu.tsx:115 ~ skill:", skill)
+    console.log('Attempting to cast skill:', skill.name, 'at index:', index);
+    console.log('Skill level:', skill.level);
+    console.log('Skill cooldown:', skill.currentCooldown);
+
+    if (skill.level === 0) {
+      console.log('Skill not learned yet');
+      return;
+    }
+
+    if (skill.currentCooldown > 0) {
+      console.log('Skill on cooldown');
+      return;
+    }
 
     setSkills(prev => prev.map((s, i) =>
       i === index ? { ...s, currentCooldown: s.cooldown } : s
     ));
 
     // Get player position
-    const playerPosition = playerRef?.translation();
-    if (!playerPosition) return;
+    const playerRef = useGameStore.getState().playerRef;
+    if (!playerRef) {
+      console.log('No player ref found in game store!');
+      return;
+    }
 
-    const position = new Vector3(playerPosition.x, playerPosition.y, playerPosition.z);
+    const playerPosition = playerRef.translation();
+    if (!playerPosition) {
+      console.log('No player position found!');
+      return;
+    }
+
+    console.log('Raw player position:', playerPosition);
+    const position = new Vector3(playerPosition.x, 1, playerPosition.z); // Set Y to 1 instead of 0
+    console.log('Casting position:', position.toArray());
 
     // Cast the appropriate skill
+    console.log('Casting skill:', skill.name);
     switch (skill.name) {
       case 'Shield Burst':
         castShieldBurst(position, skill.level);
@@ -139,6 +163,7 @@ export function BottomMenu() {
         castTimeDilation(position, skill.level);
         break;
       case 'Magic Missiles':
+        console.log('Calling castMagicMissiles with position:', position.toArray(), 'and level:', skill.level);
         castMagicMissiles(position, skill.level);
         break;
     }

@@ -6,6 +6,7 @@ import { useGameStore } from "../store/gameStore";
 import { useKeyboardControls } from '../hooks/useKeyboardControls';
 import { MagicOrb } from './MagicOrb';
 import { LevelUpEffect } from './LevelUpEffect';
+import type { RigidBody as RigidBodyType } from "@react-three/rapier";
 
 interface PlayerProps {
   moveTargetRef: React.MutableRefObject<{
@@ -24,7 +25,7 @@ const START_ANIMATION_DURATION = 2;
 const BOUNDARY_SIZE = 20; // Size of the playable area (half-width)
 
 export function Player({ moveTargetRef }: PlayerProps) {
-  const playerRef = useRef<Group>(null);
+  const playerRef = useRef<RigidBodyType>(null);
   const { forward, backward, left, right } = useKeyboardControls();
   const visualRef = useRef<Group>(null);
   const lastValidPosition = useRef(new Vector3(0, FLOAT_HEIGHT, 0));
@@ -43,6 +44,7 @@ export function Player({ moveTargetRef }: PlayerProps) {
   const adjustCameraAngle = useGameStore(state => state.adjustCameraAngle);
   const [rigidBodyKey, setRigidBodyKey] = useState(0);
   const floatOffset = useRef(0);
+  const setPlayerRef = useGameStore(state => state.setPlayerRef);
 
   // Initialize physics and camera
   useEffect(() => {
@@ -116,6 +118,14 @@ export function Player({ moveTargetRef }: PlayerProps) {
       window.removeEventListener('touchend', handleTouchEnd);
     };
   }, [camera, adjustCameraZoom, adjustCameraAngle, rigidBodyKey]);
+
+  // Set player ref in game store
+  useEffect(() => {
+    if (playerRef.current) {
+      console.log('Setting player ref in game store');
+      setPlayerRef(playerRef.current);
+    }
+  }, [playerRef.current]);
 
   // Check for level up
   useEffect(() => {
@@ -307,19 +317,16 @@ export function Player({ moveTargetRef }: PlayerProps) {
   });
 
   return (
-    <>
+    <group>
       <RigidBody
-        key={rigidBodyKey}
         ref={playerRef}
-        colliders={false}
-        mass={1}
-        type="dynamic"
+        key={rigidBodyKey}
         position={[0, FLOAT_HEIGHT, 0]}
         enabledRotations={[false, false, false]}
-        scale={1 + damage/12}
-        linearDamping={0.95}
-        // need this here or else player stops being able to move (like render loop stops or simulation temp reaches 0)
-        gravityScale={0.1} 
+        lockRotations
+        mass={1}
+        type="dynamic"
+        colliders="cuboid"
       >
         <CuboidCollider args={[0.3, 0.4, 0.3]} position={[0, FLOAT_HEIGHT, 0]} />
         <group ref={visualRef}>
@@ -539,6 +546,6 @@ export function Player({ moveTargetRef }: PlayerProps) {
         </group>
       </RigidBody>
       <MagicOrb playerRef={playerRef} />
-    </>
+    </group>
   );
 }

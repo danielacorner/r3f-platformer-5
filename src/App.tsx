@@ -116,7 +116,7 @@ export default function App() {
         <WaveIndicator />
         <Canvas
           shadows="soft"
-          camera={{ fov: 50 }}
+          camera={{ fov: 75, position: [0, 20, 20], near: 0.1, far: 1000 }}
           dpr={[1, 2]}
           gl={{
             powerPreference: "high-performance",
@@ -127,25 +127,25 @@ export default function App() {
           }}
         >
           <color attach="background" args={["#000913"]} />
-          <fog attach="fog" args={["#000913", 30, 100]} />
+          <fog attach="fog" args={["#000913", 50, 200]} />
 
           <Suspense fallback={null}>
             <SoftShadows size={35} samples={16} focus={0.5} />
 
             <Environment preset="sunset" background={false} />
 
-            <ambientLight intensity={0.2} />
+            <ambientLight intensity={0.5} />
             <directionalLight
               castShadow
-              intensity={2}
-              position={[10, 15, 10]}
-              shadow-mapSize={[2048, 2048]}
-              shadow-camera-left={-30}
-              shadow-camera-right={30}
-              shadow-camera-top={30}
-              shadow-camera-bottom={-30}
+              intensity={3}
+              position={[20, 30, 20]}
+              shadow-mapSize={[4096, 4096]}
+              shadow-camera-left={-50}
+              shadow-camera-right={50}
+              shadow-camera-top={50}
+              shadow-camera-bottom={-50}
               shadow-camera-near={0.1}
-              shadow-camera-far={200}
+              shadow-camera-far={500}
               shadow-bias={-0.001}
             />
 
