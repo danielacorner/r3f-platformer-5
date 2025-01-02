@@ -1,9 +1,14 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Vector3, MeshBasicMaterial, Color, Matrix4, Quaternion, AdditiveBlending, DoubleSide } from 'three';
+import { Vector3, Color, Matrix4, Quaternion, AdditiveBlending, DoubleSide } from 'three';
 import { useGameStore } from '../../store/gameStore';
 import { Trail, MeshDistortMaterial, Sparkles } from '@react-three/drei';
 import * as THREE from 'three';
+
+interface MissileProps {
+  effect: SkillEffect;
+  onUpdate: (position: Vector3, velocity: Vector3) => void;
+}
 
 interface SkillEffect {
   id: string;
@@ -15,7 +20,6 @@ interface SkillEffect {
   damage?: number;
   color: string;
   velocity?: Vector3;
-  target?: Vector3;
   phase?: 'rising' | 'seeking' | 'falling';
   initialVelocity?: Vector3;
   timeOffset?: number;
@@ -96,16 +100,16 @@ export function castTimeDilation(position: Vector3, level: number) {
 
 export function castMagicMissiles(position: Vector3, level: number) {
   console.log('Casting Magic Missiles at position:', position.toArray());
-
+  
   const missileCount = Math.floor(3 + level * 2);
   const baseDamage = 30;
   const damagePerLevel = 5;
   const damage = baseDamage + (level * damagePerLevel);
   const missileSpeed = 10;
   const missileRadius = 0.75;
-
+  
   const angleStep = (2 * Math.PI) / missileCount;
-
+  
   for (let i = 0; i < missileCount; i++) {
     const angle = i * angleStep;
     const horizontalDir = new Vector3(
@@ -139,21 +143,25 @@ export function castMagicMissiles(position: Vector3, level: number) {
       phase: 'rising' as const,
       timeOffset
     };
-
+    
     console.log('Created missile:', i, 'at position:', effect.position.toArray(), 'with velocity:', effect.velocity.toArray());
     activeEffects.push(effect);
   }
+
+  // Force a re-render by updating the effects count
+  window.dispatchEvent(new CustomEvent('effectsChanged'));
 }
 
 function findNearestCreep(position: Vector3, creeps: any[]): Vector3 | null {
-  let nearestDist = MAX_SEEK_DISTANCE;
-  let nearestPos = null;
+  let nearestDistance = Infinity;
+  let nearestPos: Vector3 | null = null;
 
   for (const creep of creeps) {
     const creepPos = new Vector3(...creep.position);
-    const dist = position.distanceTo(creepPos);
-    if (dist < nearestDist) {
-      nearestDist = dist;
+    const distance = creepPos.distanceTo(position);
+
+    if (distance < nearestDistance && distance < MAX_SEEK_DISTANCE) {
+      nearestDistance = distance;
       nearestPos = creepPos;
     }
   }
@@ -163,10 +171,22 @@ function findNearestCreep(position: Vector3, creeps: any[]): Vector3 | null {
 
 export function SkillEffects() {
   const { creeps, damageCreep } = useGameStore();
-  const lineGeometryRefs = useRef<Map<string, THREE.BufferGeometry>>(new Map());
-  const sphereRefs = useRef<Map<string, THREE.Mesh>>(new Map());
+  const [effectsCount, setEffectsCount] = useState(0);
+  const [frameCount, setFrameCount] = useState(0);
+
+  // Listen for new effects
+  useEffect(() => {
+    const handleEffectsChanged = () => {
+      setEffectsCount(prev => prev + 1);
+    };
+    window.addEventListener('effectsChanged', handleEffectsChanged);
+    return () => window.removeEventListener('effectsChanged', handleEffectsChanged);
+  }, []);
 
   useFrame((state, delta) => {
+    // Force continuous updates
+    setFrameCount(prev => (prev + 1) % 1000000);
+
     const now = Date.now();
     const remainingEffects: SkillEffect[] = [];
 
@@ -178,7 +198,7 @@ export function SkillEffects() {
         }
 
         const age = (now - effect.startTime) / 1000;
-
+        
         if (age > effect.duration) {
           console.log('Effect expired:', effect.id);
           continue;
@@ -187,28 +207,22 @@ export function SkillEffects() {
         const frameVelocity = effect.velocity.clone().multiplyScalar(delta);
         effect.position.add(frameVelocity);
 
-        // Update sphere position
-        const sphere = sphereRefs.current.get(effect.id);
-        if (sphere) {
-          sphere.position.copy(effect.position);
-        }
-
         if (effect.phase === 'rising') {
           effect.velocity.add(GRAVITY.clone().multiplyScalar(delta * 0.3));
-
+          
           if (effect.velocity.y < 0) {
             effect.phase = 'seeking';
             console.log('Missile transitioning to seeking phase');
           }
         } else if (effect.phase === 'seeking') {
           effect.velocity.add(GRAVITY.clone().multiplyScalar(delta * 0.3));
-
+          
           const nearestCreep = findNearestCreep(effect.position, creeps);
           if (nearestCreep) {
             const toTarget = nearestCreep.clone().sub(effect.position).normalize();
             const seekForce = toTarget.multiplyScalar(20 * delta);
             effect.velocity.add(seekForce);
-
+            
             if (effect.velocity.length() > 15) {
               effect.velocity.normalize().multiplyScalar(15);
             }
@@ -232,22 +246,7 @@ export function SkillEffects() {
           }
         }
 
-        // Update line geometry
-        const lineGeometry = lineGeometryRefs.current.get(effect.id);
-        if (lineGeometry) {
-          const positions = new Float32Array([
-            effect.position.x, effect.position.y, effect.position.z,
-            effect.position.x + effect.velocity.x,
-            effect.position.y + effect.velocity.y,
-            effect.position.z + effect.velocity.z
-          ]);
-          lineGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-          lineGeometry.attributes.position.needsUpdate = true;
-        }
-
         if (hitCreep) continue;
-        remainingEffects.push(effect);
-      } else {
         remainingEffects.push(effect);
       }
     }
@@ -266,16 +265,9 @@ export function SkillEffects() {
       {activeEffects.map(effect => {
         if (effect.type === 'magicMissile') {
           return (
-            <group key={effect.id}>
+            <group key={`${effect.id}-${frameCount}`}>
               {/* Simple bright sphere for testing */}
-              <mesh 
-                ref={(mesh) => {
-                  if (mesh) {
-                    sphereRefs.current.set(effect.id, mesh);
-                    mesh.position.copy(effect.position);
-                  }
-                }}
-              >
+              <mesh position={effect.position.toArray()}>
                 <sphereGeometry args={[effect.radius, 32, 32]} />
                 <meshBasicMaterial
                   color={effect.color}
@@ -283,24 +275,6 @@ export function SkillEffects() {
                   fog={false}
                 />
               </mesh>
-
-              {/* Debug line showing velocity direction */}
-              <line>
-                <bufferGeometry ref={(geometry) => {
-                  if (geometry) {
-                    lineGeometryRefs.current.set(effect.id, geometry);
-                    const positions = new Float32Array([
-                      effect.position.x, effect.position.y, effect.position.z,
-                      effect.position.x + effect.velocity.x,
-                      effect.position.y + effect.velocity.y,
-                      effect.position.z + effect.velocity.z
-                    ]);
-                    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-                  }
-                }}>
-                </bufferGeometry>
-                <lineBasicMaterial color="yellow" />
-              </line>
 
               {/* Point light */}
               <pointLight
@@ -310,66 +284,6 @@ export function SkillEffects() {
                 distance={20}
                 decay={1}
               />
-            </group>
-          );
-        } else if (effect.type === 'shield') {
-          return (
-            <group key={effect.id} position={effect.position.toArray()}>
-              <mesh>
-                <sphereGeometry args={[effect.radius, 32, 32]} />
-                <meshBasicMaterial
-                  color={effect.color}
-                  transparent
-                  opacity={0.3}
-                  emissive={effect.color}
-                  emissiveIntensity={2}
-                />
-              </mesh>
-            </group>
-          );
-        } else if (effect.type === 'lightning') {
-          return (
-            <group key={effect.id} position={effect.position.toArray()}>
-              <mesh>
-                <sphereGeometry args={[effect.radius, 32, 32]} />
-                <meshBasicMaterial
-                  color={effect.color}
-                  transparent
-                  opacity={0.3}
-                  emissive={effect.color}
-                  emissiveIntensity={2}
-                />
-              </mesh>
-            </group>
-          );
-        } else if (effect.type === 'inferno') {
-          return (
-            <group key={effect.id} position={effect.position.toArray()}>
-              <mesh>
-                <sphereGeometry args={[effect.radius, 32, 32]} />
-                <meshBasicMaterial
-                  color={effect.color}
-                  transparent
-                  opacity={0.3}
-                  emissive={effect.color}
-                  emissiveIntensity={2}
-                />
-              </mesh>
-            </group>
-          );
-        } else if (effect.type === 'timeDilation') {
-          return (
-            <group key={effect.id} position={effect.position.toArray()}>
-              <mesh>
-                <sphereGeometry args={[effect.radius, 32, 32]} />
-                <meshBasicMaterial
-                  color={effect.color}
-                  transparent
-                  opacity={0.3}
-                  emissive={effect.color}
-                  emissiveIntensity={2}
-                />
-              </mesh>
             </group>
           );
         }
