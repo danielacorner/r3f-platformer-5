@@ -15,7 +15,7 @@ const activeSkills = [
     description: 'Launch multiple homing missiles that deal damage to enemies',
     icon: RiMagicFill,
     color: '#8b5cf6',
-    cooldown: process.eng.NODE_ENV === 'development' ? 1 : 12,
+    cooldown: process.env.NODE_ENV === 'development' ? 1 : 12,
   },
   {
     name: 'Shield Burst',
