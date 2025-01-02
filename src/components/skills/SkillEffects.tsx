@@ -1,14 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Vector3, Color, Matrix4, Quaternion, AdditiveBlending, DoubleSide } from 'three';
+import { Vector3 } from 'three';
 import { useGameStore } from '../../store/gameStore';
-import { Trail, MeshDistortMaterial, Sparkles } from '@react-three/drei';
 import * as THREE from 'three';
-
-interface MissileProps {
-  effect: SkillEffect;
-  onUpdate: (position: Vector3, velocity: Vector3) => void;
-}
 
 interface SkillEffect {
   id: string;
@@ -25,7 +19,6 @@ interface SkillEffect {
   timeOffset?: number;
 }
 
-// Store for active skill effects
 let activeEffects: SkillEffect[] = [];
 
 const GRAVITY = new Vector3(0, -9.8, 0);
@@ -100,16 +93,16 @@ export function castTimeDilation(position: Vector3, level: number) {
 
 export function castMagicMissiles(position: Vector3, level: number) {
   console.log('Casting Magic Missiles at position:', position.toArray());
-  
+
   const missileCount = Math.floor(3 + level * 2);
   const baseDamage = 30;
   const damagePerLevel = 5;
   const damage = baseDamage + (level * damagePerLevel);
   const missileSpeed = 10;
-  const missileRadius = 0.75;
-  
+  const missileRadius = 0.2;
+
   const angleStep = (2 * Math.PI) / missileCount;
-  
+
   for (let i = 0; i < missileCount; i++) {
     const angle = i * angleStep;
     const horizontalDir = new Vector3(
@@ -143,12 +136,12 @@ export function castMagicMissiles(position: Vector3, level: number) {
       phase: 'rising' as const,
       timeOffset
     };
-    
+
     console.log('Created missile:', i, 'at position:', effect.position.toArray(), 'with velocity:', effect.velocity.toArray());
     activeEffects.push(effect);
   }
 
-  // Force a re-render by updating the effects count
+  // Force a re-render
   window.dispatchEvent(new CustomEvent('effectsChanged'));
 }
 
@@ -198,36 +191,38 @@ export function SkillEffects() {
         }
 
         const age = (now - effect.startTime) / 1000;
-        
+
         if (age > effect.duration) {
           console.log('Effect expired:', effect.id);
           continue;
         }
 
-        const frameVelocity = effect.velocity.clone().multiplyScalar(delta);
-        effect.position.add(frameVelocity);
+        if (effect.velocity) {
+          const frameVelocity = effect.velocity.clone().multiplyScalar(delta);
+          effect.position.add(frameVelocity);
 
-        if (effect.phase === 'rising') {
-          effect.velocity.add(GRAVITY.clone().multiplyScalar(delta * 0.3));
-          
-          if (effect.velocity.y < 0) {
-            effect.phase = 'seeking';
-            console.log('Missile transitioning to seeking phase');
-          }
-        } else if (effect.phase === 'seeking') {
-          effect.velocity.add(GRAVITY.clone().multiplyScalar(delta * 0.3));
-          
-          const nearestCreep = findNearestCreep(effect.position, creeps);
-          if (nearestCreep) {
-            const toTarget = nearestCreep.clone().sub(effect.position).normalize();
-            const seekForce = toTarget.multiplyScalar(20 * delta);
-            effect.velocity.add(seekForce);
-            
-            if (effect.velocity.length() > 15) {
-              effect.velocity.normalize().multiplyScalar(15);
+          if (effect.phase === 'rising') {
+            effect.velocity.add(GRAVITY.clone().multiplyScalar(delta * 0.3));
+
+            if (effect.velocity.y < 0) {
+              effect.phase = 'seeking';
+              console.log('Missile transitioning to seeking phase');
             }
-          } else {
-            effect.phase = 'falling';
+          } else if (effect.phase === 'seeking') {
+            effect.velocity.add(GRAVITY.clone().multiplyScalar(delta * 0.3));
+
+            const nearestCreep = findNearestCreep(effect.position, creeps);
+            if (nearestCreep) {
+              const toTarget = nearestCreep.clone().sub(effect.position).normalize();
+              const seekForce = toTarget.multiplyScalar(20 * delta);
+              effect.velocity.add(seekForce);
+
+              if (effect.velocity.length() > 15) {
+                effect.velocity.normalize().multiplyScalar(15);
+              }
+            } else {
+              effect.phase = 'falling';
+            }
           }
         }
 
@@ -256,35 +251,20 @@ export function SkillEffects() {
 
   return (
     <group>
-      {/* Debug sphere at origin */}
-      <mesh position={[0, 0, 0]}>
-        <sphereGeometry args={[0.5, 16, 16]} />
-        <meshBasicMaterial color="yellow" />
-      </mesh>
-
       {activeEffects.map(effect => {
         if (effect.type === 'magicMissile') {
           return (
-            <group key={`${effect.id}-${frameCount}`}>
-              {/* Simple bright sphere for testing */}
-              <mesh position={effect.position.toArray()}>
-                <sphereGeometry args={[effect.radius, 32, 32]} />
-                <meshBasicMaterial
-                  color={effect.color}
-                  transparent={false}
-                  fog={false}
-                />
-              </mesh>
-
-              {/* Point light */}
-              <pointLight
-                position={effect.position.toArray()}
+            <mesh
+              key={`${effect.id}-${frameCount}`}
+              position={effect.position.toArray()}
+            >
+              <sphereGeometry args={[effect.radius, 32, 32]} />
+              <meshStandardMaterial
                 color={effect.color}
-                intensity={10}
-                distance={20}
-                decay={1}
+                emissive={effect.color}
+                emissiveIntensity={2}
               />
-            </group>
+            </mesh>
           );
         }
         return null;
