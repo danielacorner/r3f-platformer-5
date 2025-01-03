@@ -105,7 +105,7 @@ export function BottomMenu() {
       return;
     }
 
-    // Get player position and mouse position
+    // Get player position
     const playerRef = useGameStore.getState().playerRef;
     if (!playerRef) {
       console.log('No player ref found in game store!');
@@ -119,12 +119,20 @@ export function BottomMenu() {
     }
 
     const position = new Vector3(playerPosition.x, 1, playerPosition.z);
-    const mousePos = new Vector3(
-      window.gameState.mousePosition.x,
-      0,
-      window.gameState.mousePosition.z
-    );
-    const direction = mousePos.clone().sub(position).normalize();
+    let direction: Vector3;
+
+    // Try to get mouse position, use default direction if not available
+    if (window.gameState?.mousePosition) {
+      const mousePos = new Vector3(
+        window.gameState.mousePosition.x,
+        0,
+        window.gameState.mousePosition.z
+      );
+      direction = mousePos.clone().sub(position).normalize();
+    } else {
+      // Default direction when mouse position not available (facing forward)
+      direction = new Vector3(0, 0, 1);
+    }
 
     // Cast the appropriate skill
     console.log('Casting skill:', skill.name, 'at position:', position.toArray(), 'direction:', direction.toArray());
