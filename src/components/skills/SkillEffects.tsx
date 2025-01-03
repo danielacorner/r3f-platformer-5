@@ -126,8 +126,8 @@ export function castMagicMissiles(position: Vector3, level: number) {
 
     // Create initial velocity with upward and outward components
     const initialVelocity = new Vector3(
-      horizontalDir.x * INITIAL_SPEED * 0.7,  // Horizontal component
-      INITIAL_SPEED,  // Vertical component
+      horizontalDir.x * INITIAL_SPEED * 0.7, // Horizontal component
+      INITIAL_SPEED, // Vertical component
       horizontalDir.z * INITIAL_SPEED * 0.7   // Horizontal component
     );
 
@@ -162,7 +162,8 @@ export function castMagicBoomerang(position: Vector3, direction: Vector3, level:
   const spawnPos = position.clone().add(spawnOffset);
   
   // Find nearest enemy for targeting
-  const nearestCreepInfo = findNearestCreep(spawnPos, window.gameState.creeps);
+  const creeps = useGameStore.getState().creeps;
+  const nearestCreepInfo = findNearestCreep(spawnPos, creeps);
   let targetPos: Vector3;
   
   if (nearestCreepInfo) {
@@ -180,7 +181,7 @@ export function castMagicBoomerang(position: Vector3, direction: Vector3, level:
   [-1, 1].forEach(curve => {
     const effect = {
       id: Math.random().toString(),
-      type: 'magicBoomerang' as const,
+      type: 'magicBoomerang',
       position: spawnPos.clone(),
       velocity: toTarget.clone().multiplyScalar(BOOMERANG_SPEED)
         .add(rightVector.clone().multiplyScalar(BOOMERANG_CURVE * curve)),
@@ -190,9 +191,13 @@ export function castMagicBoomerang(position: Vector3, direction: Vector3, level:
       spawnPos: spawnPos.clone(),
       curve: curve,
       age: 0,
-      level
+      level,
+      color: BOOMERANG_COLOR,
+      startTime: Date.now(),
+      duration: 10
     };
     
+    console.log('Creating boomerang:', effect);
     activeEffects.push(effect);
   });
 }

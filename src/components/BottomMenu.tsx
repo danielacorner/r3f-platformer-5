@@ -55,6 +55,7 @@ export function BottomMenu() {
     level: skill.level ?? 0,
   })));
 
+
   // Update skills based on levels
   useEffect(() => {
     setSkills(prev => prev.map(skill => ({
@@ -62,6 +63,7 @@ export function BottomMenu() {
       level: useGameStore.getState().skillLevels[skill.name] || 0,
     })));
   }, [useGameStore.getState().skillLevels]);
+
 
   // Handle cooldowns
   useEffect(() => {
@@ -74,6 +76,7 @@ export function BottomMenu() {
 
     return () => clearInterval(interval);
   }, []);
+
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -88,12 +91,9 @@ export function BottomMenu() {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [skills]);
 
+
   const handleSkillClick = (index: number) => {
     const skill = skills[index];
-    console.log("🚀 ~ file: BottomMenu.tsx:115 ~ skill:", skill)
-    console.log('Attempting to cast skill:', skill.name, 'at index:', index);
-    console.log('Skill level:', skill.level);
-    console.log('Skill cooldown:', skill.currentCooldown);
 
     if (skill.level === 0) {
       console.log('Skill not learned yet');
@@ -105,11 +105,7 @@ export function BottomMenu() {
       return;
     }
 
-    setSkills(prev => prev.map((s, i) =>
-      i === index ? { ...s, currentCooldown: s.cooldown } : s
-    ));
-
-    // Get player position
+    // Get player position and mouse position
     const playerRef = useGameStore.getState().playerRef;
     if (!playerRef) {
       console.log('No player ref found in game store!');
@@ -122,15 +118,19 @@ export function BottomMenu() {
       return;
     }
 
-    console.log('Raw player position:', playerPosition);
-    const position = new Vector3(playerPosition.x, 1, playerPosition.z); // Set Y to 1 instead of 0
-    console.log('Casting position:', position.toArray());
+    const position = new Vector3(playerPosition.x, 1, playerPosition.z);
+    const mousePos = new Vector3(
+      window.gameState.mousePosition.x,
+      0,
+      window.gameState.mousePosition.z
+    );
+    const direction = mousePos.clone().sub(position).normalize();
 
     // Cast the appropriate skill
-    console.log('Casting skill:', skill.name);
+    console.log('Casting skill:', skill.name, 'at position:', position.toArray(), 'direction:', direction.toArray());
     switch (skill.name) {
       case 'Magic Boomerang':
-        castMagicBoomerang(position, new Vector3(0, 0, 1), skill.level);
+        castMagicBoomerang(position, direction, skill.level);
         break;
       case 'Magic Missiles':
         castMagicMissiles(position, skill.level);
@@ -148,7 +148,13 @@ export function BottomMenu() {
         castTimeDilation(position, skill.level);
         break;
     }
+
+    // Start cooldown
+    setSkills(prev => prev.map((s, i) =>
+      i === index ? { ...s, currentCooldown: s.cooldown } : s
+    ));
   };
+
 
   // Calculate XP progress
   const xpForNextLevel = Math.floor(100 * Math.pow(1.5, level - 1));
