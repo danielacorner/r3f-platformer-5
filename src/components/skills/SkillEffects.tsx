@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Vector3 } from 'three';
+import { Vector3, InstancedMesh, Matrix4, Object3D } from 'three';
 import { useGameStore } from '../../store/gameStore';
 import * as THREE from 'three';
 
@@ -167,6 +167,19 @@ export function SkillEffects() {
   const [effectsCount, setEffectsCount] = useState(0);
   const [frameCount, setFrameCount] = useState(0);
   const trailsRef = useRef(new Map<string, Vector3[]>());
+  
+  // Create reusable geometries and materials
+  const trailGeometry = useMemo(() => new THREE.SphereGeometry(1, 8, 8), []);
+  const trailMaterial = useMemo(() => new THREE.MeshBasicMaterial({
+    color: MISSILE_COLOR,
+    transparent: true,
+  }), []);
+  const trailInstancesRef = useRef<InstancedMesh>(null);
+  const tempObject = useMemo(() => new Object3D(), []);
+  const tempMatrix = useMemo(() => new Matrix4(), []);
+  
+  // Track total number of trail particles
+  const [totalTrailParticles, setTotalTrailParticles] = useState(0);
 
   useEffect(() => {
     const handleEffectsChanged = () => {
@@ -181,22 +194,22 @@ export function SkillEffects() {
 
     const now = Date.now();
     const remainingEffects: SkillEffect[] = [];
+    let particleCount = 0;
 
+    // Update trails
     for (const effect of activeEffects) {
       if (effect.type === 'magicMissile') {
-        // Initialize trail if needed
         if (!trailsRef.current.has(effect.id)) {
           trailsRef.current.set(effect.id, []);
         }
         const trail = trailsRef.current.get(effect.id)!;
-
-        // Add new position to start of trail
+        
         trail.unshift(effect.position.clone());
-
-        // Keep trail at fixed length
         if (trail.length > 20) {
           trail.pop();
         }
+
+        particleCount += trail.length;
 
         if (now < effect.startTime) {
           remainingEffects.push(effect);
@@ -264,18 +277,57 @@ export function SkillEffects() {
       }
     }
 
+    // Update instanced mesh
+    if (trailInstancesRef.current && particleCount > 0) {
+      let instanceIndex = 0;
+      
+      for (const [_, trail] of trailsRef.current.entries()) {
+        trail.forEach((pos, index) => {
+          const scale = 0.15 * (1 - index/trail.length);
+          const opacity = (1 - index/trail.length) * 0.7;
+          
+          tempObject.position.copy(pos);
+          tempObject.scale.set(scale, scale, scale);
+          tempObject.updateMatrix();
+          
+          trailInstancesRef.current.setMatrixAt(instanceIndex, tempObject.matrix);
+          if (trailInstancesRef.current.instanceColor) {
+            trailInstancesRef.current.instanceColor.setXYZ(
+              instanceIndex,
+              1,
+              1,
+              1
+            );
+            trailInstancesRef.current.instanceColor.setW(instanceIndex, opacity);
+          }
+          
+          instanceIndex++;
+        });
+      }
+      
+      trailInstancesRef.current.instanceMatrix.needsUpdate = true;
+      if (trailInstancesRef.current.instanceColor) {
+        trailInstancesRef.current.instanceColor.needsUpdate = true;
+      }
+    }
+
+    setTotalTrailParticles(particleCount);
     activeEffects = remainingEffects;
   });
 
   return (
     <group>
+      {/* Trail particles using instancing */}
+      <instancedMesh 
+        ref={trailInstancesRef}
+        args={[trailGeometry, trailMaterial, Math.max(100, totalTrailParticles)]}
+      />
+
+      {/* Missiles */}
       {activeEffects.map(effect => {
         if (effect.type === 'magicMissile') {
-          const trail = trailsRef.current.get(effect.id) || [];
-
           return (
             <group key={`${effect.id}-${frameCount}`}>
-              {/* Main missile */}
               <mesh position={effect.position.toArray()}>
                 <sphereGeometry args={[effect.radius, 32, 32]} />
                 <meshStandardMaterial
@@ -284,22 +336,6 @@ export function SkillEffects() {
                   emissiveIntensity={2}
                 />
               </mesh>
-
-              {/* Trail particles */}
-              {trail.map((pos, index) => (
-                <mesh
-                  key={index}
-                  position={pos.toArray()}
-                  scale={[0.15 * (1 - index / trail.length), 0.15 * (1 - index / trail.length), 0.15 * (1 - index / trail.length)]}
-                >
-                  <sphereGeometry args={[1, 8, 8]} />
-                  <meshBasicMaterial
-                    color={effect.color}
-                    transparent
-                    opacity={(1 - index / trail.length) * 0.7}
-                  />
-                </mesh>
-              ))}
             </group>
           );
         }
