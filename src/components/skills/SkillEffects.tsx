@@ -190,11 +190,16 @@ export function castMagicBoomerang(position: Vector3, direction: Vector3, level:
   const toTarget = targetPos.clone().sub(spawnPos).normalize();
   const rightVector = new Vector3(toTarget.z, 0, -toTarget.x).normalize();
 
-  // Spawn two boomerangs with opposite curves, but closer together
+  // Spawn level+2 boomerangs with opposite curves, but closer together
   const spawnSpread = 0.5; // Reduced from default spread
-  [-1, 1].forEach(curve => {
+  [...new Array(level + 1)].map(idx => idx % 2 === 0 ? 1 : -1).forEach((curve, idx) => {
     // Offset spawn position slightly to the side
     const offsetPos = spawnPos.clone().add(rightVector.clone().multiplyScalar(curve * spawnSpread));
+
+    // add slight random offset for idx
+    offsetPos.x += idx - level / 2;
+    offsetPos.z += -Math.abs(idx - level / 2);
+
 
     const effect = {
       id: Math.random().toString(),
@@ -448,7 +453,7 @@ export function SkillEffects() {
           if (effect.phase === 'outward') {
             // Calculate distance from spawn
             const distanceFromSpawn = effect.position.distanceTo(effect.spawnPos);
-            
+
             if (distanceFromSpawn >= BOOMERANG_MAX_DISTANCE) {
               effect.phase = 'return';
             } else {
@@ -456,7 +461,7 @@ export function SkillEffects() {
               const creeps = useGameStore.getState().creeps;
               let nearestCreep = null;
               let nearestDist = Infinity;
-              
+
               for (const creep of creeps) {
                 if (!creep || !creep.position) continue;
                 const creepPos = new Vector3(...creep.position);
@@ -470,10 +475,10 @@ export function SkillEffects() {
               // Add curved path and enemy seeking
               const forward = effect.velocity.clone().normalize();
               const right = new Vector3(forward.z, 0, -forward.x).normalize();
-              
+
               // Base curve
               effect.velocity.add(right.multiplyScalar(BOOMERANG_CURVE * effect.curve * delta));
-              
+
               // Add enemy seeking if we have a target
               if (nearestCreep) {
                 const toEnemy = new Vector3(...nearestCreep.position).sub(effect.position).normalize();
@@ -486,23 +491,23 @@ export function SkillEffects() {
             if (playerRef) {
               const playerPos = playerRef.translation();
               const returnTarget = new Vector3(playerPos.x, playerPos.y + 1, playerPos.z);
-              
+
               // Calculate path to player
               const toPlayer = returnTarget.clone().sub(effect.position);
               const distanceToPlayer = toPlayer.length();
-              
+
               // Only remove if very close to player
               if (distanceToPlayer < 0.5) {
                 trailsRef.current.delete(effect.id);
                 continue;
               }
-              
+
               // Strong return force that maintains some curve
               const toPlayerDir = toPlayer.normalize();
               const right = new Vector3(toPlayerDir.z, 0, -toPlayerDir.x).normalize();
               const returnForce = toPlayerDir.multiplyScalar(BOOMERANG_RETURN_SPEED)
                 .add(right.multiplyScalar(BOOMERANG_CURVE * effect.curve * 0.3));
-              
+
               effect.velocity.lerp(returnForce, 0.2);
             }
           }
@@ -510,16 +515,16 @@ export function SkillEffects() {
           // Check for enemy hits
           for (const creep of creeps) {
             if (!creep || !creep.position) continue;
-            
+
             const creepPos = new Vector3(...creep.position);
             const hitDistance = effect.position.distanceTo(creepPos);
-            
+
             if (hitDistance <= HIT_RADIUS) {
               const damageMultiplier = 1 - (hitDistance / HIT_RADIUS) * 0.3;
               const finalDamage = Math.floor((effect.damage || 0) * damageMultiplier);
-              
+
               damageCreep(creep.id, finalDamage);
-              
+
               // Start returning after hitting an enemy
               effect.phase = 'return';
               break;
