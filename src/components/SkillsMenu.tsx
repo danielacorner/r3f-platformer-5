@@ -9,13 +9,16 @@ import { GiFireBowl, GiSpeedometer, GiMagicSwirl, GiCrystalBall, GiInfinity } fr
 import { RiShieldFlashFill, RiThunderstormsFill, RiFireFill, RiContrastDrop2Fill, RiSwordFill, RiMagicFill } from 'react-icons/ri';
 import { useGameStore } from "../store/gameStore";
 import { Tabs, Tab, Box } from "@mui/material";
+import { GiBoomerang } from "react-icons/gi";
 
 interface SkillsMenuProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type Skill = {
+type Skill = PassiveSkill | ActiveSkill;
+
+type PassiveSkill = {
   name: string;
   description: string;
   icon: any;
@@ -28,7 +31,7 @@ type Skill = {
   effect?: (level: number) => any;
 };
 
-const passiveSkills: Skill[] = [
+export const passiveSkills: PassiveSkill[] = [
   {
     name: 'Arcane Power',
     description: 'Increases magic damage by 20% per level',
@@ -71,80 +74,80 @@ const passiveSkills: Skill[] = [
   },
 ];
 
-const activeSkills = [
+export interface ActiveSkill {
+  name: string;
+  icon: any;
+  cooldown: number;
+  currentCooldown?: number;
+  color: string;
+  level: number;
+  description: string;
+  duration?: number;
+  maxLevel: number;
+}
+export const activeSkills: ActiveSkill[] = [
   {
     name: 'Magic Missiles',
     description: 'Launch multiple homing missiles that deal damage to enemies',
     icon: RiMagicFill,
     color: '#8b5cf6',
-    basePrice: 250,
-    priceMultiplier: 1.5,
-    maxLevel: 5,
-    cooldown: 12,
-    effect: (level: number) => ({
-      missileCount: 3 + level * 2,
-      missileDamage: 30 + level * 5
-    }),
+    cooldown: 5,
+    level: 1,
+    maxLevel: 20,
+  },
+  {
+    name: 'Magic Boomerang',
+    description: 'Cast two magical boomerangs that curve outward and return',
+    icon: GiBoomerang,
+    color: '#8b5cf6',
+    cooldown: 8,
+    level: 0,
+    maxLevel: 20,
   },
   {
     name: 'Shield Burst',
     description: 'Creates a protective barrier that blocks projectiles',
     icon: RiShieldFlashFill,
     color: '#2563eb',
-    basePrice: 200,
-    priceMultiplier: 1.5,
-    maxLevel: 3,
     cooldown: 15,
     duration: 5,
-    effect: (level: number) => ({
-      shieldDuration: 3 + level * 1,
-      shieldStrength: 100 + level * 50
-    }),
+    level: 0,
+    maxLevel: 20,
+
   },
   {
     name: 'Lightning Storm',
     description: 'Summons lightning strikes on nearby enemies',
     icon: RiThunderstormsFill,
     color: '#7c3aed',
-    basePrice: 250,
-    priceMultiplier: 1.5,
-    maxLevel: 3,
     cooldown: 20,
-    effect: (level: number) => ({
-      strikeDamage: 50 + level * 25,
-      strikeCount: 3 + level * 1,
-      radius: 5 + level * 1
-    }),
+    level: 0,
+    maxLevel: 20,
+
   },
   {
     name: 'Inferno',
     description: 'Creates a ring of fire damaging nearby enemies',
     icon: RiFireFill,
     color: '#dc2626',
-    basePrice: 300,
-    priceMultiplier: 1.5,
-    maxLevel: 3,
     cooldown: 25,
     duration: 8,
-    effect: (level: number) => ({
-      burnDamage: 20 + level * 15,
-      radius: 4 + level * 0.5,
-      burnDuration: 3 + level * 1
-    }),
+    level: 0,
+    maxLevel: 20,
+
   },
   {
     name: 'Time Dilation',
     description: 'Slows down enemies in an area',
     icon: RiContrastDrop2Fill,
     color: '#0891b2',
-    basePrice: 350,
-    priceMultiplier: 1.5,
-    maxLevel: 3,
     cooldown: 30,
     duration: 6,
-    effect: (level: number) => ({ slowAmount: 0.3 + level * 0.2 }),
+    level: 0,
+    maxLevel: 20,
   },
 ];
+
 
 export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
   const [activeTab, setActiveTab] = useState<'passive' | 'active'>('active');
@@ -178,6 +181,7 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
     <div className="skills-grid">
       {skills.map((skill) => {
         const currentLevel = skillLevels[skill.name] || 0;
+        console.log("🚀 ~ file: SkillsMenu.tsx:108 ~ currentLevel:", currentLevel, skill.maxLevel)
         const canAfford = skillPoints >= 1 && currentLevel < skill.maxLevel;
 
         let effectText = '';

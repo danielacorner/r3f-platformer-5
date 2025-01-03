@@ -14,10 +14,14 @@ interface SkillEffect {
   damage?: number;
   color: string;
   velocity?: Vector3;
-  phase?: 'rising' | 'seeking' | 'falling';
+  phase?: 'rising' | 'seeking' | 'falling' | 'outward' | 'return';
   initialVelocity?: Vector3;
   timeOffset?: number;
   spawnDir?: Vector3;
+  spawnPos?: Vector3;
+  curve?: number;
+  age?: number;
+  level?: number;
 }
 
 let activeEffects: SkillEffect[] = [];
@@ -25,11 +29,15 @@ let activeEffects: SkillEffect[] = [];
 const GRAVITY = new Vector3(0, -9.8 * 3, 0);
 const MAX_SEEK_DISTANCE = 50;  // Increased from 15
 const MISSILE_COLOR = '#6bb7c8';  // Light blue
+const BOOMERANG_COLOR = '#ffd700';  // Gold color
 const SEEK_FORCE = 60;  // Increased from 35
 const MAX_SPEED = 30;  // Increased from 25
 const INITIAL_SPEED = 15;
 const HORIZONTAL_SEEK_HEIGHT = 2;
 const HIT_RADIUS = 2.5;  // Increased hit radius with small explosion effect
+const BOOMERANG_SPEED = 35;
+const BOOMERANG_CURVE = 25;  // Curve strength
+const BOOMERANG_RETURN_DISTANCE = 20;  // Distance at which boomerang starts returning
 
 export function castShieldBurst(position: Vector3, level: number) {
   const effect = {
@@ -147,6 +155,46 @@ export function castMagicMissiles(position: Vector3, level: number) {
   }
 
   window.dispatchEvent(new CustomEvent('effectsChanged'));
+}
+
+export function castMagicBoomerang(position: Vector3, direction: Vector3, level: number) {
+  const spawnOffset = new Vector3(0, 1, 0);  // Spawn slightly above ground
+  const spawnPos = position.clone().add(spawnOffset);
+  
+  // Find nearest enemy for targeting
+  const nearestCreepInfo = findNearestCreep(spawnPos, window.gameState.creeps);
+  let targetPos: Vector3;
+  
+  if (nearestCreepInfo) {
+    targetPos = new Vector3(...nearestCreepInfo.creep.position);
+  } else {
+    // Use mouse direction if no enemy
+    targetPos = spawnPos.clone().add(direction.multiplyScalar(BOOMERANG_RETURN_DISTANCE));
+  }
+
+  // Calculate initial trajectory
+  const toTarget = targetPos.clone().sub(spawnPos).normalize();
+  const rightVector = new Vector3(toTarget.z, 0, -toTarget.x).normalize();  // Perpendicular to direction
+  
+  // Spawn two boomerangs with opposite curves
+  [-1, 1].forEach(curve => {
+    const effect = {
+      id: Math.random().toString(),
+      type: 'magicBoomerang' as const,
+      position: spawnPos.clone(),
+      velocity: toTarget.clone().multiplyScalar(BOOMERANG_SPEED)
+        .add(rightVector.clone().multiplyScalar(BOOMERANG_CURVE * curve)),
+      damage: 30 + level * 10,
+      radius: 0.5,
+      phase: 'outward' as 'outward' | 'return',
+      spawnPos: spawnPos.clone(),
+      curve: curve,
+      age: 0,
+      level
+    };
+    
+    activeEffects.push(effect);
+  });
 }
 
 function findNearestCreep(position: Vector3, creeps: any[]): { creep: any, position: Vector3 } | null {
@@ -346,6 +394,85 @@ export function SkillEffects() {
 
           remainingEffects.push(effect);
         }
+      } else if (effect.type === 'magicBoomerang') {
+        // Update trail
+        if (!trailsRef.current.has(effect.id)) {
+          trailsRef.current.set(effect.id, []);
+        }
+        const trail = trailsRef.current.get(effect.id)!;
+        
+        trail.unshift(effect.position.clone());
+        if (trail.length > 15) {
+          trail.pop();
+        }
+
+        effect.age += delta;
+        
+        if (effect.velocity) {
+          const frameVelocity = effect.velocity.clone().multiplyScalar(delta);
+          effect.position.add(frameVelocity);
+
+          if (effect.phase === 'outward') {
+            // Calculate distance from spawn
+            const distanceFromSpawn = effect.position.distanceTo(effect.spawnPos);
+            
+            if (distanceFromSpawn >= BOOMERANG_RETURN_DISTANCE) {
+              effect.phase = 'return';
+            }
+            
+            // Add curved path
+            const forward = effect.velocity.clone().normalize();
+            const right = new Vector3(forward.z, 0, -forward.x).normalize();
+            effect.velocity.add(right.multiplyScalar(BOOMERANG_CURVE * effect.curve * delta));
+            
+          } else if (effect.phase === 'return') {
+            // Seek back to player
+            const toPlayer = effect.spawnPos.clone().sub(effect.position);
+            const distanceToPlayer = toPlayer.length();
+            
+            // Remove if very close to player
+            if (distanceToPlayer < 1) {
+              trailsRef.current.delete(effect.id);
+              continue;
+            }
+            
+            // Seek towards player
+            const seekForce = toPlayer.normalize().multiplyScalar(BOOMERANG_SPEED * 1.2 * delta);
+            effect.velocity.lerp(seekForce, 0.1);
+          }
+
+          // Check for enemy hits
+          for (const creep of creeps) {
+            if (!creep || !creep.position) continue;
+            
+            const creepPos = new Vector3(...creep.position);
+            const hitDistance = effect.position.distanceTo(creepPos);
+            
+            if (hitDistance <= HIT_RADIUS) {
+              const damageMultiplier = 1 - (hitDistance / HIT_RADIUS) * 0.3;
+              const finalDamage = Math.floor((effect.damage || 0) * damageMultiplier);
+              
+              console.log('Boomerang hit creep:', effect.id, 'with damage:', finalDamage);
+              damageCreep(creep.id, finalDamage);
+              
+              // Add hit effect to trail
+              const hitPos = effect.position.clone();
+              const trail = trailsRef.current.get(effect.id)!;
+              for (let i = 0; i < 3; i++) {
+                trail.unshift(hitPos.clone().add(new Vector3(
+                  (Math.random() - 0.5) * 0.5,
+                  (Math.random() - 0.5) * 0.5,
+                  (Math.random() - 0.5) * 0.5
+                )));
+              }
+            }
+          }
+
+          // Maintain speed
+          effect.velocity.normalize().multiplyScalar(BOOMERANG_SPEED);
+          
+          remainingEffects.push(effect);
+        }
       }
     }
 
@@ -405,6 +532,19 @@ export function SkillEffects() {
                 <meshStandardMaterial
                   color={effect.color}
                   emissive={effect.color}
+                  emissiveIntensity={2}
+                />
+              </mesh>
+            </group>
+          );
+        } else if (effect.type === 'magicBoomerang') {
+          return (
+            <group key={`${effect.id}-${frameCount}`}>
+              <mesh position={effect.position.toArray()}>
+                <sphereGeometry args={[effect.radius, 32, 32]} />
+                <meshStandardMaterial
+                  color={BOOMERANG_COLOR}
+                  emissive={BOOMERANG_COLOR}
                   emissiveIntensity={2}
                 />
               </mesh>

@@ -1,65 +1,13 @@
 import { useState, useEffect } from "react";
 import { useGameStore } from "../store/gameStore";
 import { FaUser } from "react-icons/fa";
-import { RiShieldFlashFill, RiThunderstormsFill, RiFireFill, RiContrastDrop2Fill, RiMagicFill } from "react-icons/ri";
 import "../styles/BottomMenu.css";
-import { SkillsMenu } from "./SkillsMenu";
-import { castShieldBurst, castLightningStorm, castInferno, castTimeDilation, castMagicMissiles } from './skills/SkillEffects';
+import { ActiveSkill, activeSkills, SkillsMenu } from "./SkillsMenu";
+import { castShieldBurst, castLightningStorm, castInferno, castTimeDilation, castMagicMissiles, castMagicBoomerang } from './skills/SkillEffects';
 import { Vector3 } from "three";
 
 const SKILL_KEYS = ["1", "2", "3", "4", "5"];
 
-const activeSkills = [
-  {
-    name: 'Magic Missiles',
-    description: 'Launch multiple homing missiles that deal damage to enemies',
-    icon: RiMagicFill,
-    color: '#8b5cf6',
-    cooldown: 5,
-  },
-  {
-    name: 'Shield Burst',
-    description: 'Creates a protective barrier that blocks projectiles',
-    icon: RiShieldFlashFill,
-    color: '#2563eb',
-    cooldown: 15,
-    duration: 5,
-  },
-  {
-    name: 'Lightning Storm',
-    description: 'Summons lightning strikes on nearby enemies',
-    icon: RiThunderstormsFill,
-    color: '#7c3aed',
-    cooldown: 20,
-  },
-  {
-    name: 'Inferno',
-    description: 'Creates a ring of fire damaging nearby enemies',
-    icon: RiFireFill,
-    color: '#dc2626',
-    cooldown: 25,
-    duration: 8,
-  },
-  {
-    name: 'Time Dilation',
-    description: 'Slows down enemies in an area',
-    icon: RiContrastDrop2Fill,
-    color: '#0891b2',
-    cooldown: 30,
-    duration: 6,
-  },
-];
-
-interface ActiveSkill {
-  name: string;
-  icon: any;
-  cooldown: number;
-  currentCooldown: number;
-  color: string;
-  level: number;
-  description: string;
-  duration?: number;
-}
 
 interface CooldownOverlayProps {
   remainingTime: number;
@@ -101,10 +49,10 @@ export function BottomMenu() {
   } = useGameStore();
 
   const [showSkillsMenu, setShowSkillsMenu] = useState(false);
-  const [skills, setSkills] = useState<ActiveSkill[]>(activeSkills.map(skill => ({
+  const [skills, setSkills] = useState<(ActiveSkill & { currentCooldown: number })[]>(activeSkills.map(skill => ({
     ...skill,
     currentCooldown: 0,
-    level: 0,
+    level: skill.level ?? 0,
   })));
 
   // Update skills based on levels
@@ -120,7 +68,7 @@ export function BottomMenu() {
     const interval = setInterval(() => {
       setSkills(prev => prev.map(skill => ({
         ...skill,
-        currentCooldown: Math.max(0, skill.currentCooldown - 0.1),
+        currentCooldown: Math.max(0, (skill.currentCooldown ?? 0.1) - 0.1),
       })));
     }, 100);
 
@@ -152,7 +100,7 @@ export function BottomMenu() {
       return;
     }
 
-    if (skill.currentCooldown > 0) {
+    if ((skill.currentCooldown ?? 0) > 0) {
       console.log('Skill on cooldown');
       return;
     }
@@ -181,6 +129,12 @@ export function BottomMenu() {
     // Cast the appropriate skill
     console.log('Casting skill:', skill.name);
     switch (skill.name) {
+      case 'Magic Boomerang':
+        castMagicBoomerang(position, new Vector3(0, 0, 1), skill.level);
+        break;
+      case 'Magic Missiles':
+        castMagicMissiles(position, skill.level);
+        break;
       case 'Shield Burst':
         castShieldBurst(position, skill.level);
         break;
@@ -192,10 +146,6 @@ export function BottomMenu() {
         break;
       case 'Time Dilation':
         castTimeDilation(position, skill.level);
-        break;
-      case 'Magic Missiles':
-        console.log('Calling castMagicMissiles with position:', position.toArray(), 'and level:', skill.level);
-        castMagicMissiles(position, skill.level);
         break;
     }
   };
@@ -282,7 +232,7 @@ export function BottomMenu() {
                   color={skill.color}
                 />
               )}
-              <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-2 py-1 rounded text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-2 py-1 rounded text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                 {skill.name}
                 <br />
                 {skill.description}

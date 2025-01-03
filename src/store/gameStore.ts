@@ -107,7 +107,12 @@ const initialState: GameState = {
   selectedObjectType: null,
   selectedObjectLevel: null,
   skillLevels: {
-    'Magic Missiles': 1
+    'Magic Missiles': 1,
+    'Magic Boomerang': 0,
+    'Shield Burst': 0,
+    'Lightning Storm': 0,
+    'Inferno': 0,
+    'Time Dilation': 0,
   },
   money: 1000,
   score: 0,
