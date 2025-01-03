@@ -100,8 +100,8 @@ export const activeSkills: ActiveSkill[] = [
     description: 'Cast two magical boomerangs that curve outward and return',
     icon: GiBoomerang,
     color: '#8b5cf6',
-    cooldown: 8,
-    level: 0,
+    cooldown: 5,
+    level: process.env.NODE_ENV === "development" ? 1 : 0,
     maxLevel: 20,
   },
   {
@@ -109,9 +109,9 @@ export const activeSkills: ActiveSkill[] = [
     description: 'Creates a protective barrier that blocks projectiles',
     icon: RiShieldFlashFill,
     color: '#2563eb',
-    cooldown: 15,
+    cooldown: 7,
     duration: 5,
-    level: 0,
+    level: process.env.NODE_ENV === "development" ? 1 : 0,
     maxLevel: 20,
 
   },
@@ -120,8 +120,8 @@ export const activeSkills: ActiveSkill[] = [
     description: 'Summons lightning strikes on nearby enemies',
     icon: RiThunderstormsFill,
     color: '#7c3aed',
-    cooldown: 20,
-    level: 0,
+    cooldown: 16,
+    level: process.env.NODE_ENV === "development" ? 1 : 0,
     maxLevel: 20,
 
   },
@@ -132,7 +132,7 @@ export const activeSkills: ActiveSkill[] = [
     color: '#dc2626',
     cooldown: 25,
     duration: 8,
-    level: 0,
+    level: process.env.NODE_ENV === "development" ? 1 : 0,
     maxLevel: 20,
 
   },
@@ -143,7 +143,7 @@ export const activeSkills: ActiveSkill[] = [
     color: '#0891b2',
     cooldown: 30,
     duration: 6,
-    level: 0,
+    level: process.env.NODE_ENV === "development" ? 1 : 0,
     maxLevel: 20,
   },
 ];

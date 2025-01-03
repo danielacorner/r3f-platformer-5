@@ -52,7 +52,7 @@ export function BottomMenu() {
   const [skills, setSkills] = useState<(ActiveSkill & { currentCooldown: number })[]>(activeSkills.map(skill => ({
     ...skill,
     currentCooldown: 0,
-    level: skill.level ?? 0,
+    // level: skill.level ?? (process.env.NODE_ENV === 'development' ? 1 : 0),
   })));
 
 
@@ -60,7 +60,7 @@ export function BottomMenu() {
   useEffect(() => {
     setSkills(prev => prev.map(skill => ({
       ...skill,
-      level: useGameStore.getState().skillLevels[skill.name] || 0,
+      level: useGameStore.getState().skillLevels[skill.name] || (process.env.NODE_ENV === 'development' ? 1 : 0),
     })));
   }, [useGameStore.getState().skillLevels]);
 
