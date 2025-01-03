@@ -116,7 +116,12 @@ export default function App() {
         <WaveIndicator />
         <Canvas
           shadows="soft"
-          camera={{ fov: 75, position: [0, 20, 20], near: 0.1, far: 1000 }}
+          camera={{
+            fov: 75,
+            position: [0, 20, 20],
+            near: 0.1,
+            far: 2000
+          }}
           dpr={[1, 2]}
           gl={{
             powerPreference: "high-performance",
@@ -127,7 +132,7 @@ export default function App() {
           }}
         >
           <color attach="background" args={["#000913"]} />
-          <fog attach="fog" args={["#000913", 50, 200]} />
+          <fog attach="fog" args={["#000913", 100, 400]} />
 
           <Suspense fallback={null}>
             <SoftShadows size={35} samples={16} focus={0.5} />
