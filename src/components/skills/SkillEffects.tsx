@@ -166,8 +166,8 @@ export function SkillEffects() {
   const { creeps, damageCreep } = useGameStore();
   const [effectsCount, setEffectsCount] = useState(0);
   const [frameCount, setFrameCount] = useState(0);
+  const trailsRef = useRef(new Map<string, Vector3[]>());
 
-  // Listen for new effects
   useEffect(() => {
     const handleEffectsChanged = () => {
       setEffectsCount(prev => prev + 1);
@@ -177,7 +177,6 @@ export function SkillEffects() {
   }, []);
 
   useFrame((state, delta) => {
-    // Force continuous updates
     setFrameCount(prev => (prev + 1) % 1000000);
 
     const now = Date.now();
@@ -185,6 +184,20 @@ export function SkillEffects() {
 
     for (const effect of activeEffects) {
       if (effect.type === 'magicMissile') {
+        // Initialize trail if needed
+        if (!trailsRef.current.has(effect.id)) {
+          trailsRef.current.set(effect.id, []);
+        }
+        const trail = trailsRef.current.get(effect.id)!;
+        
+        // Add new position to start of trail
+        trail.unshift(effect.position.clone());
+        
+        // Keep trail at fixed length
+        if (trail.length > 20) {
+          trail.pop();
+        }
+
         if (now < effect.startTime) {
           remainingEffects.push(effect);
           continue;
@@ -194,6 +207,7 @@ export function SkillEffects() {
 
         if (age > effect.duration) {
           console.log('Effect expired:', effect.id);
+          trailsRef.current.delete(effect.id);
           continue;
         }
 
@@ -226,7 +240,10 @@ export function SkillEffects() {
           }
         }
 
-        if (effect.position.y <= 0) continue;
+        if (effect.position.y <= 0) {
+          trailsRef.current.delete(effect.id);
+          continue;
+        }
 
         let hitCreep = false;
         for (const creep of creeps) {
@@ -237,6 +254,7 @@ export function SkillEffects() {
             console.log('Missile hit creep:', effect.id);
             damageCreep(creep.id, effect.damage || 0);
             hitCreep = true;
+            trailsRef.current.delete(effect.id);
             break;
           }
         }
@@ -253,18 +271,36 @@ export function SkillEffects() {
     <group>
       {activeEffects.map(effect => {
         if (effect.type === 'magicMissile') {
+          const trail = trailsRef.current.get(effect.id) || [];
+          
           return (
-            <mesh
-              key={`${effect.id}-${frameCount}`}
-              position={effect.position.toArray()}
-            >
-              <sphereGeometry args={[effect.radius, 32, 32]} />
-              <meshStandardMaterial
-                color={effect.color}
-                emissive={effect.color}
-                emissiveIntensity={2}
-              />
-            </mesh>
+            <group key={`${effect.id}-${frameCount}`}>
+              {/* Main missile */}
+              <mesh position={effect.position.toArray()}>
+                <sphereGeometry args={[effect.radius, 32, 32]} />
+                <meshStandardMaterial
+                  color={effect.color}
+                  emissive={effect.color}
+                  emissiveIntensity={2}
+                />
+              </mesh>
+
+              {/* Trail particles */}
+              {trail.map((pos, index) => (
+                <mesh
+                  key={index}
+                  position={pos.toArray()}
+                  scale={[0.15 * (1 - index/trail.length), 0.15 * (1 - index/trail.length), 0.15 * (1 - index/trail.length)]}
+                >
+                  <sphereGeometry args={[1, 8, 8]} />
+                  <meshBasicMaterial
+                    color={effect.color}
+                    transparent
+                    opacity={(1 - index/trail.length) * 0.7}
+                  />
+                </mesh>
+              ))}
+            </group>
           );
         }
         return null;
