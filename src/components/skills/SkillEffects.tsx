@@ -39,6 +39,7 @@ const BOOMERANG_SPEED = 16; // Slightly faster
 const BOOMERANG_SPIN_SPEED = 15;     // Slightly slower for more magical feel
 const BOOMERANG_CURVE = 15; // Reduced for smoother arc
 const BOOMERANG_RETURN_DISTANCE = 15; // Shorter distance before return
+const BOOMERANG_RETURN_RADIUS = 2.5; // Increased catch radius
 const BOOMERANG_RETURN_SPEED = 30; // Faster return speed
 const BOOMERANG_MAX_DURATION = 8; // Maximum duration before forced removal
 const BOOMERANG_SEEK_STRENGTH = 8; // How strongly it seeks enemies
@@ -197,8 +198,8 @@ export function castMagicBoomerang(position: Vector3, direction: Vector3, level:
     const offsetPos = spawnPos.clone().add(rightVector.clone().multiplyScalar(curve * spawnSpread));
 
     // add slight random offset for idx
-    offsetPos.x += idx - level / 2;
-    offsetPos.z += -Math.abs(idx - level / 2);
+    offsetPos.x += 1 * (idx - level / 2) * (Math.random() > 0.5 ? 1 : -1);
+    offsetPos.z += 1 * (idx - level / 2) * (Math.random() > 0.5 ? 1 : -1);
 
 
     const effect = {
@@ -497,18 +498,24 @@ export function SkillEffects() {
               const distanceToPlayer = toPlayer.length();
 
               // Only remove if very close to player
-              if (distanceToPlayer < 0.5) {
+              if (distanceToPlayer < BOOMERANG_RETURN_RADIUS) {
                 trailsRef.current.delete(effect.id);
                 continue;
               }
 
-              // Strong return force that maintains some curve
+              // Stronger return force when close
+              const returnStrength = Math.min(1, BOOMERANG_RETURN_RADIUS / Math.max(1, distanceToPlayer));
               const toPlayerDir = toPlayer.normalize();
               const right = new Vector3(toPlayerDir.z, 0, -toPlayerDir.x).normalize();
-              const returnForce = toPlayerDir.multiplyScalar(BOOMERANG_RETURN_SPEED)
+              const returnForce = toPlayerDir.multiplyScalar(BOOMERANG_RETURN_SPEED * (1 + returnStrength))
                 .add(right.multiplyScalar(BOOMERANG_CURVE * effect.curve * 0.3));
 
-              effect.velocity.lerp(returnForce, 0.2);
+              // More aggressive lerping when close
+              effect.velocity.lerp(returnForce, 0.2 + returnStrength * 0.4);
+
+              // Maintain speed based on phase
+              const currentSpeed = effect.velocity.length();
+              effect.velocity.normalize().multiplyScalar(BOOMERANG_RETURN_SPEED);
             }
           }
 
@@ -530,10 +537,6 @@ export function SkillEffects() {
               break;
             }
           }
-
-          // Maintain speed based on phase
-          const currentSpeed = effect.phase === 'return' ? BOOMERANG_RETURN_SPEED : BOOMERANG_SPEED;
-          effect.velocity.normalize().multiplyScalar(currentSpeed);
 
           remainingEffects.push(effect);
         }
