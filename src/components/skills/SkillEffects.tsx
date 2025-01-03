@@ -32,9 +32,9 @@ const MISSILE_COLOR = '#6bb7c8';  // Light blue
 const BOOMERANG_COLOR = '#8B4513';  // Saddle brown for wooden look
 const BOOMERANG_HIGHLIGHT = '#DEB887';  // Burlywood for wood grain
 const BOOMERANG_GLOW = '#87CEFA';  // Light blue for magic effect
-const BOOMERANG_LENGTH = 0.8;  // Total length of the L shape
-const BOOMERANG_WIDTH = 0.2;  // Width of the arms
-const BOOMERANG_THICKNESS = 0.1;  // Thickness of the boomerang
+const BOOMERANG_LENGTH = 0.4;  // Reduced to 1/4 of previous size
+const BOOMERANG_WIDTH = 0.1;  // Reduced to 1/4 of previous size
+const BOOMERANG_THICKNESS = 0.05;  // Reduced to 1/4 of previous size
 const BOOMERANG_SPEED = 25; // Slightly faster
 const BOOMERANG_SPIN_SPEED = 15;     // Slightly slower for more magical feel
 const BOOMERANG_CURVE = 15; // Reduced for smoother arc
@@ -47,7 +47,7 @@ const INITIAL_SPEED = 15;
 const HORIZONTAL_SEEK_HEIGHT = 2;
 const HIT_RADIUS = 2.5;  // Increased hit radius with small explosion effect
 const BOOMERANG_ARC_RADIUS = 6;  // Shallower arc
-
+const BOOMERANG_SCALE = 2
 export function castShieldBurst(position: Vector3, level: number) {
   const effect = {
     id: Math.random().toString(),
@@ -173,7 +173,7 @@ export function castMagicBoomerang(position: Vector3, direction: Vector3, level:
   // Find nearest enemy for targeting
   const creeps = useGameStore.getState().creeps;
   const nearestCreepInfo = findNearestCreep(spawnPos, creeps);
-  
+
   let targetPos: Vector3;
   if (nearestCreepInfo) {
     targetPos = new Vector3(...nearestCreepInfo.creep.position);
@@ -185,13 +185,13 @@ export function castMagicBoomerang(position: Vector3, direction: Vector3, level:
   // Calculate initial trajectory
   const toTarget = targetPos.clone().sub(spawnPos).normalize();
   const rightVector = new Vector3(toTarget.z, 0, -toTarget.x).normalize();
-  
+
   // Spawn two boomerangs with opposite curves, but closer together
   const spawnSpread = 0.5; // Reduced from default spread
   [-1, 1].forEach(curve => {
     // Offset spawn position slightly to the side
     const offsetPos = spawnPos.clone().add(rightVector.clone().multiplyScalar(curve * spawnSpread));
-    
+
     const effect = {
       id: Math.random().toString(),
       type: 'magicBoomerang',
@@ -414,20 +414,20 @@ export function SkillEffects() {
           trailsRef.current.set(effect.id, []);
         }
         const trail = trailsRef.current.get(effect.id)!;
-        
+
         trail.unshift(effect.position.clone());
         if (trail.length > 15) {
           trail.pop();
         }
 
         effect.age += delta;
-        
+
         // Remove if max duration exceeded
         if (effect.age > BOOMERANG_MAX_DURATION) {
           trailsRef.current.delete(effect.id);
           continue;
         }
-        
+
         if (effect.velocity) {
           const frameVelocity = effect.velocity.clone().multiplyScalar(delta);
           effect.position.add(frameVelocity);
@@ -435,41 +435,41 @@ export function SkillEffects() {
           if (effect.phase === 'outward') {
             // Calculate distance from spawn
             const distanceFromSpawn = effect.position.distanceTo(effect.spawnPos);
-            
+
             if (distanceFromSpawn >= BOOMERANG_RETURN_DISTANCE) {
               effect.phase = 'return';
             }
-            
+
             // Add curved path
             const forward = effect.velocity.clone().normalize();
             const right = new Vector3(forward.z, 0, -forward.x).normalize();  // Perpendicular to direction
 
             // Apply curve
             effect.velocity.add(right.multiplyScalar(BOOMERANG_CURVE * effect.curve * delta));
-            
+
           } else if (effect.phase === 'return') {
             // Get current player position for tracking
             const playerRef = useGameStore.getState().playerRef;
             if (playerRef) {
               const playerPos = playerRef.translation();
               const returnTarget = new Vector3(playerPos.x, playerPos.y + 1, playerPos.z);
-              
+
               // Calculate path to player
               const toPlayer = returnTarget.clone().sub(effect.position);
               const distanceToPlayer = toPlayer.length();
-              
+
               // Only remove if very close to player
               if (distanceToPlayer < 0.5) {
                 trailsRef.current.delete(effect.id);
                 continue;
               }
-              
+
               // Strong return force that maintains some curve
               const toPlayerDir = toPlayer.normalize();
               const right = new Vector3(toPlayerDir.z, 0, -toPlayerDir.x).normalize();
               const returnForce = toPlayerDir.multiplyScalar(BOOMERANG_RETURN_SPEED)
                 .add(right.multiplyScalar(BOOMERANG_CURVE * effect.curve * 0.3));
-              
+
               effect.velocity.lerp(returnForce, 0.2);
             }
           }
@@ -477,32 +477,22 @@ export function SkillEffects() {
           // Check for enemy hits
           for (const creep of creeps) {
             if (!creep || !creep.position) continue;
-            
+
             const creepPos = new Vector3(...creep.position);
             const hitDistance = effect.position.distanceTo(creepPos);
-            
+
             if (hitDistance <= HIT_RADIUS) {
               const damageMultiplier = 1 - (hitDistance / HIT_RADIUS) * 0.3;
               const finalDamage = Math.floor((effect.damage || 0) * damageMultiplier);
-              
+
               damageCreep(creep.id, finalDamage);
-              
-              // Add hit effect to trail
-              const hitPos = effect.position.clone();
-              for (let i = 0; i < 3; i++) {
-                trail.unshift(hitPos.clone().add(new Vector3(
-                  (Math.random() - 0.5) * 0.5,
-                  (Math.random() - 0.5) * 0.5,
-                  (Math.random() - 0.5) * 0.5
-                )));
-              }
             }
           }
-          
+
           // Maintain speed based on phase
           const currentSpeed = effect.phase === 'return' ? BOOMERANG_RETURN_SPEED : BOOMERANG_SPEED;
           effect.velocity.normalize().multiplyScalar(currentSpeed);
-          
+
           remainingEffects.push(effect);
         }
       }
@@ -572,18 +562,16 @@ export function SkillEffects() {
         } else if (effect.type === 'magicBoomerang') {
           // Horizontal spin with slight tilt for more dynamic look
           const wobble = Math.sin(effect.age * 5) * 0.05;
-          const rotation = [Math.PI / 2 + wobble, effect.age * BOOMERANG_SPIN_SPEED, 0];
-
-          const trail = trailsRef.current.get(effect.id);
+          const rotation = [0, effect.age * BOOMERANG_SPIN_SPEED, wobble];  // Changed to spin around Y axis
 
           return (
             <group key={`${effect.id}-${frameCount}`}>
-              <group
+              <group scale={BOOMERANG_SCALE}
                 position={effect.position.toArray()}
                 rotation={rotation}
               >
                 {/* Main L-shaped body */}
-                <group>
+                <group rotation={[Math.PI / 2, 0, 0]}>  {/* Rotate to horizontal orientation */}
                   {/* Vertical arm */}
                   <mesh>
                     <boxGeometry args={[BOOMERANG_WIDTH, BOOMERANG_LENGTH, BOOMERANG_THICKNESS]} />
@@ -593,9 +581,9 @@ export function SkillEffects() {
                       roughness={0.7}
                     />
                   </mesh>
-                  
+
                   {/* Horizontal arm */}
-                  <mesh position={[BOOMERANG_LENGTH/2 - BOOMERANG_WIDTH/2, BOOMERANG_LENGTH/2 - BOOMERANG_WIDTH/2, 0]}>
+                  <mesh position={[BOOMERANG_LENGTH / 2 - BOOMERANG_WIDTH / 2, BOOMERANG_LENGTH / 2 - BOOMERANG_WIDTH / 2, 0]}>
                     <boxGeometry args={[BOOMERANG_LENGTH, BOOMERANG_WIDTH, BOOMERANG_THICKNESS]} />
                     <meshStandardMaterial
                       color={BOOMERANG_COLOR}
@@ -605,7 +593,7 @@ export function SkillEffects() {
                   </mesh>
 
                   {/* Wood grain highlights */}
-                  <mesh position={[0, 0, BOOMERANG_THICKNESS/2 + 0.001]}>
+                  <mesh position={[0, 0, BOOMERANG_THICKNESS / 2 + 0.001]}>
                     <boxGeometry args={[BOOMERANG_WIDTH * 0.8, BOOMERANG_LENGTH * 0.9, 0.001]} />
                     <meshBasicMaterial
                       color={BOOMERANG_HIGHLIGHT}
@@ -621,21 +609,6 @@ export function SkillEffects() {
                   intensity={1}
                   distance={2}
                 />
-
-                {/* Trail effect */}
-                {trail && trail.map((pos, i) => {
-                  const scale = 1 - (i / trail.length);
-                  return (
-                    <mesh key={i} position={pos.toArray()}>
-                      <sphereGeometry args={[0.05 * scale, 8, 8]} />
-                      <meshBasicMaterial
-                        color={BOOMERANG_GLOW}
-                        transparent
-                        opacity={0.2 * scale}
-                      />
-                    </mesh>
-                  );
-                })}
               </group>
             </group>
           );
