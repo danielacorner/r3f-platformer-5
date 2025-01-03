@@ -35,12 +35,14 @@ const BOOMERANG_GLOW = '#87CEFA';  // Light blue for magic effect
 const BOOMERANG_LENGTH = 0.4;  // Reduced to 1/4 of previous size
 const BOOMERANG_WIDTH = 0.1;  // Reduced to 1/4 of previous size
 const BOOMERANG_THICKNESS = 0.05;  // Reduced to 1/4 of previous size
-const BOOMERANG_SPEED = 25; // Slightly faster
+const BOOMERANG_SPEED = 16; // Slightly faster
 const BOOMERANG_SPIN_SPEED = 15;     // Slightly slower for more magical feel
 const BOOMERANG_CURVE = 15; // Reduced for smoother arc
 const BOOMERANG_RETURN_DISTANCE = 15; // Shorter distance before return
 const BOOMERANG_RETURN_SPEED = 30; // Faster return speed
 const BOOMERANG_MAX_DURATION = 8; // Maximum duration before forced removal
+const BOOMERANG_SEEK_STRENGTH = 8; // How strongly it seeks enemies
+const BOOMERANG_MAX_DISTANCE = 20; // Maximum distance from player
 const SEEK_FORCE = 60;  // Increased from 35
 const MAX_SPEED = 30;  // Increased from 25
 const INITIAL_SPEED = 15;
@@ -48,6 +50,8 @@ const HORIZONTAL_SEEK_HEIGHT = 2;
 const HIT_RADIUS = 2.5;  // Increased hit radius with small explosion effect
 const BOOMERANG_ARC_RADIUS = 6;  // Shallower arc
 const BOOMERANG_SCALE = 2
+const BOOMERANG_MIN_HEIGHT = 1.0; // Minimum height above ground
+
 export function castShieldBurst(position: Vector3, level: number) {
   const effect = {
     id: Math.random().toString(),
@@ -432,44 +436,73 @@ export function SkillEffects() {
           const frameVelocity = effect.velocity.clone().multiplyScalar(delta);
           effect.position.add(frameVelocity);
 
+          // Clamp height to minimum
+          if (effect.position.y < BOOMERANG_MIN_HEIGHT) {
+            effect.position.y = BOOMERANG_MIN_HEIGHT;
+            // Reflect any downward velocity
+            if (effect.velocity.y < 0) {
+              effect.velocity.y = Math.abs(effect.velocity.y) * 0.5;
+            }
+          }
+
           if (effect.phase === 'outward') {
             // Calculate distance from spawn
             const distanceFromSpawn = effect.position.distanceTo(effect.spawnPos);
-
-            if (distanceFromSpawn >= BOOMERANG_RETURN_DISTANCE) {
+            
+            if (distanceFromSpawn >= BOOMERANG_MAX_DISTANCE) {
               effect.phase = 'return';
+            } else {
+              // Find nearest enemy
+              const creeps = useGameStore.getState().creeps;
+              let nearestCreep = null;
+              let nearestDist = Infinity;
+              
+              for (const creep of creeps) {
+                if (!creep || !creep.position) continue;
+                const creepPos = new Vector3(...creep.position);
+                const dist = effect.position.distanceTo(creepPos);
+                if (dist < nearestDist) {
+                  nearestDist = dist;
+                  nearestCreep = creep;
+                }
+              }
+
+              // Add curved path and enemy seeking
+              const forward = effect.velocity.clone().normalize();
+              const right = new Vector3(forward.z, 0, -forward.x).normalize();
+              
+              // Base curve
+              effect.velocity.add(right.multiplyScalar(BOOMERANG_CURVE * effect.curve * delta));
+              
+              // Add enemy seeking if we have a target
+              if (nearestCreep) {
+                const toEnemy = new Vector3(...nearestCreep.position).sub(effect.position).normalize();
+                effect.velocity.lerp(toEnemy.multiplyScalar(BOOMERANG_SPEED), delta * BOOMERANG_SEEK_STRENGTH);
+              }
             }
-
-            // Add curved path
-            const forward = effect.velocity.clone().normalize();
-            const right = new Vector3(forward.z, 0, -forward.x).normalize();  // Perpendicular to direction
-
-            // Apply curve
-            effect.velocity.add(right.multiplyScalar(BOOMERANG_CURVE * effect.curve * delta));
-
           } else if (effect.phase === 'return') {
             // Get current player position for tracking
             const playerRef = useGameStore.getState().playerRef;
             if (playerRef) {
               const playerPos = playerRef.translation();
               const returnTarget = new Vector3(playerPos.x, playerPos.y + 1, playerPos.z);
-
+              
               // Calculate path to player
               const toPlayer = returnTarget.clone().sub(effect.position);
               const distanceToPlayer = toPlayer.length();
-
+              
               // Only remove if very close to player
               if (distanceToPlayer < 0.5) {
                 trailsRef.current.delete(effect.id);
                 continue;
               }
-
+              
               // Strong return force that maintains some curve
               const toPlayerDir = toPlayer.normalize();
               const right = new Vector3(toPlayerDir.z, 0, -toPlayerDir.x).normalize();
               const returnForce = toPlayerDir.multiplyScalar(BOOMERANG_RETURN_SPEED)
                 .add(right.multiplyScalar(BOOMERANG_CURVE * effect.curve * 0.3));
-
+              
               effect.velocity.lerp(returnForce, 0.2);
             }
           }
@@ -477,15 +510,19 @@ export function SkillEffects() {
           // Check for enemy hits
           for (const creep of creeps) {
             if (!creep || !creep.position) continue;
-
+            
             const creepPos = new Vector3(...creep.position);
             const hitDistance = effect.position.distanceTo(creepPos);
-
+            
             if (hitDistance <= HIT_RADIUS) {
               const damageMultiplier = 1 - (hitDistance / HIT_RADIUS) * 0.3;
               const finalDamage = Math.floor((effect.damage || 0) * damageMultiplier);
-
+              
               damageCreep(creep.id, finalDamage);
+              
+              // Start returning after hitting an enemy
+              effect.phase = 'return';
+              break;
             }
           }
 
