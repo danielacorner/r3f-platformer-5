@@ -15,7 +15,7 @@ const activeSkills = [
     description: 'Launch multiple homing missiles that deal damage to enemies',
     icon: RiMagicFill,
     color: '#8b5cf6',
-    cooldown: process.env.NODE_ENV === 'development' ? 1 : 12,
+    cooldown: 5,
   },
   {
     name: 'Shield Burst',
@@ -61,6 +61,37 @@ interface ActiveSkill {
   duration?: number;
 }
 
+interface CooldownOverlayProps {
+  remainingTime: number;
+  totalTime: number;
+  color: string;
+}
+
+function CooldownOverlay({ remainingTime, totalTime, color }: CooldownOverlayProps) {
+  const progress = remainingTime / totalTime;
+  const angle = progress * 360;
+
+  const conicGradient = `conic-gradient(
+    rgba(0, 0, 0, 0.5) ${angle}deg,
+    rgba(0, 0, 0, 0.2) ${angle}deg
+  )`;
+
+  return (
+    <div className="absolute inset-0 flex items-center justify-center">
+      <div
+        className="w-full h-full rounded-lg"
+        style={{
+          background: conicGradient,
+          transform: 'rotate(-90deg)'
+        }}
+      />
+      <div className="absolute text-white font-bold text-lg">
+        {Math.ceil(remainingTime)}
+      </div>
+    </div>
+  );
+}
+
 export function BottomMenu() {
   const {
     money,
@@ -89,9 +120,9 @@ export function BottomMenu() {
     const interval = setInterval(() => {
       setSkills(prev => prev.map(skill => ({
         ...skill,
-        currentCooldown: Math.max(0, skill.currentCooldown - 1),
+        currentCooldown: Math.max(0, skill.currentCooldown - 0.1),
       })));
-    }, 1000);
+    }, 100);
 
     return () => clearInterval(interval);
   }, []);
@@ -229,7 +260,7 @@ export function BottomMenu() {
           {skills.map((skill, index) => (
             <div
               key={skill.name}
-              className={`skill-button ${skill.level === 0 ? 'locked' : ''} ${skill.currentCooldown > 0 ? 'on-cooldown' : ''}`}
+              className={`relative group skill-button ${skill.level === 0 ? 'locked' : ''} ${skill.currentCooldown > 0 ? 'on-cooldown' : ''}`}
               onPointerDown={(e) => {
                 e.stopPropagation();
                 e.preventDefault();
@@ -237,15 +268,27 @@ export function BottomMenu() {
               }}
               style={{ borderColor: skill.color }}
             >
-              <skill.icon />
+              <button
+                className={`w-16 h-16 rounded-lg flex items-center justify-center text-2xl transition-all
+                  ${skill.currentCooldown > 0 ? 'opacity-50' : 'hover:scale-110'}`}
+                style={{ backgroundColor: skill.color }}
+              >
+                <skill.icon />
+              </button>
               {skill.currentCooldown > 0 && (
-                <div className="cooldown-overlay" style={{ height: `${(skill.currentCooldown / skill.cooldown) * 100}%` }} />
+                <CooldownOverlay
+                  remainingTime={skill.currentCooldown}
+                  totalTime={skill.cooldown}
+                  color={skill.color}
+                />
               )}
+              <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-2 py-1 rounded text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                {skill.name}
+                <br />
+                {skill.description}
+              </div>
               <div className="skill-key">{SKILL_KEYS[index]}</div>
               {skill.level > 0 && <div className="skill-level">{skill.level}</div>}
-              {skill.currentCooldown > 0 && (
-                <div className="cooldown-text">{skill.currentCooldown}s</div>
-              )}
             </div>
           ))}
         </div>

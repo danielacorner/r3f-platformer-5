@@ -23,7 +23,7 @@ let activeEffects: SkillEffect[] = [];
 
 const GRAVITY = new Vector3(0, -9.8, 0);
 const MAX_SEEK_DISTANCE = 15;
-const MISSILE_COLOR = '#ff0000';  // Bright red for testing
+const MISSILE_COLOR = '#6bb7c8';  // Light blue
 
 export function castShieldBurst(position: Vector3, level: number) {
   const effect = {
@@ -189,10 +189,10 @@ export function SkillEffects() {
           trailsRef.current.set(effect.id, []);
         }
         const trail = trailsRef.current.get(effect.id)!;
-        
+
         // Add new position to start of trail
         trail.unshift(effect.position.clone());
-        
+
         // Keep trail at fixed length
         if (trail.length > 20) {
           trail.pop();
@@ -272,7 +272,7 @@ export function SkillEffects() {
       {activeEffects.map(effect => {
         if (effect.type === 'magicMissile') {
           const trail = trailsRef.current.get(effect.id) || [];
-          
+
           return (
             <group key={`${effect.id}-${frameCount}`}>
               {/* Main missile */}
@@ -290,13 +290,13 @@ export function SkillEffects() {
                 <mesh
                   key={index}
                   position={pos.toArray()}
-                  scale={[0.15 * (1 - index/trail.length), 0.15 * (1 - index/trail.length), 0.15 * (1 - index/trail.length)]}
+                  scale={[0.15 * (1 - index / trail.length), 0.15 * (1 - index / trail.length), 0.15 * (1 - index / trail.length)]}
                 >
                   <sphereGeometry args={[1, 8, 8]} />
                   <meshBasicMaterial
                     color={effect.color}
                     transparent
-                    opacity={(1 - index/trail.length) * 0.7}
+                    opacity={(1 - index / trail.length) * 0.7}
                   />
                 </mesh>
               ))}
