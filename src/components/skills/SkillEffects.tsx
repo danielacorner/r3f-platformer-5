@@ -54,7 +54,14 @@ const HIT_RADIUS = 2.5;  // Increased hit radius with small explosion effect
 const BOOMERANG_ARC_RADIUS = 6;  // Shallower arc
 const BOOMERANG_SCALE = 2
 const BOOMERANG_MIN_HEIGHT = 1.0; // Minimum height above ground
-
+const NOVA_CONFIG = {
+  geometry: new THREE.RingGeometry(0.9, 1, 24),
+  material: new THREE.MeshBasicMaterial({
+    color: '#8A2BE2',
+    transparent: true,
+    side: THREE.DoubleSide
+  })
+};
 export function castLightningStorm(position: Vector3, level: number) {
   const strikeCount = 3 + level;
   const radius = 5 + level;
@@ -212,12 +219,12 @@ export function castMagicBoomerang(position: Vector3, direction: Vector3, level:
 }
 
 export function castArcaneNova(position: Vector3, level: number) {
-  const waveCount = 3 + Math.floor(level / 2);
-  const baseDamage = 40 + level * 15;
+  const waveCount = 2 + Math.floor(level / 2);  // Fewer waves
+  const baseDamage = 50 + level * 20;           // More damage
   const baseRadius = 3;
-  const expansionSpeed = 8;
-  const waveDuration = 1.0;
-  const waveSpacing = 0.2;
+  const expansionSpeed = 12;                     // Faster expansion
+  const waveDuration = 0.6;                      // Shorter duration
+  const waveSpacing = 0.12;                      // Less delay between waves
 
   for (let i = 0; i < waveCount; i++) {
     setTimeout(() => {
@@ -233,7 +240,6 @@ export function castArcaneNova(position: Vector3, level: number) {
         expansionSpeed: expansionSpeed * (1 + i * 0.2)
       };
       activeEffects.push(effect);
-      window.dispatchEvent(new CustomEvent('effectsChanged'));
     }, i * waveSpacing * 1000);
   }
 }
@@ -283,6 +289,8 @@ export function SkillEffects() {
   const trailInstancesRef = useRef<InstancedMesh>(null);
   const tempObject = useMemo(() => new Object3D(), []);
   const tempMatrix = useMemo(() => new Matrix4(), []);
+  const novaGeometry = useMemo(() => NOVA_CONFIG.geometry, []);
+  const novaMaterial = useMemo(() => NOVA_CONFIG.material, []);
 
   // Track total number of trail particles
   const [totalTrailParticles, setTotalTrailParticles] = useState(0);
@@ -669,7 +677,7 @@ export function SkillEffects() {
       {/* Missiles */}
       {activeEffects.map(effect => {
         const currentTime = Date.now();
-        
+
         if (effect.type === 'magicMissile') {
           return (
             <group key={`${effect.id}-${frameCount}`}>
@@ -744,15 +752,20 @@ export function SkillEffects() {
 
           return (
             <group key={`${effect.id}-${frameCount}`}>
-              <mesh position={[effect.position.x, effect.position.y + 0.1, effect.position.z]} rotation={[-Math.PI / 2, 0, 0]}>
-                <ringGeometry args={[currentRadius * 0.9, currentRadius, 32]} />
-                <meshBasicMaterial color={effect.color} transparent opacity={opacity} side={THREE.DoubleSide} />
+              <mesh
+                position={[effect.position.x, effect.position.y + 0.1, effect.position.z]}
+                rotation={[-Math.PI / 2, 0, 0]}
+                scale={[currentRadius, currentRadius, 1]}
+              >
+                <primitive object={novaGeometry} />
+                <primitive object={novaMaterial} transparent opacity={opacity} />
               </mesh>
               <pointLight 
                 position={[effect.position.x, effect.position.y + 0.5, effect.position.z]}
                 color={effect.color} 
                 intensity={2 * (1 - progress)} 
-                distance={currentRadius * 2} 
+                distance={currentRadius * 2}
+                decay={3}
               />
             </group>
           );
