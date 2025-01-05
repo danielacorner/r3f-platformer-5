@@ -23,6 +23,7 @@ interface SkillEffect {
   age?: number;
   level?: number;
   hasHitEnemy?: boolean;
+  expansionSpeed?: number;
 }
 
 let activeEffects: SkillEffect[] = [];
@@ -53,19 +54,6 @@ const HIT_RADIUS = 2.5;  // Increased hit radius with small explosion effect
 const BOOMERANG_ARC_RADIUS = 6;  // Shallower arc
 const BOOMERANG_SCALE = 2
 const BOOMERANG_MIN_HEIGHT = 1.0; // Minimum height above ground
-
-export function castShieldBurst(position: Vector3, level: number) {
-  const effect = {
-    id: Math.random().toString(),
-    type: 'shield',
-    position: position.clone(),
-    startTime: Date.now(),
-    duration: 3 + level,
-    radius: 5,
-    color: '#3b82f6'
-  };
-  activeEffects.push(effect);
-}
 
 export function castLightningStorm(position: Vector3, level: number) {
   const strikeCount = 3 + level;
@@ -221,6 +209,33 @@ export function castMagicBoomerang(position: Vector3, direction: Vector3, level:
     console.log('Creating boomerang:', effect);
     activeEffects.push(effect);
   });
+}
+
+export function castArcaneNova(position: Vector3, level: number) {
+  const waveCount = 3 + Math.floor(level / 2);
+  const baseDamage = 40 + level * 15;
+  const baseRadius = 3;
+  const expansionSpeed = 8;
+  const waveDuration = 1.0;
+  const waveSpacing = 0.2;
+
+  for (let i = 0; i < waveCount; i++) {
+    setTimeout(() => {
+      const effect = {
+        id: Math.random().toString(),
+        type: 'arcaneNova',
+        position: position.clone(),
+        startTime: Date.now(),
+        duration: waveDuration,
+        radius: baseRadius,
+        damage: baseDamage * (1 - i * 0.15),
+        color: '#8A2BE2',
+        expansionSpeed: expansionSpeed * (1 + i * 0.2)
+      };
+      activeEffects.push(effect);
+      window.dispatchEvent(new CustomEvent('effectsChanged'));
+    }, i * waveSpacing * 1000);
+  }
 }
 
 function findNearestCreep(position: Vector3, creeps: any[]): { creep: any, position: Vector3 } | null {
@@ -393,7 +408,7 @@ export function SkillEffects() {
                 // Create a small explosion effect in the trail
                 const explosionPos = effect.position.clone();
                 const trail = trailsRef.current.get(effect.id)!;
-                
+
                 // Clear existing trail and add explosion particles
                 trail.length = 0;
                 for (let i = 0; i < 3; i++) {
@@ -409,7 +424,7 @@ export function SkillEffects() {
                   trailsRef.current.delete(effect.id);
                   activeEffects = activeEffects.filter(e => e.id !== effect.id);
                 }, 100);
-                
+
                 continue;
               }
             } else {
@@ -553,10 +568,10 @@ export function SkillEffects() {
               const finalDamage = Math.floor((effect.damage || 0) * damageMultiplier);
 
               damageCreep(creep.id, finalDamage);
-              
+
               // Mark that we've hit an enemy to stop seeking behavior
               effect.hasHitEnemy = true;
-              
+
               // Don't change phase, let it continue on its path
               // Only start returning if we've gone too far from spawn
               const distanceFromSpawn = effect.position.distanceTo(effect.spawnPos);
@@ -583,6 +598,25 @@ export function SkillEffects() {
 
           remainingEffects.push(effect);
         }
+      } else if (effect.type === 'arcaneNova') {
+        const age = (now - effect.startTime) / 1000;
+        const progress = Math.min(age / effect.duration, 1);
+        const currentRadius = effect.radius + (effect.expansionSpeed * age);
+        const opacity = 1 - progress;
+
+        // Check for enemy hits
+        for (const creep of creeps) {
+          if (!creep || !creep.position) continue;
+          const creepPos = new Vector3(...creep.position);
+          const distanceToCreep = creepPos.distanceTo(effect.position);
+          const hitRange = 0.5; // Width of the damage ring
+
+          if (Math.abs(distanceToCreep - currentRadius) < hitRange) {
+            damageCreep(creep.id, effect.damage);
+          }
+        }
+
+        remainingEffects.push(effect);
       }
     }
 
@@ -634,6 +668,8 @@ export function SkillEffects() {
 
       {/* Missiles */}
       {activeEffects.map(effect => {
+        const currentTime = Date.now();
+        
         if (effect.type === 'magicMissile') {
           return (
             <group key={`${effect.id}-${frameCount}`}>
@@ -650,7 +686,7 @@ export function SkillEffects() {
         } else if (effect.type === 'magicBoomerang') {
           // Horizontal spin with slight tilt for more dynamic look
           const wobble = Math.sin(effect.age * 5) * 0.05;
-          const rotation = [0, effect.age * BOOMERANG_SPIN_SPEED, wobble];  // Changed to spin around Y axis
+          const rotation = [0, effect.age * BOOMERANG_SPIN_SPEED, wobble];
 
           return (
             <group key={`${effect.id}-${frameCount}`}>
@@ -698,6 +734,26 @@ export function SkillEffects() {
                   distance={2}
                 />
               </group>
+            </group>
+          );
+        } else if (effect.type === 'arcaneNova') {
+          const age = (currentTime - effect.startTime) / 1000;
+          const progress = Math.min(age / effect.duration, 1);
+          const currentRadius = effect.radius + (effect.expansionSpeed * age);
+          const opacity = 1 - progress;
+
+          return (
+            <group key={`${effect.id}-${frameCount}`}>
+              <mesh position={[effect.position.x, effect.position.y + 0.1, effect.position.z]} rotation={[-Math.PI / 2, 0, 0]}>
+                <ringGeometry args={[currentRadius * 0.9, currentRadius, 32]} />
+                <meshBasicMaterial color={effect.color} transparent opacity={opacity} side={THREE.DoubleSide} />
+              </mesh>
+              <pointLight 
+                position={[effect.position.x, effect.position.y + 0.5, effect.position.z]}
+                color={effect.color} 
+                intensity={2 * (1 - progress)} 
+                distance={currentRadius * 2} 
+              />
             </group>
           );
         }

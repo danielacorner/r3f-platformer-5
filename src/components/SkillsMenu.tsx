@@ -5,11 +5,10 @@ import {
   FaTimes,
   FaPlus,
 } from "react-icons/fa";
-import { GiFireBowl, GiSpeedometer, GiMagicSwirl, GiCrystalBall, GiInfinity } from 'react-icons/gi';
-import { RiShieldFlashFill, RiThunderstormsFill, RiFireFill, RiContrastDrop2Fill, RiSwordFill, RiMagicFill } from 'react-icons/ri';
+import { GiFireBowl, GiSpeedometer, GiMagicSwirl, GiCrystalBall, GiInfinity, GiBoomerang } from 'react-icons/gi';
+import { RiFireFill, RiThunderstormsFill, RiContrastDrop2Fill, RiSwordFill, RiMagicFill } from 'react-icons/ri';
 import { useGameStore } from "../store/gameStore";
 import { Tabs, Tab, Box } from "@mui/material";
-import { GiBoomerang } from "react-icons/gi";
 
 interface SkillsMenuProps {
   isOpen: boolean;
@@ -105,15 +104,13 @@ export const activeSkills: ActiveSkill[] = [
     maxLevel: 20,
   },
   {
-    name: 'Shield Burst',
-    description: 'Creates a protective barrier that blocks projectiles',
-    icon: RiShieldFlashFill,
+    name: 'Arcane Nova',
+    description: 'Release waves of arcane energy that expand outward, dealing heavy damage to enemies caught in the rings.',
+    icon: '🌀',
     color: '#2563eb',
-    cooldown: 7,
-    duration: 5,
+    cooldown: 8,
     level: process.env.NODE_ENV === "development" ? 1 : 0,
-    maxLevel: 20,
-
+    maxLevel: 5,
   },
   {
     name: 'Lightning Storm',
