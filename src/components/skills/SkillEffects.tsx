@@ -70,6 +70,15 @@ const LIGHTNING_CONFIG = {
     side: THREE.DoubleSide
   })
 };
+const INFERNO_CONFIG = {
+  particleCount: 50,
+  geometry: new THREE.SphereGeometry(0.2, 8, 8),
+  material: new THREE.MeshBasicMaterial({
+    color: '#dc2626',
+    transparent: true,
+    side: THREE.DoubleSide
+  })
+};
 
 export function castLightningStorm(position: Vector3, level: number) {
   const strikeCount = 3 + level;
@@ -653,6 +662,22 @@ export function SkillEffects() {
         }
 
         remainingEffects.push(effect);
+      } else if (effect.type === 'inferno') {
+        const age = (now - effect.startTime) / 1000;
+        const progress = Math.min(age / effect.duration, 1);
+        const opacity = Math.min(1, Math.max(0, 1.5 - progress * 1.5));
+
+        // Check for enemy hits every frame
+        for (const creep of creeps) {
+          if (!creep || !creep.position) continue;
+          const creepPos = new Vector3(...creep.position);
+          const distanceToCreep = creepPos.distanceTo(effect.position);
+          if (distanceToCreep < effect.radius) {
+            damageCreep(creep.id, effect.damage / 20); // Damage per frame (DPS = damage)
+          }
+        }
+
+        remainingEffects.push(effect);
       }
 
     }
@@ -829,6 +854,60 @@ export function SkillEffects() {
                 <ringGeometry args={[0.3, 1, 12]} />
                 <meshBasicMaterial color={effect.color} transparent opacity={opacity} side={THREE.DoubleSide} />
               </mesh>
+            </group>
+          );
+        } else if (effect.type === 'inferno') {
+          const age = (currentTime - effect.startTime) / 1000;
+          const progress = Math.min(age / effect.duration, 1);
+          const opacity = Math.min(1, Math.max(0, 1.5 - progress * 1.5));
+
+          // Generate multiple flame particles
+          return (
+            <group key={`${effect.id}-${frameCount}`}>
+              {Array.from({ length: INFERNO_CONFIG.particleCount }).map((_, i) => {
+                const angle = (i / INFERNO_CONFIG.particleCount) * Math.PI * 2;
+                const radius = effect.radius * (0.2 + Math.sin(age * 2 + i) * 0.8);
+                const height = 2 + Math.sin(age * 3 + i * 0.5) * 1.5;
+                const x = effect.position.x + Math.cos(angle) * radius;
+                const z = effect.position.z + Math.sin(angle) * radius;
+                const particleScale = 0.5 + Math.sin(age * 4 + i) * 0.5;
+
+                return (
+                  <mesh
+                    key={i}
+                    position={[x, effect.position.y + height, z]}
+                    scale={[particleScale, particleScale, particleScale]}
+                  >
+                    <primitive object={INFERNO_CONFIG.geometry} />
+                    <primitive object={INFERNO_CONFIG.material} transparent opacity={opacity * 0.7} />
+                  </mesh>
+                );
+              })}
+              {/* Central fire column */}
+              <mesh
+                position={[effect.position.x, effect.position.y + 3, effect.position.z]}
+                scale={[effect.radius * 0.5, 6, effect.radius * 0.5]}
+              >
+                <cylinderGeometry args={[1, 0.5, 1, 8]} />
+                <meshBasicMaterial color="#dc2626" transparent opacity={opacity * 0.3} />
+              </mesh>
+              {/* Ground fire ring */}
+              <mesh
+                position={[effect.position.x, effect.position.y + 0.1, effect.position.z]}
+                rotation={[-Math.PI / 2, 0, 0]}
+                scale={[effect.radius, effect.radius, 1]}
+              >
+                <ringGeometry args={[0.5, 1, 16]} />
+                <meshBasicMaterial color="#dc2626" transparent opacity={opacity * 0.5} side={THREE.DoubleSide} />
+              </mesh>
+              {/* Fire light */}
+              <pointLight
+                position={[effect.position.x, effect.position.y + 2, effect.position.z]}
+                color="#ff4444"
+                intensity={8 * opacity}
+                distance={effect.radius * 3}
+                decay={2}
+              />
             </group>
           );
         }
