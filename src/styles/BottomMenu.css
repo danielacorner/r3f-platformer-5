@@ -894,3 +894,24 @@
     font-size: 1.1rem;
   }
 }
+
+@media screen and (max-width: 480px) {
+  .bottom-menu { padding: 0.5rem; }
+  .status-section { padding: 0.5rem; }
+  .player-icon { width: 2rem; height: 2rem; font-size: 1rem; }
+  .level-info { margin-left: 0.5rem; }
+  .xp-bar { width: 120px; }
+  .money { padding: 0.2rem 0.5rem; font-size: 0.9rem; }
+  .skills-section { gap: 0.25rem; padding: 0.25rem; justify-content: center; }
+  .skill-button button { width: 3rem !important; height: 3rem !important; font-size: 1.25rem !important; }
+  .skill-key { font-size: 0.7rem; padding: 0.1rem 0.3rem; }
+}
+
+@media screen and (max-width: 360px) {
+  .xp-text { display: none; }
+  .level-number { font-size: 0.9rem; }
+  .xp-bar { width: 80px; }
+  .money { font-size: 0.8rem; }
+  .skill-button button { width: 2.5rem !important; height: 2.5rem !important; font-size: 1rem !important; }
+  .skills-section { gap: 0.2rem; }
+}

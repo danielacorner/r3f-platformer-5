@@ -288,11 +288,13 @@ export function SkillEffects() {
     // Update trails
     for (const effect of activeEffects) {
       if (effect.type === 'magicMissile') {
+        // Get or create trail
         if (!trailsRef.current.has(effect.id)) {
           trailsRef.current.set(effect.id, []);
         }
         const trail = trailsRef.current.get(effect.id)!;
 
+        // Update trail
         trail.unshift(effect.position.clone());
         if (trail.length > 20) {
           trail.pop();
@@ -308,7 +310,7 @@ export function SkillEffects() {
         const age = (now - effect.startTime) / 1000;
 
         if (age > effect.duration) {
-          console.log('Effect expired:', effect.id);
+          // Clean up trail when effect expires
           trailsRef.current.delete(effect.id);
           continue;
         }
@@ -328,7 +330,7 @@ export function SkillEffects() {
               // Set horizontal velocity in spawn direction but slower
               const spawnDir = (effect as any).spawnDir || new Vector3(1, 0, 0);
               effect.velocity.set(
-                spawnDir.x * MAX_SPEED * 0.5, // Reduced initial seeking speed
+                spawnDir.x * MAX_SPEED * 0.5,
                 0,
                 spawnDir.z * MAX_SPEED * 0.5
               );
@@ -389,15 +391,22 @@ export function SkillEffects() {
                 // Create a small explosion effect in the trail
                 const explosionPos = effect.position.clone();
                 const trail = trailsRef.current.get(effect.id)!;
+                
+                // Clear existing trail and add explosion particles
+                trail.length = 0;
                 for (let i = 0; i < 3; i++) {
-                  trail.unshift(explosionPos.clone().add(new Vector3(
+                  trail.push(explosionPos.clone().add(new Vector3(
                     (Math.random() - 0.5) * 0.5,
                     (Math.random() - 0.5) * 0.5,
                     (Math.random() - 0.5) * 0.5
                   )));
                 }
 
-                trailsRef.current.delete(effect.id);
+                // Remove trail after a short delay to show explosion
+                setTimeout(() => {
+                  trailsRef.current.delete(effect.id);
+                }, 100);
+                
                 continue;
               }
             } else {

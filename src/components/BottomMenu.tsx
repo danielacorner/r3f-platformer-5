@@ -6,7 +6,7 @@ import { ActiveSkill, activeSkills, SkillsMenu } from "./SkillsMenu";
 import { castShieldBurst, castLightningStorm, castInferno, castTimeDilation, castMagicMissiles, castMagicBoomerang } from './skills/SkillEffects';
 import { Vector3 } from "three";
 
-const SKILL_KEYS = ["1", "2", "3", "4", "5"];
+const SKILL_KEYS = ["1", "2", "3", "4", "5", "6"];
 
 
 interface CooldownOverlayProps {
@@ -252,7 +252,6 @@ export function BottomMenu() {
                 {skill.description}
               </div>
               <div className="skill-key">{SKILL_KEYS[index]}</div>
-              {skill.level > 0 && <div className="skill-level">{skill.level}</div>}
             </div>
           ))}
         </div>
