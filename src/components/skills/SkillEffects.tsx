@@ -62,6 +62,15 @@ const NOVA_CONFIG = {
     side: THREE.DoubleSide
   })
 };
+const LIGHTNING_CONFIG = {
+  geometry: new THREE.CylinderGeometry(0.1, 0.3, 15, 8),
+  material: new THREE.MeshBasicMaterial({
+    color: '#7c3aed',
+    transparent: true,
+    side: THREE.DoubleSide
+  })
+};
+
 export function castLightningStorm(position: Vector3, level: number) {
   const strikeCount = 3 + level;
   const radius = 5 + level;
@@ -625,7 +634,27 @@ export function SkillEffects() {
         }
 
         remainingEffects.push(effect);
+      } else if (effect.type === 'lightning') {
+        const age = (now - effect.startTime) / 1000;
+        const progress = Math.min(age / effect.duration, 1);
+        const opacity = Math.max(0, 1 - progress * 2); // Faster fade out
+        const scale = progress < 0.1 ? progress * 10 : 1; // Quick scale up
+
+        // Check for enemy hits if the lightning just appeared
+        if (progress < 0.1) {
+          for (const creep of creeps) {
+            if (!creep || !creep.position) continue;
+            const creepPos = new Vector3(...creep.position);
+            const distanceToCreep = creepPos.distanceTo(effect.position);
+            if (distanceToCreep < effect.radius) {
+              damageCreep(creep.id, effect.damage);
+            }
+          }
+        }
+
+        remainingEffects.push(effect);
       }
+
     }
 
     // Update instanced mesh
@@ -767,6 +796,39 @@ export function SkillEffects() {
                 distance={currentRadius * 2}
                 decay={3}
               />
+            </group>
+          );
+        } else if (effect.type === 'lightning') {
+          const age = (currentTime - effect.startTime) / 1000;
+          const progress = Math.min(age / effect.duration, 1);
+          const opacity = Math.max(0, 1 - progress * 2); // Faster fade out
+          const scale = progress < 0.1 ? progress * 10 : 1; // Quick scale up
+
+          return (
+            <group key={`${effect.id}-${frameCount}`}>
+              <mesh
+                position={[effect.position.x, effect.position.y + 7.5, effect.position.z]}
+                scale={[scale, 1, scale]}
+              >
+                <primitive object={LIGHTNING_CONFIG.geometry} />
+                <primitive object={LIGHTNING_CONFIG.material} transparent opacity={opacity} />
+              </mesh>
+              <pointLight
+                position={[effect.position.x, effect.position.y + 1, effect.position.z]}
+                color={effect.color}
+                intensity={10 * (1 - progress)}
+                distance={5}
+                decay={2}
+              />
+              {/* Ground impact effect */}
+              <mesh
+                position={[effect.position.x, effect.position.y + 0.1, effect.position.z]}
+                rotation={[-Math.PI / 2, 0, 0]}
+                scale={[effect.radius * scale * 2, effect.radius * scale * 2, 1]}
+              >
+                <ringGeometry args={[0.3, 1, 12]} />
+                <meshBasicMaterial color={effect.color} transparent opacity={opacity} side={THREE.DoubleSide} />
+              </mesh>
             </group>
           );
         }
