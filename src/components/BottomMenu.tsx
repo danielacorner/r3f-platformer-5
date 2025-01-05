@@ -5,6 +5,7 @@ import "../styles/BottomMenu.css";
 import { ActiveSkill, activeSkills, SkillsMenu } from "./SkillsMenu";
 import { castMagicMissiles, castMagicBoomerang, castInferno, castTimeDilation, castLightningStorm, castArcaneNova } from './skills/SkillEffects';
 import { Vector3 } from "three";
+import { Tooltip } from "@mui/material";
 
 const SKILL_KEYS = ["1", "2", "3", "4", "5", "6"];
 
@@ -232,37 +233,40 @@ export function BottomMenu() {
               }}
               style={{ borderColor: skill.color }}
             >
-              <button
-                className={`w-16 h-16 rounded-lg flex items-center justify-center text-2xl transition-all
+              <Tooltip title={<>
+                <div className="skill-name">{skill.name}</div>
+                <div className="skill-description">{skill.description}</div>
+              </>} placement="top" arrow>
+                <button
+                  className={`w-16 h-16 rounded-lg flex items-center justify-center text-2xl transition-all
                   ${skill.currentCooldown > 0 ? 'opacity-50' : 'hover:scale-110'}`}
-                style={{ backgroundColor: skill.color }}
-              >
-                {skill.name === 'Arcane Nova' && <span className="text-2xl">🌀</span>}
-                {skill.name !== 'Arcane Nova' && <skill.icon />}
-              </button>
-              {skill.currentCooldown > 0 && (
-                <CooldownOverlay
-                  remainingTime={skill.currentCooldown}
-                  totalTime={skill.cooldown}
-                  color={skill.color}
-                />
-              )}
-              <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-2 py-1 rounded text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                {skill.name}
-                <br />
-                {skill.description}
-              </div>
-              <div className="skill-key">{SKILL_KEYS[index]}</div>
+                  style={{ backgroundColor: skill.color }}
+                >
+                  {skill.name === 'Arcane Nova' && <span className="text-2xl">🌀</span>}
+                  {skill.name !== 'Arcane Nova' && <skill.icon />}
+                </button>
+              </Tooltip>
+              {
+                skill.currentCooldown > 0 && (
+                  <CooldownOverlay
+                    remainingTime={skill.currentCooldown}
+                    totalTime={skill.cooldown}
+                    color={skill.color}
+                  />
+                )
+              }
+              < div className="skill-key" > {SKILL_KEYS[index]}</div>
             </div>
           ))}
-        </div>
-      </div>
+        </div >
+      </div >
       {showSkillsMenu && (
         <SkillsMenu
           isOpen={showSkillsMenu}
           onClose={() => setShowSkillsMenu(false)}
         />
-      )}
+      )
+      }
     </>
   );
 }
