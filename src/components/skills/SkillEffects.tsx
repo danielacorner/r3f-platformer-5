@@ -22,6 +22,7 @@ interface SkillEffect {
   curve?: number;
   age?: number;
   level?: number;
+  hasHitEnemy?: boolean;
 }
 
 let activeEffects: SkillEffect[] = [];
@@ -213,7 +214,8 @@ export function castMagicBoomerang(position: Vector3, direction: Vector3, level:
       damage: 20 + level * 5,
       age: 0,
       startTime: Date.now(),
-      duration: 10
+      duration: 10,
+      hasHitEnemy: false
     };
 
     console.log('Creating boomerang:', effect);
@@ -402,9 +404,10 @@ export function SkillEffects() {
                   )));
                 }
 
-                // Remove trail after a short delay to show explosion
+                // Remove trail and effect after a short delay to show explosion
                 setTimeout(() => {
                   trailsRef.current.delete(effect.id);
+                  activeEffects = activeEffects.filter(e => e.id !== effect.id);
                 }, 100);
                 
                 continue;
@@ -444,6 +447,7 @@ export function SkillEffects() {
         // Remove if max duration exceeded
         if (effect.age > BOOMERANG_MAX_DURATION) {
           trailsRef.current.delete(effect.id);
+          activeEffects = activeEffects.filter(e => e.id !== effect.id);
           continue;
         }
 
@@ -467,32 +471,40 @@ export function SkillEffects() {
             if (distanceFromSpawn >= BOOMERANG_MAX_DISTANCE) {
               effect.phase = 'return';
             } else {
-              // Find nearest enemy
-              const creeps = useGameStore.getState().creeps;
-              let nearestCreep = null;
-              let nearestDist = Infinity;
+              // Only seek if we haven't hit any enemies yet
+              if (!effect.hasHitEnemy) {
+                // Find nearest enemy
+                const creeps = useGameStore.getState().creeps;
+                let nearestCreep = null;
+                let nearestDist = Infinity;
 
-              for (const creep of creeps) {
-                if (!creep || !creep.position) continue;
-                const creepPos = new Vector3(...creep.position);
-                const dist = effect.position.distanceTo(creepPos);
-                if (dist < nearestDist) {
-                  nearestDist = dist;
-                  nearestCreep = creep;
+                for (const creep of creeps) {
+                  if (!creep || !creep.position) continue;
+                  const creepPos = new Vector3(...creep.position);
+                  const dist = effect.position.distanceTo(creepPos);
+                  if (dist < nearestDist) {
+                    nearestDist = dist;
+                    nearestCreep = creep;
+                  }
                 }
-              }
 
-              // Add curved path and enemy seeking
-              const forward = effect.velocity.clone().normalize();
-              const right = new Vector3(forward.z, 0, -forward.x).normalize();
+                // Add curved path and enemy seeking
+                const forward = effect.velocity.clone().normalize();
+                const right = new Vector3(forward.z, 0, -forward.x).normalize();
 
-              // Base curve
-              effect.velocity.add(right.multiplyScalar(BOOMERANG_CURVE * effect.curve * delta));
+                // Base curve
+                effect.velocity.add(right.multiplyScalar(BOOMERANG_CURVE * effect.curve * delta));
 
-              // Add enemy seeking if we have a target
-              if (nearestCreep) {
-                const toEnemy = new Vector3(...nearestCreep.position).sub(effect.position).normalize();
-                effect.velocity.lerp(toEnemy.multiplyScalar(BOOMERANG_SPEED), delta * BOOMERANG_SEEK_STRENGTH);
+                // Add enemy seeking if we have a target
+                if (nearestCreep) {
+                  const toEnemy = new Vector3(...nearestCreep.position).sub(effect.position).normalize();
+                  effect.velocity.lerp(toEnemy.multiplyScalar(BOOMERANG_SPEED), delta * BOOMERANG_SEEK_STRENGTH);
+                }
+              } else {
+                // Just continue on curved path without seeking
+                const forward = effect.velocity.clone().normalize();
+                const right = new Vector3(forward.z, 0, -forward.x).normalize();
+                effect.velocity.add(right.multiplyScalar(BOOMERANG_CURVE * effect.curve * delta));
               }
             }
           } else if (effect.phase === 'return') {
@@ -509,6 +521,7 @@ export function SkillEffects() {
               // Only remove if very close to player
               if (distanceToPlayer < BOOMERANG_RETURN_RADIUS) {
                 trailsRef.current.delete(effect.id);
+                activeEffects = activeEffects.filter(e => e.id !== effect.id);
                 continue;
               }
 
@@ -540,10 +553,31 @@ export function SkillEffects() {
               const finalDamage = Math.floor((effect.damage || 0) * damageMultiplier);
 
               damageCreep(creep.id, finalDamage);
+              
+              // Mark that we've hit an enemy to stop seeking behavior
+              effect.hasHitEnemy = true;
+              
+              // Don't change phase, let it continue on its path
+              // Only start returning if we've gone too far from spawn
+              const distanceFromSpawn = effect.position.distanceTo(effect.spawnPos);
+              if (distanceFromSpawn >= BOOMERANG_MAX_DISTANCE) {
+                effect.phase = 'return';
+              }
 
-              // Start returning after hitting an enemy
-              effect.phase = 'return';
-              break;
+              // Add hit effect to the trail
+              const trail = trailsRef.current.get(effect.id)!;
+              const hitPos = effect.position.clone();
+              for (let i = 0; i < 2; i++) {
+                trail.push(hitPos.clone().add(new Vector3(
+                  (Math.random() - 0.5) * 0.3,
+                  (Math.random() - 0.5) * 0.3,
+                  (Math.random() - 0.5) * 0.3
+                )));
+              }
+              // Trim trail to prevent it from growing too long
+              while (trail.length > 15) {
+                trail.pop();
+              }
             }
           }
 
