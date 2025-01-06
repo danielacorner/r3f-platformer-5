@@ -135,6 +135,7 @@ export function SkillEffects() {
   const tempMatrix = useMemo(() => new Matrix4(), []);
   const novaGeometry = useMemo(() => NOVA_CONFIG.geometry, []);
   const novaMaterial = useMemo(() => NOVA_CONFIG.material, []);
+  const ringRef = useRef<InstancedMesh>();
 
   // Track total number of trail particles
   const [totalTrailParticles, setTotalTrailParticles] = useState(0);
@@ -720,25 +721,45 @@ export function SkillEffects() {
         } else if (effect.type === 'arcaneNova') {
           const age = (currentTime - effect.startTime) / 1000;
           const progress = Math.min(age / effect.duration, 1);
-          const currentRadius = effect.radius + (effect.expansionSpeed * age);
-          const opacity = 1 - progress;
+          const opacity = Math.max(0, 1 - (progress - 0.5) * 2);
+          const scale = Math.min(progress * 2, 1) * effect.radius;
+
+          // Apply damage during expansion phase
+          if (progress < 0.5) {
+            creeps.forEach(creep => {
+              if (!creep.isDead) {
+                const creepPos = new Vector3(...creep.position);
+                const distance = effect.position.distanceTo(creepPos);
+                if (distance < scale) {
+                  damageCreep(creep.id, effect.damage);
+                }
+              }
+            });
+          }
 
           return (
             <group key={`${effect.id}-${frameCount}`}>
               <mesh
                 position={[effect.position.x, effect.position.y + 0.1, effect.position.z]}
                 rotation={[-Math.PI / 2, 0, 0]}
-                scale={[currentRadius, currentRadius, 1]}
+                scale={[scale, scale, 1]}
               >
-                <primitive object={novaGeometry} />
-                <primitive object={novaMaterial} transparent opacity={opacity} />
+                <ringGeometry args={[0.8, 1, 32]} />
+                <meshBasicMaterial
+                  color="#8B5CF6"
+                  transparent
+                  opacity={opacity}
+                  side={THREE.DoubleSide}
+                  depthWrite={false}
+                  depthTest={false}
+                />
               </mesh>
               <pointLight
-                position={[effect.position.x, effect.position.y + 0.5, effect.position.z]}
-                color={effect.color}
-                intensity={2 * (1 - progress)}
-                distance={currentRadius * 2}
-                decay={3}
+                position={[effect.position.x, effect.position.y + 1, effect.position.z]}
+                color="#8B5CF6"
+                intensity={5 * opacity}
+                distance={scale * 2}
+                decay={2}
               />
             </group>
           );
