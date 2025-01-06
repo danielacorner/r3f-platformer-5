@@ -7,10 +7,10 @@ export function castArcaneNova(position: Vector3, level: number) {
   const effect = {
     id: Math.random().toString(),
     type: 'arcaneNova',
-    position: position.clone(),
+    position: position.clone().setY(1), // Raise it off the ground
     startTime: Date.now(),
     duration: 1.0,
-    radius: 6 + level * 2,
+    radius: 8 + level * 2, // Larger radius
     damage: 30 + level * 10,
     color: '#8B5CF6',
     expansionSpeed: 10,

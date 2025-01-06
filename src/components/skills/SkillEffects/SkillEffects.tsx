@@ -3,6 +3,10 @@ import { useFrame } from '@react-three/fiber';
 import { Vector3, InstancedMesh, Matrix4, Object3D } from 'three';
 import { useGameStore } from '../../../store/gameStore';
 import * as THREE from 'three';
+import { extend } from '@react-three/fiber';
+import { ArcaneNovaShaderMaterial } from './shaders/ArcaneNovaShader';
+
+extend({ ArcaneNovaShaderMaterial });
 
 interface SkillEffect {
   id: string;
@@ -745,13 +749,14 @@ export function SkillEffects() {
                 scale={[scale, scale, 1]}
               >
                 <ringGeometry args={[0.8, 1, 32]} />
-                <meshBasicMaterial
-                  color="#8B5CF6"
-                  transparent
+                <arcaneNovaShaderMaterial
+                  time={age}
+                  scale={scale}
                   opacity={opacity}
-                  side={THREE.DoubleSide}
+                  transparent
                   depthWrite={false}
                   depthTest={false}
+                  side={THREE.DoubleSide}
                 />
               </mesh>
               <pointLight
