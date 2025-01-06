@@ -9,6 +9,7 @@ import { GiFireBowl, GiSpeedometer, GiMagicSwirl, GiCrystalBall, GiInfinity, GiB
 import { RiFireFill, RiThunderstormsFill, RiContrastDrop2Fill, RiSwordFill, RiMagicFill } from 'react-icons/ri';
 import { useGameStore } from "../store/gameStore";
 import { Tabs, Tab, Box } from "@mui/material";
+import "../styles/SkillsMenu.css";
 
 interface SkillsMenuProps {
   isOpen: boolean;
@@ -203,6 +204,9 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
             key={skill.name}
             className="skill-item"
           >
+            <div className="skill-background-icon" aria-hidden="true">
+              <skill.icon />
+            </div>
             <div className="skill-icon" style={{ borderColor: skill.color }}>
               <skill.icon />
             </div>
@@ -216,9 +220,9 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
               {'cooldown' in skill && (
                 <p className="skill-cooldown">Cooldown: {skill.cooldown}s</p>
               )}
-              <div className="skill-level">
-                Level {currentLevel}/{skill.maxLevel}
-              </div>
+            </div>
+            <div className="skill-level">
+              Level {currentLevel}/{skill.maxLevel}
             </div>
             {currentLevel < skill.maxLevel ? (
               <button
