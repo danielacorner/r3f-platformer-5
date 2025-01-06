@@ -106,7 +106,7 @@ export const activeSkills: ActiveSkill[] = [
   {
     name: 'Arcane Nova',
     description: 'Release waves of arcane energy that expand outward, dealing heavy damage to enemies caught in the rings.',
-    icon: '🌀',
+    icon: GiMagicSwirl,
     color: '#2563eb',
     cooldown: 8,
     level: process.env.NODE_ENV === "development" ? 1 : 0,
