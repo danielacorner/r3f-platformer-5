@@ -5,7 +5,7 @@ import {
   FaTimes,
   FaPlus,
 } from "react-icons/fa";
-import { GiFireBowl, GiSpeedometer, GiMagicSwirl, GiCrystalBall, GiInfinity, GiBoomerang } from 'react-icons/gi';
+import { GiFireBowl, GiSpeedometer, GiMagicSwirl, GiCrystalBall, GiInfinity, GiBoomerang, GiLightningStorm, GiMagicPalm, GiMagicShield, GiWaterSplash } from 'react-icons/gi';
 import { RiFireFill, RiThunderstormsFill, RiContrastDrop2Fill, RiSwordFill, RiMagicFill } from 'react-icons/ri';
 import { useGameStore } from "../store/gameStore";
 import { Tabs, Tab, Box } from "@mui/material";
@@ -38,7 +38,7 @@ export const passiveSkills: PassiveSkill[] = [
     color: '#9333ea',
     basePrice: 100,
     priceMultiplier: 1.5,
-    maxLevel: 5,
+    maxLevel: 20,
     effect: (level: number) => ({ damage: 1 + level * 0.2 }),
   },
   {
@@ -48,7 +48,7 @@ export const passiveSkills: PassiveSkill[] = [
     color: '#06b6d4',
     basePrice: 150,
     priceMultiplier: 1.5,
-    maxLevel: 5,
+    maxLevel: 20,
     effect: (level: number) => ({ cooldownReduction: level * 0.1 }),
   },
   {
@@ -58,7 +58,7 @@ export const passiveSkills: PassiveSkill[] = [
     color: '#2563eb',
     basePrice: 200,
     priceMultiplier: 1.5,
-    maxLevel: 5,
+    maxLevel: 20,
     effect: (level: number) => ({ range: 1 + level * 0.15 }),
   },
   {
@@ -68,7 +68,7 @@ export const passiveSkills: PassiveSkill[] = [
     color: '#ea580c',
     basePrice: 300,
     priceMultiplier: 1.5,
-    maxLevel: 5,
+    maxLevel: 20,
     effect: (level: number) => ({ multiCast: level * 0.15 }),
   },
 ];
@@ -89,62 +89,68 @@ export const activeSkills: ActiveSkill[] = [
     name: 'Magic Missiles',
     description: 'Launch multiple homing missiles that deal damage to enemies',
     icon: RiMagicFill,
-    color: '#8b5cf6',
-    cooldown: 5,
-    level: 1,
+    color: '#4F46E5',
+    cooldown: 2,
+    level: process.env.NODE_ENV === "development" ? 1 : 0,
     maxLevel: 20,
   },
   {
     name: 'Magic Boomerang',
-    description: 'Cast two magical boomerangs that curve outward and return',
+    description: 'Launch a magical boomerang that damages enemies in its path',
     icon: GiBoomerang,
-    color: '#8b5cf6',
-    cooldown: 5,
+    color: '#10B981',
+    cooldown: 4,
     level: process.env.NODE_ENV === "development" ? 1 : 0,
     maxLevel: 20,
   },
   {
     name: 'Arcane Nova',
-    description: 'Release waves of arcane energy that expand outward, dealing heavy damage to enemies caught in the rings.',
-    icon: '🌀',
-    color: '#2563eb',
+    description: 'Release a burst of arcane energy, damaging nearby enemies',
+    icon: GiMagicSwirl,
+    color: '#EC4899',
     cooldown: 8,
     level: process.env.NODE_ENV === "development" ? 1 : 0,
-    maxLevel: 5,
+    maxLevel: 20,
   },
   {
     name: 'Lightning Storm',
-    description: 'Summons lightning strikes on nearby enemies',
-    icon: RiThunderstormsFill,
-    color: '#7c3aed',
-    cooldown: 16,
+    description: 'Call down lightning strikes on random enemies',
+    icon: GiLightningStorm,
+    color: '#EAB308',
+    cooldown: 12,
     level: process.env.NODE_ENV === "development" ? 1 : 0,
     maxLevel: 20,
-
   },
   {
-    name: 'Inferno',
-    description: 'Creates a ring of fire damaging nearby enemies',
-    icon: RiFireFill,
-    color: '#dc2626',
-    cooldown: 25,
-    duration: 8,
+    name: 'Arcane Multiplication',
+    description: 'Temporarily triple all your magical effects',
+    icon: GiMagicPalm,
+    color: '#9333EA',
+    cooldown: 15,
+    duration: 5,
     level: process.env.NODE_ENV === "development" ? 1 : 0,
     maxLevel: 20,
-
   },
   {
-    name: 'Time Dilation',
-    description: 'Slows down enemies in an area',
-    icon: RiContrastDrop2Fill,
-    color: '#0891b2',
-    cooldown: 30,
+    name: 'Tsunami Wave',
+    description: 'Summon a massive wave that damages and pushes back enemies',
+    icon: GiWaterSplash,
+    color: '#06B6D4',
+    cooldown: 12,
+    level: process.env.NODE_ENV === "development" ? 1 : 0,
+    maxLevel: 20,
+  },
+  {
+    name: 'Arcane Shield',
+    description: 'Create a protective barrier that damages nearby enemies',
+    icon: GiMagicShield,
+    color: '#0EA5E9',
+    cooldown: 10,
     duration: 6,
     level: process.env.NODE_ENV === "development" ? 1 : 0,
     maxLevel: 20,
   },
 ];
-
 
 export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
   const [activeTab, setActiveTab] = useState<'passive' | 'active'>('active');
@@ -178,7 +184,6 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
     <div className="skills-grid">
       {skills.map((skill) => {
         const currentLevel = skillLevels[skill.name] || 0;
-        console.log("🚀 ~ file: SkillsMenu.tsx:108 ~ currentLevel:", currentLevel, skill.maxLevel)
         const canAfford = skillPoints >= 1 && currentLevel < skill.maxLevel;
 
         let effectText = '';

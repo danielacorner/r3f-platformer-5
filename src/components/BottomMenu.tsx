@@ -3,9 +3,10 @@ import { useGameStore } from "../store/gameStore";
 import { FaUser } from "react-icons/fa";
 import "../styles/BottomMenu.css";
 import { ActiveSkill, activeSkills, SkillsMenu } from "./SkillsMenu";
-import { castMagicMissiles, castMagicBoomerang, castInferno, castTimeDilation, castLightningStorm, castArcaneNova } from './skills/SkillEffects';
+import { castMagicMissiles, castMagicBoomerang, castArcaneMultiplication, castTimeDilation, castLightningStorm, castArcaneNova } from './skills/SkillEffects';
 import { Vector3 } from "three";
 import { Tooltip } from "@mui/material";
+import { GiMagicSwirl } from "react-icons/gi";
 
 const SKILL_KEYS = ["1", "2", "3", "4", "5", "6"];
 
@@ -150,8 +151,8 @@ export function BottomMenu() {
       case 'Lightning Storm':
         castLightningStorm(position, skill.level);
         break;
-      case 'Inferno':
-        castInferno(position, skill.level);
+      case 'Arcane Multiplication':
+        castArcaneMultiplication(position, skill.level);
         break;
       case 'Time Dilation':
         castTimeDilation(position, skill.level);
@@ -238,12 +239,11 @@ export function BottomMenu() {
                 <div className="skill-description">{skill.description}</div>
               </>} placement="top" arrow>
                 <button
-                  className={`w-16 h-16 rounded-lg flex items-center justify-center text-2xl transition-all
+                  className={`w-full h-full rounded-sm flex items-center justify-center text-4xl transition-all
                   ${skill.currentCooldown > 0 ? 'opacity-50' : 'hover:scale-110'}`}
                   style={{ backgroundColor: skill.color }}
                 >
-                  {skill.name === 'Arcane Nova' && <span className="text-2xl">🌀</span>}
-                  {skill.name !== 'Arcane Nova' && <skill.icon />}
+                  {<skill.icon />}
                 </button>
               </Tooltip>
               {

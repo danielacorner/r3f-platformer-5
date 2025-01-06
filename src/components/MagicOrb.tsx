@@ -26,13 +26,32 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   const [attackProgress, setAttackProgress] = useState(0);
   const [canAttack, setCanAttack] = useState(true);
   const [hitEffects, setHitEffects] = useState<{ position: Vector3; key: string }[]>([]);
-  
+  const [orbMultiplier, setOrbMultiplier] = useState(1);
+
   // Refs for tracking positions and timing
   const lastAttackTime = useRef(0);
   const startPositions = useRef<{ [key: number]: Vector3 }>({});
   const midPoints = useRef<{ [key: number]: Vector3 }>({});
   const frameCount = useRef(0);
   const trailPoints = useRef<Vector3[]>([]);
+
+  // Listen for arcaneMultiplication events
+  useEffect(() => {
+    const handleArcaneMultiplication = (event: CustomEvent) => {
+      const { multiplier, duration } = event.detail;
+      setOrbMultiplier(multiplier);
+
+      // Reset multiplier after duration
+      setTimeout(() => {
+        setOrbMultiplier(1);
+      }, duration * 1000);
+    };
+
+    window.addEventListener('arcaneMultiplication', handleArcaneMultiplication as EventListener);
+    return () => {
+      window.removeEventListener('arcaneMultiplication', handleArcaneMultiplication as EventListener);
+    };
+  }, []);
 
   // Add a UUID generator for truly unique keys
   const generateUUID = () => {
@@ -57,18 +76,21 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   const range = useGameStore(state => state.upgrades.range);
   const speed = useGameStore(state => state.upgrades.speed);
   const orbSpeed = useGameStore(state => state.orbSpeed);
-  const multishot = useGameStore(state => state.upgrades.multishot);
+  const multiCastLevel = useGameStore(state => state.skillLevels['Multi Orb'] || 0); // Get Multi Orb level from skillLevels
   // Calculate actual values based on upgrades
   const actualDamage = BASE_ATTACK_DAMAGE * (1 + damage * 0.1);
   const actualRange = BASE_ATTACK_RANGE * (1 + range * 0.1);
   const actualCooldown = BASE_ATTACK_COOLDOWN * (1 - speed * 0.12);
   const actualOrbSpeed = BASE_ORB_SPEED * orbSpeed;
-  const multishotChance = multishot * 0.15; // 15% chance per level
+  const multiCastChance = multiCastLevel * 0.15; // 15% per level of Multi Orb
 
-  // Get multishot level and calculate number of orbs
-  const numAdditionalOrbs = Math.floor(multishotChance); // Full orbs
-  const partialOrbOpacity = (multishotChance % 1); // Opacity for the partial orb
-  const totalOrbs = numAdditionalOrbs + (partialOrbOpacity > 0 ? 1 : 0) + 1; // +1 for main orb
+  // Calculate number of orbs from Multi Orb passive
+  const guaranteedAdditionalOrbs = Math.floor(multiCastChance); // At level 20 (300%), this should be 3
+  const baseOrbs = guaranteedAdditionalOrbs + 1; // +1 for main orb
+  const totalOrbs = baseOrbs * orbMultiplier; // Apply multiplier from Arcane Multiplication
+
+  // Calculate opacity for each orb - all orbs should be full opacity since they're guaranteed
+  const getOrbOpacity = (index: number) => 1;
 
   const findNearestEnemies = () => {
     if (!orbsRef.current[0] || !playerRef.current || !canAttack) return [];
@@ -119,14 +141,8 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
     if (now - lastAttackTime.current < actualCooldown * 1000) return;
     lastAttackTime.current = now;
 
-    // Calculate number of orbs to attack
-    const guaranteedOrbs = Math.floor(multishotChance) + 1; // +1 for main orb
-    const extraOrbChance = multishotChance % 1;
-    let totalAttackingOrbs = guaranteedOrbs;
-    
-    if (Math.random() < extraOrbChance) {
-      totalAttackingOrbs++;
-    }
+    // Use all available orbs for attack
+    const totalAttackingOrbs = totalOrbs;
 
     // Initialize attack states for all attacking orbs
     const newAttackingOrbs: { [key: number]: any } = {};
@@ -267,7 +283,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   return (
     <group>
       {Array(totalOrbs).fill(null).map((_, index) => {
-        const opacity = index === 0 ? 1 : index <= numAdditionalOrbs ? 1 : partialOrbOpacity;
+        const opacity = getOrbOpacity(index);
         return (
           <group 
             key={index}
