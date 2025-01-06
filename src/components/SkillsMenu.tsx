@@ -125,8 +125,8 @@ export const activeSkills: ActiveSkill[] = [
   {
     name: 'Arcane Multiplication',
     description: 'Temporarily triples your magic orbs for devastating burst damage',
-    icon: RiFireFill,
-    color: '#dc2626',
+    icon: GiInfinity,
+    color: '#8A2BE2',
     cooldown: 25,
     duration: 8,
     level: process.env.NODE_ENV === "development" ? 1 : 0,

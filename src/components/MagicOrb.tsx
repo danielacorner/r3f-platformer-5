@@ -26,13 +26,32 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   const [attackProgress, setAttackProgress] = useState(0);
   const [canAttack, setCanAttack] = useState(true);
   const [hitEffects, setHitEffects] = useState<{ position: Vector3; key: string }[]>([]);
-  
+  const [orbMultiplier, setOrbMultiplier] = useState(1);
+
   // Refs for tracking positions and timing
   const lastAttackTime = useRef(0);
   const startPositions = useRef<{ [key: number]: Vector3 }>({});
   const midPoints = useRef<{ [key: number]: Vector3 }>({});
   const frameCount = useRef(0);
   const trailPoints = useRef<Vector3[]>([]);
+
+  // Listen for arcaneMultiplication events
+  useEffect(() => {
+    const handleArcaneMultiplication = (event: CustomEvent) => {
+      const { multiplier, duration } = event.detail;
+      setOrbMultiplier(multiplier);
+
+      // Reset multiplier after duration
+      setTimeout(() => {
+        setOrbMultiplier(1);
+      }, duration * 1000);
+    };
+
+    window.addEventListener('arcaneMultiplication', handleArcaneMultiplication as EventListener);
+    return () => {
+      window.removeEventListener('arcaneMultiplication', handleArcaneMultiplication as EventListener);
+    };
+  }, []);
 
   // Add a UUID generator for truly unique keys
   const generateUUID = () => {
@@ -68,7 +87,8 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   // Get multishot level and calculate number of orbs
   const numAdditionalOrbs = Math.floor(multishotChance); // Full orbs
   const partialOrbOpacity = (multishotChance % 1); // Opacity for the partial orb
-  const totalOrbs = numAdditionalOrbs + (partialOrbOpacity > 0 ? 1 : 0) + 1; // +1 for main orb
+  const baseOrbs = numAdditionalOrbs + (partialOrbOpacity > 0 ? 1 : 0) + 1; // +1 for main orb
+  const totalOrbs = baseOrbs * orbMultiplier; // Apply multiplier from Arcane Multiplication
 
   const findNearestEnemies = () => {
     if (!orbsRef.current[0] || !playerRef.current || !canAttack) return [];
@@ -267,7 +287,10 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   return (
     <group>
       {Array(totalOrbs).fill(null).map((_, index) => {
-        const opacity = index === 0 ? 1 : index <= numAdditionalOrbs ? 1 : partialOrbOpacity;
+        // Calculate base index (for the original set of orbs)
+        const baseIndex = index % baseOrbs;
+        // Use baseIndex to determine opacity, so multiplied orbs use the same opacity as their base orb
+        const opacity = baseIndex === 0 ? 1 : baseIndex <= numAdditionalOrbs ? 1 : partialOrbOpacity;
         return (
           <group 
             key={index}

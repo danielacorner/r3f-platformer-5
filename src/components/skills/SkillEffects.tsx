@@ -789,10 +789,10 @@ export function SkillEffects() {
                 <primitive object={novaGeometry} />
                 <primitive object={novaMaterial} transparent opacity={opacity} />
               </mesh>
-              <pointLight 
+              <pointLight
                 position={[effect.position.x, effect.position.y + 0.5, effect.position.z]}
-                color={effect.color} 
-                intensity={2 * (1 - progress)} 
+                color={effect.color}
+                intensity={2 * (1 - progress)}
                 distance={currentRadius * 2}
                 decay={3}
               />
@@ -836,4 +836,21 @@ export function SkillEffects() {
       })}
     </group>
   );
+}
+
+export function castArcaneMultiplication(position: Vector3, level: number) {
+  const effect = {
+    id: Math.random().toString(),
+    type: 'arcaneMultiplication',
+    position: position.clone(),
+    startTime: Date.now(),
+    duration: 8 + level * 0.5,
+    radius: 4 + level * 0.5,
+    color: '#8A2BE2'
+  };
+  activeEffects.push(effect);
+
+  window.dispatchEvent(new CustomEvent('arcaneMultiplication', {
+    detail: { multiplier: 3, duration: 8 + level * 0.5 }
+  }));
 }

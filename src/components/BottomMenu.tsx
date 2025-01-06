@@ -3,7 +3,7 @@ import { useGameStore } from "../store/gameStore";
 import { FaUser } from "react-icons/fa";
 import "../styles/BottomMenu.css";
 import { ActiveSkill, activeSkills, SkillsMenu } from "./SkillsMenu";
-import { castMagicMissiles, castMagicBoomerang, castInferno, castTimeDilation, castLightningStorm, castArcaneNova } from './skills/SkillEffects';
+import { castMagicMissiles, castMagicBoomerang, castArcaneMultiplication, castTimeDilation, castLightningStorm, castArcaneNova } from './skills/SkillEffects';
 import { Vector3 } from "three";
 import { Tooltip } from "@mui/material";
 
@@ -150,8 +150,8 @@ export function BottomMenu() {
       case 'Lightning Storm':
         castLightningStorm(position, skill.level);
         break;
-      case 'Inferno':
-        castInferno(position, skill.level);
+      case 'Arcane Multiplication':
+        castArcaneMultiplication(position, skill.level);
         break;
       case 'Time Dilation':
         castTimeDilation(position, skill.level);
