@@ -79,6 +79,14 @@ const INFERNO_CONFIG = {
     side: THREE.DoubleSide
   })
 };
+const TIME_DILATION_CONFIG = {
+  geometry: new THREE.TorusGeometry(1, 0.1, 16, 32),
+  material: new THREE.MeshBasicMaterial({
+    color: '#0891b2',
+    transparent: true,
+    side: THREE.DoubleSide
+  })
+};
 
 export function castLightningStorm(position: Vector3, level: number) {
   const strikeCount = 3 + level;
@@ -128,7 +136,8 @@ export function castTimeDilation(position: Vector3, level: number) {
     startTime: Date.now(),
     duration: 5 + level,
     radius: 6 + level,
-    color: '#0891b2'
+    color: '#0891b2',
+    level
   };
   activeEffects.push(effect);
 }
@@ -293,10 +302,14 @@ function findNearestCreep(position: Vector3, creeps: any[]): { creep: any, posit
 }
 
 export function SkillEffects() {
-  const { creeps, damageCreep } = useGameStore();
+  const { creeps, damageCreep, setTimeDilation } = useGameStore();
   const [effectsCount, setEffectsCount] = useState(0);
   const [frameCount, setFrameCount] = useState(0);
   const trailsRef = useRef(new Map<string, Vector3[]>());
+  const timeDilationRef = useRef<{
+    lastUpdate: number;
+    activeEffects: Set<string>;
+  }>({ lastUpdate: 0, activeEffects: new Set() });
 
   // Create reusable geometries and materials
   const trailGeometry = useMemo(() => new THREE.SphereGeometry(1, 8, 8), []);
@@ -320,6 +333,23 @@ export function SkillEffects() {
     window.addEventListener('effectsChanged', handleEffectsChanged);
     return () => window.removeEventListener('effectsChanged', handleEffectsChanged);
   }, []);
+
+  useEffect(() => {
+    const checkTimeDilation = () => {
+      const now = Date.now();
+      const hasActiveEffects = timeDilationRef.current.activeEffects.size > 0;
+      const isRecent = now - timeDilationRef.current.lastUpdate < 100; // 100ms threshold
+
+      if (hasActiveEffects && isRecent) {
+        setTimeDilation(0.3); // Apply slowdown
+      } else {
+        setTimeDilation(1); // Reset to normal speed
+      }
+    };
+
+    const interval = setInterval(checkTimeDilation, 100);
+    return () => clearInterval(interval);
+  }, [setTimeDilation]);
 
   useFrame((state, delta) => {
     setFrameCount(prev => (prev + 1) % 1000000);
@@ -678,6 +708,82 @@ export function SkillEffects() {
         }
 
         remainingEffects.push(effect);
+      } else if (effect.type === 'timeDilation') {
+        const age = (now - effect.startTime) / 1000;
+        const progress = Math.min(age / effect.duration, 1);
+        const opacity = Math.min(1, Math.max(0, 1.5 - progress * 1.5));
+        const dilationFactor = 0.3 + (effect.level * 0.1); // 30% - 80% slowdown based on level
+
+        // Track time dilation effect
+        if (!timeDilationRef.current.activeEffects.has(effect.id)) {
+          timeDilationRef.current.activeEffects.add(effect.id);
+        }
+
+        // Check if any enemies are in range
+        let enemiesInRange = false;
+        for (const creep of creeps) {
+          if (!creep || !creep.position) continue;
+          const creepPos = new Vector3(...creep.position);
+          const distanceToCreep = creepPos.distanceTo(effect.position);
+          if (distanceToCreep < effect.radius) {
+            enemiesInRange = true;
+            break;
+          }
+        }
+
+        // Store the effect state for useEffect to handle
+        if (enemiesInRange) {
+          timeDilationRef.current.lastUpdate = Date.now();
+        }
+
+        // Remove expired effects
+        if (progress >= 1) {
+          timeDilationRef.current.activeEffects.delete(effect.id);
+        }
+
+        // Visual effect
+        return (
+          <group key={`${effect.id}-${frameCount}`}>
+            {/* Outer ring */}
+            <mesh
+              position={[effect.position.x, effect.position.y + 0.1, effect.position.z]}
+              rotation={[-Math.PI / 2, 0, 0]}
+              scale={[effect.radius, effect.radius, 1]}
+            >
+              <primitive object={TIME_DILATION_CONFIG.geometry} />
+              <primitive object={TIME_DILATION_CONFIG.material} transparent opacity={opacity * 0.7} />
+            </mesh>
+            {/* Inner rings */}
+            {Array.from({ length: 3 }).map((_, i) => {
+              const ringProgress = (age * (1 - i * 0.2)) % 1;
+              const ringScale = effect.radius * ringProgress;
+              return (
+                <mesh
+                  key={i}
+                  position={[effect.position.x, effect.position.y + 0.1, effect.position.z]}
+                  rotation={[-Math.PI / 2, 0, 0]}
+                  scale={[ringScale, ringScale, 1]}
+                >
+                  <ringGeometry args={[0.9, 1, 32]} />
+                  <meshBasicMaterial
+                    color={effect.color}
+                    transparent
+                    opacity={opacity * (1 - ringProgress)}
+                    side={THREE.DoubleSide}
+                  />
+                </mesh>
+              );
+            })}
+            {/* Area light */}
+            <pointLight
+              position={[effect.position.x, effect.position.y + 2, effect.position.z]}
+              color={effect.color}
+              intensity={3 * opacity}
+              distance={effect.radius * 2}
+              decay={2}
+            />
+          </group>
+        );
       }
 
     }
@@ -814,10 +920,10 @@ export function SkillEffects() {
                 <primitive object={novaGeometry} />
                 <primitive object={novaMaterial} transparent opacity={opacity} />
               </mesh>
-              <pointLight 
+              <pointLight
                 position={[effect.position.x, effect.position.y + 0.5, effect.position.z]}
-                color={effect.color} 
-                intensity={2 * (1 - progress)} 
+                color={effect.color}
+                intensity={2 * (1 - progress)}
                 distance={currentRadius * 2}
                 decay={3}
               />
@@ -906,6 +1012,55 @@ export function SkillEffects() {
                 color="#ff4444"
                 intensity={8 * opacity}
                 distance={effect.radius * 3}
+                decay={2}
+              />
+            </group>
+          );
+        } else if (effect.type === 'timeDilation') {
+          const age = (currentTime - effect.startTime) / 1000;
+          const progress = Math.min(age / effect.duration, 1);
+          const opacity = Math.min(1, Math.max(0, 1.5 - progress * 1.5));
+          const dilationFactor = 0.3 + (effect.level * 0.1); // 30% - 80% slowdown based on level
+
+          // Visual effect
+          return (
+            <group key={`${effect.id}-${frameCount}`}>
+              {/* Outer ring */}
+              <mesh
+                position={[effect.position.x, effect.position.y + 0.1, effect.position.z]}
+                rotation={[-Math.PI / 2, 0, 0]}
+                scale={[effect.radius, effect.radius, 1]}
+              >
+                <primitive object={TIME_DILATION_CONFIG.geometry} />
+                <primitive object={TIME_DILATION_CONFIG.material} transparent opacity={opacity * 0.7} />
+              </mesh>
+              {/* Inner rings */}
+              {Array.from({ length: 3 }).map((_, i) => {
+                const ringProgress = (age * (1 - i * 0.2)) % 1;
+                const ringScale = effect.radius * ringProgress;
+                return (
+                  <mesh
+                    key={i}
+                    position={[effect.position.x, effect.position.y + 0.1, effect.position.z]}
+                    rotation={[-Math.PI / 2, 0, 0]}
+                    scale={[ringScale, ringScale, 1]}
+                  >
+                    <ringGeometry args={[0.9, 1, 32]} />
+                    <meshBasicMaterial
+                      color={effect.color}
+                      transparent
+                      opacity={opacity * (1 - ringProgress)}
+                      side={THREE.DoubleSide}
+                    />
+                  </mesh>
+                );
+              })}
+              {/* Area light */}
+              <pointLight
+                position={[effect.position.x, effect.position.y + 2, effect.position.z]}
+                color={effect.color}
+                intensity={3 * opacity}
+                distance={effect.radius * 2}
                 decay={2}
               />
             </group>

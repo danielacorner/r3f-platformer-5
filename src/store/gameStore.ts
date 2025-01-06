@@ -20,6 +20,7 @@ interface CreepState {
   value: number;
   id: string;
   waveId: number;
+  waypointIndex?: number;
   effects: {
     [key: string]: {
       value: number;
@@ -49,6 +50,7 @@ interface GameState {
     [key: string]: number;
   };
   money: number;
+  timeDilation: number;
   score: number;
   lives: number;
   experience: number;
@@ -89,12 +91,14 @@ interface GameState {
   setShowWaveIndicator: (show: boolean) => void;
   setCameraZoom: (zoom: number) => void;
   setCameraAngle: (angle: number) => void;
+  setTimeDilation: (value: number) => void;
   loseLife: () => void;
   reset: () => void;
   addExperience: (amount: number) => void;
   addScore: (amount: number) => void;
   updateCreep: (creepId: string, updates: Partial<CreepState>) => void;
   upgradeSkill: (skillName: string, cost: number) => void;
+  setCreeps: (creeps: CreepState[]) => void;
 }
 
 const initialState: GameState = {
@@ -115,6 +119,7 @@ const initialState: GameState = {
     'Time Dilation': 0,
   },
   money: 1000,
+  timeDilation: 1,
   score: 0,
   lives: 20,
   experience: 0,
@@ -155,12 +160,14 @@ const initialState: GameState = {
   setShowWaveIndicator: () => { },
   setCameraZoom: () => { },
   setCameraAngle: () => { },
+  setTimeDilation: () => { },
   loseLife: () => { },
   reset: () => { },
   addExperience: () => { },
   addScore: () => { },
   updateCreep: () => { },
-  upgradeSkill: () => { }
+  upgradeSkill: () => { },
+  setCreeps: () => { }
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -350,4 +357,6 @@ export const useGameStore = create<GameState>((set, get) => ({
     const newAngle = Math.max(0.2, Math.min(0.8, currentAngle + delta));
     set({ cameraAngle: newAngle });
   },
+  setTimeDilation: (value: number) => set({ timeDilation: value }),
+  setCreeps: (creeps: CreepState[]) => set({ creeps }),
 }));

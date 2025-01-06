@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { Vector3 } from 'three';
 import { generateWaveSet, WaveCreep, Wave as ConfigWave } from '../config/waveConfig';
@@ -9,34 +9,48 @@ interface WaveManagerProps {
 }
 
 export function WaveManager({ pathPoints }: WaveManagerProps) {
-  const { 
-    phase, 
-    currentLevel, 
-    setPhase, 
-    setEnemiesAlive, 
-    addCreep, 
+  const {
+    phase,
+    currentLevel,
+    setPhase,
+    setEnemiesAlive,
+    addCreep,
     isSpawning,
     setIsSpawning,
     creeps,
+    setCreeps,
+    addMoney,
     incrementLevel,
     enemiesAlive,
-    addMoney,
     setWave,
     isWaveInProgress,
     setIsWaveInProgress,
-    setWaveStartTime
+    setWaveStartTime,
+    timeDilation
   } = useGameStore();
-  
+
   const waveQueue = useRef<Array<WaveCreep & { waveId: number }>>([]);
   const spawnTimerRef = useRef<number | null>(null);
   const enemyIdCounter = useRef(0);
   const currentWaveRef = useRef<ConfigWave | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const lastUpdateTimeRef = useRef<number>(0);
+
+  // Get the next waypoint for a creep
+  const getNextWaypoint = (currentPosition: Vector3, waypointIndex: number) => {
+    if (!pathPoints[waypointIndex]) return null;
+    return pathPoints[waypointIndex];
+  };
 
   // Cleanup function
   const cleanup = () => {
     if (spawnTimerRef.current) {
       clearInterval(spawnTimerRef.current);
       spawnTimerRef.current = null;
+    }
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
     }
     waveQueue.current = [];
     currentWaveRef.current = null;
@@ -54,9 +68,9 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
     const wave = waveSet.waves.find(w => w.id === currentWaveRef.current?.id) || waveSet.waves[0];
     currentWaveRef.current = wave;
     setWave(wave.id);
-    
+
     console.log('Current wave set:', { wave, currentWaveRef: currentWaveRef.current });
-    
+
     if (!wave) {
       console.log('No more waves available!');
       setPhase('victory');
@@ -68,9 +82,10 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
     const totalEnemies = wave.creeps.reduce((total, group) => total + group.count, 0);
     console.log(`Wave ${wave.id} will have ${totalEnemies} total enemies`);
     setEnemiesAlive(totalEnemies);
-    
-    waveQueue.current = wave.creeps.flatMap(creepGroup => 
+
+    waveQueue.current = wave.creeps.flatMap(creepGroup =>
       Array(creepGroup.count).fill(null).map(() => ({
+
         ...creepGroup,
         waveId: wave.id,
         health: creepGroup.health * (wave.modifiers?.find(m => m.type === 'health')?.value || 1),
@@ -105,9 +120,10 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
           speed: enemy.speed,
           size: enemy.size,
           value: enemy.value,
-          id: String(enemyIdCounter.current),  // Convert to string
+          id: String(enemyIdCounter.current),
           effects: {},
-          waveId: enemy.waveId
+          waveId: enemy.waveId,
+          waypointIndex: 0
         };
 
         // Add to game store
@@ -130,7 +146,7 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
         console.log('Finished spawning all enemies for wave ' + currentWaveRef.current?.id);
         clearInterval(interval);
         setIsSpawning(false);
-        
+
         // Award wave completion bonus
         if (currentWaveRef.current) {
           addMoney(currentWaveRef.current.reward);
@@ -166,7 +182,7 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
         availableWaves: waveSet.waves.map(w => w.id),
         currentLevel
       });
-      
+
       const nextWave = waveSet.waves.find(w => w.id === (currentWaveId + 1));
       console.log('Next wave found:', nextWave);
 
@@ -189,20 +205,85 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
     return () => clearTimeout(timer);
   }, [phase, isSpawning, enemiesAlive, currentLevel]);
 
+  // Handle creep movement
+  useEffect(() => {
+    if (phase !== 'combat') return;
+
+    const updateCreeps = (timestamp: number) => {
+      if (!lastUpdateTimeRef.current) lastUpdateTimeRef.current = timestamp;
+      const deltaTime = (timestamp - lastUpdateTimeRef.current) / 1000;
+      lastUpdateTimeRef.current = timestamp;
+
+      // Apply time dilation to delta
+      const dilatedDelta = deltaTime * timeDilation;
+
+      // Update creep positions
+      const updatedCreeps = creeps.map(creep => {
+        if (!creep || !creep.position) return creep;
+
+        // Initialize waypointIndex if it doesn't exist
+        const currentWaypointIndex = creep.waypointIndex ?? 0;
+        const currentPosition = new Vector3(...creep.position);
+        const nextWaypoint = getNextWaypoint(currentPosition, currentWaypointIndex);
+
+        if (!nextWaypoint) return creep;
+
+        const direction = nextWaypoint.clone().sub(currentPosition);
+        const distance = direction.length();
+
+        if (distance < 0.1) {
+          // Move to next waypoint
+          return {
+            ...creep,
+            waypointIndex: currentWaypointIndex + 1
+          };
+        }
+
+        direction.normalize();
+        const movement = direction.multiplyScalar(creep.speed * dilatedDelta);
+        const newPosition = currentPosition.add(movement);
+
+        return {
+          ...creep,
+          position: [newPosition.x, newPosition.y, newPosition.z],
+          waypointIndex: currentWaypointIndex
+        };
+      });
+
+      // Update creeps in store
+      setCreeps(updatedCreeps);
+
+      // Continue animation loop
+      animationFrameRef.current = requestAnimationFrame(updateCreeps);
+    };
+
+    // Start animation loop
+    animationFrameRef.current = requestAnimationFrame(updateCreeps);
+
+    // Cleanup
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      lastUpdateTimeRef.current = 0;
+    };
+  }, [phase, creeps, timeDilation]);
+
   const startWave = () => {
     if (isWaveInProgress) return;
-    
+
     // Debug log
     console.log('Starting wave...');
-    
+
     // Get the store instance
     const store = useGameStore.getState();
     console.log('Current store state:', store);
-    
+
     // Call startWave
     store.startWave();
     console.log('Wave started, new state:', useGameStore.getState());
-    
+
     setIsWaveInProgress(true);
     setWaveStartTime(Date.now());
   };
@@ -210,16 +291,16 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
   const handleNextWave = () => {
     // Debug log
     console.log('Next wave clicked');
-    
+
     // Get current store state
     const store = useGameStore.getState();
-    
+
     // Update wave state
     store.startWave();
-    
+
     // Start wave
     startWave();
-    
+
     console.log('Wave started, new state:', useGameStore.getState());
   };
 
