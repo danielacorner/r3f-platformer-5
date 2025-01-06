@@ -140,16 +140,7 @@ export const activeSkills: ActiveSkill[] = [
     level: process.env.NODE_ENV === "development" ? 1 : 0,
     maxLevel: 20,
   },
-  {
-    name: 'Arcane Shield',
-    description: 'Create a protective barrier that damages nearby enemies',
-    icon: GiMagicShield,
-    color: '#0EA5E9',
-    cooldown: 10,
-    duration: 6,
-    level: process.env.NODE_ENV === "development" ? 1 : 0,
-    maxLevel: 20,
-  },
+
 ];
 
 export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {

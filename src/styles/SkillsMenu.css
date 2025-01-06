@@ -154,7 +154,8 @@
   line-height: 1.4;
 }
 
-.skill-duration, .skill-cooldown {
+.skill-duration,
+.skill-cooldown {
   color: #818cf8;
   font-size: 0.85rem;
   margin-top: 0.25rem;
@@ -200,6 +201,7 @@
 
   .skills-grid {
     grid-template-columns: 1fr;
+    padding: 0;
   }
 
   .skill-card {

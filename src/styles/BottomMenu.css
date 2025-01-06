@@ -389,7 +389,6 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1rem;
-  padding: 1rem;
 }
 
 @keyframes glowPulse {
@@ -572,6 +571,7 @@
   font-size: 0.8rem;
   font-weight: bold;
   color: #fbbf24;
+  height: fit-content;
 }
 
 @media screen and (max-width: 640px) {
@@ -857,8 +857,8 @@
 
   .skill-level {
     position: absolute;
-    top: 1px;
-    right: 12px;
+    right: 10px;
+    bottom: 12px;
   }
 
   .close-icon-button {
