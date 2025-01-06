@@ -562,8 +562,8 @@
 
 .skill-level {
   position: absolute;
-  bottom: -0.5rem;
-  right: -0.5rem;
+  bottom: 0.5rem;
+  right: 0.5rem;
   background: rgba(0, 0, 0, 0.8);
   border: 1px solid currentColor;
   border-radius: 0.25rem;
