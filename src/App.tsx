@@ -111,8 +111,8 @@ export default function App() {
           position: "relative",
         }}
       >
-        <BottomMenu />
         <GameUI />
+        <BottomMenu />
         <WaveIndicator />
         <Canvas
           shadows="soft"
