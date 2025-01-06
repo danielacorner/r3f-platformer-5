@@ -1,6 +1,6 @@
 .game-ui {
   position: fixed;
-  bottom: 10rem;
+  bottom: 8rem;
   left: 0;
   right: 0;
   padding: 20px;
@@ -16,15 +16,17 @@
   padding: 12px 20px;
   border-radius: 8px;
   display: flex;
-  gap: 24px;
+  flex-direction: column;
   backdrop-filter: blur(8px);
   pointer-events: auto;
+  gap: 4px;
 }
 
 .stat-item {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .stat-label {
@@ -189,7 +191,6 @@
 
   .game-stats {
     padding: 8px 12px;
-    gap: 16px;
   }
 
   .control-button {
@@ -220,7 +221,6 @@
 
   .game-stats {
     padding: 6px 10px;
-    gap: 12px;
   }
 
   .stat-label {
@@ -252,7 +252,6 @@
 
   .game-stats {
     padding: 4px 8px;
-    gap: 10px;
   }
 
   .control-button {
