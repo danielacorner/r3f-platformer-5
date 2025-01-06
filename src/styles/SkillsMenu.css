@@ -179,11 +179,32 @@
   line-height: 1.4;
 }
 
-.skill-duration,
-.skill-cooldown {
-  color: #818cf8;
+.skill-info p.skill-duration,
+.skill-info p.skill-cooldown,
+.skill-info p.skill-stats {
   font-size: 0.85rem;
   margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.skill-info p.skill-duration {
+  color: #22D3EE; /* Cyan 400 - for duration/time effects */
+}
+
+.skill-info p.skill-cooldown {
+  color: #F87171; /* Red 400 - for cooldown/waiting */
+}
+
+.skill-info p.skill-stats {
+  color: #FBBF24; /* Amber 400 - for power/effect stats */
+  font-weight: 500;
+}
+
+.skill-info .stat-label {
+  color: #94A3B8; /* Slate 400 */
+  font-weight: normal;
 }
 
 .skill-level {
@@ -228,6 +249,13 @@
     width: 180%;
     height: 180%;
   }
+
+  .skill-info p.skill-duration,
+  .skill-info p.skill-cooldown,
+  .skill-info p.skill-stats {
+    font-size: 0.75rem;
+    margin-top: 0.2rem;
+  }
 }
 
 @media screen and (max-width: 359px) {
@@ -239,6 +267,13 @@
   .skill-background-icon {
     width: 120%;
     height: 120%;
+  }
+
+  .skill-info p.skill-duration,
+  .skill-info p.skill-cooldown,
+  .skill-info p.skill-stats {
+    font-size: 0.7rem;
+    margin-top: 0.15rem;
   }
 }
 

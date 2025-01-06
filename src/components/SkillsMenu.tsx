@@ -172,11 +172,31 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
     e.stopPropagation();
   };
 
+  const getSkillStats = (skill: typeof activeSkills[0], level: number) => {
+    switch (skill.name) {
+      case 'Magic Missiles':
+        return `Missiles: ${2 + Math.floor(level / 3)}`;
+      case 'Magic Boomerang':
+        return `Boomerangs: ${1 + Math.floor(level / 5)}`;
+      case 'Arcane Nova':
+        return `Damage: ${Math.round((10 + level * 5) * 10) / 10}`;
+      case 'Lightning Storm':
+        return `Lightning Bolts: ${3 + Math.floor(level / 4)}`;
+      case 'Arcane Multiplication':
+        return `Spell Copies: ${1 + Math.floor(level / 4)}`;
+      case 'Tsunami Wave':
+        return `Wave Size: ${Math.round((1 + level * 0.2) * 10) / 10}x`;
+      default:
+        return '';
+    }
+  };
+
   const renderSkillList = (skills: typeof passiveSkills) => (
     <div className="skills-grid">
       {skills.map((skill) => {
         const currentLevel = skillLevels[skill.name] || 0;
         const canAfford = skillPoints >= 1 && currentLevel < skill.maxLevel;
+        const skillStats = 'effect' in skill ? '' : getSkillStats(skill as typeof activeSkills[0], currentLevel);
 
         let effectText = '';
         if ('effect' in skill) {
@@ -215,10 +235,17 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
               <p>{skill.description}</p>
               {effectText && <p className="skill-effect">{effectText}</p>}
               {'duration' in skill && (
-                <p className="skill-duration">Duration: {skill.duration}s</p>
+                <p className="skill-duration">
+                  <span className="stat-label">Duration:</span> {skill.duration}s
+                </p>
               )}
               {'cooldown' in skill && (
-                <p className="skill-cooldown">Cooldown: {skill.cooldown}s</p>
+                <p className="skill-cooldown">
+                  <span className="stat-label">Cooldown:</span> {skill.cooldown}s
+                </p>
+              )}
+              {!('effect' in skill) && skillStats && (
+                <p className="skill-stats">{skillStats}</p>
               )}
             </div>
             <div className="skill-level">
