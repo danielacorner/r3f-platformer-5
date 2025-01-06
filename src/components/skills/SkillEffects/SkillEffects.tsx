@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Vector3, InstancedMesh, Matrix4, Object3D } from 'three';
-import { useGameStore } from '../../store/gameStore';
+import { useGameStore } from '../../../store/gameStore';
 import * as THREE from 'three';
 
 interface SkillEffect {
@@ -26,21 +26,19 @@ interface SkillEffect {
   expansionSpeed?: number;
 }
 
-let activeEffects: SkillEffect[] = [];
+export let activeEffects: SkillEffect[] = [];
 
+export const MISSILE_COLOR = '#6bb7c8';  // Light blue
 const GRAVITY = new Vector3(0, -9.8 * 3, 0);
 const MAX_SEEK_DISTANCE = 50;  // Increased from 15
-const MISSILE_COLOR = '#6bb7c8';  // Light blue
 const BOOMERANG_COLOR = '#8B4513';  // Saddle brown for wooden look
 const BOOMERANG_HIGHLIGHT = '#DEB887';  // Burlywood for wood grain
 const BOOMERANG_GLOW = '#87CEFA';  // Light blue for magic effect
 const BOOMERANG_LENGTH = 0.4;  // Reduced to 1/4 of previous size
 const BOOMERANG_WIDTH = 0.1;  // Reduced to 1/4 of previous size
 const BOOMERANG_THICKNESS = 0.05;  // Reduced to 1/4 of previous size
-const BOOMERANG_SPEED = 16; // Slightly faster
 const BOOMERANG_SPIN_SPEED = 15;     // Slightly slower for more magical feel
 const BOOMERANG_CURVE = 15; // Reduced for smoother arc
-const BOOMERANG_RETURN_DISTANCE = 15; // Shorter distance before return
 const BOOMERANG_RETURN_RADIUS = 2.5; // Increased catch radius
 const BOOMERANG_RETURN_SPEED = 30; // Faster return speed
 const BOOMERANG_MAX_DURATION = 8; // Maximum duration before forced removal
@@ -48,10 +46,8 @@ const BOOMERANG_SEEK_STRENGTH = 8; // How strongly it seeks enemies
 const BOOMERANG_MAX_DISTANCE = 20; // Maximum distance from player
 const SEEK_FORCE = 60;  // Increased from 35
 const MAX_SPEED = 30;  // Increased from 25
-const INITIAL_SPEED = 15;
 const HORIZONTAL_SEEK_HEIGHT = 2;
 const HIT_RADIUS = 2.5;  // Increased hit radius with small explosion effect
-const BOOMERANG_ARC_RADIUS = 6;  // Shallower arc
 const BOOMERANG_SCALE = 2
 const BOOMERANG_MIN_HEIGHT = 1.0; // Minimum height above ground
 const NOVA_CONFIG = {
@@ -88,190 +84,7 @@ const TIME_DILATION_CONFIG = {
   })
 };
 
-export function castLightningStorm(position: Vector3, level: number) {
-  const strikeCount = 3 + level;
-  const radius = 5 + level;
-  const damage = 50 + level * 25;
-
-  for (let i = 0; i < strikeCount; i++) {
-    setTimeout(() => {
-      const angle = (i / strikeCount) * Math.PI * 2;
-      const x = position.x + Math.cos(angle) * (radius / 2);
-      const z = position.z + Math.sin(angle) * (radius / 2);
-
-      const effect = {
-        id: Math.random().toString(),
-        type: 'lightning',
-        position: new Vector3(x, position.y, z),
-        startTime: Date.now(),
-        duration: 0.5,
-        radius: 2,
-        damage,
-        color: '#7c3aed'
-      };
-      activeEffects.push(effect);
-    }, i * 200);
-  }
-}
-
-export function castInferno(position: Vector3, level: number) {
-  const effect = {
-    id: Math.random().toString(),
-    type: 'inferno',
-    position: position.clone(),
-    startTime: Date.now(),
-    duration: 3 + level,
-    radius: 4 + level * 0.5,
-    damage: 20 + level * 15,
-    color: '#dc2626'
-  };
-  activeEffects.push(effect);
-}
-
-export function castTimeDilation(position: Vector3, level: number) {
-  const effect = {
-    id: Math.random().toString(),
-    type: 'timeDilation',
-    position: position.clone(),
-    startTime: Date.now(),
-    duration: 5 + level,
-    radius: 6 + level,
-    color: '#0891b2',
-    level
-  };
-  activeEffects.push(effect);
-}
-
-export function castMagicMissiles(position: Vector3, level: number) {
-  console.log('Casting Magic Missiles at position:', position.toArray());
-
-  const missileCount = Math.floor(3 + level * 2);
-  const baseDamage = 30;
-  const damagePerLevel = 5;
-  const damage = baseDamage + (level * damagePerLevel);
-  const missileRadius = 0.2;
-
-  const angleStep = (2 * Math.PI) / missileCount;
-
-  for (let i = 0; i < missileCount; i++) {
-    const angle = i * angleStep;
-    const horizontalDir = new Vector3(
-      Math.cos(angle),
-      0,
-      Math.sin(angle)
-    ).normalize();
-
-    // Create initial velocity with upward and outward components
-    const initialVelocity = new Vector3(
-      horizontalDir.x * INITIAL_SPEED * 0.7, // Horizontal component
-      INITIAL_SPEED, // Vertical component
-      horizontalDir.z * INITIAL_SPEED * 0.7   // Horizontal component
-    );
-
-    const timeOffset = i * 0.1;
-    const startPos = position.clone();
-    startPos.y += 1;
-
-    const effect = {
-      id: Math.random().toString(),
-      type: 'magicMissile',
-      position: startPos.clone(),
-      startTime: Date.now() + timeOffset * 1000,
-      duration: 8,
-      radius: missileRadius,
-      damage,
-      color: MISSILE_COLOR,
-      velocity: initialVelocity,
-      phase: 'rising' as const,
-      timeOffset,
-      spawnDir: horizontalDir
-    };
-
-    console.log('Created missile:', i, 'at position:', effect.position.toArray(), 'with velocity:', effect.velocity.toArray());
-    activeEffects.push(effect);
-  }
-
-  window.dispatchEvent(new CustomEvent('effectsChanged'));
-}
-
-export function castMagicBoomerang(position: Vector3, direction: Vector3, level: number) {
-  const spawnOffset = new Vector3(0, 1, 0);  // Spawn slightly above ground
-  const spawnPos = position.clone().add(spawnOffset);
-
-  // Find nearest enemy for targeting
-  const creeps = useGameStore.getState().creeps;
-  const nearestCreepInfo = findNearestCreep(spawnPos, creeps);
-
-  let targetPos: Vector3;
-  if (nearestCreepInfo) {
-    targetPos = new Vector3(...nearestCreepInfo.creep.position);
-  } else {
-    // If no target, just go forward
-    targetPos = spawnPos.clone().add(direction.clone().multiplyScalar(BOOMERANG_RETURN_DISTANCE));
-  }
-
-  // Calculate initial trajectory
-  const toTarget = targetPos.clone().sub(spawnPos).normalize();
-  const rightVector = new Vector3(toTarget.z, 0, -toTarget.x).normalize();
-
-  // Spawn level+2 boomerangs with opposite curves, but closer together
-  const spawnSpread = 0.5; // Reduced from default spread
-  [...new Array(level + 1)].map(idx => idx % 2 === 0 ? 1 : -1).forEach((curve, idx) => {
-    // Offset spawn position slightly to the side
-    const offsetPos = spawnPos.clone().add(rightVector.clone().multiplyScalar(curve * spawnSpread));
-
-    // add slight random offset for idx
-    offsetPos.x += 1 * (idx - level / 2) * (Math.random() > 0.5 ? 1 : -1);
-    offsetPos.z += 1 * (idx - level / 2) * (Math.random() > 0.5 ? 1 : -1);
-
-
-    const effect = {
-      id: Math.random().toString(),
-      type: 'magicBoomerang',
-      position: offsetPos,
-      spawnPos: spawnPos.clone(),
-      velocity: toTarget.clone().multiplyScalar(BOOMERANG_SPEED),
-      curve,
-      phase: 'outward' as const,
-      damage: 20 + level * 5,
-      age: 0,
-      startTime: Date.now(),
-      duration: 10,
-      hasHitEnemy: false
-    };
-
-    console.log('Creating boomerang:', effect);
-    activeEffects.push(effect);
-  });
-}
-
-export function castArcaneNova(position: Vector3, level: number) {
-  const waveCount = 2 + Math.floor(level / 2);  // Fewer waves
-  const baseDamage = 50 + level * 20;           // More damage
-  const baseRadius = 3;
-  const expansionSpeed = 12;                     // Faster expansion
-  const waveDuration = 0.6;                      // Shorter duration
-  const waveSpacing = 0.12;                      // Less delay between waves
-
-  for (let i = 0; i < waveCount; i++) {
-    setTimeout(() => {
-      const effect = {
-        id: Math.random().toString(),
-        type: 'arcaneNova',
-        position: position.clone(),
-        startTime: Date.now(),
-        duration: waveDuration,
-        radius: baseRadius,
-        damage: baseDamage * (1 - i * 0.15),
-        color: '#8A2BE2',
-        expansionSpeed: expansionSpeed * (1 + i * 0.2)
-      };
-      activeEffects.push(effect);
-    }, i * waveSpacing * 1000);
-  }
-}
-
-function findNearestCreep(position: Vector3, creeps: any[]): { creep: any, position: Vector3 } | null {
+export function findNearestCreep(position: Vector3, creeps: any[]): { creep: any, position: Vector3 } | null {
   if (!creeps || creeps.length === 0) return null;
 
   // First try to find a creep within MAX_SEEK_DISTANCE
@@ -1072,19 +885,3 @@ export function SkillEffects() {
   );
 }
 
-export function castArcaneMultiplication(position: Vector3, level: number) {
-  const effect = {
-    id: Math.random().toString(),
-    type: 'arcaneMultiplication',
-    position: position.clone(),
-    startTime: Date.now(),
-    duration: 8 + level * 0.5,
-    radius: 4 + level * 0.5,
-    color: '#8A2BE2'
-  };
-  activeEffects.push(effect);
-
-  window.dispatchEvent(new CustomEvent('arcaneMultiplication', {
-    detail: { multiplier: 3, duration: 8 + level * 0.5 }
-  }));
-}
