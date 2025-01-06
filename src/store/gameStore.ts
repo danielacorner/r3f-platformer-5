@@ -111,7 +111,7 @@ const initialState: GameState = {
     'Magic Boomerang': 0,
     'Shield Burst': 0,
     'Lightning Storm': 0,
-    'Inferno': 0,
+    'Arcane Multiplication': 0,
     'Time Dilation': 0,
   },
   money: 1000,

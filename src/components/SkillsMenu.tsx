@@ -123,15 +123,14 @@ export const activeSkills: ActiveSkill[] = [
 
   },
   {
-    name: 'Inferno',
-    description: 'Creates a ring of fire damaging nearby enemies',
+    name: 'Arcane Multiplication',
+    description: 'Temporarily triples your magic orbs for devastating burst damage',
     icon: RiFireFill,
     color: '#dc2626',
     cooldown: 25,
     duration: 8,
     level: process.env.NODE_ENV === "development" ? 1 : 0,
     maxLevel: 20,
-
   },
   {
     name: 'Time Dilation',
@@ -144,7 +143,6 @@ export const activeSkills: ActiveSkill[] = [
     maxLevel: 20,
   },
 ];
-
 
 export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
   const [activeTab, setActiveTab] = useState<'passive' | 'active'>('active');
