@@ -76,19 +76,21 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   const range = useGameStore(state => state.upgrades.range);
   const speed = useGameStore(state => state.upgrades.speed);
   const orbSpeed = useGameStore(state => state.orbSpeed);
-  const multishot = useGameStore(state => state.upgrades.multishot);
+  const multiCastLevel = useGameStore(state => state.skillLevels['Multi Orb'] || 0); // Get Multi Orb level from skillLevels
   // Calculate actual values based on upgrades
   const actualDamage = BASE_ATTACK_DAMAGE * (1 + damage * 0.1);
   const actualRange = BASE_ATTACK_RANGE * (1 + range * 0.1);
   const actualCooldown = BASE_ATTACK_COOLDOWN * (1 - speed * 0.12);
   const actualOrbSpeed = BASE_ORB_SPEED * orbSpeed;
-  const multishotChance = multishot * 0.15; // 15% chance per level
+  const multiCastChance = multiCastLevel * 0.15; // 15% per level of Multi Orb
 
-  // Get multishot level and calculate number of orbs
-  const numAdditionalOrbs = Math.floor(multishotChance); // Full orbs
-  const partialOrbOpacity = (multishotChance % 1); // Opacity for the partial orb
-  const baseOrbs = numAdditionalOrbs + (partialOrbOpacity > 0 ? 1 : 0) + 1; // +1 for main orb
+  // Calculate number of orbs from Multi Orb passive
+  const guaranteedAdditionalOrbs = Math.floor(multiCastChance); // At level 20 (300%), this should be 3
+  const baseOrbs = guaranteedAdditionalOrbs + 1; // +1 for main orb
   const totalOrbs = baseOrbs * orbMultiplier; // Apply multiplier from Arcane Multiplication
+
+  // Calculate opacity for each orb - all orbs should be full opacity since they're guaranteed
+  const getOrbOpacity = (index: number) => 1;
 
   const findNearestEnemies = () => {
     if (!orbsRef.current[0] || !playerRef.current || !canAttack) return [];
@@ -139,14 +141,8 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
     if (now - lastAttackTime.current < actualCooldown * 1000) return;
     lastAttackTime.current = now;
 
-    // Calculate number of orbs to attack
-    const guaranteedOrbs = Math.floor(multishotChance) + 1; // +1 for main orb
-    const extraOrbChance = multishotChance % 1;
-    let totalAttackingOrbs = guaranteedOrbs;
-    
-    if (Math.random() < extraOrbChance) {
-      totalAttackingOrbs++;
-    }
+    // Use all available orbs for attack
+    const totalAttackingOrbs = totalOrbs;
 
     // Initialize attack states for all attacking orbs
     const newAttackingOrbs: { [key: number]: any } = {};
@@ -287,10 +283,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   return (
     <group>
       {Array(totalOrbs).fill(null).map((_, index) => {
-        // Calculate base index (for the original set of orbs)
-        const baseIndex = index % baseOrbs;
-        // Use baseIndex to determine opacity, so multiplied orbs use the same opacity as their base orb
-        const opacity = baseIndex === 0 ? 1 : baseIndex <= numAdditionalOrbs ? 1 : partialOrbOpacity;
+        const opacity = getOrbOpacity(index);
         return (
           <group 
             key={index}
