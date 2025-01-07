@@ -128,27 +128,22 @@ export function SkillEffects() {
   const { creeps, damageCreep, setTimeDilation } = useGameStore();
   const [effectsCount, setEffectsCount] = useState(0);
   const [frameCount, setFrameCount] = useState(0);
-  const trailsRef = useRef(new Map<string, Vector3[]>());
-  const timeDilationRef = useRef<{
-    lastUpdate: number;
-    activeEffects: Set<string>;
-  }>({ lastUpdate: 0, activeEffects: new Set() });
 
-  // Create reusable geometries and materials
-  const trailGeometry = useMemo(() => new THREE.SphereGeometry(1, 8, 8), []);
+  // Trail particle setup
+  const trailGeometry = useMemo(() => new THREE.SphereGeometry(0.15, 8, 8), []);
   const trailMaterial = useMemo(() => new THREE.MeshBasicMaterial({
-    color: MISSILE_COLOR,
+    color: '#9F7AEA', // Slightly brighter purple
     transparent: true,
+    opacity: 0.8,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending // Add glow effect
   }), []);
-  const trailInstancesRef = useRef<InstancedMesh>(null);
-  const tempObject = useMemo(() => new Object3D(), []);
-  const tempMatrix = useMemo(() => new Matrix4(), []);
-  const novaGeometry = useMemo(() => NOVA_CONFIG.geometry, []);
-  const novaMaterial = useMemo(() => NOVA_CONFIG.material, []);
-  const ringRef = useRef<InstancedMesh>();
 
-  // Track total number of trail particles
-  const [totalTrailParticles, setTotalTrailParticles] = useState(0);
+  const trailInstancesRef = useRef<InstancedMesh>();
+  const trailsRef = useRef<Map<string, Vector3[]>>(new Map());
+  const [totalTrailParticles, setTotalTrailParticles] = useState(100);
+  const matrix = useMemo(() => new Matrix4(), []);
+  const dummy = useMemo(() => new Object3D(), []);
 
   useEffect(() => {
     const handleEffectsChanged = () => {
@@ -198,51 +193,36 @@ export function SkillEffects() {
     });
 
     // Update instanced mesh
-    if (trailInstancesRef.current && totalTrailParticles > 0) {
+    if (trailInstancesRef.current) {
       let instanceIndex = 0;
 
+      // Update trail particles
       for (const [_, trail] of trailsRef.current.entries()) {
-        trail.forEach((pos, index) => {
-          const scale = 0.15 * (1 - index / trail.length);
-          const opacity = (1 - index / trail.length) * 0.7;
+        for (let i = 0; i < trail.length; i++) {
+          const pos = trail[i];
+          const scale = 1.5 * (1 - (i / trail.length)); // Larger base scale
+          
+          dummy.position.copy(pos);
+          dummy.scale.set(scale, scale, scale);
+          dummy.updateMatrix();
 
-          tempObject.position.copy(pos);
-          tempObject.scale.set(scale, scale, scale);
-          tempObject.updateMatrix();
-
-          trailInstancesRef.current.setMatrixAt(instanceIndex, tempObject.matrix);
-          if (trailInstancesRef.current.instanceColor) {
-            trailInstancesRef.current.instanceColor.setXYZ(
-              instanceIndex,
-              1,
-              1,
-              1
-            );
-            trailInstancesRef.current.instanceColor.setW(instanceIndex, opacity);
-          }
-
+          trailInstancesRef.current.setMatrixAt(instanceIndex, dummy.matrix);
           instanceIndex++;
-        });
+        }
       }
 
       trailInstancesRef.current.instanceMatrix.needsUpdate = true;
-      if (trailInstancesRef.current.instanceColor) {
-        trailInstancesRef.current.instanceColor.needsUpdate = true;
-      }
+      setTotalTrailParticles(Math.max(100, instanceIndex)); // Keep minimum size of 100
     }
-
-    setTotalTrailParticles(trailsRef.current.size * 20);
   });
 
   return (
     <group>
       {/* Trail particles */}
-      {trailInstancesRef.current && (
-        <instancedMesh
-          ref={trailInstancesRef}
-          args={[trailGeometry, trailMaterial, totalTrailParticles]}
-        />
-      )}
+      <instancedMesh
+        ref={trailInstancesRef}
+        args={[trailGeometry, trailMaterial, Math.max(100, totalTrailParticles)]}
+      />
 
       {/* Render effects */}
       {activeEffects.map(effect => {
