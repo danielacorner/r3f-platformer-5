@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Vector3, InstancedMesh, Matrix4, Object3D } from 'three';
+import { Vector3, InstancedMesh, Matrix4, Object3D, BufferGeometry } from 'three';
 import { useGameStore } from '../../../store/gameStore';
 import * as THREE from 'three';
 import { extend } from '@react-three/fiber';
@@ -11,7 +11,7 @@ import { updateArcaneNova } from './effectHandlers/arcaneNovaHandler';
 import { updateLightning } from './effectHandlers/lightningHandler';
 import { updateBoomerang } from './effectHandlers/boomerangHandler';
 import { updateLightningStorm } from './effectHandlers/lightningStormHandler';
-import { Cloud } from '@react-three/drei';
+import { StormCloud } from '../StormCloud';
 import { SkillEffect } from './types';
 
 extend({ ArcaneNovaShaderMaterial, LightningStormShaderMaterial });
@@ -39,6 +39,25 @@ export function SkillEffects() {
   const [totalTrailParticles, setTotalTrailParticles] = useState(100);
   const matrix = useMemo(() => new Matrix4(), []);
   const dummy = useMemo(() => new Object3D(), []);
+
+  // Memoized materials for lightning
+  const lightningMaterial = useMemo(() => new THREE.MeshBasicMaterial({
+    color: '#80ffff',
+    transparent: true,
+    opacity: 1,
+    blending: THREE.AdditiveBlending,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  }), []);
+
+  const lightningCoreMaterial = useMemo(() => new THREE.MeshBasicMaterial({
+    color: '#ffffff',
+    transparent: true,
+    opacity: 1,
+    blending: THREE.AdditiveBlending,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  }), []);
 
   useEffect(() => {
     const handleEffectsChanged = () => {
@@ -104,37 +123,52 @@ export function SkillEffects() {
 
       {/* Render effects */}
       {activeEffects.map(effect => {
-        if (effect.type === 'magicMissile') {
+        if (effect.type === 'lightning') {
+          const age = (Date.now() - effect.startTime) / 1000;
+          const progress = Math.min(age / effect.duration, 1);
+          const opacity = Math.max(0, 1 - progress * 2);
+
           return (
             <group key={`${effect.id}-${frameCount}`}>
-              <mesh position={effect.position.toArray()}>
-                <sphereGeometry args={[effect.radius, 32, 32]} />
-                <meshStandardMaterial
-                  color={effect.color}
-                  emissive={effect.color}
-                  emissiveIntensity={2}
-                />
+              {/* Outer glow */}
+              <mesh
+                position={[effect.position.x, effect.position.y + 4, effect.position.z]}
+              >
+                <cylinderGeometry args={[0.8, 0.8, 8, 16]} />
+                <primitive object={lightningMaterial} opacity={opacity * 0.5} />
               </mesh>
-            </group>
-          );
-        } else if (effect.type === 'magicBoomerang') {
-          const wobble = Math.sin(effect.age * 5) * 0.05;
-          const rotation = [0, effect.age * 15, wobble];
-          return (
-            <group key={`${effect.id}-${frameCount}`}>
-              <group scale={3} position={effect.position.toArray()} rotation={rotation}>
-                <group rotation={[Math.PI / 2, 0, 0]}>
-                  <mesh>
-                    <boxGeometry args={[0.1, 0.4, 0.05]} />
-                    <meshStandardMaterial color="#8B4513" metalness={0.1} roughness={0.7} />
-                  </mesh>
-                  <mesh position={[0.4 / 2 - 0.1 / 2, 0.4 / 2 - 0.1 / 2, 0]}>
-                    <boxGeometry args={[0.4, 0.1, 0.05]} />
-                    <meshStandardMaterial color="#8B4513" metalness={0.1} roughness={0.7} />
-                  </mesh>
-                </group>
-                <pointLight color="#87CEFA" intensity={1} distance={2} />
-              </group>
+
+              {/* Core bolt */}
+              <mesh
+                position={[effect.position.x, effect.position.y + 4, effect.position.z]}
+              >
+                <cylinderGeometry args={[0.4, 0.4, 8, 16]} />
+                <primitive object={lightningCoreMaterial} opacity={opacity} />
+              </mesh>
+
+              {/* Impact flash */}
+              <mesh
+                position={[effect.position.x, effect.position.y, effect.position.z]}
+              >
+                <sphereGeometry args={[2, 32, 32]} />
+                <primitive object={lightningMaterial} opacity={opacity * 0.7} />
+              </mesh>
+
+              {/* Impact lights */}
+              <pointLight
+                position={[effect.position.x, effect.position.y + 4, effect.position.z]}
+                color="#80ffff"
+                intensity={50}
+                distance={15}
+                decay={2}
+              />
+              <pointLight
+                position={[effect.position.x, effect.position.y, effect.position.z]}
+                color="#ffffff"
+                intensity={30}
+                distance={10}
+                decay={2}
+              />
             </group>
           );
         } else if (effect.type === 'lightningStorm') {
@@ -143,51 +177,20 @@ export function SkillEffects() {
             <group key={`${effect.id}-${frameCount}`} position={pos}>
               {/* Storm cloud */}
               <group position={[0, 8, 0]}>
-                <Cloud
-                  opacity={0.8}
-                  speed={0.4}
-                  width={10}
-                  depth={2.5}
-                  segments={20}
-                >
-                  <meshStandardMaterial 
-                    color={effect.color} 
-                    emissive={effect.color}
-                    emissiveIntensity={0.5}
-                    transparent
-                    opacity={0.6}
-                  />
-                </Cloud>
+                <StormCloud color={effect.color} seed={(effect as any).seed} />
               </group>
 
-              {/* Electric effect */}
-              <mesh position={[0, 8, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-                <planeGeometry args={[effect.radius * 2, effect.radius * 2]} />
-                <lightningStormShaderMaterial
-                  time={time.current}
-                  color={new THREE.Color(effect.color)}
-                  intensity={1.0}
-                />
-              </mesh>
-
               {/* Range indicator */}
-              <line>
+              <line scale={[effect.radius, 1, effect.radius]}>
                 <bufferGeometry>
                   <float32BufferAttribute
                     attach="attributes-position"
-                    array={(() => {
-                      const positions = [];
-                      const segments = 64;
-                      for (let i = 0; i <= segments; i++) {
-                        const theta = (i / segments) * Math.PI * 2;
-                        positions.push(
-                          Math.cos(theta) * effect.radius,
-                          0.1,
-                          Math.sin(theta) * effect.radius
-                        );
-                      }
-                      return new Float32Array(positions);
-                    })()}
+                    array={new Float32Array(
+                      Array.from({ length: 65 }, (_, i) => {
+                        const theta = (i / 64) * Math.PI * 2;
+                        return [Math.cos(theta), 0.1, Math.sin(theta)];
+                      }).flat()
+                    )}
                     count={65}
                     itemSize={3}
                   />
@@ -203,37 +206,13 @@ export function SkillEffects() {
                 />
               </line>
 
-              {/* Ambient light */}
+              {/* Cloud light */}
               <pointLight
                 color={effect.color}
                 intensity={2}
                 distance={effect.radius * 2}
                 decay={2}
                 position={[0, 8, 0]}
-              />
-            </group>
-          );
-        } else if (effect.type === 'lightning') {
-          const age = (Date.now() - effect.startTime) / 1000;
-          const progress = Math.min(age / effect.duration, 1);
-          const opacity = Math.max(0, 1 - progress * 2);
-          const scale = progress < 0.1 ? progress * 10 : 1;
-
-          return (
-            <group key={`${effect.id}-${frameCount}`}>
-              <mesh
-                position={[effect.position.x, effect.position.y + 2, effect.position.z]}
-                scale={[0.2 * scale, 4 * scale, 0.2 * scale]}
-              >
-                <cylinderGeometry args={[1, 0, 1, 6]} />
-                <meshBasicMaterial color={effect.color} transparent opacity={opacity} />
-              </mesh>
-              <pointLight
-                position={[effect.position.x, effect.position.y + 2, effect.position.z]}
-                color={effect.color}
-                intensity={10 * opacity}
-                distance={5}
-                decay={2}
               />
             </group>
           );

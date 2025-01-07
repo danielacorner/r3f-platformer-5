@@ -44,7 +44,7 @@ export function updateLightningStorm(
       const targetCreep = creepsInRange[Math.floor(Math.random() * creepsInRange.length)];
       const targetPos = new Vector3(targetCreep.position[0], targetCreep.position[1], targetCreep.position[2]);
 
-      // Create lightning strike effect
+      // Create main lightning strike
       const strikeEffect = {
         id: Math.random().toString(),
         type: 'lightning',
@@ -52,7 +52,7 @@ export function updateLightningStorm(
         startTime: now,
         duration: 0.3,
         radius: 0.5,
-        color: effect.color,
+        color: '#80ffff',
       };
 
       // Add strike effect to activeEffects
@@ -67,6 +67,9 @@ export function updateLightningStorm(
 
       // Notify that effects have changed
       window.dispatchEvent(new CustomEvent('effectsChanged'));
+    } else {
+      // If no creeps in range, just update next strike time
+      effect.nextStrikeTime = now + effect.strikeInterval;
     }
   }
 

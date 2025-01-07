@@ -1,7 +1,5 @@
-import { useRef, useEffect } from 'react';
-import { Cloud } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
-import { Vector3, Color } from 'three';
+import { useRef, memo, useMemo } from 'react';
+import { Vector3, Float32BufferAttribute } from 'three';
 import { LightningStormShaderMaterial } from './SkillEffects/shaders/LightningStormShader';
 import { extend } from '@react-three/fiber';
 
@@ -13,18 +11,16 @@ interface LightningStormProps {
   level: number;
 }
 
-export function LightningStorm({ position, radius, level }: LightningStormProps) {
-  const cloudRef = useRef();
-  const shaderRef = useRef();
-  const lightRef = useRef();
-  const time = useRef(0);
+export const MemoizedStorm = memo(function LightningStorm({ position, radius, level }: LightningStormProps) {
+  const shaderRef = useRef<THREE.ShaderMaterial>();
+  const lightRef = useRef<THREE.PointLight>();
 
   // Create range indicator
   const rangeIndicator = useRef();
   const segments = 64;
   const rangeGeometry = useMemo(() => {
     const geometry = new THREE.BufferGeometry();
-    const positions = [];
+    const positions: number[] = [];
     for (let i = 0; i <= segments; i++) {
       const theta = (i / segments) * Math.PI * 2;
       positions.push(
@@ -33,47 +29,12 @@ export function LightningStorm({ position, radius, level }: LightningStormProps)
         Math.sin(theta) * radius
       );
     }
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
     return geometry;
   }, [radius]);
 
-  useFrame((state, delta) => {
-    if (shaderRef.current) {
-      time.current += delta;
-      shaderRef.current.uniforms.time.value = time.current;
-      
-      // Animate cloud rotation
-      if (cloudRef.current) {
-        cloudRef.current.rotation.y += delta * 0.2;
-      }
-
-      // Animate range indicator
-      if (rangeIndicator.current) {
-        rangeIndicator.current.material.dashOffset -= delta * 2;
-      }
-    }
-  });
-
   return (
     <group position={position}>
-      {/* Storm cloud */}
-      <Cloud
-        ref={cloudRef}
-        opacity={0.5}
-        speed={0.4} // Rotation speed
-        width={10}
-        depth={2.5}
-        segments={20}
-      >
-        <meshStandardMaterial
-          ref={shaderRef}
-          transparent
-          opacity={0.6}
-          color="#7c3aed"
-          emissive="#7c3aed"
-          emissiveIntensity={0.5}
-        />
-      </Cloud>
 
       {/* Electric effect overlay */}
       <mesh>
@@ -111,3 +72,4 @@ export function LightningStorm({ position, radius, level }: LightningStormProps)
     </group>
   );
 }
+);

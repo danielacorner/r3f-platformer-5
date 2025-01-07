@@ -1,6 +1,5 @@
 import { Vector3 } from "three";
 import { activeEffects } from "./SkillEffects";
-import * as THREE from 'three';
 import { useGameStore } from "../../../store/gameStore";
 
 const STORM_RADIUS = 12;
@@ -18,14 +17,14 @@ export const getLightningStormStats = (level: number) => ({
 export function castLightningStorm(position: Vector3, level: number) {
   const stats = getLightningStormStats(level);
   const playerRef = useGameStore.getState().playerRef;
-  
+
   // Get player position
   let stormPosition = position.clone();
   if (playerRef) {
     const playerPos = playerRef.translation();
     stormPosition = new Vector3(playerPos.x, playerPos.y, playerPos.z);
   }
-  
+
   // Create the main storm effect
   const stormEffect = {
     id: Math.random().toString(),
@@ -35,12 +34,13 @@ export function castLightningStorm(position: Vector3, level: number) {
     duration: stats.duration,
     radius: stats.radius,
     damage: stats.damage,
-    color: '#7c3aed',
+    color: '#a786e0',
     nextStrikeTime: Date.now(),
     strikeInterval: stats.strikeInterval,
     remainingStrikes: stats.strikeCount,
     level,
-    followPlayer: true
+    followPlayer: true,
+    seed: Math.random()
   };
 
   // Add main storm effect

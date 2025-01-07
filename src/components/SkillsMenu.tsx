@@ -120,7 +120,7 @@ export const activeSkills: ActiveSkill[] = [
     description: 'Call down lightning strikes on random enemies',
     icon: GiLightningStorm,
     color: '#EAB308',
-    cooldown: 8,
+    cooldown: process.env.NODE_ENV === "development" ? 1 : 8,
     level: process.env.NODE_ENV === "development" ? 1 : 0,
     maxLevel: 20,
   },
