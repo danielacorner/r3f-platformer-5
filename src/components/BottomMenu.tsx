@@ -4,7 +4,6 @@ import { FaUser } from "react-icons/fa";
 import "../styles/BottomMenu.css";
 import { ActiveSkill, activeSkills, SkillsMenu } from "./SkillsMenu";
 import { castLightningStorm } from './skills/SkillEffects/castLightningStorm';
-import { castTimeDilation } from './skills/SkillEffects/castTimeDilation';
 import { castMagicMissiles } from './skills/SkillEffects/castMagicMissiles';
 import { castMagicBoomerang } from './skills/SkillEffects/castMagicBoomerang';
 import { castArcaneNova } from './skills/SkillEffects/castArcaneNova';
@@ -158,9 +157,6 @@ export function BottomMenu() {
         break;
       case 'Arcane Multiplication':
         castArcaneMultiplication(position, skill.level);
-        break;
-      case 'Time Dilation':
-        castTimeDilation(position, skill.level);
         break;
     }
 

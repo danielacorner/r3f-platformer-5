@@ -26,7 +26,6 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
     isWaveInProgress,
     setIsWaveInProgress,
     setWaveStartTime,
-    timeDilation
   } = useGameStore();
 
   const waveQueue = useRef<Array<WaveCreep & { waveId: number }>>([]);
@@ -214,9 +213,6 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
       const deltaTime = (timestamp - lastUpdateTimeRef.current) / 1000;
       lastUpdateTimeRef.current = timestamp;
 
-      // Apply time dilation to delta
-      const dilatedDelta = deltaTime * timeDilation;
-
       // Update creep positions
       const updatedCreeps = creeps.map(creep => {
         if (!creep || !creep.position) return creep;
@@ -240,7 +236,7 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
         }
 
         direction.normalize();
-        const movement = direction.multiplyScalar(creep.speed * dilatedDelta);
+        const movement = direction.multiplyScalar(creep.speed * deltaTime);
         const newPosition = currentPosition.add(movement);
 
         return {
@@ -268,7 +264,7 @@ export function WaveManager({ pathPoints }: WaveManagerProps) {
       }
       lastUpdateTimeRef.current = 0;
     };
-  }, [phase, creeps, timeDilation]);
+  }, [phase, creeps]);
 
   const startWave = () => {
     if (isWaveInProgress) return;

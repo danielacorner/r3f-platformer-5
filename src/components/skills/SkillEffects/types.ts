@@ -2,7 +2,7 @@ import { Vector3 } from 'three';
 
 export interface SkillEffect {
   id: string;
-  type: 'magicMissile' | 'timeDilation' | 'arcaneNova' | 'lightning' | 'magicBoomerang' | 'inferno';
+  type: 'magicMissile' | 'arcaneNova' | 'lightning' | 'magicBoomerang' | 'inferno';
   position: Vector3;
   startTime: number;
   duration: number;

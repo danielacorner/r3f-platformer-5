@@ -50,7 +50,6 @@ interface GameState {
     [key: string]: number;
   };
   money: number;
-  timeDilation: number;
   score: number;
   lives: number;
   experience: number;
@@ -63,7 +62,7 @@ interface GameState {
     multishot: number;
   };
   wave: number;
-  creeps: CreepState[];
+  creeps: any[];
   playerRef: RapierRigidBody | null;
   orbSpeed: number;
   highlightedPathSegment: PathSegment | null;
@@ -91,7 +90,6 @@ interface GameState {
   setShowWaveIndicator: (show: boolean) => void;
   setCameraZoom: (zoom: number) => void;
   setCameraAngle: (angle: number) => void;
-  setTimeDilation: (value: number) => void;
   loseLife: () => void;
   reset: () => void;
   addExperience: (amount: number) => void;
@@ -116,10 +114,8 @@ const initialState: GameState = {
     'Shield Burst': 0,
     'Lightning Storm': 0,
     'Arcane Multiplication': 0,
-    'Time Dilation': 0,
   },
   money: 1000,
-  timeDilation: 1,
   score: 0,
   lives: 20,
   experience: 0,
@@ -160,7 +156,6 @@ const initialState: GameState = {
   setShowWaveIndicator: () => { },
   setCameraZoom: () => { },
   setCameraAngle: () => { },
-  setTimeDilation: () => { },
   loseLife: () => { },
   reset: () => { },
   addExperience: () => { },
@@ -357,6 +352,5 @@ export const useGameStore = create<GameState>((set, get) => ({
     const newAngle = Math.max(0.2, Math.min(0.8, currentAngle + delta));
     set({ cameraAngle: newAngle });
   },
-  setTimeDilation: (value: number) => set({ timeDilation: value }),
   setCreeps: (creeps: CreepState[]) => set({ creeps }),
 }));

@@ -6,7 +6,6 @@ import * as THREE from 'three';
 import { extend } from '@react-three/fiber';
 import { ArcaneNovaShaderMaterial } from './shaders/ArcaneNovaShader';
 import { updateMagicMissile } from './effectHandlers/magicMissileHandler';
-import { updateTimeDilation } from './effectHandlers/timeDilationHandler';
 import { updateArcaneNova } from './effectHandlers/arcaneNovaHandler';
 import { updateLightning } from './effectHandlers/lightningHandler';
 import { updateBoomerang } from './effectHandlers/boomerangHandler';
@@ -37,62 +36,6 @@ interface SkillEffect {
 }
 
 export let activeEffects: SkillEffect[] = [];
-
-export const MISSILE_COLOR = '#6bb7c8';  // Light blue
-const GRAVITY = new Vector3(0, -9.8 * 3, 0);
-const MAX_SEEK_DISTANCE = 50;  // Increased from 15
-const BOOMERANG_COLOR = '#8B4513';  // Saddle brown for wooden look
-const BOOMERANG_HIGHLIGHT = '#DEB887';  // Burlywood for wood grain
-const BOOMERANG_GLOW = '#87CEFA';  // Light blue for magic effect
-const BOOMERANG_LENGTH = 0.4;  // Reduced to 1/4 of previous size
-const BOOMERANG_WIDTH = 0.1;  // Reduced to 1/4 of previous size
-const BOOMERANG_THICKNESS = 0.05;  // Reduced to 1/4 of previous size
-const BOOMERANG_SPIN_SPEED = 15;     // Slightly slower for more magical feel
-const BOOMERANG_CURVE = 15; // Reduced for smoother arc
-const BOOMERANG_RETURN_RADIUS = 2.5; // Increased catch radius
-const BOOMERANG_RETURN_SPEED = 30; // Faster return speed
-const BOOMERANG_MAX_DURATION = 8; // Maximum duration before forced removal
-const BOOMERANG_SEEK_STRENGTH = 8; // How strongly it seeks enemies
-const BOOMERANG_MAX_DISTANCE = 20; // Maximum distance from player
-const SEEK_FORCE = 60;  // Increased from 35
-const MAX_SPEED = 30;  // Increased from 25
-const HORIZONTAL_SEEK_HEIGHT = 2;
-const HIT_RADIUS = 2.5;  // Increased hit radius with small explosion effect
-const BOOMERANG_SCALE = 2
-const BOOMERANG_MIN_HEIGHT = 1.0; // Minimum height above ground
-const NOVA_CONFIG = {
-  geometry: new THREE.RingGeometry(0.9, 1, 24),
-  material: new THREE.MeshBasicMaterial({
-    color: '#8A2BE2',
-    transparent: true,
-    side: THREE.DoubleSide
-  })
-};
-const LIGHTNING_CONFIG = {
-  geometry: new THREE.CylinderGeometry(0.1, 0.3, 15, 8),
-  material: new THREE.MeshBasicMaterial({
-    color: '#7c3aed',
-    transparent: true,
-    side: THREE.DoubleSide
-  })
-};
-const INFERNO_CONFIG = {
-  particleCount: 50,
-  geometry: new THREE.SphereGeometry(0.2, 8, 8),
-  material: new THREE.MeshBasicMaterial({
-    color: '#dc2626',
-    transparent: true,
-    side: THREE.DoubleSide
-  })
-};
-const TIME_DILATION_CONFIG = {
-  geometry: new THREE.TorusGeometry(1, 0.1, 16, 32),
-  material: new THREE.MeshBasicMaterial({
-    color: '#0891b2',
-    transparent: true,
-    side: THREE.DoubleSide
-  })
-};
 
 export function findNearestCreep(position: Vector3, creeps: any[]): { creep: any, position: Vector3 } | null {
   if (!creeps || creeps.length === 0) return null;
@@ -125,18 +68,18 @@ export function findNearestCreep(position: Vector3, creeps: any[]): { creep: any
 }
 
 export function SkillEffects() {
-  const { creeps, damageCreep, setTimeDilation } = useGameStore();
+  const { creeps, damageCreep } = useGameStore();
   const [effectsCount, setEffectsCount] = useState(0);
   const [frameCount, setFrameCount] = useState(0);
 
   // Trail particle setup
   const trailGeometry = useMemo(() => new THREE.SphereGeometry(0.15, 8, 8), []);
   const trailMaterial = useMemo(() => new THREE.MeshBasicMaterial({
-    color: '#9F7AEA', // Slightly brighter purple
+    color: '#9F7AEA',
     transparent: true,
     opacity: 0.8,
     depthWrite: false,
-    blending: THREE.AdditiveBlending // Add glow effect
+    blending: THREE.AdditiveBlending
   }), []);
 
   const trailInstancesRef = useRef<InstancedMesh>();
@@ -147,28 +90,14 @@ export function SkillEffects() {
 
   useEffect(() => {
     const handleEffectsChanged = () => {
-      setEffectsCount(prev => prev + 1);
+      setEffectsCount(activeEffects.length);
     };
-    window.addEventListener('effectsChanged', handleEffectsChanged);
-    return () => window.removeEventListener('effectsChanged', handleEffectsChanged);
+
+    // Cleanup function
+    return () => {
+      activeEffects = [];
+    };
   }, []);
-
-  useEffect(() => {
-    const checkTimeDilation = () => {
-      const now = Date.now();
-      const hasActiveEffects = timeDilationRef.current.activeEffects.size > 0;
-      const isRecent = now - timeDilationRef.current.lastUpdate < 100; // 100ms threshold
-
-      if (hasActiveEffects && isRecent) {
-        setTimeDilation(0.3); // Apply slowdown
-      } else {
-        setTimeDilation(1); // Reset to normal speed
-      }
-    };
-
-    const interval = setInterval(checkTimeDilation, 100);
-    return () => clearInterval(interval);
-  }, [setTimeDilation]);
 
   useFrame((state, delta) => {
     setFrameCount(prev => (prev + 1) % 1000000);
@@ -182,8 +111,6 @@ export function SkillEffects() {
         return updateMagicMissile(effect, delta, creeps, damageCreep, trailsRef, now);
       } else if (effect.type === 'magicBoomerang') {
         return updateBoomerang(effect, delta, creeps, damageCreep, trailsRef, now);
-      } else if (effect.type === 'timeDilation') {
-        return updateTimeDilation(effect, now, creeps);
       } else if (effect.type === 'arcaneNova') {
         return updateArcaneNova(effect, now, creeps, damageCreep);
       } else if (effect.type === 'lightning') {
@@ -200,8 +127,8 @@ export function SkillEffects() {
       for (const [_, trail] of trailsRef.current.entries()) {
         for (let i = 0; i < trail.length; i++) {
           const pos = trail[i];
-          const scale = 1.5 * (1 - (i / trail.length)); // Larger base scale
-          
+          const scale = 1.5 * (1 - (i / trail.length));
+
           dummy.position.copy(pos);
           dummy.scale.set(scale, scale, scale);
           dummy.updateMatrix();
@@ -212,7 +139,7 @@ export function SkillEffects() {
       }
 
       trailInstancesRef.current.instanceMatrix.needsUpdate = true;
-      setTotalTrailParticles(Math.max(100, instanceIndex)); // Keep minimum size of 100
+      setTotalTrailParticles(Math.max(100, instanceIndex));
     }
   });
 
@@ -226,8 +153,6 @@ export function SkillEffects() {
 
       {/* Render effects */}
       {activeEffects.map(effect => {
-        const currentTime = Date.now();
-
         if (effect.type === 'magicMissile') {
           return (
             <group key={`${effect.id}-${frameCount}`}>
@@ -244,11 +169,11 @@ export function SkillEffects() {
         } else if (effect.type === 'magicBoomerang') {
           // Horizontal spin with slight tilt for more dynamic look
           const wobble = Math.sin(effect.age * 5) * 0.05;
-          const rotation = [0, effect.age * BOOMERANG_SPIN_SPEED, wobble];
+          const rotation = [0, effect.age * 15, wobble];
 
           return (
             <group key={`${effect.id}-${frameCount}`}>
-              <group scale={BOOMERANG_SCALE}
+              <group scale={2}
                 position={effect.position.toArray()}
                 rotation={rotation}
               >
@@ -256,29 +181,29 @@ export function SkillEffects() {
                 <group rotation={[Math.PI / 2, 0, 0]}>  {/* Rotate to horizontal orientation */}
                   {/* Vertical arm */}
                   <mesh>
-                    <boxGeometry args={[BOOMERANG_WIDTH, BOOMERANG_LENGTH, BOOMERANG_THICKNESS]} />
+                    <boxGeometry args={[0.1, 0.4, 0.05]} />
                     <meshStandardMaterial
-                      color={BOOMERANG_COLOR}
+                      color="#8B4513"
                       metalness={0.1}
                       roughness={0.7}
                     />
                   </mesh>
 
                   {/* Horizontal arm */}
-                  <mesh position={[BOOMERANG_LENGTH / 2 - BOOMERANG_WIDTH / 2, BOOMERANG_LENGTH / 2 - BOOMERANG_WIDTH / 2, 0]}>
-                    <boxGeometry args={[BOOMERANG_LENGTH, BOOMERANG_WIDTH, BOOMERANG_THICKNESS]} />
+                  <mesh position={[0.4 / 2 - 0.1 / 2, 0.4 / 2 - 0.1 / 2, 0]}>
+                    <boxGeometry args={[0.4, 0.1, 0.05]} />
                     <meshStandardMaterial
-                      color={BOOMERANG_COLOR}
+                      color="#8B4513"
                       metalness={0.1}
                       roughness={0.7}
                     />
                   </mesh>
 
                   {/* Wood grain highlights */}
-                  <mesh position={[0, 0, BOOMERANG_THICKNESS / 2 + 0.001]}>
-                    <boxGeometry args={[BOOMERANG_WIDTH * 0.8, BOOMERANG_LENGTH * 0.9, 0.001]} />
+                  <mesh position={[0, 0, 0.05 / 2 + 0.001]}>
+                    <boxGeometry args={[0.1 * 0.8, 0.4 * 0.9, 0.001]} />
                     <meshBasicMaterial
-                      color={BOOMERANG_HIGHLIGHT}
+                      color="#DEB887"
                       transparent
                       opacity={0.3}
                     />
@@ -287,7 +212,7 @@ export function SkillEffects() {
 
                 {/* Magic effect */}
                 <pointLight
-                  color={BOOMERANG_GLOW}
+                  color="#87CEFA"
                   intensity={1}
                   distance={2}
                 />
@@ -295,7 +220,7 @@ export function SkillEffects() {
             </group>
           );
         } else if (effect.type === 'arcaneNova') {
-          const age = (currentTime - effect.startTime) / 1000;
+          const age = (Date.now() - effect.startTime) / 1000;
           const progress = Math.min(age / effect.duration, 1);
           const opacity = Math.max(0, 1 - (progress - 0.5) * 2);
           const scale = Math.min(progress * 2, 1) * effect.radius;
@@ -341,10 +266,10 @@ export function SkillEffects() {
             </group>
           );
         } else if (effect.type === 'lightning') {
-          const age = (currentTime - effect.startTime) / 1000;
+          const age = (Date.now() - effect.startTime) / 1000;
           const progress = Math.min(age / effect.duration, 1);
-          const opacity = Math.max(0, 1 - progress * 2); // Faster fade out
-          const scale = progress < 0.1 ? progress * 10 : 1; // Quick scale up
+          const opacity = Math.max(0, 1 - progress * 2);
+          const scale = progress < 0.1 ? progress * 10 : 1;
 
           return (
             <group key={`${effect.id}-${frameCount}`}>
@@ -360,110 +285,6 @@ export function SkillEffects() {
                 color="#00ffff"
                 intensity={10 * opacity}
                 distance={5}
-                decay={2}
-              />
-            </group>
-          );
-        } else if (effect.type === 'timeDilation') {
-          const age = (currentTime - effect.startTime) / 1000;
-          const progress = Math.min(age / effect.duration, 1);
-          const opacity = Math.min(1, Math.max(0, 1.5 - progress * 1.5));
-
-          return (
-            <group key={`${effect.id}-${frameCount}`}>
-              <mesh
-                position={[effect.position.x, effect.position.y + 0.1, effect.position.z]}
-                rotation={[-Math.PI / 2, 0, 0]}
-                scale={[effect.radius, effect.radius, 1]}
-              >
-                <ringGeometry args={[0.8, 1, 32]} />
-                <meshBasicMaterial
-                  color={effect.color}
-                  transparent
-                  opacity={opacity * 0.7}
-                  side={THREE.DoubleSide}
-                />
-              </mesh>
-              {/* Inner rings */}
-              {Array.from({ length: 3 }).map((_, i) => {
-                const ringProgress = (age * (1 - i * 0.2)) % 1;
-                const ringScale = effect.radius * ringProgress;
-                return (
-                  <mesh
-                    key={i}
-                    position={[effect.position.x, effect.position.y + 0.1, effect.position.z]}
-                    rotation={[-Math.PI / 2, 0, 0]}
-                    scale={[ringScale, ringScale, 1]}
-                  >
-                    <ringGeometry args={[0.9, 1, 32]} />
-                    <meshBasicMaterial
-                      color={effect.color}
-                      transparent
-                      opacity={opacity * (1 - ringProgress)}
-                      side={THREE.DoubleSide}
-                    />
-                  </mesh>
-                );
-              })}
-              <pointLight
-                position={[effect.position.x, effect.position.y + 2, effect.position.z]}
-                color={effect.color}
-                intensity={3 * opacity}
-                distance={effect.radius * 2}
-                decay={2}
-              />
-            </group>
-          );
-        } else if (effect.type === 'inferno') {
-          const age = (currentTime - effect.startTime) / 1000;
-          const progress = Math.min(age / effect.duration, 1);
-          const opacity = Math.min(1, Math.max(0, 1.5 - progress * 1.5));
-
-          // Generate multiple flame particles
-          return (
-            <group key={`${effect.id}-${frameCount}`}>
-              {Array.from({ length: INFERNO_CONFIG.particleCount }).map((_, i) => {
-                const angle = (i / INFERNO_CONFIG.particleCount) * Math.PI * 2;
-                const radius = effect.radius * (0.2 + Math.sin(age * 2 + i) * 0.8);
-                const height = 2 + Math.sin(age * 3 + i * 0.5) * 1.5;
-                const x = effect.position.x + Math.cos(angle) * radius;
-                const z = effect.position.z + Math.sin(angle) * radius;
-                const particleScale = 0.5 + Math.sin(age * 4 + i) * 0.5;
-
-                return (
-                  <mesh
-                    key={i}
-                    position={[x, effect.position.y + height, z]}
-                    scale={[particleScale, particleScale, particleScale]}
-                  >
-                    <primitive object={INFERNO_CONFIG.geometry} />
-                    <primitive object={INFERNO_CONFIG.material} transparent opacity={opacity * 0.7} />
-                  </mesh>
-                );
-              })}
-              {/* Central fire column */}
-              <mesh
-                position={[effect.position.x, effect.position.y + 3, effect.position.z]}
-                scale={[effect.radius * 0.5, 6, effect.radius * 0.5]}
-              >
-                <cylinderGeometry args={[1, 0.5, 1, 8]} />
-                <meshBasicMaterial color="#dc2626" transparent opacity={opacity * 0.3} />
-              </mesh>
-              {/* Ground fire ring */}
-              <mesh
-                position={[effect.position.x, effect.position.y + 0.1, effect.position.z]}
-                rotation={[-Math.PI / 2, 0, 0]}
-                scale={[effect.radius, effect.radius, 1]}
-              >
-                <ringGeometry args={[0.5, 1, 16]} />
-                <meshBasicMaterial color="#dc2626" transparent opacity={opacity * 0.5} side={THREE.DoubleSide} />
-              </mesh>
-              {/* Fire light */}
-              <pointLight
-                position={[effect.position.x, effect.position.y + 2, effect.position.z]}
-                color="#ff4444"
-                intensity={8 * opacity}
-                distance={effect.radius * 3}
                 decay={2}
               />
             </group>

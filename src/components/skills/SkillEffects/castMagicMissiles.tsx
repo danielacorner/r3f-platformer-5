@@ -1,5 +1,7 @@
 import { Vector3 } from "three";
-import { activeEffects, MISSILE_COLOR } from "./SkillEffects";
+import { activeEffects, } from "./SkillEffects";
+const MISSILE_COLOR = '#6bb7c8';  // Light blue
+
 const INITIAL_SPEED = 15;
 
 
