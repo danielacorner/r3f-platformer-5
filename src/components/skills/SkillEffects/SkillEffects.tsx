@@ -173,7 +173,7 @@ export function SkillEffects() {
 
           return (
             <group key={`${effect.id}-${frameCount}`}>
-              <group scale={2}
+              <group scale={3}
                 position={effect.position.toArray()}
                 rotation={rotation}
               >

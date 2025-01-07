@@ -105,7 +105,8 @@ export const generateWaveSet = (level: number): WaveSet => {
     } else {
       // Normal wave
       const creepTypes = ['normal', 'fast', 'armored'] as const;
-      const groupCount = 2 + Math.floor(difficulty / 2);
+      const getCreepGroupCount = (difficulty: number) => 7 + Math.floor(4 * Math.random() * (Math.random() > 0.5 ? 1 : -1)) + Math.floor(difficulty * 5)
+      const groupCount = getCreepGroupCount(difficulty);
 
       for (let j = 0; j < groupCount; j++) {
         const type = creepTypes[Math.floor(Math.random() * creepTypes.length)];

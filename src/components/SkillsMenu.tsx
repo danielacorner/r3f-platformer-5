@@ -10,6 +10,8 @@ import { RiFireFill, RiThunderstormsFill, RiContrastDrop2Fill, RiSwordFill, RiMa
 import { useGameStore } from "../store/gameStore";
 import { Tabs, Tab, Box } from "@mui/material";
 import "../styles/SkillsMenu.css";
+import { getMissileCount } from "./skills/SkillEffects/castMagicMissiles";
+import { getBoomerangCount } from "./skills/SkillEffects/castMagicBoomerang";
 
 interface SkillsMenuProps {
   isOpen: boolean;
@@ -175,9 +177,9 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
   const getSkillStats = (skill: typeof activeSkills[0], level: number) => {
     switch (skill.name) {
       case 'Magic Missiles':
-        return `Missiles: ${2 + Math.floor(level / 3)}`;
+        return `Missiles: ${getMissileCount(level)}`;
       case 'Magic Boomerang':
-        return `Boomerangs: ${1 + Math.floor(level / 5)}`;
+        return `Boomerangs: ${getBoomerangCount(level)}`;
       case 'Arcane Nova':
         return `Damage: ${Math.round((10 + level * 5) * 10) / 10}`;
       case 'Lightning Storm':
