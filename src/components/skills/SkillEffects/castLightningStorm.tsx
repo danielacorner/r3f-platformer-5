@@ -1,27 +1,36 @@
 import { Vector3 } from "three";
 import { activeEffects } from "./SkillEffects";
 import * as THREE from 'three';
+import { useGameStore } from "../../../store/gameStore";
 
-const STORM_RADIUS = 20; // 2x the usual range
+const STORM_RADIUS = 12;
 const BOLT_DAMAGE = 75;
 const STORM_DURATION = 6;
 
 export const getLightningStormStats = (level: number) => ({
-  radius: STORM_RADIUS + level * 2,
+  radius: STORM_RADIUS + level * 1.5,
   damage: BOLT_DAMAGE + level * 25,
   duration: STORM_DURATION + level * 0.5,
   strikeCount: 3 + Math.floor(level * 1.5),
-  strikeInterval: 1000 / (2 + level * 0.5)
+  strikeInterval: 500 // Strike every 0.5 seconds
 });
 
 export function castLightningStorm(position: Vector3, level: number) {
   const stats = getLightningStormStats(level);
+  const playerRef = useGameStore.getState().playerRef;
+  
+  // Get player position
+  let stormPosition = position.clone();
+  if (playerRef) {
+    const playerPos = playerRef.translation();
+    stormPosition = new Vector3(playerPos.x, playerPos.y, playerPos.z);
+  }
   
   // Create the main storm effect
   const stormEffect = {
     id: Math.random().toString(),
-    type: 'lightningStorm',
-    position: position.clone().add(new Vector3(0, 8, 0)), // Raise cloud position
+    type: 'lightningStorm' as const,
+    position: stormPosition,
     startTime: Date.now(),
     duration: stats.duration,
     radius: stats.radius,
@@ -30,41 +39,12 @@ export function castLightningStorm(position: Vector3, level: number) {
     nextStrikeTime: Date.now(),
     strikeInterval: stats.strikeInterval,
     remainingStrikes: stats.strikeCount,
-    level
+    level,
+    followPlayer: true
   };
 
   // Add main storm effect
   activeEffects.push(stormEffect);
-
-  // Create initial range indicator effect
-  const rangeEffect = {
-    id: Math.random().toString(),
-    type: 'stormRange',
-    position: position.clone(),
-    startTime: Date.now(),
-    duration: stats.duration,
-    radius: stats.radius,
-    color: '#7c3aed',
-    level
-  };
-
-  // Add range indicator effect
-  activeEffects.push(rangeEffect);
-
-  // Create cloud effect
-  const cloudEffect = {
-    id: Math.random().toString(),
-    type: 'stormCloud',
-    position: position.clone().add(new Vector3(0, 8, 0)),
-    startTime: Date.now(),
-    duration: stats.duration,
-    radius: 5,
-    color: '#7c3aed',
-    level
-  };
-
-  // Add cloud effect
-  activeEffects.push(cloudEffect);
 
   // Notify that effects have changed
   window.dispatchEvent(new CustomEvent('effectsChanged'));

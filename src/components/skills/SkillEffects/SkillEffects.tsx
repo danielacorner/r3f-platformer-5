@@ -138,8 +138,9 @@ export function SkillEffects() {
             </group>
           );
         } else if (effect.type === 'lightningStorm') {
+          const pos = effect.position.toArray();
           return (
-            <group key={`${effect.id}-${frameCount}`}>
+            <group key={`${effect.id}-${frameCount}`} position={pos}>
               {/* Storm cloud */}
               <group position={[0, 8, 0]}>
                 <Cloud
@@ -225,11 +226,11 @@ export function SkillEffects() {
                 scale={[0.2 * scale, 4 * scale, 0.2 * scale]}
               >
                 <cylinderGeometry args={[1, 0, 1, 6]} />
-                <meshBasicMaterial color="#00ffff" transparent opacity={opacity} />
+                <meshBasicMaterial color={effect.color} transparent opacity={opacity} />
               </mesh>
               <pointLight
                 position={[effect.position.x, effect.position.y + 2, effect.position.z]}
-                color="#00ffff"
+                color={effect.color}
                 intensity={10 * opacity}
                 distance={5}
                 decay={2}
