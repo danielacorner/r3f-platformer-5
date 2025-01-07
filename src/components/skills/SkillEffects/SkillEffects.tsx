@@ -123,50 +123,82 @@ export function SkillEffects() {
 
       {/* Render effects */}
       {activeEffects.map(effect => {
-        if (effect.type === 'lightning') {
+
+        if (effect.type === 'magicMissile') {
+          return (
+            <group key={`${effect.id}-${frameCount}`}>
+              <mesh position={effect.position.toArray()}>
+                <sphereGeometry args={[effect.radius, 32, 32]} />
+                <meshStandardMaterial
+                  color={effect.color}
+                  emissive={effect.color}
+                  emissiveIntensity={2}
+                />
+              </mesh>
+            </group>
+          );
+        } else if (effect.type === 'magicBoomerang') {
+          const wobble = Math.sin(effect.age * 5) * 0.05;
+          const rotation = [0, effect.age * 15, wobble];
+          return (
+            <group key={`${effect.id}-${frameCount}`}>
+              <group scale={3} position={effect.position.toArray()} rotation={rotation}>
+                <group rotation={[Math.PI / 2, 0, 0]}>
+                  <mesh>
+                    <boxGeometry args={[0.1, 0.4, 0.05]} />
+                    <meshStandardMaterial color="#8B4513" metalness={0.1} roughness={0.7} />
+                  </mesh>
+                  <mesh position={[0.4 / 2 - 0.1 / 2, 0.4 / 2 - 0.1 / 2, 0]}>
+                    <boxGeometry args={[0.4, 0.1, 0.05]} />
+                    <meshStandardMaterial color="#8B4513" metalness={0.1} roughness={0.7} />
+                  </mesh>
+                </group>
+                <pointLight color="#87CEFA" intensity={1} distance={2} />
+              </group>
+            </group>
+          );
+        } else if (effect.type === 'arcaneNova') {
           const age = (Date.now() - effect.startTime) / 1000;
           const progress = Math.min(age / effect.duration, 1);
-          const opacity = Math.max(0, 1 - progress * 2);
+          const opacity = Math.max(0, 1 - (progress - 0.5) * 2);
+          const scale = Math.min(progress * 2, 1) * effect.radius;
+
+          // Apply damage during expansion phase
+          if (progress < 0.5) {
+            creeps.forEach(creep => {
+              if (!creep.isDead) {
+                const creepPos = new Vector3(...creep.position);
+                const distance = effect.position.distanceTo(creepPos);
+                if (distance < scale) {
+                  damageCreep(creep.id, effect.damage);
+                }
+              }
+            });
+          }
 
           return (
             <group key={`${effect.id}-${frameCount}`}>
-              {/* Outer glow */}
               <mesh
-                position={[effect.position.x, effect.position.y + 4, effect.position.z]}
+                position={[effect.position.x, effect.position.y + 0.1, effect.position.z]}
+                rotation={[-Math.PI / 2, 0, 0]}
+                scale={[scale, scale, 1]}
               >
-                <cylinderGeometry args={[0.8, 0.8, 8, 16]} />
-                <primitive object={lightningMaterial} opacity={opacity * 0.5} />
+                <ringGeometry args={[0.8, 1, 32]} />
+                <arcaneNovaShaderMaterial
+                  time={age}
+                  scale={scale}
+                  opacity={opacity}
+                  transparent
+                  depthWrite={false}
+                  depthTest={false}
+                  side={THREE.DoubleSide}
+                />
               </mesh>
-
-              {/* Core bolt */}
-              <mesh
-                position={[effect.position.x, effect.position.y + 4, effect.position.z]}
-              >
-                <cylinderGeometry args={[0.4, 0.4, 8, 16]} />
-                <primitive object={lightningCoreMaterial} opacity={opacity} />
-              </mesh>
-
-              {/* Impact flash */}
-              <mesh
-                position={[effect.position.x, effect.position.y, effect.position.z]}
-              >
-                <sphereGeometry args={[2, 32, 32]} />
-                <primitive object={lightningMaterial} opacity={opacity * 0.7} />
-              </mesh>
-
-              {/* Impact lights */}
               <pointLight
-                position={[effect.position.x, effect.position.y + 4, effect.position.z]}
-                color="#80ffff"
-                intensity={50}
-                distance={15}
-                decay={2}
-              />
-              <pointLight
-                position={[effect.position.x, effect.position.y, effect.position.z]}
-                color="#ffffff"
-                intensity={30}
-                distance={10}
+                position={[effect.position.x, effect.position.y + 1, effect.position.z]}
+                color="#8B5CF6"
+                intensity={5 * opacity}
+                distance={scale * 2}
                 decay={2}
               />
             </group>
