@@ -1,13 +1,37 @@
-import { create } from 'zustand';
-import { RapierRigidBody } from '@react-three/rapier';
+import { create } from "zustand";
+import { RapierRigidBody } from "@react-three/rapier";
 
 export type ElementType =
-  | 'storm1' | 'storm2' | 'storm3' | 'storm4' | 'storm5'
-  | 'fire1' | 'fire2' | 'fire3' | 'fire4' | 'fire5'
-  | 'ice1' | 'ice2' | 'ice3' | 'ice4' | 'ice5'
-  | 'nature1' | 'nature2' | 'nature3' | 'nature4' | 'nature5'
-  | 'water1' | 'water2' | 'water3' | 'water4' | 'water5'
-  | 'dark1' | 'dark2' | 'dark3' | 'dark4' | 'dark5';
+  | "storm1"
+  | "storm2"
+  | "storm3"
+  | "storm4"
+  | "storm5"
+  | "fire1"
+  | "fire2"
+  | "fire3"
+  | "fire4"
+  | "fire5"
+  | "ice1"
+  | "ice2"
+  | "ice3"
+  | "ice4"
+  | "ice5"
+  | "nature1"
+  | "nature2"
+  | "nature3"
+  | "nature4"
+  | "nature5"
+  | "water1"
+  | "water2"
+  | "water3"
+  | "water4"
+  | "water5"
+  | "dark1"
+  | "dark2"
+  | "dark3"
+  | "dark4"
+  | "dark5";
 
 type PlaceableObjectType = ElementType;
 interface CreepState {
@@ -38,7 +62,7 @@ interface PathSegment {
 }
 
 interface GameState {
-  phase: 'prep' | 'combat' | 'victory';
+  phase: "prep" | "combat" | "victory";
   currentLevel: number;
   timer: number;
   enemiesAlive: number;
@@ -71,7 +95,7 @@ interface GameState {
   showWaveIndicator: boolean;
   cameraZoom: number;
   cameraAngle: number;
-  setPhase: (phase: 'prep' | 'combat' | 'victory') => void;
+  setPhase: (phase: "prep" | "combat" | "victory") => void;
   setCurrentLevel: (level: number) => void;
   setTimer: (timer: number) => void;
   setEnemiesAlive: (count: number) => void;
@@ -96,11 +120,10 @@ interface GameState {
   addScore: (amount: number) => void;
   updateCreep: (creepId: string, updates: Partial<CreepState>) => void;
   upgradeSkill: (skillName: string, cost: number) => void;
-  setCreeps: (creeps: CreepState[]) => void;
 }
 
 const initialState: GameState = {
-  phase: 'prep' as 'prep' | 'combat' | 'victory',
+  phase: "prep" as "prep" | "combat" | "victory",
   currentLevel: 1,
   timer: 0,
   enemiesAlive: 0,
@@ -109,18 +132,18 @@ const initialState: GameState = {
   selectedObjectType: null,
   selectedObjectLevel: null,
   skillLevels: {
-    'Magic Missiles': 1,
-    'Magic Boomerang': 0,
-    'Shield Burst': 0,
-    'Lightning Storm': 0,
-    'Arcane Multiplication': 0,
+    "Magic Missiles": 1,
+    "Magic Boomerang": 0,
+    "Shield Burst": 0,
+    "Lightning Storm": 0,
+    "Arcane Multiplication": 0,
   },
   money: 1000,
   score: 0,
   lives: 20,
   experience: 0,
   level: 1,
-  skillPoints: process.env.NODE_ENV === 'development' ? 99 : 8,
+  skillPoints: process.env.NODE_ENV === "development" ? 99 : 8,
   upgrades: {
     damage: 0,
     speed: 0,
@@ -137,33 +160,32 @@ const initialState: GameState = {
   showWaveIndicator: false,
   cameraZoom: 1,
   cameraAngle: 0.5,
-  setPhase: () => { },
-  setCurrentLevel: () => { },
-  setTimer: () => { },
-  setEnemiesAlive: () => { },
-  setIsSpawning: () => { },
-  setLevelComplete: () => { },
-  setWave: () => { },
-  addCreep: () => { },
-  incrementLevel: () => { },
-  addMoney: () => { },
-  setWaveStartTime: () => { },
-  removeCreep: () => { },
-  removeProjectile: () => { },
-  setPlayerRef: () => { },
-  setOrbSpeed: () => { },
-  setHighlightedPathSegment: () => { },
-  setShowWaveIndicator: () => { },
-  setCameraZoom: () => { },
-  setCameraAngle: () => { },
-  loseLife: () => { },
-  reset: () => { },
-  addExperience: () => { },
-  addScore: () => { },
-  updateCreep: () => { },
-  upgradeSkill: () => { },
-  setCreeps: () => { }
-}
+  setPhase: () => {},
+  setCurrentLevel: () => {},
+  setTimer: () => {},
+  setEnemiesAlive: () => {},
+  setIsSpawning: () => {},
+  setLevelComplete: () => {},
+  setWave: () => {},
+  addCreep: () => {},
+  incrementLevel: () => {},
+  addMoney: () => {},
+  setWaveStartTime: () => {},
+  removeCreep: () => {},
+  removeProjectile: () => {},
+  setPlayerRef: () => {},
+  setOrbSpeed: () => {},
+  setHighlightedPathSegment: () => {},
+  setShowWaveIndicator: () => {},
+  setCameraZoom: () => {},
+  setCameraAngle: () => {},
+  loseLife: () => {},
+  reset: () => {},
+  addExperience: () => {},
+  addScore: () => {},
+  updateCreep: () => {},
+  upgradeSkill: () => {},
+};
 
 export const useGameStore = create<GameState>((set, get) => ({
   ...initialState,
@@ -199,71 +221,78 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ wave });
   },
 
-  setSelectedObjectType: (type, level = null) => set({ selectedObjectType: type, selectedObjectLevel: level }),
+  setSelectedObjectType: (type, level = null) =>
+    set({ selectedObjectType: type, selectedObjectLevel: level }),
 
-  addMoney: (amount) => set(state => ({ money: state.money + amount })),
+  addMoney: (amount) => set((state) => ({ money: state.money + amount })),
 
-  spendMoney: (amount) => set(state => ({ money: state.money - amount })),
+  spendMoney: (amount) => set((state) => ({ money: state.money - amount })),
 
-  addScore: (amount) => set(state => ({ score: state.score + amount })),
+  addScore: (amount) => set((state) => ({ score: state.score + amount })),
 
-  loseLife: () => set(state => {
-    const newLives = state.lives - 1;
-    if (newLives <= 0) {
-      return {
-        ...initialState,
-        phase: 'prep',
-        currentLevel: 1
-      };
-    }
-    return { lives: newLives };
-  }),
+  loseLife: () =>
+    set((state) => {
+      const newLives = state.lives - 1;
+      if (newLives <= 0) {
+        return {
+          ...initialState,
+          phase: "prep",
+          currentLevel: 1,
+        };
+      }
+      return { lives: newLives };
+    }),
 
-  resetLevel: () => set(state => ({
-    ...initialState,
-    currentLevel: state.currentLevel
-  })),
+  resetLevel: () =>
+    set((state) => ({
+      ...initialState,
+      currentLevel: state.currentLevel,
+    })),
 
   addCreep: (creep) => {
     console.log(`Adding creep: ${creep.id}`);
-    set(state => ({
+    set((state) => ({
       creeps: [...state.creeps, creep],
-      enemiesAlive: state.enemiesAlive + 1
+      enemiesAlive: state.enemiesAlive + 1,
     }));
   },
 
   removeCreep: (id) => {
     console.log(`Removing creep: ${id}`);
-    set(state => {
-      const remainingCreeps = state.creeps.filter(c => c.id !== id);
+    set((state) => {
+      const remainingCreeps = state.creeps.filter((c) => c.id !== id);
       const newEnemiesAlive = remainingCreeps.length;
-      console.log(`Enemies alive after removal: ${newEnemiesAlive} (based on ${remainingCreeps.length} remaining creeps)`);
+      console.log(
+        `Enemies alive after removal: ${newEnemiesAlive} (based on ${remainingCreeps.length} remaining creeps)`
+      );
 
       return {
         creeps: remainingCreeps,
-        enemiesAlive: newEnemiesAlive
+        enemiesAlive: newEnemiesAlive,
       };
     });
   },
 
   updateCreep: (id, updates) => {
-    set(state => ({
-      creeps: state.creeps.map(c =>
-        c.id === id ? { ...c, ...updates } : c
-      )
+    set((state) => ({
+      creeps: state.creeps.map((c) => (c.id === id ? { ...c, ...updates } : c)),
     }));
   },
 
   damageCreep: (id, damage) => {
     const state = get();
-    const creep = state.creeps.find(c => c.id === id);
+    const creep = state.creeps.find((c) => c.id === id);
     if (!creep) return;
 
     const newHealth = creep.health - damage;
-    console.log(`Creep ${id} damaged. Health: ${creep.health} -> ${newHealth}. Enemies alive: ${state.enemiesAlive}`);
+    console.log(
+      `Creep ${id} damaged. Health: ${creep.health} -> ${newHealth}. Enemies alive: ${state.enemiesAlive}`
+    );
 
     if (newHealth <= 0) {
-      console.log(`Creep ${id} died. Enemies alive before: ${state.enemiesAlive}`);
+      console.log(
+        `Creep ${id} died. Enemies alive before: ${state.enemiesAlive}`
+      );
       state.addExperience(10 + creep.waveId * 2);
       state.addMoney(creep.value);
       state.addScore(creep.value);
@@ -274,7 +303,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   addExperience: (amount) => {
-    set(state => {
+    set((state) => {
       const newExperience = state.experience + amount;
       const expForNextLevel = state.level * 100; // Each level requires level * 100 XP
 
@@ -283,7 +312,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         return {
           experience: newExperience - expForNextLevel,
           level: state.level + 1,
-          skillPoints: state.skillPoints + 1
+          skillPoints: state.skillPoints + 1,
         };
       }
 
@@ -304,19 +333,21 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
   },
 
-  incrementLevel: () => set(state => ({
-    currentLevel: state.currentLevel + 1,
-    wave: 0
-  })),
+  incrementLevel: () =>
+    set((state) => ({
+      currentLevel: state.currentLevel + 1,
+      wave: 0,
+    })),
 
-  setPlayerRef: (ref) => set(state => {
-    // Only update if the ref has actually changed
-    if (state.playerRef !== ref) {
-      console.log('Setting player ref:', ref);
-      return { playerRef: ref };
-    }
-    return state;
-  }),
+  setPlayerRef: (ref) =>
+    set((state) => {
+      // Only update if the ref has actually changed
+      if (state.playerRef !== ref) {
+        console.log("Setting player ref:", ref);
+        return { playerRef: ref };
+      }
+      return state;
+    }),
 
   setHighlightedPathSegment: (segment) => {
     set({ highlightedPathSegment: segment });
@@ -324,23 +355,23 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   startWave: () => {
     const state = get();
-    console.log('Starting wave, current state:', state);
+    console.log("Starting wave, current state:", state);
 
     set((state) => ({
       currentWave: state.currentWave + 1,
       wave: state.currentWave + 1, // Keep wave and currentWave in sync
       showWaveIndicator: true,
-      phase: 'combat',
+      phase: "combat",
       isSpawning: true,
     }));
 
     // Hide the indicator after 1 second to allow for 2 second fade out
     setTimeout(() => {
-      console.log('Hiding wave indicator');
+      console.log("Hiding wave indicator");
       set({ showWaveIndicator: false });
     }, 1000);
 
-    console.log('Wave started, new state:', get());
+    console.log("Wave started, new state:", get());
   },
   adjustCameraZoom: (delta: number) => {
     const currentZoom = get().cameraZoom;
@@ -352,5 +383,4 @@ export const useGameStore = create<GameState>((set, get) => ({
     const newAngle = Math.max(0.2, Math.min(0.8, currentAngle + delta));
     set({ cameraAngle: newAngle });
   },
-  setCreeps: (creeps: CreepState[]) => set({ creeps }),
 }));
