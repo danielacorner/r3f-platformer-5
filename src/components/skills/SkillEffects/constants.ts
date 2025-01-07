@@ -1,4 +1,4 @@
-import { Vector3 } from 'three';
+import { Vector3 } from "three";
 
 export const GRAVITY = new Vector3(0, -20, 0);
 export const MAX_SPEED = 15;

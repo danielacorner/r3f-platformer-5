@@ -1,7 +1,13 @@
-import { Vector3 } from 'three';
-import { SkillEffect } from '../types';
-import { findNearestCreep } from '../utils';
-import { GRAVITY, HIT_RADIUS, HORIZONTAL_SEEK_HEIGHT, MAX_SPEED, SEEK_FORCE } from '../constants';
+import { Vector3 } from "three";
+import { SkillEffect } from "../types";
+import { findNearestCreep } from "../utils";
+import {
+  GRAVITY,
+  HIT_RADIUS,
+  HORIZONTAL_SEEK_HEIGHT,
+  MAX_SPEED,
+  SEEK_FORCE,
+} from "../constants";
 
 export function updateMagicMissile(
   effect: SkillEffect,
@@ -40,13 +46,13 @@ export function updateMagicMissile(
   const frameVelocity = effect.velocity.clone().multiplyScalar(delta);
   effect.position.add(frameVelocity);
 
-  if (effect.phase === 'rising') {
+  if (effect.phase === "rising") {
     // Full gravity during rising phase for parabolic arc
     effect.velocity.add(GRAVITY.clone().multiplyScalar(delta));
 
     // Transition to seeking when velocity points downward and we're above minimum height
     if (effect.velocity.y < 0 && effect.position.y > HORIZONTAL_SEEK_HEIGHT) {
-      effect.phase = 'seeking';
+      effect.phase = "seeking";
 
       // Set horizontal velocity in spawn direction but slower
       const spawnDir = (effect as any).spawnDir || new Vector3(1, 0, 0);
@@ -56,9 +62,9 @@ export function updateMagicMissile(
         spawnDir.z * MAX_SPEED * 0.5
       );
 
-      console.log('Missile transitioning to seeking phase');
+      console.log("Missile transitioning to seeking phase");
     }
-  } else if (effect.phase === 'seeking') {
+  } else if (effect.phase === "seeking") {
     const nearestCreepInfo = findNearestCreep(effect.position, creeps);
     if (nearestCreepInfo) {
       const { creep, position: creepPos } = nearestCreepInfo;
@@ -72,7 +78,8 @@ export function updateMagicMissile(
 
       // Stronger seeking force overall and even stronger at close range
       const distanceMultiplier = Math.min(3, 5 / Math.max(1, distanceToTarget));
-      const seekForce = toTarget.normalize()
+      const seekForce = toTarget
+        .normalize()
         .multiplyScalar(SEEK_FORCE * distanceMultiplier * delta);
 
       // Apply seek force
@@ -100,13 +107,20 @@ export function updateMagicMissile(
       }
 
       // Check for hits with larger radius
-      const hitDistance = effect.position.distanceTo(creepPos);
+      const hitDistance = effect.position.distanceTo(targetPos);
       if (hitDistance <= HIT_RADIUS) {
         // Apply damage with slight falloff based on distance
         const damageMultiplier = 1 - (hitDistance / HIT_RADIUS) * 0.3;
         const finalDamage = Math.floor((effect.damage || 0) * damageMultiplier);
 
-        console.log('Missile hit creep:', effect.id, 'with damage:', finalDamage, 'at distance:', hitDistance.toFixed(2));
+        console.log(
+          "Missile hit creep:",
+          effect.id,
+          "with damage:",
+          finalDamage,
+          "at distance:",
+          hitDistance.toFixed(2)
+        );
         damageCreep(creep.id, finalDamage);
 
         // Create a small explosion effect in the trail
@@ -116,11 +130,17 @@ export function updateMagicMissile(
         // Clear existing trail and add explosion particles
         trail.length = 0;
         for (let i = 0; i < 3; i++) {
-          trail.push(explosionPos.clone().add(new Vector3(
-            (Math.random() - 0.5) * 0.5,
-            (Math.random() - 0.5) * 0.5,
-            (Math.random() - 0.5) * 0.5
-          )));
+          trail.push(
+            explosionPos
+              .clone()
+              .add(
+                new Vector3(
+                  (Math.random() - 0.5) * 0.5,
+                  (Math.random() - 0.5) * 0.5,
+                  (Math.random() - 0.5) * 0.5
+                )
+              )
+          );
         }
 
         // Remove trail and effect after a short delay to show explosion
@@ -135,10 +155,10 @@ export function updateMagicMissile(
       const horizontalVel = effect.velocity.clone();
       horizontalVel.y = 0;
       if (horizontalVel.length() < 0.1) {
-        effect.phase = 'falling';
+        effect.phase = "falling";
       }
     }
-  } else if (effect.phase === 'falling') {
+  } else if (effect.phase === "falling") {
     effect.velocity.add(GRAVITY.clone().multiplyScalar(delta));
     if (effect.position.y <= 0) {
       trailsRef.current.delete(effect.id);
