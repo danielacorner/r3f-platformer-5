@@ -8,6 +8,8 @@ import { ArcaneNovaShaderMaterial } from './shaders/ArcaneNovaShader';
 import { updateMagicMissile } from './effectHandlers/magicMissileHandler';
 import { updateTimeDilation } from './effectHandlers/timeDilationHandler';
 import { updateArcaneNova } from './effectHandlers/arcaneNovaHandler';
+import { updateLightning } from './effectHandlers/lightningHandler';
+import { updateBoomerang } from './effectHandlers/boomerangHandler';
 import { SkillEffect } from './types';
 
 extend({ ArcaneNovaShaderMaterial });
@@ -183,10 +185,14 @@ export function SkillEffects() {
     activeEffects = activeEffects.filter(effect => {
       if (effect.type === 'magicMissile') {
         return updateMagicMissile(effect, delta, creeps, damageCreep, trailsRef, now);
+      } else if (effect.type === 'magicBoomerang') {
+        return updateBoomerang(effect, delta, creeps, damageCreep, trailsRef, now);
       } else if (effect.type === 'timeDilation') {
         return updateTimeDilation(effect, now, creeps);
       } else if (effect.type === 'arcaneNova') {
         return updateArcaneNova(effect, now, creeps, damageCreep);
+      } else if (effect.type === 'lightning') {
+        return updateLightning(effect, now, creeps, damageCreep);
       }
       return false;
     });
@@ -230,13 +236,15 @@ export function SkillEffects() {
 
   return (
     <group>
-      {/* Trail particles using instancing */}
-      <instancedMesh
-        ref={trailInstancesRef}
-        args={[trailGeometry, trailMaterial, Math.max(100, totalTrailParticles)]}
-      />
+      {/* Trail particles */}
+      {trailInstancesRef.current && (
+        <instancedMesh
+          ref={trailInstancesRef}
+          args={[trailGeometry, trailMaterial, totalTrailParticles]}
+        />
+      )}
 
-      {/* Missiles */}
+      {/* Render effects */}
       {activeEffects.map(effect => {
         const currentTime = Date.now();
 
@@ -361,28 +369,69 @@ export function SkillEffects() {
           return (
             <group key={`${effect.id}-${frameCount}`}>
               <mesh
-                position={[effect.position.x, effect.position.y + 7.5, effect.position.z]}
-                scale={[scale, 1, scale]}
+                position={[effect.position.x, effect.position.y + 2, effect.position.z]}
+                scale={[0.2 * scale, 4 * scale, 0.2 * scale]}
               >
-                <primitive object={LIGHTNING_CONFIG.geometry} />
-                <primitive object={LIGHTNING_CONFIG.material} transparent opacity={opacity} />
+                <cylinderGeometry args={[1, 0, 1, 6]} />
+                <meshBasicMaterial color="#00ffff" transparent opacity={opacity} />
               </mesh>
               <pointLight
-                position={[effect.position.x, effect.position.y + 1, effect.position.z]}
-                color={effect.color}
-                intensity={10 * (1 - progress)}
+                position={[effect.position.x, effect.position.y + 2, effect.position.z]}
+                color="#00ffff"
+                intensity={10 * opacity}
                 distance={5}
                 decay={2}
               />
-              {/* Ground impact effect */}
+            </group>
+          );
+        } else if (effect.type === 'timeDilation') {
+          const age = (currentTime - effect.startTime) / 1000;
+          const progress = Math.min(age / effect.duration, 1);
+          const opacity = Math.min(1, Math.max(0, 1.5 - progress * 1.5));
+
+          return (
+            <group key={`${effect.id}-${frameCount}`}>
               <mesh
                 position={[effect.position.x, effect.position.y + 0.1, effect.position.z]}
                 rotation={[-Math.PI / 2, 0, 0]}
-                scale={[effect.radius * scale * 2, effect.radius * scale * 2, 1]}
+                scale={[effect.radius, effect.radius, 1]}
               >
-                <ringGeometry args={[0.3, 1, 12]} />
-                <meshBasicMaterial color={effect.color} transparent opacity={opacity} side={THREE.DoubleSide} />
+                <ringGeometry args={[0.8, 1, 32]} />
+                <meshBasicMaterial
+                  color={effect.color}
+                  transparent
+                  opacity={opacity * 0.7}
+                  side={THREE.DoubleSide}
+                />
               </mesh>
+              {/* Inner rings */}
+              {Array.from({ length: 3 }).map((_, i) => {
+                const ringProgress = (age * (1 - i * 0.2)) % 1;
+                const ringScale = effect.radius * ringProgress;
+                return (
+                  <mesh
+                    key={i}
+                    position={[effect.position.x, effect.position.y + 0.1, effect.position.z]}
+                    rotation={[-Math.PI / 2, 0, 0]}
+                    scale={[ringScale, ringScale, 1]}
+                  >
+                    <ringGeometry args={[0.9, 1, 32]} />
+                    <meshBasicMaterial
+                      color={effect.color}
+                      transparent
+                      opacity={opacity * (1 - ringProgress)}
+                      side={THREE.DoubleSide}
+                    />
+                  </mesh>
+                );
+              })}
+              <pointLight
+                position={[effect.position.x, effect.position.y + 2, effect.position.z]}
+                color={effect.color}
+                intensity={3 * opacity}
+                distance={effect.radius * 2}
+                decay={2}
+              />
             </group>
           );
         } else if (effect.type === 'inferno') {
@@ -435,55 +484,6 @@ export function SkillEffects() {
                 color="#ff4444"
                 intensity={8 * opacity}
                 distance={effect.radius * 3}
-                decay={2}
-              />
-            </group>
-          );
-        } else if (effect.type === 'timeDilation') {
-          const age = (currentTime - effect.startTime) / 1000;
-          const progress = Math.min(age / effect.duration, 1);
-          const opacity = Math.min(1, Math.max(0, 1.5 - progress * 1.5));
-          const dilationFactor = 0.3 + (effect.level * 0.1); // 30% - 80% slowdown based on level
-
-          // Visual effect
-          return (
-            <group key={`${effect.id}-${frameCount}`}>
-              {/* Outer ring */}
-              <mesh
-                position={[effect.position.x, effect.position.y + 0.1, effect.position.z]}
-                rotation={[-Math.PI / 2, 0, 0]}
-                scale={[effect.radius, effect.radius, 1]}
-              >
-                <primitive object={TIME_DILATION_CONFIG.geometry} />
-                <primitive object={TIME_DILATION_CONFIG.material} transparent opacity={opacity * 0.7} />
-              </mesh>
-              {/* Inner rings */}
-              {Array.from({ length: 3 }).map((_, i) => {
-                const ringProgress = (age * (1 - i * 0.2)) % 1;
-                const ringScale = effect.radius * ringProgress;
-                return (
-                  <mesh
-                    key={i}
-                    position={[effect.position.x, effect.position.y + 0.1, effect.position.z]}
-                    rotation={[-Math.PI / 2, 0, 0]}
-                    scale={[ringScale, ringScale, 1]}
-                  >
-                    <ringGeometry args={[0.9, 1, 32]} />
-                    <meshBasicMaterial
-                      color={effect.color}
-                      transparent
-                      opacity={opacity * (1 - ringProgress)}
-                      side={THREE.DoubleSide}
-                    />
-                  </mesh>
-                );
-              })}
-              {/* Area light */}
-              <pointLight
-                position={[effect.position.x, effect.position.y + 2, effect.position.z]}
-                color={effect.color}
-                intensity={3 * opacity}
-                distance={effect.radius * 2}
                 decay={2}
               />
             </group>
