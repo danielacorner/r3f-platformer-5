@@ -1,7 +1,7 @@
 import { Vector3 } from "three";
 import { useGameStore } from "../../../store/gameStore";
-import { findNearestCreep } from "./SkillEffects";
 import { activeEffects } from "./SkillEffects";
+import { findNearestCreep } from "./utils";
 
 export const BOOMERANG_SPEED = 16; // Slightly faster
 

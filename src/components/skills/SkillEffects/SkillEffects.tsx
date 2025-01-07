@@ -5,72 +5,24 @@ import { useGameStore } from '../../../store/gameStore';
 import * as THREE from 'three';
 import { extend } from '@react-three/fiber';
 import { ArcaneNovaShaderMaterial } from './shaders/ArcaneNovaShader';
+import { LightningStormShaderMaterial } from './shaders/LightningStormShader';
 import { updateMagicMissile } from './effectHandlers/magicMissileHandler';
 import { updateArcaneNova } from './effectHandlers/arcaneNovaHandler';
 import { updateLightning } from './effectHandlers/lightningHandler';
 import { updateBoomerang } from './effectHandlers/boomerangHandler';
+import { updateLightningStorm } from './effectHandlers/lightningStormHandler';
+import { Cloud } from '@react-three/drei';
 import { SkillEffect } from './types';
 
-extend({ ArcaneNovaShaderMaterial });
-
-interface SkillEffect {
-  id: string;
-  type: string;
-  position: Vector3;
-  startTime: number;
-  duration: number;
-  radius: number;
-  damage?: number;
-  color: string;
-  velocity?: Vector3;
-  phase?: 'rising' | 'seeking' | 'falling' | 'outward' | 'return';
-  initialVelocity?: Vector3;
-  timeOffset?: number;
-  spawnDir?: Vector3;
-  spawnPos?: Vector3;
-  curve?: number;
-  age?: number;
-  level?: number;
-  hasHitEnemy?: boolean;
-  expansionSpeed?: number;
-}
+extend({ ArcaneNovaShaderMaterial, LightningStormShaderMaterial });
 
 export let activeEffects: SkillEffect[] = [];
-
-export function findNearestCreep(position: Vector3, creeps: any[]): { creep: any, position: Vector3 } | null {
-  if (!creeps || creeps.length === 0) return null;
-
-  // First try to find a creep within MAX_SEEK_DISTANCE
-  let nearestDistance = Infinity;
-  let nearestCreep = null;
-  let nearestPos = null;
-
-  for (const creep of creeps) {
-    if (!creep || !creep.position) continue;
-
-    const creepPos = new Vector3(...creep.position);
-    const distance = creepPos.distanceTo(position);
-
-    if (distance < nearestDistance) {
-      nearestDistance = distance;
-      nearestCreep = creep;
-      nearestPos = creepPos;
-    }
-  }
-
-  // If we found a creep, return it
-  if (nearestCreep) {
-    console.log('Found target at distance:', nearestDistance);
-    return { creep: nearestCreep, position: nearestPos! };
-  }
-
-  return null;
-}
 
 export function SkillEffects() {
   const { creeps, damageCreep } = useGameStore();
   const [effectsCount, setEffectsCount] = useState(0);
   const [frameCount, setFrameCount] = useState(0);
+  const time = useRef(0);
 
   // Trail particle setup
   const trailGeometry = useMemo(() => new THREE.SphereGeometry(0.15, 8, 8), []);
@@ -93,13 +45,15 @@ export function SkillEffects() {
       setEffectsCount(activeEffects.length);
     };
 
-    // Cleanup function
+    window.addEventListener('effectsChanged', handleEffectsChanged);
     return () => {
+      window.removeEventListener('effectsChanged', handleEffectsChanged);
       activeEffects = [];
     };
   }, []);
 
   useFrame((state, delta) => {
+    time.current += delta;
     setFrameCount(prev => (prev + 1) % 1000000);
 
     const now = Date.now();
@@ -115,6 +69,8 @@ export function SkillEffects() {
         return updateArcaneNova(effect, now, creeps, damageCreep);
       } else if (effect.type === 'lightning') {
         return updateLightning(effect, now, creeps, damageCreep);
+      } else if (effect.type === 'lightningStorm') {
+        return updateLightningStorm(effect as any, now, creeps, damageCreep);
       }
       return false;
     });
@@ -122,22 +78,17 @@ export function SkillEffects() {
     // Update instanced mesh
     if (trailInstancesRef.current) {
       let instanceIndex = 0;
-
-      // Update trail particles
       for (const [_, trail] of trailsRef.current.entries()) {
         for (let i = 0; i < trail.length; i++) {
           const pos = trail[i];
           const scale = 1.5 * (1 - (i / trail.length));
-
           dummy.position.copy(pos);
           dummy.scale.set(scale, scale, scale);
           dummy.updateMatrix();
-
           trailInstancesRef.current.setMatrixAt(instanceIndex, dummy.matrix);
           instanceIndex++;
         }
       }
-
       trailInstancesRef.current.instanceMatrix.needsUpdate = true;
       setTotalTrailParticles(Math.max(100, instanceIndex));
     }
@@ -167,101 +118,97 @@ export function SkillEffects() {
             </group>
           );
         } else if (effect.type === 'magicBoomerang') {
-          // Horizontal spin with slight tilt for more dynamic look
           const wobble = Math.sin(effect.age * 5) * 0.05;
           const rotation = [0, effect.age * 15, wobble];
-
           return (
             <group key={`${effect.id}-${frameCount}`}>
-              <group scale={3}
-                position={effect.position.toArray()}
-                rotation={rotation}
-              >
-                {/* Main L-shaped body */}
-                <group rotation={[Math.PI / 2, 0, 0]}>  {/* Rotate to horizontal orientation */}
-                  {/* Vertical arm */}
+              <group scale={3} position={effect.position.toArray()} rotation={rotation}>
+                <group rotation={[Math.PI / 2, 0, 0]}>
                   <mesh>
                     <boxGeometry args={[0.1, 0.4, 0.05]} />
-                    <meshStandardMaterial
-                      color="#8B4513"
-                      metalness={0.1}
-                      roughness={0.7}
-                    />
+                    <meshStandardMaterial color="#8B4513" metalness={0.1} roughness={0.7} />
                   </mesh>
-
-                  {/* Horizontal arm */}
                   <mesh position={[0.4 / 2 - 0.1 / 2, 0.4 / 2 - 0.1 / 2, 0]}>
                     <boxGeometry args={[0.4, 0.1, 0.05]} />
-                    <meshStandardMaterial
-                      color="#8B4513"
-                      metalness={0.1}
-                      roughness={0.7}
-                    />
-                  </mesh>
-
-                  {/* Wood grain highlights */}
-                  <mesh position={[0, 0, 0.05 / 2 + 0.001]}>
-                    <boxGeometry args={[0.1 * 0.8, 0.4 * 0.9, 0.001]} />
-                    <meshBasicMaterial
-                      color="#DEB887"
-                      transparent
-                      opacity={0.3}
-                    />
+                    <meshStandardMaterial color="#8B4513" metalness={0.1} roughness={0.7} />
                   </mesh>
                 </group>
-
-                {/* Magic effect */}
-                <pointLight
-                  color="#87CEFA"
-                  intensity={1}
-                  distance={2}
-                />
+                <pointLight color="#87CEFA" intensity={1} distance={2} />
               </group>
             </group>
           );
-        } else if (effect.type === 'arcaneNova') {
-          const age = (Date.now() - effect.startTime) / 1000;
-          const progress = Math.min(age / effect.duration, 1);
-          const opacity = Math.max(0, 1 - (progress - 0.5) * 2);
-          const scale = Math.min(progress * 2, 1) * effect.radius;
-
-          // Apply damage during expansion phase
-          if (progress < 0.5) {
-            creeps.forEach(creep => {
-              if (!creep.isDead) {
-                const creepPos = new Vector3(...creep.position);
-                const distance = effect.position.distanceTo(creepPos);
-                if (distance < scale) {
-                  damageCreep(creep.id, effect.damage);
-                }
-              }
-            });
-          }
-
+        } else if (effect.type === 'lightningStorm') {
           return (
             <group key={`${effect.id}-${frameCount}`}>
-              <mesh
-                position={[effect.position.x, effect.position.y + 0.1, effect.position.z]}
-                rotation={[-Math.PI / 2, 0, 0]}
-                scale={[scale, scale, 1]}
-              >
-                <ringGeometry args={[0.8, 1, 32]} />
-                <arcaneNovaShaderMaterial
-                  time={age}
-                  scale={scale}
-                  opacity={opacity}
-                  transparent
-                  depthWrite={false}
-                  depthTest={false}
-                  side={THREE.DoubleSide}
+              {/* Storm cloud */}
+              <group position={[0, 8, 0]}>
+                <Cloud
+                  opacity={0.8}
+                  speed={0.4}
+                  width={10}
+                  depth={2.5}
+                  segments={20}
+                >
+                  <meshStandardMaterial 
+                    color={effect.color} 
+                    emissive={effect.color}
+                    emissiveIntensity={0.5}
+                    transparent
+                    opacity={0.6}
+                  />
+                </Cloud>
+              </group>
+
+              {/* Electric effect */}
+              <mesh position={[0, 8, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <planeGeometry args={[effect.radius * 2, effect.radius * 2]} />
+                <lightningStormShaderMaterial
+                  time={time.current}
+                  color={new THREE.Color(effect.color)}
+                  intensity={1.0}
                 />
               </mesh>
+
+              {/* Range indicator */}
+              <line>
+                <bufferGeometry>
+                  <float32BufferAttribute
+                    attach="attributes-position"
+                    array={(() => {
+                      const positions = [];
+                      const segments = 64;
+                      for (let i = 0; i <= segments; i++) {
+                        const theta = (i / segments) * Math.PI * 2;
+                        positions.push(
+                          Math.cos(theta) * effect.radius,
+                          0.1,
+                          Math.sin(theta) * effect.radius
+                        );
+                      }
+                      return new Float32Array(positions);
+                    })()}
+                    count={65}
+                    itemSize={3}
+                  />
+                </bufferGeometry>
+                <lineDashedMaterial
+                  color={effect.color}
+                  scale={2}
+                  dashSize={5}
+                  gapSize={3}
+                  opacity={0.5}
+                  transparent
+                  fog={false}
+                />
+              </line>
+
+              {/* Ambient light */}
               <pointLight
-                position={[effect.position.x, effect.position.y + 1, effect.position.z]}
-                color="#8B5CF6"
-                intensity={5 * opacity}
-                distance={scale * 2}
+                color={effect.color}
+                intensity={2}
+                distance={effect.radius * 2}
                 decay={2}
+                position={[0, 8, 0]}
               />
             </group>
           );

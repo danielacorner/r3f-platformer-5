@@ -2,19 +2,25 @@ import { Vector3 } from 'three';
 
 export interface SkillEffect {
   id: string;
-  type: 'magicMissile' | 'arcaneNova' | 'lightning' | 'magicBoomerang' | 'inferno';
+  type: string;
   position: Vector3;
   startTime: number;
   duration: number;
+  radius: number;
   damage?: number;
-  radius?: number;
+  color: string;
   velocity?: Vector3;
   phase?: 'rising' | 'seeking' | 'falling' | 'outward' | 'return';
-  color?: string;
-  expansionSpeed?: number;
-  level?: number;
-  age?: number;
+  initialVelocity?: Vector3;
+  timeOffset?: number;
+  spawnDir?: Vector3;
   spawnPos?: Vector3;
   curve?: number;
+  age?: number;
+  level?: number;
   hasHitEnemy?: boolean;
+  expansionSpeed?: number;
+  nextStrikeTime?: number;
+  strikeInterval?: number;
+  remainingStrikes?: number;
 }
