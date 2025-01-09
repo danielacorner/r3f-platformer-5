@@ -4,6 +4,7 @@ import { LightningStormShaderMaterial } from './SkillEffects/shaders/LightningSt
 import { extend, useFrame } from '@react-three/fiber';
 import { StormCloud } from './StormCloud';
 import * as THREE from 'three';
+import { useGameStore } from '../../store/gameStore';
 
 extend({ LightningStormShaderMaterial });
 
@@ -13,9 +14,12 @@ interface LightningStormProps {
   level: number;
   color: string;
   seed: number;
+  damage: number;
+  duration: number;
+  strikeInterval: number;
 }
 
-const LightningBolt = ({ startPos, endPos, color }: { startPos: Vector3, endPos: Vector3, color: string }) => {
+const LightningBolt = ({ startPos, endPos, color, isAmbient }: { startPos: Vector3, endPos: Vector3, color: string, isAmbient: boolean }) => {
   // Calculate direction and length for cylinder
   const direction = endPos.clone().sub(startPos);
   const length = direction.length();
@@ -47,7 +51,7 @@ const LightningBolt = ({ startPos, endPos, color }: { startPos: Vector3, endPos:
 
       {/* Impact flash */}
       <mesh position={endPos}>
-        <sphereGeometry args={[0.8, 16, 16]} />
+        <sphereGeometry args={[isAmbient ? 0.8 : 1.2, 16, 16]} />
         <meshBasicMaterial
           color={color}
           toneMapped={false}
@@ -61,24 +65,25 @@ const LightningBolt = ({ startPos, endPos, color }: { startPos: Vector3, endPos:
       <pointLight
         position={endPos}
         color={color}
-        intensity={10}
-        distance={5}
+        intensity={isAmbient ? 10 : 20}
+        distance={isAmbient ? 5 : 8}
       />
       <pointLight
         position={startPos}
         color={color}
-        intensity={10}
-        distance={5}
+        intensity={isAmbient ? 10 : 20}
+        distance={isAmbient ? 5 : 8}
       />
     </group>
   );
 };
 
-export const MemoizedStorm = memo(function LightningStorm({ position, radius, level, color, seed }: LightningStormProps) {
+export const MemoizedStorm = memo(function LightningStorm({ position, radius, level, color, seed, damage, duration, strikeInterval }: LightningStormProps) {
   const shaderRef = useRef<THREE.ShaderMaterial>();
   const lightRef = useRef<THREE.PointLight>();
-  const [bolts, setBolts] = useState<Array<{ id: number, start: Vector3, end: Vector3 }>>([]);
+  const [bolts, setBolts] = useState<Array<{ id: number, start: Vector3, end: Vector3, isAmbient: boolean }>>([]);
   const nextBoltId = useRef(0);
+  const nextStrikeTime = useRef(Date.now());
 
   // Create range indicator
   const segments = 64;
@@ -108,7 +113,7 @@ export const MemoizedStorm = memo(function LightningStorm({ position, radius, le
       const start = new Vector3(x, 15, z);
       const end = new Vector3(x, 0, z);
 
-      setBolts(prev => [...prev, { id: nextBoltId.current++, start, end }]);
+      setBolts(prev => [...prev, { id: nextBoltId.current++, start, end, isAmbient: true }]);
 
       // Remove bolt after 100ms
       setTimeout(() => {
@@ -118,6 +123,60 @@ export const MemoizedStorm = memo(function LightningStorm({ position, radius, le
 
     return () => clearInterval(interval);
   }, [radius]);
+
+  // Strike enemies
+  useFrame(() => {
+    const now = Date.now();
+    if (now >= nextStrikeTime.current) {
+      const creeps = useGameStore.getState().creeps;
+      const damageCreep = useGameStore.getState().damageCreep;
+
+      // Find creeps in range
+      const creepsInRange = creeps.filter(creep => {
+        if (!creep || !creep.position || creep.isDead) return false;
+        const creepPos = new Vector3(creep.position[0], creep.position[1], creep.position[2]);
+        const distance = creepPos.distanceTo(position);
+        return distance <= radius;
+      });
+
+      if (creepsInRange.length > 0) {
+        // Pick a random creep to strike
+        const targetCreep = creepsInRange[Math.floor(Math.random() * creepsInRange.length)];
+        const targetPos = new Vector3(targetCreep.position[0], targetCreep.position[1], targetCreep.position[2]);
+        const localTargetPos = targetPos.clone().sub(position);
+
+        // Create main strike
+        const start = new Vector3(localTargetPos.x, 15, localTargetPos.z);
+        setBolts(prev => [...prev, { id: nextBoltId.current++, start, end: localTargetPos, isAmbient: false }]);
+
+        // Create visual effects around the strike
+        for (let i = 0; i < 3; i++) {
+          const offset = new Vector3(
+            (Math.random() - 0.5) * 2,
+            0,
+            (Math.random() - 0.5) * 2
+          );
+          const effectPos = localTargetPos.clone().add(offset);
+          const effectStart = new Vector3(effectPos.x, 15, effectPos.z);
+          
+          setTimeout(() => {
+            setBolts(prev => [...prev, { id: nextBoltId.current++, start: effectStart, end: effectPos, isAmbient: false }]);
+          }, i * 50);
+        }
+
+        // Apply damage
+        damageCreep(targetCreep.id, damage);
+
+        // Schedule next strike
+        nextStrikeTime.current = now + strikeInterval;
+
+        // Remove strike effects after 200ms
+        setTimeout(() => {
+          setBolts(prev => prev.filter(bolt => bolt.isAmbient));
+        }, 200);
+      }
+    }
+  });
 
   return (
     <group position={position}>
@@ -176,7 +235,8 @@ export const MemoizedStorm = memo(function LightningStorm({ position, radius, le
           key={bolt.id}
           startPos={bolt.start}
           endPos={bolt.end}
-          color="#4080ff"
+          color={bolt.isAmbient ? "#4080ff" : "#ffffff"}
+          isAmbient={bolt.isAmbient}
         />
       ))}
     </group>

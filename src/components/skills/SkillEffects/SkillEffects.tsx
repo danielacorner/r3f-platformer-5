@@ -275,6 +275,9 @@ export function SkillEffects() {
               level={1}
               color={effect.color}
               seed={(effect as any).seed}
+              damage={effect.damage}
+              duration={effect.duration}
+              strikeInterval={(effect as any).strikeInterval || 500}
             />
           );
         }
