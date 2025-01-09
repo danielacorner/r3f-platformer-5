@@ -2,9 +2,9 @@ import { Vector3 } from "three";
 import { activeEffects } from "./SkillEffects";
 import { useGameStore } from "../../../store/gameStore";
 
-const STORM_RADIUS = 12;
-const BOLT_DAMAGE = 12;
-const STORM_DURATION = 9;
+const STORM_RADIUS = 7;
+const BOLT_DAMAGE = 18;
+const STORM_DURATION = 7;
 
 export const getLightningStormStats = (level: number) => ({
   radius: STORM_RADIUS + level * 1.5,

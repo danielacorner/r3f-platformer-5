@@ -22,7 +22,7 @@ interface LightningStormProps {
 // Cache shared materials outside components to prevent recreation
 const createSharedMaterials = (() => {
   const materialCache = new Map<string, { core: THREE.LineBasicMaterial, glow: THREE.LineBasicMaterial }>();
-  
+
   return (color: string, width: number) => {
     const key = `${color}-${width}`;
     if (!materialCache.has(key)) {
@@ -149,10 +149,10 @@ const LightningBolt = ({
     <group renderOrder={1000}>
       <BoltLine points={points} color={color} width={width} />
       {branches.map((branch, i) => (
-        <BoltLine 
-          key={`branch-${i}`} 
-          points={branch.points} 
-          color={color} 
+        <BoltLine
+          key={`branch-${i}`}
+          points={branch.points}
+          color={color}
           width={width * 0.6}
         />
       ))}
@@ -171,9 +171,9 @@ const LightningBolt = ({
 };
 
 // Separate component for bolt lines with shared materials
-const BoltLine = memo(({ points, color, width }: { 
-  points: Vector3[], 
-  color: string, 
+const BoltLine = memo(({ points, color, width }: {
+  points: Vector3[],
+  color: string,
   width: number
 }) => {
   const materials = useMemo(() => createSharedMaterials(color, width), [color, width]);
@@ -426,7 +426,7 @@ export const MemoizedStorm = memo(function LightningStorm({ position, radius, le
 
   return (
     <group position={position}>
-      <StormCloud color={color} position={[0, 18, 0]} seed={seed} />
+      <StormCloud position={[0, 18, 0]} seed={seed} />
       <RangeIndicator radius={radius} color={color} />
 
       {boltsRef.current.map(bolt => (
