@@ -240,8 +240,8 @@ export default function LightningStorm({ position, radius, damage, strikeInterva
 
       {/* Range indicator */}
       <mesh rotation-x={-Math.PI / 2} position-y={0.1}>
-        <ringGeometry args={[0, radius, 32]} />
-        <meshBasicMaterial color="#4060ff" transparent opacity={0.2} />
+        <ringGeometry args={[radius - 0.1, radius, 32]} />
+        <meshBasicMaterial color="#4060ff" />
       </mesh>
 
       {/* Ambient bolts */}
