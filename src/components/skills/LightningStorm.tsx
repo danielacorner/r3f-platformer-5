@@ -1,9 +1,15 @@
-import { useRef, memo, useMemo } from 'react';
+import { useRef, memo, useMemo, useState } from 'react';
 import { Vector3 } from 'three';
 import { extend, useFrame } from '@react-three/fiber';
 import { StormCloud } from './StormCloud';
 import * as THREE from 'three';
 import { useGameStore } from '../../store/gameStore';
+import { HitSparks } from '../effects/HitSparks';
+
+interface HitEffect {
+  position: Vector3;
+  key: string;
+}
 
 interface LightningBolt {
   id: number;
@@ -34,6 +40,7 @@ export default function LightningStorm({ position, radius, damage, strikeInterva
   const groupRef = useRef<THREE.Group>(null);
   const ambientLinesRef = useRef<THREE.LineSegments>(null);
   const strikeLinesRef = useRef<THREE.LineSegments>(null);
+  const [hitEffects, setHitEffects] = useState<HitEffect[]>([]);
 
   // Create materials
   const materials = useMemo(() => {
@@ -118,7 +125,7 @@ export default function LightningStorm({ position, radius, damage, strikeInterva
   };
 
   // Update frame
-  useFrame(() => {
+  useFrame((state, delta) => {
     const now = Date.now();
 
     // Update existing bolts
@@ -186,7 +193,7 @@ export default function LightningStorm({ position, radius, damage, strikeInterva
 
         const start = new Vector3(localTargetPos.x, 18, localTargetPos.z);
         const points = createBoltPoints(start, localTargetPos, false);
-
+        
         activeBolts.current.push({
           id: nextBoltId.current++,
           points,
@@ -196,6 +203,10 @@ export default function LightningStorm({ position, radius, damage, strikeInterva
           isAmbient: false,
           width: 0.2
         });
+
+        // Create spark explosion at hit position
+        const hitKey = `${now}-${nextBoltId.current}`;
+        setHitEffects(prev => [...prev, { position: localTargetPos, key: hitKey }]);
 
         damageCreep(targetCreep.id, damage);
         nextStrikeTime.current = now + strikeInterval;
@@ -243,6 +254,17 @@ export default function LightningStorm({ position, radius, damage, strikeInterva
         <ringGeometry args={[radius - 0.1, radius, 32]} />
         <meshBasicMaterial color="#4060ff" />
       </mesh>
+
+      {/* Hit effects */}
+      {hitEffects.map(effect => (
+        <HitSparks
+          key={effect.key}
+          position={effect.position}
+          onComplete={() => {
+            setHitEffects(prev => prev.filter(e => e.key !== effect.key));
+          }}
+        />
+      ))}
 
       {/* Ambient bolts */}
       <lineSegments ref={ambientLinesRef}>
