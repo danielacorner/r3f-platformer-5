@@ -45,9 +45,9 @@ export default function LightningStorm({ position, radius, damage, strikeInterva
   // Create materials
   const materials = useMemo(() => {
     const ambientCore = new THREE.LineBasicMaterial({
-      color: new THREE.Color(0.6, 0.8, 1.0), // Brighter blue
+      color: new THREE.Color(0.4, 0.8, 1.0), // Brighter blue
       transparent: true,
-      opacity: 0.8, // More visible
+      opacity: 0.2, // More visible
       blending: THREE.AdditiveBlending,
       fog: false,
       toneMapped: false
@@ -124,7 +124,7 @@ export default function LightningStorm({ position, radius, damage, strikeInterva
               (Math.random() - 0.5) * segmentLength * 1.5
             )
           );
-          
+
           // Add sub-branches
           const midPoint = basePoint.clone().lerp(branchEnd, 0.5);
           const subBranch = midPoint.clone().add(
@@ -134,7 +134,7 @@ export default function LightningStorm({ position, radius, damage, strikeInterva
               (Math.random() - 0.5) * segmentLength * 0.5
             )
           );
-          
+
           points.push(basePoint.clone(), midPoint, subBranch, midPoint, branchEnd);
         }
       }
@@ -214,7 +214,7 @@ export default function LightningStorm({ position, radius, damage, strikeInterva
 
         const start = new Vector3(localTargetPos.x, 18, localTargetPos.z);
         const points = createBoltPoints(start, localTargetPos, false);
-        
+
         activeBolts.current.push({
           id: nextBoltId.current++,
           points,
