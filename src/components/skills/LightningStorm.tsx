@@ -19,6 +19,35 @@ interface LightningStormProps {
   strikeInterval: number;
 }
 
+// Cache shared materials outside components to prevent recreation
+const createSharedMaterials = (() => {
+  const materialCache = new Map<string, { core: THREE.LineBasicMaterial, glow: THREE.LineBasicMaterial }>();
+  
+  return (color: string, width: number) => {
+    const key = `${color}-${width}`;
+    if (!materialCache.has(key)) {
+      const core = new THREE.LineBasicMaterial({
+        color,
+        linewidth: 3 * width,
+        toneMapped: false,
+        fog: false,
+        lights: false
+      });
+      const glow = new THREE.LineBasicMaterial({
+        color,
+        linewidth: 6 * width,
+        toneMapped: false,
+        transparent: true,
+        opacity: 0.3,
+        fog: false,
+        lights: false
+      });
+      materialCache.set(key, { core, glow });
+    }
+    return materialCache.get(key)!;
+  };
+})();
+
 const LightningBolt = ({
   startPos,
   endPos,
@@ -102,57 +131,36 @@ const LightningBolt = ({
 
   return (
     <group renderOrder={1000}>
-      <BoltLine points={points} color={color} width={width} intensity={intensity} />
+      <BoltLine points={points} color={color} width={width} />
       {branches.map((branch, i) => (
         <BoltLine 
           key={`branch-${i}`} 
           points={branch.points} 
           color={color} 
-          width={width * 0.6} 
-          intensity={intensity * 0.7} 
+          width={width * 0.6}
         />
       ))}
 
-      {/* Point lights */}
+      {/* Simplified point lights */}
       <pointLight
         position={endPos}
         color={color}
         intensity={10 * intensity}
-        distance={5 * Math.sqrt(intensity)}
-      />
-      <pointLight
-        position={startPos}
-        color={color}
-        intensity={5 * intensity}
-        distance={3 * Math.sqrt(intensity)}
+        distance={5}
+        decay={2}
+        castShadow={false}
       />
     </group>
   );
 };
 
 // Separate component for bolt lines with shared materials
-const BoltLine = memo(({ points, color, width, intensity }: { 
+const BoltLine = memo(({ points, color, width }: { 
   points: Vector3[], 
   color: string, 
-  width: number,
-  intensity: number 
+  width: number
 }) => {
-  // Create and cache materials
-  const materials = useMemo(() => {
-    const core = new THREE.LineBasicMaterial({
-      color,
-      linewidth: 3 * width,
-      toneMapped: false
-    });
-    const glow = new THREE.LineBasicMaterial({
-      color,
-      linewidth: 6 * width,
-      toneMapped: false,
-      transparent: true,
-      opacity: 0.3
-    });
-    return { core, glow };
-  }, [color, width]);
+  const materials = useMemo(() => createSharedMaterials(color, width), [color, width]);
 
   // Create geometry
   const geometry = useMemo(() => {
@@ -176,15 +184,13 @@ const BoltLine = memo(({ points, color, width, intensity }: {
 
   return (
     <group>
-      <line geometry={geometry} material={materials.core} />
-      <line geometry={geometry} material={materials.glow} />
+      <primitive object={new THREE.Line(geometry, materials.core)} />
+      <primitive object={new THREE.Line(geometry, materials.glow)} />
     </group>
   );
 });
 
 export const MemoizedStorm = memo(function LightningStorm({ position, radius, level, color, seed, damage, duration, strikeInterval }: LightningStormProps) {
-  const shaderRef = useRef<THREE.ShaderMaterial>();
-  const lightRef = useRef<THREE.PointLight>();
   const boltsRef = useRef<Array<{
     id: number,
     start: Vector3,
@@ -203,7 +209,7 @@ export const MemoizedStorm = memo(function LightningStorm({ position, radius, le
   const burstEndTime = useRef(0);
   const [, forceUpdate] = useState({});
 
-  const MAX_CONCURRENT_BOLTS = 8;
+  const MAX_CONCURRENT_BOLTS = 6; // Reduced max bolts
 
   // Handle all bolt updates in one place
   useFrame(() => {
@@ -383,19 +389,19 @@ export const MemoizedStorm = memo(function LightningStorm({ position, radius, le
   return (
     <group position={position}>
       <StormCloud color={color} position={[0, 18, 0]} seed={seed} />
-
+      
       {/* Range indicator */}
       <line scale={radius}>
         <bufferGeometry>
           <float32BufferAttribute
             attach="attributes-position"
             array={new Float32Array(
-              Array.from({ length: 65 }, (_, i) => {
-                const theta = (i / 64) * Math.PI * 2;
+              Array.from({ length: 33 }, (_, i) => { // Reduced vertices
+                const theta = (i / 32) * Math.PI * 2;
                 return [Math.cos(theta), 0.1, Math.sin(theta)];
               }).flat()
             )}
-            count={65}
+            count={33}
             itemSize={3}
           />
         </bufferGeometry>
@@ -407,10 +413,10 @@ export const MemoizedStorm = memo(function LightningStorm({ position, radius, le
           opacity={0.5}
           transparent
           fog={false}
+          lights={false}
         />
       </line>
 
-      {/* Lightning bolts */}
       {boltsRef.current.map(bolt => (
         <LightningBolt
           key={bolt.id}
@@ -428,8 +434,10 @@ export const MemoizedStorm = memo(function LightningStorm({ position, radius, le
         <pointLight
           position={[0, 12, 0]}
           color="#4080ff"
-          intensity={burstModeRef.current ? 2 : 1}
+          intensity={burstModeRef.current ? 1.5 : 0.8}
           distance={radius * 2}
+          decay={2}
+          castShadow={false}
         />
       )}
     </group>
