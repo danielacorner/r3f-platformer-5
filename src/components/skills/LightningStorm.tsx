@@ -22,7 +22,7 @@ interface LightningBolt {
 }
 
 const MAX_BOLTS = 32;
-const SEGMENTS = 8; // Number of segments per bolt
+const SEGMENTS = 12; // Increased segments for more jagged appearance
 
 export default function LightningStorm({ position, radius, damage, strikeInterval, seed }: {
   position: Vector3;
@@ -45,36 +45,36 @@ export default function LightningStorm({ position, radius, damage, strikeInterva
   // Create materials
   const materials = useMemo(() => {
     const ambientCore = new THREE.LineBasicMaterial({
-      color: new THREE.Color(0.4, 0.6, 1.0), // Softer blue
+      color: new THREE.Color(0.6, 0.8, 1.0), // Brighter blue
       transparent: true,
-      opacity: 0.4, // More transparent
+      opacity: 0.8, // More visible
       blending: THREE.AdditiveBlending,
       fog: false,
       toneMapped: false
     });
 
     const ambientGlow = new THREE.LineBasicMaterial({
-      color: new THREE.Color(0.3, 0.5, 1.0), // Darker blue for glow
+      color: new THREE.Color(0.4, 0.7, 1.0), // Brighter blue glow
       transparent: true,
-      opacity: 0.2, // Very subtle glow
+      opacity: 0.4, // Stronger glow
       blending: THREE.AdditiveBlending,
       fog: false,
       toneMapped: false
     });
 
     const strikeCore = new THREE.LineBasicMaterial({
-      color: new THREE.Color(1.0, 0.2, 0.05), // Bright red
+      color: new THREE.Color(1.0, 0.3, 0.1), // Brighter red
       transparent: true,
-      opacity: 0.95, // Almost solid
+      opacity: 1.0, // Fully opaque
       blending: THREE.AdditiveBlending,
       fog: false,
       toneMapped: false
     });
 
     const strikeGlow = new THREE.LineBasicMaterial({
-      color: new THREE.Color(1.0, 0.4, 0.0), // Orange glow
+      color: new THREE.Color(1.0, 0.5, 0.0), // Brighter orange glow
       transparent: true,
-      opacity: 0.6, // Strong glow
+      opacity: 0.8, // Stronger glow
       blending: THREE.AdditiveBlending,
       fog: false,
       toneMapped: false
@@ -91,30 +91,51 @@ export default function LightningStorm({ position, radius, damage, strikeInterva
     const right = new THREE.Vector3(1, 0, 0);
     const forward = new THREE.Vector3(0, 0, 1);
 
-    // More zigzag for strike bolts, less for ambient
-    const offsetMultiplier = isAmbient ? 0.3 : 0.7;
-    const branchChance = isAmbient ? 0.1 : 0.3;
+    // More extreme zigzag
+    const offsetMultiplier = isAmbient ? 0.5 : 1.0; // Increased zigzag for both types
+    const branchChance = isAmbient ? 0.15 : 0.4; // More branches
+    const subSegments = isAmbient ? 1 : 2; // Add sub-zigzags for strike bolts
 
     for (let i = 0; i <= SEGMENTS; i++) {
       const t = i / SEGMENTS;
       const basePoint = start.clone().lerp(end, t);
 
       if (i > 0 && i < SEGMENTS) {
+        // Main zigzag
         const offset = right.clone()
           .multiplyScalar((Math.random() - 0.5) * segmentLength * offsetMultiplier)
           .add(forward.clone().multiplyScalar((Math.random() - 0.5) * segmentLength * offsetMultiplier));
         basePoint.add(offset);
 
-        // Add branches for strike bolts
+        // Add sub-zigzags for more detail
+        for (let j = 0; j < subSegments; j++) {
+          const subOffset = right.clone()
+            .multiplyScalar((Math.random() - 0.5) * segmentLength * 0.3)
+            .add(forward.clone().multiplyScalar((Math.random() - 0.5) * segmentLength * 0.3));
+          points.push(basePoint.clone().add(subOffset));
+        }
+
+        // Add branches with sub-branches for strike bolts
         if (!isAmbient && Math.random() < branchChance) {
           const branchEnd = basePoint.clone().add(
             new THREE.Vector3(
-              (Math.random() - 0.5) * segmentLength,
-              -Math.random() * segmentLength * 0.5,
-              (Math.random() - 0.5) * segmentLength
+              (Math.random() - 0.5) * segmentLength * 1.5,
+              -Math.random() * segmentLength,
+              (Math.random() - 0.5) * segmentLength * 1.5
             )
           );
-          points.push(basePoint.clone(), branchEnd);
+          
+          // Add sub-branches
+          const midPoint = basePoint.clone().lerp(branchEnd, 0.5);
+          const subBranch = midPoint.clone().add(
+            new THREE.Vector3(
+              (Math.random() - 0.5) * segmentLength * 0.5,
+              -Math.random() * segmentLength * 0.3,
+              (Math.random() - 0.5) * segmentLength * 0.5
+            )
+          );
+          
+          points.push(basePoint.clone(), midPoint, subBranch, midPoint, branchEnd);
         }
       }
 
