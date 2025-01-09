@@ -187,30 +187,22 @@ const LightningBolt = ({ startPos, endPos, color, isAmbient }: { startPos: Vecto
 export const MemoizedStorm = memo(function LightningStorm({ position, radius, level, color, seed, damage, duration, strikeInterval }: LightningStormProps) {
   const shaderRef = useRef<THREE.ShaderMaterial>();
   const lightRef = useRef<THREE.PointLight>();
-  const [bolts, setBolts] = useState<Array<{ id: number, start: Vector3, end: Vector3, isAmbient: boolean }>>([]);
+  const boltsRef = useRef<Array<{ id: number, start: Vector3, end: Vector3, isAmbient: boolean, expireTime: number }>>([]);
   const nextBoltId = useRef(0);
   const nextStrikeTime = useRef(Date.now());
+  const nextAmbientTime = useRef(Date.now());
+  const [, forceUpdate] = useState({});
 
-  // Create range indicator
-  const segments = 64;
-  const rangeGeometry = useMemo(() => {
-    const geometry = new THREE.BufferGeometry();
-    const positions: number[] = [];
-    for (let i = 0; i <= segments; i++) {
-      const theta = (i / segments) * Math.PI * 2;
-      positions.push(
-        Math.cos(theta) * radius,
-        0.1,
-        Math.sin(theta) * radius
-      );
-    }
-    geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
-    return geometry;
-  }, [radius]);
+  // Handle all bolt updates in one place
+  useFrame(() => {
+    const now = Date.now();
+    let needsUpdate = false;
 
-  // Create ambient bolts
-  useEffect(() => {
-    const interval = setInterval(() => {
+    // Remove expired bolts
+    boltsRef.current = boltsRef.current.filter(bolt => now < bolt.expireTime);
+
+    // Create ambient bolts
+    if (now >= nextAmbientTime.current) {
       const angle = Math.random() * Math.PI * 2;
       const distance = Math.random() * radius;
       const x = Math.cos(angle) * distance;
@@ -219,20 +211,19 @@ export const MemoizedStorm = memo(function LightningStorm({ position, radius, le
       const start = new Vector3(x, 15, z);
       const end = new Vector3(x, 0, z);
 
-      setBolts(prev => [...prev, { id: nextBoltId.current++, start, end, isAmbient: true }]);
+      boltsRef.current.push({
+        id: nextBoltId.current++,
+        start,
+        end,
+        isAmbient: true,
+        expireTime: now + 100
+      });
 
-      // Remove bolt after 100ms
-      setTimeout(() => {
-        setBolts(prev => prev.filter(bolt => bolt.id !== nextBoltId.current - 1));
-      }, 100);
-    }, 100);
+      nextAmbientTime.current = now + 100;
+      needsUpdate = true;
+    }
 
-    return () => clearInterval(interval);
-  }, [radius]);
-
-  // Strike enemies
-  useFrame(() => {
-    const now = Date.now();
+    // Check for enemy strikes
     if (now >= nextStrikeTime.current) {
       const creeps = useGameStore.getState().creeps;
       const damageCreep = useGameStore.getState().damageCreep;
@@ -253,7 +244,13 @@ export const MemoizedStorm = memo(function LightningStorm({ position, radius, le
 
         // Create main strike
         const start = new Vector3(localTargetPos.x, 15, localTargetPos.z);
-        setBolts(prev => [...prev, { id: nextBoltId.current++, start, end: localTargetPos, isAmbient: false }]);
+        boltsRef.current.push({
+          id: nextBoltId.current++,
+          start,
+          end: localTargetPos,
+          isAmbient: false,
+          expireTime: now + 200
+        });
 
         // Create visual effects around the strike
         for (let i = 0; i < 3; i++) {
@@ -264,10 +261,14 @@ export const MemoizedStorm = memo(function LightningStorm({ position, radius, le
           );
           const effectPos = localTargetPos.clone().add(offset);
           const effectStart = new Vector3(effectPos.x, 15, effectPos.z);
-
-          setTimeout(() => {
-            setBolts(prev => [...prev, { id: nextBoltId.current++, start: effectStart, end: effectPos, isAmbient: false }]);
-          }, i * 50);
+          
+          boltsRef.current.push({
+            id: nextBoltId.current++,
+            start: effectStart,
+            end: effectPos,
+            isAmbient: false,
+            expireTime: now + 200 + i * 50
+          });
         }
 
         // Apply damage
@@ -275,12 +276,13 @@ export const MemoizedStorm = memo(function LightningStorm({ position, radius, le
 
         // Schedule next strike
         nextStrikeTime.current = now + strikeInterval;
-
-        // Remove strike effects after 200ms
-        setTimeout(() => {
-          setBolts(prev => prev.filter(bolt => bolt.isAmbient));
-        }, 200);
+        needsUpdate = true;
       }
+    }
+
+    // Force a re-render only when bolts change
+    if (needsUpdate) {
+      forceUpdate({});
     }
   });
 
@@ -288,17 +290,6 @@ export const MemoizedStorm = memo(function LightningStorm({ position, radius, le
     <group position={position}>
       {/* Storm cloud */}
       <StormCloud color={color} position={[0, 8, 0]} seed={seed} />
-
-      {/* Electric effect overlay */}
-      {/* <mesh>
-        <planeGeometry args={[radius * 2, radius * 2]} />
-        <lightningStormShaderMaterial
-          ref={shaderRef}
-          transparent
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
-        />
-      </mesh> */}
 
       {/* Range indicator */}
       <line scale={radius}>
@@ -326,17 +317,8 @@ export const MemoizedStorm = memo(function LightningStorm({ position, radius, le
         />
       </line>
 
-      {/* Ambient light */}
-      <pointLight
-        ref={lightRef}
-        position={[0, 15, 0]}
-        color={color}
-        intensity={5}
-        distance={radius * 2}
-      />
-
       {/* Lightning bolts */}
-      {bolts.map(bolt => (
+      {boltsRef.current.map(bolt => (
         <LightningBolt
           key={bolt.id}
           startPos={bolt.start}
