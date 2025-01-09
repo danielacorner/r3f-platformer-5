@@ -64,8 +64,7 @@ export function updateLightningStorm(
       };
 
       activeEffects.push(strikeEffect);
-      console.log('Created ambient bolt:', strikeEffect);  // Debug log
-      
+
       // Reset bolt timer and position with shorter interval
       bolt.time = now + 100;  // Strike every 100ms
       bolt.offset = new Vector3(
@@ -162,7 +161,7 @@ export function updateLightningStorm(
         isAmbient: true
       };
       activeEffects.push(visualEffect);
-      
+
       // Update next strike time
       effect.nextStrikeTime = now + effect.strikeInterval;
     }
