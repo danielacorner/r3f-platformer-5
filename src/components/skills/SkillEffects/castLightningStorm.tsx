@@ -4,23 +4,22 @@ import { useGameStore } from "../../../store/gameStore";
 
 const STORM_RADIUS = 7;
 const BOLT_DAMAGE = 18;
-const STORM_DURATION = 7;
+const STORM_DURATION = 8; // Changed to match SkillsMenu duration
 
 export const getLightningStormStats = (level: number) => ({
   radius: STORM_RADIUS + level * 1.5,
   damage: BOLT_DAMAGE + level * 25,
-  duration: STORM_DURATION + level * 0.5,
-  strikeCount: 3 + Math.floor(level * 1.5),
-  strikeInterval: 500 // Strike every 0.5 seconds
+  duration: STORM_DURATION,
+  strikeInterval: Math.max(200, 500 - level * 25) // Strike interval decreases with level, min 200ms
 });
 
 export function castLightningStorm(position: Vector3, level: number) {
   const stats = getLightningStormStats(level);
   const playerRef = useGameStore.getState().playerRef;
 
-  // Get player position
+  // Get initial position
   let stormPosition = position.clone();
-  if (playerRef) {
+  if (!position && playerRef) {
     const playerPos = playerRef.translation();
     stormPosition = new Vector3(playerPos.x, playerPos.y, playerPos.z);
   }
@@ -37,9 +36,8 @@ export function castLightningStorm(position: Vector3, level: number) {
     color: '#a786e0',
     nextStrikeTime: Date.now(),
     strikeInterval: stats.strikeInterval,
-    remainingStrikes: stats.strikeCount,
     level,
-    followPlayer: true,
+    followPlayer: false, // Storm stays where it was cast
     seed: Math.random()
   };
 
