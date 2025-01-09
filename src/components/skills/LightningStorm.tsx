@@ -19,18 +19,29 @@ interface LightningStormProps {
   strikeInterval: number;
 }
 
-const LightningBolt = ({ startPos, endPos, color, isAmbient }: { startPos: Vector3, endPos: Vector3, color: string, isAmbient: boolean }) => {
+const LightningBolt = ({
+  startPos,
+  endPos,
+  color,
+  isAmbient,
+  intensity = 1,
+  width = 1
+}: {
+  startPos: Vector3,
+  endPos: Vector3,
+  color: string,
+  isAmbient: boolean,
+  intensity?: number,
+  width?: number
+}) => {
   // Calculate direction and length for bolt
   const direction = endPos.clone().sub(startPos);
   const length = direction.length();
+  const segments = Math.max(4, Math.min(12, Math.floor(length / 2)));
 
-  // Create zigzag points for the bolt
-  const segments = 12;
+  // Create zigzag points
   const points = useMemo(() => {
     const pts = [];
-    const maxOffset = isAmbient ? 0.3 : 0.5;
-    const segmentLength = length / segments;
-
     for (let i = 0; i <= segments; i++) {
       const t = i / segments;
       const basePoint = startPos.clone().lerp(endPos, t);
@@ -38,30 +49,15 @@ const LightningBolt = ({ startPos, endPos, color, isAmbient }: { startPos: Vecto
       if (i > 0 && i < segments) {
         const perpX = new Vector3(1, 0, 0).cross(direction.clone().normalize());
         const perpZ = new Vector3(0, 0, 1).cross(direction.clone().normalize());
-        basePoint.add(
-          perpX.multiplyScalar((Math.random() - 0.5) * maxOffset)
-            .add(perpZ.multiplyScalar((Math.random() - 0.5) * maxOffset))
-        );
+        const offset = perpX.multiplyScalar(Math.random() - 0.5)
+          .add(perpZ.multiplyScalar(Math.random() - 0.5))
+          .multiplyScalar(length * 0.15);
+        basePoint.add(offset);
       }
       pts.push(basePoint);
     }
     return pts;
-  }, [startPos, endPos, length, isAmbient]);
-
-  // Create line geometry from points
-  const lineGeometry = useMemo(() => {
-    const geometry = new THREE.BufferGeometry();
-    const positions = new Float32Array(points.length * 3);
-
-    points.forEach((point, i) => {
-      positions[i * 3] = point.x;
-      positions[i * 3 + 1] = point.y;
-      positions[i * 3 + 2] = point.z;
-    });
-
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    return geometry;
-  }, [points]);
+  }, [startPos, endPos, segments]);
 
   // Create branch points
   const branches = useMemo(() => {
@@ -76,14 +72,13 @@ const LightningBolt = ({ startPos, endPos, color, isAmbient }: { startPos: Vecto
 
       const branchDir = new Vector3(
         (Math.random() - 0.5) * 2,
-        -Math.random() - 0.2, // Point downward
+        -Math.random() - 0.2,
         (Math.random() - 0.5) * 2
       ).normalize();
 
       const branchLength = length * (Math.random() * 0.2 + 0.1);
       const end = start.clone().add(branchDir.multiplyScalar(branchLength));
 
-      // Create zigzag points for branch
       const branchPoints = [];
       const branchSegments = 6;
       for (let j = 0; j <= branchSegments; j++) {
@@ -93,137 +88,226 @@ const LightningBolt = ({ startPos, endPos, color, isAmbient }: { startPos: Vecto
         if (j > 0 && j < branchSegments) {
           const perpX = new Vector3(1, 0, 0).cross(branchDir);
           const perpZ = new Vector3(0, 0, 1).cross(branchDir);
-          basePoint.add(
-            perpX.multiplyScalar((Math.random() - 0.5) * 0.2)
-              .add(perpZ.multiplyScalar((Math.random() - 0.5) * 0.2))
-          );
+          const offset = perpX.multiplyScalar(Math.random() - 0.5)
+            .add(perpZ.multiplyScalar(Math.random() - 0.5))
+            .multiplyScalar(branchLength * 0.15);
+          basePoint.add(offset);
         }
         branchPoints.push(basePoint);
       }
-
-      const branchGeometry = new THREE.BufferGeometry();
-      const branchPositions = new Float32Array(branchPoints.length * 3);
-      branchPoints.forEach((point, j) => {
-        branchPositions[j * 3] = point.x;
-        branchPositions[j * 3 + 1] = point.y;
-        branchPositions[j * 3 + 2] = point.z;
-      });
-      branchGeometry.setAttribute('position', new THREE.Float32BufferAttribute(branchPositions, 3));
-
-      branchPoints.push({ geometry: branchGeometry });
+      branchPoints.push({ points: branchPoints });
     }
     return branchPoints;
-  }, [points, isAmbient, length, segments]);
+  }, [points, isAmbient, segments]);
 
   return (
     <group renderOrder={1000}>
-      {/* Main bolt */}
-      <group>
-        {/* Core bright line */}
-        <line>
-          <primitive object={lineGeometry} />
-          <lineBasicMaterial
-            color={color}
-            linewidth={3}
-            toneMapped={false}
-          />
-        </line>
-        {/* Glow line */}
-        <line>
-          <primitive object={lineGeometry} />
-          <lineBasicMaterial
-            color={color}
-            linewidth={isAmbient ? 6 : 8}
-            toneMapped={false}
-            transparent={true}
-            opacity={0.3}
-          />
-        </line>
-      </group>
-
-      {/* Branch bolts */}
+      <BoltLine points={points} color={color} width={width} intensity={intensity} />
       {branches.map((branch, i) => (
-        <group key={`branch-${i}`}>
-          {/* Core bright line */}
-          <line>
-            <primitive object={branch.geometry} />
-            <lineBasicMaterial
-              color={color}
-              linewidth={2}
-              toneMapped={false}
-            />
-          </line>
-          {/* Glow line */}
-          <line>
-            <primitive object={branch.geometry} />
-            <lineBasicMaterial
-              color={color}
-              linewidth={4}
-              toneMapped={false}
-              transparent={true}
-              opacity={0.3}
-            />
-          </line>
-        </group>
+        <BoltLine 
+          key={`branch-${i}`} 
+          points={branch.points} 
+          color={color} 
+          width={width * 0.6} 
+          intensity={intensity * 0.7} 
+        />
       ))}
 
-      {/* Impact flash */}
+      {/* Point lights */}
       <pointLight
         position={endPos}
         color={color}
-        intensity={isAmbient ? 10 : 20}
-        distance={isAmbient ? 5 : 8}
+        intensity={10 * intensity}
+        distance={5 * Math.sqrt(intensity)}
       />
       <pointLight
         position={startPos}
         color={color}
-        intensity={isAmbient ? 5 : 10}
-        distance={isAmbient ? 3 : 5}
+        intensity={5 * intensity}
+        distance={3 * Math.sqrt(intensity)}
       />
     </group>
   );
 };
 
+// Separate component for bolt lines with shared materials
+const BoltLine = memo(({ points, color, width, intensity }: { 
+  points: Vector3[], 
+  color: string, 
+  width: number,
+  intensity: number 
+}) => {
+  // Create and cache materials
+  const materials = useMemo(() => {
+    const core = new THREE.LineBasicMaterial({
+      color,
+      linewidth: 3 * width,
+      toneMapped: false
+    });
+    const glow = new THREE.LineBasicMaterial({
+      color,
+      linewidth: 6 * width,
+      toneMapped: false,
+      transparent: true,
+      opacity: 0.3
+    });
+    return { core, glow };
+  }, [color, width]);
+
+  // Create geometry
+  const geometry = useMemo(() => {
+    const positions = new Float32Array(points.length * 3);
+    points.forEach((point, i) => {
+      positions[i * 3] = point.x;
+      positions[i * 3 + 1] = point.y;
+      positions[i * 3 + 2] = point.z;
+    });
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    return geom;
+  }, [points]);
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+    };
+  }, [geometry]);
+
+  return (
+    <group>
+      <line geometry={geometry} material={materials.core} />
+      <line geometry={geometry} material={materials.glow} />
+    </group>
+  );
+});
+
 export const MemoizedStorm = memo(function LightningStorm({ position, radius, level, color, seed, damage, duration, strikeInterval }: LightningStormProps) {
   const shaderRef = useRef<THREE.ShaderMaterial>();
   const lightRef = useRef<THREE.PointLight>();
-  const boltsRef = useRef<Array<{ id: number, start: Vector3, end: Vector3, isAmbient: boolean, expireTime: number }>>([]);
+  const boltsRef = useRef<Array<{
+    id: number,
+    start: Vector3,
+    end: Vector3,
+    isAmbient: boolean,
+    createTime: number,
+    expireTime: number,
+    baseIntensity: number,
+    currentIntensity: number,
+    width: number
+  }>>([]);
   const nextBoltId = useRef(0);
   const nextStrikeTime = useRef(Date.now());
   const nextAmbientTime = useRef(Date.now());
+  const burstModeRef = useRef(false);
+  const burstEndTime = useRef(0);
   const [, forceUpdate] = useState({});
+
+  const MAX_CONCURRENT_BOLTS = 8;
 
   // Handle all bolt updates in one place
   useFrame(() => {
     const now = Date.now();
     let needsUpdate = false;
 
-    // Remove expired bolts
-    boltsRef.current = boltsRef.current.filter(bolt => now < bolt.expireTime);
+    // Limit concurrent bolts
+    if (boltsRef.current.length > MAX_CONCURRENT_BOLTS) {
+      boltsRef.current = boltsRef.current.slice(-MAX_CONCURRENT_BOLTS);
+    }
+
+    // Update existing bolts' intensities and remove expired ones
+    boltsRef.current = boltsRef.current.filter(bolt => {
+      if (now >= bolt.expireTime) return false;
+
+      const lifetime = bolt.expireTime - bolt.createTime;
+      const elapsed = now - bolt.createTime;
+      const progress = elapsed / lifetime;
+
+      const baseIntensity = bolt.baseIntensity * (1 - progress * 1.2);
+      const randomFlash = Math.sin(elapsed * 0.2) * 0.3 + Math.random() * 0.2;
+      bolt.currentIntensity = Math.max(0, baseIntensity + randomFlash);
+
+      return true;
+    });
 
     // Create ambient bolts
     if (now >= nextAmbientTime.current) {
-      const angle = Math.random() * Math.PI * 2;
-      const distance = Math.random() * radius;
-      const x = Math.cos(angle) * distance;
-      const z = Math.sin(angle) * distance;
+      // Randomly enter burst mode
+      if (!burstModeRef.current && Math.random() < 0.2) {
+        burstModeRef.current = true;
+        burstEndTime.current = now + Math.random() * 500 + 300; // Burst for 300-800ms
+      }
 
-      const start = new Vector3(x, 15, z);
-      const end = new Vector3(x, 0, z);
+      // Create 1-3 bolts in burst mode, 1 bolt otherwise
+      const numBolts = burstModeRef.current ? Math.floor(Math.random() * 3) + 1 : 1;
 
-      boltsRef.current.push({
-        id: nextBoltId.current++,
-        start,
-        end,
-        isAmbient: true,
-        expireTime: now + 100
-      });
+      for (let i = 0; i < numBolts; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * radius;
+        const x = Math.cos(angle) * distance;
+        const z = Math.sin(angle) * distance;
 
-      nextAmbientTime.current = now + 100;
+        const heightVariation = Math.random() * 3 - 1.5; // Vary start height by ±1.5 units
+        const start = new Vector3(x, 15 + heightVariation, z);
+        const end = new Vector3(x, 0, z);
+
+        // Shorter duration and store creation time
+        const duration = Math.random() * 30 + 45; // 45-75ms duration
+        const baseIntensity = burstModeRef.current ?
+          Math.random() * 0.5 + 1.5 : // 1.5-2.0 in burst mode
+          Math.random() * 0.3 + 1.0;  // 1.0-1.3 normally
+
+        boltsRef.current.push({
+          id: nextBoltId.current++,
+          start,
+          end,
+          isAmbient: true,
+          createTime: now,
+          expireTime: now + duration,
+          baseIntensity,
+          currentIntensity: baseIntensity,
+          width: burstModeRef.current ?
+            Math.random() * 2 + 4 : // 4-6 in burst mode
+            Math.random() * 1 + 3   // 3-4 normally
+        });
+
+        // Create branches with even shorter duration
+        if (Math.random() < 0.4) {
+          const numBranches = Math.floor(Math.random() * 2) + 1;
+          for (let j = 0; j < numBranches; j++) {
+            const branchStart = start.clone().lerp(end, Math.random() * 0.6 + 0.2);
+            const branchEnd = branchStart.clone().add(
+              new Vector3(
+                (Math.random() - 0.5) * 2,
+                -Math.random() * 2 - 1,
+                (Math.random() - 0.5) * 2
+              )
+            );
+
+            boltsRef.current.push({
+              id: nextBoltId.current++,
+              start: branchStart,
+              end: branchEnd,
+              isAmbient: true,
+              createTime: now,
+              expireTime: now + duration * 0.7, // Branches disappear faster
+              baseIntensity: baseIntensity * 0.7,
+              currentIntensity: baseIntensity * 0.7,
+              width: 0.6
+            });
+          }
+        }
+      }
+
+      // Shorter intervals between bolts
+      nextAmbientTime.current = now + (burstModeRef.current ?
+        Math.random() * 30 + 30 : // 30-60ms in burst mode
+        Math.random() * 150 + 150 // 150-300ms normally
+      );
       needsUpdate = true;
     }
 
-    // Check for enemy strikes
+    // Enemy strike logic
     if (now >= nextStrikeTime.current) {
       const creeps = useGameStore.getState().creeps;
       const damageCreep = useGameStore.getState().damageCreep;
@@ -244,31 +328,42 @@ export const MemoizedStorm = memo(function LightningStorm({ position, radius, le
 
         // Create main strike
         const start = new Vector3(localTargetPos.x, 15, localTargetPos.z);
+        const strikeIntensity = 2.0;
         boltsRef.current.push({
           id: nextBoltId.current++,
           start,
           end: localTargetPos,
           isAmbient: false,
-          expireTime: now + 200
+          createTime: now,
+          expireTime: now + 100, // Shorter duration for enemy strikes
+          baseIntensity: strikeIntensity,
+          currentIntensity: strikeIntensity,
+          width: 1
         });
 
-        // Create visual effects around the strike
+        // Visual effects with varying timing
         for (let i = 0; i < 3; i++) {
-          const offset = new Vector3(
-            (Math.random() - 0.5) * 2,
-            0,
-            (Math.random() - 0.5) * 2
-          );
-          const effectPos = localTargetPos.clone().add(offset);
-          const effectStart = new Vector3(effectPos.x, 15, effectPos.z);
-          
-          boltsRef.current.push({
-            id: nextBoltId.current++,
-            start: effectStart,
-            end: effectPos,
-            isAmbient: false,
-            expireTime: now + 200 + i * 50
-          });
+          setTimeout(() => {
+            const offset = new Vector3(
+              (Math.random() - 0.5) * 2,
+              0,
+              (Math.random() - 0.5) * 2
+            );
+            const effectPos = localTargetPos.clone().add(offset);
+            const effectStart = new Vector3(effectPos.x, 15, effectPos.z);
+
+            boltsRef.current.push({
+              id: nextBoltId.current++,
+              start: effectStart,
+              end: effectPos,
+              isAmbient: false,
+              createTime: now + i * 25,
+              expireTime: now + 100 + i * 25,
+              baseIntensity: strikeIntensity * 0.8,
+              currentIntensity: strikeIntensity * 0.8,
+              width: 0.8
+            });
+          }, i * 25);
         }
 
         // Apply damage
@@ -280,7 +375,6 @@ export const MemoizedStorm = memo(function LightningStorm({ position, radius, le
       }
     }
 
-    // Force a re-render only when bolts change
     if (needsUpdate) {
       forceUpdate({});
     }
@@ -288,8 +382,7 @@ export const MemoizedStorm = memo(function LightningStorm({ position, radius, le
 
   return (
     <group position={position}>
-      {/* Storm cloud */}
-      <StormCloud color={color} position={[0, 8, 0]} seed={seed} />
+      <StormCloud color={color} position={[0, 18, 0]} seed={seed} />
 
       {/* Range indicator */}
       <line scale={radius}>
@@ -323,10 +416,22 @@ export const MemoizedStorm = memo(function LightningStorm({ position, radius, le
           key={bolt.id}
           startPos={bolt.start}
           endPos={bolt.end}
-          color={bolt.isAmbient ? "#4080ff" : "#ffffff"}
+          color={bolt.isAmbient ? "#60a0ff" : "#ffffff"}
           isAmbient={bolt.isAmbient}
+          intensity={bolt.currentIntensity}
+          width={bolt.width}
         />
       ))}
+
+      {/* Global storm light */}
+      {boltsRef.current.length > 0 && (
+        <pointLight
+          position={[0, 12, 0]}
+          color="#4080ff"
+          intensity={burstModeRef.current ? 2 : 1}
+          distance={radius * 2}
+        />
+      )}
     </group>
   );
 });

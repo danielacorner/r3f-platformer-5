@@ -11,9 +11,7 @@ import { updateArcaneNova } from './effectHandlers/arcaneNovaHandler';
 import { updateLightning } from './effectHandlers/lightningHandler';
 import { updateBoomerang } from './effectHandlers/boomerangHandler';
 import { updateLightningStorm } from './effectHandlers/lightningStormHandler';
-import { StormCloud } from '../StormCloud';
 import { SkillEffect } from './types';
-import { Lightning } from '../../Lightning';
 import MemoizedStorm from '../LightningStorm';
 
 extend({ ArcaneNovaShaderMaterial, LightningStormShaderMaterial });
