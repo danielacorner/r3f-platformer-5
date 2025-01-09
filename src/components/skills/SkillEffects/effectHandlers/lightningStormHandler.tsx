@@ -9,7 +9,11 @@ export function updateLightningStorm(
     nextStrikeTime: number,
     strikeInterval: number,
     remainingStrikes: number,
-    followPlayer?: boolean
+    followPlayer?: boolean,
+    ambientBolts?: {
+      time: number;
+      offset: Vector3;
+    }[]
   },
   now: number,
   creeps: any[],
@@ -28,6 +32,49 @@ export function updateLightningStorm(
     const playerPos = playerRef.translation();
     effect.position.set(playerPos.x, playerPos.y, playerPos.z);
   }
+
+  // Initialize ambient bolts if they don't exist
+  if (!effect.ambientBolts) {
+    effect.ambientBolts = Array(5).fill(0).map(() => ({
+      time: now,  // Start immediately
+      offset: new Vector3(
+        (Math.random() - 0.5) * effect.radius * 0.8,
+        0,
+        (Math.random() - 0.5) * effect.radius * 0.8
+      )
+    }));
+  }
+
+  // Update ambient bolts
+  effect.ambientBolts.forEach((bolt, index) => {
+    if (now >= bolt.time) {
+      // Create new ambient bolt
+      const boltPos = effect.position.clone().add(bolt.offset);
+      const strikeEffect = {
+        id: Math.random().toString(),
+        type: 'lightning',
+        position: boltPos,
+        startTime: now,
+        duration: 0.5,  // Longer duration
+        radius: 0.5,
+        color: '#80ffff',
+        sourceHeight: 15,
+        damage: 0, // Ambient bolts do no damage
+        isAmbient: true
+      };
+
+      activeEffects.push(strikeEffect);
+      console.log('Created ambient bolt:', strikeEffect);  // Debug log
+      
+      // Reset bolt timer and position with shorter interval
+      bolt.time = now + 100;  // Strike every 100ms
+      bolt.offset = new Vector3(
+        (Math.random() - 0.5) * effect.radius * 0.8,
+        0,
+        (Math.random() - 0.5) * effect.radius * 0.8
+      );
+    }
+  });
 
   // Time to strike?
   if (now >= effect.nextStrikeTime && effect.remainingStrikes > 0) {
@@ -50,13 +97,18 @@ export function updateLightningStorm(
         type: 'lightning',
         position: targetPos.clone(),
         startTime: now,
-        duration: 0.3,
+        duration: 0.5,
         radius: 0.5,
-        color: '#80ffff',
+        color: '#ffffff',
+        sourceHeight: 15,
+        damage: effect.damage,
+        isAmbient: false
       };
 
       // Add strike effect to activeEffects
       activeEffects.push(strikeEffect);
+      console.log('Created lightning strike effect:', strikeEffect);
+      console.log('Current active effects:', activeEffects);
 
       // Apply damage
       damageCreep(targetCreep.id, effect.damage);
@@ -65,10 +117,53 @@ export function updateLightningStorm(
       effect.remainingStrikes--;
       effect.nextStrikeTime = now + effect.strikeInterval;
 
+      // Create additional visual effects
+      for (let i = 0; i < 3; i++) {
+        const offset = new Vector3(
+          (Math.random() - 0.5) * 2,
+          0,
+          (Math.random() - 0.5) * 2
+        );
+        const visualEffect = {
+          id: Math.random().toString(),
+          type: 'lightning',
+          position: targetPos.clone().add(offset),
+          startTime: now + i * 50, // Stagger the strikes
+          duration: 0.3,
+          radius: 0.3,
+          color: '#80ffff',
+          sourceHeight: 15,
+          damage: 0,
+          isAmbient: true
+        };
+        activeEffects.push(visualEffect);
+      }
+
       // Notify that effects have changed
       window.dispatchEvent(new CustomEvent('effectsChanged'));
     } else {
-      // If no creeps in range, just update next strike time
+      // If no creeps in range, create some visual effects
+      const randomOffset = new Vector3(
+        (Math.random() - 0.5) * effect.radius * 0.8,
+        0,
+        (Math.random() - 0.5) * effect.radius * 0.8
+      );
+      const visualPos = effect.position.clone().add(randomOffset);
+      const visualEffect = {
+        id: Math.random().toString(),
+        type: 'lightning',
+        position: visualPos,
+        startTime: now,
+        duration: 0.3,
+        radius: 0.3,
+        color: '#80ffff',
+        sourceHeight: 15,
+        damage: 0,
+        isAmbient: true
+      };
+      activeEffects.push(visualEffect);
+      
+      // Update next strike time
       effect.nextStrikeTime = now + effect.strikeInterval;
     }
   }

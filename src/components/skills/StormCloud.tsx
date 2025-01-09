@@ -4,10 +4,12 @@ import { Cloud } from '@react-three/drei';
 interface StormCloudProps {
   color: string;
   seed: number;
+  position: [number, number, number];
 }
 
-export const StormCloud = React.memo(({ color, seed }: StormCloudProps) => (
+export const StormCloud = React.memo(({ color, seed, position }: StormCloudProps) => (
   <Cloud
+    position={position}
     opacity={0.4}
     speed={0.4}
     seed={seed}

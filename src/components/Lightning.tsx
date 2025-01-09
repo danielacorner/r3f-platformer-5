@@ -1,27 +1,36 @@
 import { useRef, useState, useEffect } from 'react';
 import { Vector3, CatmullRomCurve3 } from 'three';
 import { useFrame } from '@react-three/fiber';
-import { Trail, useTexture } from '@react-three/drei';
+import * as THREE from 'three';
 
 interface LightningProps {
   startPosition: Vector3;
   endPosition: Vector3;
   onComplete?: () => void;
+  segments?: number;
+  radius?: number;
+  color?: string;
 }
 
-export function Lightning({ startPosition, endPosition, onComplete }: LightningProps) {
-  const ref = useRef<THREE.Mesh>(null);
+export function Lightning({ 
+  startPosition, 
+  endPosition, 
+  onComplete,
+  segments = 8,
+  radius = 0.2,
+  color = '#ffffff'
+}: LightningProps) {
+  const ref = useRef<THREE.Group>(null);
   const [points, setPoints] = useState<Vector3[]>([]);
-  const [progress, setProgress] = useState(0);
   const startTime = useRef(Date.now());
-  const DURATION = 0.2; // Duration in seconds
+  const DURATION = 0.3; // Duration in seconds
 
   // Create zigzag points for the lightning
   useEffect(() => {
-    const numPoints = 8;
+    const numPoints = segments;
     const newPoints: Vector3[] = [];
-    const start = new Vector3(startPosition.x, startPosition.y, startPosition.z);
-    const end = new Vector3(endPosition.x, endPosition.y, endPosition.z);
+    const start = startPosition.clone();
+    const end = endPosition.clone();
     const direction = end.clone().sub(start);
     const distance = direction.length();
     const segmentLength = distance / (numPoints - 1);
@@ -32,8 +41,9 @@ export function Lightning({ startPosition, endPosition, onComplete }: LightningP
       
       // Add random offset to middle points
       if (i > 0 && i < numPoints - 1) {
-        pos.x += (Math.random() - 0.5) * segmentLength * 0.5;
-        pos.z += (Math.random() - 0.5) * segmentLength * 0.5;
+        const offset = Math.min(segmentLength * 0.5, 2); // Cap the maximum offset
+        pos.x += (Math.random() - 0.5) * offset;
+        pos.z += (Math.random() - 0.5) * offset;
       }
       
       newPoints.push(pos);
@@ -42,44 +52,90 @@ export function Lightning({ startPosition, endPosition, onComplete }: LightningP
     const curve = new CatmullRomCurve3(newPoints);
     const curvePoints = curve.getPoints(50);
     setPoints(curvePoints);
-  }, [startPosition, endPosition]);
+  }, [startPosition, endPosition, segments]);
 
   useFrame(() => {
     const elapsed = (Date.now() - startTime.current) / 1000;
-    const newProgress = Math.min(elapsed / DURATION, 1);
-    setProgress(newProgress);
-
-    if (newProgress >= 1 && onComplete) {
+    if (elapsed >= DURATION && onComplete) {
       onComplete();
     }
   });
 
+  if (points.length === 0) return null;
+
+  // Create line segments array
+  const linePoints = new Float32Array(points.length * 3);
+  points.forEach((point, i) => {
+    linePoints[i * 3] = point.x;
+    linePoints[i * 3 + 1] = point.y;
+    linePoints[i * 3 + 2] = point.z;
+  });
+
   return (
-    <group>
-      <Trail
-        width={0.4}
-        length={0.5}
-        decay={1}
-        local={false}
-        stride={0}
-        interval={1}
-        attenuation={(width) => width * (1 - progress)}
-        color={'#88ccff'}
-      >
-        <mesh ref={ref}>
-          <sphereGeometry args={[0.05, 8, 8]} />
-          <meshBasicMaterial color="#88ccff" />
-        </mesh>
-      </Trail>
-      {points.map((point, index) => (
-        <mesh key={index} position={point}>
-          <sphereGeometry args={[0.02, 4, 4]} />
-          <meshBasicMaterial 
-            color="#88ccff"
-            transparent
-            opacity={(1 - progress) * 0.5}
+    <group ref={ref}>
+      {/* Core beam */}
+      <line>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            count={points.length}
+            array={linePoints}
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <lineBasicMaterial
+          color={color}
+          linewidth={3}
+          transparent={false}
+          depthTest={false}
+          depthWrite={false}
+        />
+      </line>
+
+      {/* Glow beam */}
+      <line>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            count={points.length}
+            array={linePoints}
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <lineBasicMaterial
+          color={color}
+          linewidth={6}
+          transparent
+          opacity={0.3}
+          depthTest={false}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </line>
+
+      {/* Impact points */}
+      {[0, points.length - 1].map((idx) => (
+        <mesh key={idx} position={points[idx]}>
+          <sphereGeometry args={[radius, 16, 16]} />
+          <meshBasicMaterial
+            color={color}
+            transparent={false}
+            depthTest={false}
+            depthWrite={false}
           />
         </mesh>
+      ))}
+
+      {/* Glow spheres along the path */}
+      {points.filter((_, i) => i % 5 === 0).map((point, i) => (
+        <pointLight
+          key={i}
+          position={point}
+          color={color}
+          intensity={2}
+          distance={2}
+          decay={2}
+        />
       ))}
     </group>
   );

@@ -13,6 +13,8 @@ import { updateBoomerang } from './effectHandlers/boomerangHandler';
 import { updateLightningStorm } from './effectHandlers/lightningStormHandler';
 import { StormCloud } from '../StormCloud';
 import { SkillEffect } from './types';
+import { Lightning } from '../../Lightning';
+import MemoizedStorm from '../LightningStorm';
 
 extend({ ArcaneNovaShaderMaterial, LightningStormShaderMaterial });
 
@@ -203,50 +205,77 @@ export function SkillEffects() {
               />
             </group>
           );
-        } else if (effect.type === 'lightningStorm') {
-          const pos = effect.position.toArray();
+        } else if (effect.type === 'lightning') {
+          const startPos = new Vector3(effect.position.x, 15, effect.position.z);
+          const endPos = effect.position.clone();
+          const isAmbient = (effect as any).isAmbient;
+
+          // Calculate direction and length for cylinder
+          const direction = endPos.clone().sub(startPos);
+          const length = direction.length();
+
+          // Calculate rotation to point cylinder in the right direction
+          const quaternion = new THREE.Quaternion();
+          const up = new THREE.Vector3(0, 1, 0);
+          const axis = new THREE.Vector3();
+          axis.crossVectors(up, direction.normalize()).normalize();
+          const angle = Math.acos(up.dot(direction));
+          quaternion.setFromAxisAngle(axis, angle);
+
           return (
-            <group key={`${effect.id}-${frameCount}`} position={pos}>
-              {/* Storm cloud */}
-              <group position={[0, 8, 0]}>
-                <StormCloud color={effect.color} seed={(effect as any).seed} />
-              </group>
-
-              {/* Range indicator */}
-              <line scale={[effect.radius, 1, effect.radius]}>
-                <bufferGeometry>
-                  <float32BufferAttribute
-                    attach="attributes-position"
-                    array={new Float32Array(
-                      Array.from({ length: 65 }, (_, i) => {
-                        const theta = (i / 64) * Math.PI * 2;
-                        return [Math.cos(theta), 0.1, Math.sin(theta)];
-                      }).flat()
-                    )}
-                    count={65}
-                    itemSize={3}
-                  />
-                </bufferGeometry>
-                <lineDashedMaterial
-                  color={effect.color}
-                  scale={2}
-                  dashSize={5}
-                  gapSize={3}
-                  opacity={0.5}
-                  transparent
-                  fog={false}
+            <group key={`${effect.id}-${frameCount}`} renderOrder={1000}>
+              {/* Main bolt */}
+              <mesh
+                position={startPos.clone().add(endPos).multiplyScalar(0.5)}
+                quaternion={quaternion}
+              >
+                <cylinderGeometry args={[0.2, 0.2, length, 8]} />
+                <meshBasicMaterial
+                  color={isAmbient ? "#4080ff" : "#ffffff"}
+                  toneMapped={false}
+                  transparent={false}
+                  depthTest={false}
+                  depthWrite={false}
                 />
-              </line>
+              </mesh>
 
-              {/* Cloud light */}
+              {/* Impact flash */}
+              <mesh position={endPos}>
+                <sphereGeometry args={[0.8, 16, 16]} />
+                <meshBasicMaterial
+                  color={isAmbient ? "#4080ff" : "#ffffff"}
+                  toneMapped={false}
+                  transparent={false}
+                  depthTest={false}
+                  depthWrite={false}
+                />
+              </mesh>
+
+              {/* Bright point lights */}
               <pointLight
-                color={effect.color}
-                intensity={2}
-                distance={effect.radius * 2}
-                decay={2}
-                position={[0, 8, 0]}
+                position={endPos}
+                color={isAmbient ? "#4080ff" : "#ffffff"}
+                intensity={10}
+                distance={5}
+              />
+              <pointLight
+                position={startPos}
+                color={isAmbient ? "#4080ff" : "#ffffff"}
+                intensity={10}
+                distance={5}
               />
             </group>
+          );
+        } else if (effect.type === 'lightningStorm') {
+          return (
+            <MemoizedStorm
+              key={effect.id}
+              position={effect.position}
+              radius={effect.radius}
+              level={1}
+              color={effect.color}
+              seed={(effect as any).seed}
+            />
           );
         }
         return null;
