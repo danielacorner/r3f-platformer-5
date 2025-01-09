@@ -30,8 +30,7 @@ const createSharedMaterials = (() => {
         color,
         linewidth: 3 * width,
         toneMapped: false,
-        fog: false,
-        lights: false
+        fog: false
       });
       const glow = new THREE.LineBasicMaterial({
         color,
@@ -39,12 +38,29 @@ const createSharedMaterials = (() => {
         toneMapped: false,
         transparent: true,
         opacity: 0.3,
-        fog: false,
-        lights: false
+        fog: false
       });
       materialCache.set(key, { core, glow });
     }
     return materialCache.get(key)!;
+  };
+})();
+
+// Reusable geometry for range indicator
+const createRangeGeometry = (() => {
+  let geometry: THREE.BufferGeometry | null = null;
+  return () => {
+    if (!geometry) {
+      const positions = new Float32Array(
+        Array.from({ length: 33 }, (_, i) => {
+          const theta = (i / 32) * Math.PI * 2;
+          return [Math.cos(theta), 0.1, Math.sin(theta)];
+        }).flat()
+      );
+      geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    }
+    return geometry;
   };
 })();
 
@@ -186,6 +202,28 @@ const BoltLine = memo(({ points, color, width }: {
     <group>
       <primitive object={new THREE.Line(geometry, materials.core)} />
       <primitive object={new THREE.Line(geometry, materials.glow)} />
+    </group>
+  );
+});
+
+// Memoized range indicator to prevent unnecessary recreations
+const RangeIndicator = memo(({ radius, color }: { radius: number, color: string }) => {
+  const geometry = useMemo(() => createRangeGeometry(), []);
+  const material = useMemo(() => (
+    new THREE.LineDashedMaterial({
+      color,
+      scale: 2,
+      dashSize: 5,
+      gapSize: 3,
+      opacity: 0.5,
+      transparent: true,
+      fog: false
+    })
+  ), [color]);
+
+  return (
+    <group scale={radius}>
+      <primitive object={new THREE.Line(geometry, material)} />
     </group>
   );
 });
@@ -389,33 +427,7 @@ export const MemoizedStorm = memo(function LightningStorm({ position, radius, le
   return (
     <group position={position}>
       <StormCloud color={color} position={[0, 18, 0]} seed={seed} />
-      
-      {/* Range indicator */}
-      <line scale={radius}>
-        <bufferGeometry>
-          <float32BufferAttribute
-            attach="attributes-position"
-            array={new Float32Array(
-              Array.from({ length: 33 }, (_, i) => { // Reduced vertices
-                const theta = (i / 32) * Math.PI * 2;
-                return [Math.cos(theta), 0.1, Math.sin(theta)];
-              }).flat()
-            )}
-            count={33}
-            itemSize={3}
-          />
-        </bufferGeometry>
-        <lineDashedMaterial
-          color={color}
-          scale={2}
-          dashSize={5}
-          gapSize={3}
-          opacity={0.5}
-          transparent
-          fog={false}
-          lights={false}
-        />
-      </line>
+      <RangeIndicator radius={radius} color={color} />
 
       {boltsRef.current.map(bolt => (
         <LightningBolt
@@ -429,7 +441,6 @@ export const MemoizedStorm = memo(function LightningStorm({ position, radius, le
         />
       ))}
 
-      {/* Global storm light */}
       {boltsRef.current.length > 0 && (
         <pointLight
           position={[0, 12, 0]}
