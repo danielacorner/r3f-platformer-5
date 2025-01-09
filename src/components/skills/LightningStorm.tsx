@@ -18,11 +18,12 @@ interface LightningBolt {
 const MAX_BOLTS = 32;
 const SEGMENTS = 8; // Number of segments per bolt
 
-export default function LightningStorm({ position, radius, damage, strikeInterval }: {
+export default function LightningStorm({ position, radius, damage, strikeInterval, seed }: {
   position: Vector3;
   radius: number;
   damage: number;
   strikeInterval: number;
+  seed: number;
 }) {
   const activeBolts = useRef<LightningBolt[]>([]);
   const nextBoltId = useRef(0);
@@ -185,7 +186,7 @@ export default function LightningStorm({ position, radius, damage, strikeInterva
 
         const start = new Vector3(localTargetPos.x, 18, localTargetPos.z);
         const points = createBoltPoints(start, localTargetPos, false);
-        
+
         activeBolts.current.push({
           id: nextBoltId.current++,
           points,
@@ -235,7 +236,13 @@ export default function LightningStorm({ position, radius, damage, strikeInterva
 
   return (
     <group ref={groupRef} position={position}>
-      <StormCloud position={[0, 18, 0]} />
+      <StormCloud position={[0, 18, 0]} seed={seed} />
+
+      {/* Range indicator */}
+      <mesh rotation-x={-Math.PI / 2} position-y={0.1}>
+        <ringGeometry args={[0, radius, 32]} />
+        <meshBasicMaterial color="#4060ff" transparent opacity={0.2} />
+      </mesh>
 
       {/* Ambient bolts */}
       <lineSegments ref={ambientLinesRef}>
@@ -256,7 +263,7 @@ export default function LightningStorm({ position, radius, damage, strikeInterva
         <bufferGeometry />
         <primitive object={materials.strikeGlow} />
       </lineSegments>
-      
+
       {/* Global storm light */}
       {activeBolts.current.length > 0 && (
         <pointLight
