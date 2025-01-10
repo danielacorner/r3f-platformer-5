@@ -5,8 +5,19 @@ import {
   FaTimes,
   FaPlus,
 } from "react-icons/fa";
-import { GiFireBowl, GiSpeedometer, GiMagicSwirl, GiCrystalBall, GiInfinity, GiBoomerang, GiLightningStorm, GiMagicPalm, GiMagicShield, GiWaterSplash } from 'react-icons/gi';
-import { RiFireFill, RiThunderstormsFill, RiContrastDrop2Fill, RiSwordFill, RiMagicFill } from 'react-icons/ri';
+import {
+  GiSpellBook, GiCrystalBall, GiMagicPotion,  // Arcane
+  GiSpeedometer, GiLightningBranches, GiLaserSparks,  // Storm
+  GiWaterDrop, GiWaterfall, GiWaveStrike,  // Water
+  GiWindSlap, GiShieldReflect, GiPush,  // Force
+  GiIceBolt, GiSnowflake1, GiFrozenRing,  // Frost - Passive
+  GiMissileSwarm, GiEnergyShield, GiShieldBash,   // Arcane - Active
+  GiLightningStorm, GiLightningHelix, GiFocusedLightning,  // Storm - Active
+  GiWaterSplash, GiHighTide, GiVortex,  // Water - Active
+  GiBoomerang, GiPunchBlast, GiVacuumCleaner,  // Force - Active
+  GiIceSpellCast, GiIciclesAura, GiSnowman  // Frost - Active
+} from 'react-icons/gi';
+import { RiMagicFill } from 'react-icons/ri';
 import { useGameStore } from "../store/gameStore";
 import { Tabs, Tab, Box } from "@mui/material";
 import "../styles/SkillsMenu.css";
@@ -64,13 +75,13 @@ export const magicSchools: Record<MagicSchool, {
   storm: {
     name: 'Storm',
     color: '#eab308',
-    icon: RiThunderstormsFill,
+    icon: GiLightningStorm,
     description: 'Harness the power of lightning and thunder'
   },
   water: {
     name: 'Water',
     color: '#06b6d4',
-    icon: RiContrastDrop2Fill,
+    icon: GiWaterSplash,
     description: 'Control the flow of water and tidal forces'
   },
   force: {
@@ -82,7 +93,7 @@ export const magicSchools: Record<MagicSchool, {
   frost: {
     name: 'Frost',
     color: '#60a5fa',
-    icon: GiMagicSwirl,
+    icon: GiIceBolt,
     description: 'Command ice and cold energies'
   }
 };
@@ -92,7 +103,7 @@ export const passiveSkills: (PassiveSkill)[] = [
   {
     name: 'Arcane Power',
     description: 'Increases magic damage by 20% per level',
-    icon: GiFireBowl,
+    icon: GiSpellBook,
     color: '#9333ea',
     basePrice: 100,
     priceMultiplier: 1.5,
@@ -114,7 +125,7 @@ export const passiveSkills: (PassiveSkill)[] = [
   {
     name: 'Mana Mastery',
     description: 'Reduces mana cost of spells by 10% per level',
-    icon: GiMagicPalm,
+    icon: GiMagicPotion,
     color: '#9333ea',
     basePrice: 250,
     priceMultiplier: 1.5,
@@ -137,7 +148,7 @@ export const passiveSkills: (PassiveSkill)[] = [
   {
     name: 'Storm Mastery',
     description: 'Increases lightning damage by 25% per level',
-    icon: RiThunderstormsFill,
+    icon: GiLightningBranches,
     color: '#eab308',
     basePrice: 200,
     priceMultiplier: 1.5,
@@ -148,7 +159,7 @@ export const passiveSkills: (PassiveSkill)[] = [
   {
     name: 'Static Charge',
     description: 'Adds 15% chance per level to shock enemies',
-    icon: GiLightningStorm,
+    icon: GiLaserSparks,
     color: '#eab308',
     basePrice: 250,
     priceMultiplier: 1.5,
@@ -160,7 +171,7 @@ export const passiveSkills: (PassiveSkill)[] = [
   {
     name: 'Mystic Reach',
     description: 'Increases spell range by 15% per level',
-    icon: GiMagicSwirl,
+    icon: GiWaterDrop,
     color: '#06b6d4',
     basePrice: 200,
     priceMultiplier: 1.5,
@@ -171,7 +182,7 @@ export const passiveSkills: (PassiveSkill)[] = [
   {
     name: 'Tidal Force',
     description: 'Increases knockback effect by 20% per level',
-    icon: RiContrastDrop2Fill,
+    icon: GiWaterfall,
     color: '#06b6d4',
     basePrice: 250,
     priceMultiplier: 1.5,
@@ -182,7 +193,7 @@ export const passiveSkills: (PassiveSkill)[] = [
   {
     name: 'Flow State',
     description: 'Increases movement speed by 10% per level while casting',
-    icon: GiWaterSplash,
+    icon: GiWaveStrike,
     color: '#06b6d4',
     basePrice: 200,
     priceMultiplier: 1.5,
@@ -194,7 +205,7 @@ export const passiveSkills: (PassiveSkill)[] = [
   {
     name: 'Force Amplification',
     description: 'Increases physical damage by 25% per level',
-    icon: RiSwordFill,
+    icon: GiWindSlap,
     color: '#10b981',
     basePrice: 200,
     priceMultiplier: 1.5,
@@ -205,7 +216,7 @@ export const passiveSkills: (PassiveSkill)[] = [
   {
     name: 'Kinetic Mastery',
     description: 'Increases projectile speed by 15% per level',
-    icon: GiBoomerang,
+    icon: GiShieldReflect,
     color: '#10b981',
     basePrice: 180,
     priceMultiplier: 1.5,
@@ -216,7 +227,7 @@ export const passiveSkills: (PassiveSkill)[] = [
   {
     name: 'Impact Resonance',
     description: 'Adds 20% chance per level for force spells to stun',
-    icon: GiMagicPalm,
+    icon: GiPush,
     color: '#10b981',
     basePrice: 300,
     priceMultiplier: 1.5,
@@ -228,7 +239,7 @@ export const passiveSkills: (PassiveSkill)[] = [
   {
     name: 'Frost Mastery',
     description: 'Increases frost damage by 25% per level',
-    icon: GiMagicSwirl,
+    icon: GiIceBolt,
     color: '#60a5fa',
     basePrice: 200,
     priceMultiplier: 1.5,
@@ -239,7 +250,7 @@ export const passiveSkills: (PassiveSkill)[] = [
   {
     name: 'Glacial Presence',
     description: 'Increases slow effect duration by 20% per level',
-    icon: GiMagicShield,
+    icon: GiSnowflake1,
     color: '#60a5fa',
     basePrice: 250,
     priceMultiplier: 1.5,
@@ -250,7 +261,7 @@ export const passiveSkills: (PassiveSkill)[] = [
   {
     name: 'Deep Freeze',
     description: 'Adds 15% chance per level to freeze enemies solid',
-    icon: GiMagicSwirl,
+    icon: GiFrozenRing,
     color: '#60a5fa',
     basePrice: 300,
     priceMultiplier: 1.5,
@@ -265,7 +276,7 @@ export const activeSkills: (ActiveSkill)[] = [
   {
     name: 'Magic Missiles',
     description: 'Launch multiple homing missiles that deal damage to enemies',
-    icon: RiMagicFill,
+    icon: GiMissileSwarm,
     color: '#9333ea',
     cooldown: 2,
     level: process.env.NODE_ENV === "development" ? 1 : 0,
@@ -275,7 +286,7 @@ export const activeSkills: (ActiveSkill)[] = [
   {
     name: 'Arcane Nova',
     description: 'Release a burst of arcane energy, damaging nearby enemies',
-    icon: GiMagicSwirl,
+    icon: GiEnergyShield,
     color: '#9333ea',
     cooldown: 6,
     level: process.env.NODE_ENV === "development" ? 1 : 0,
@@ -285,7 +296,7 @@ export const activeSkills: (ActiveSkill)[] = [
   {
     name: 'Arcane Multiplication',
     description: 'Temporarily triple all your magical effects',
-    icon: GiMagicPalm,
+    icon: GiShieldBash,
     color: '#9333ea',
     cooldown: 10,
     duration: 5,
@@ -308,7 +319,7 @@ export const activeSkills: (ActiveSkill)[] = [
   {
     name: 'Chain Lightning',
     description: 'Launch a lightning bolt that chains between enemies',
-    icon: RiThunderstormsFill,
+    icon: GiLightningHelix,
     color: '#eab308',
     cooldown: 4,
     level: process.env.NODE_ENV === "development" ? 1 : 0,
@@ -318,7 +329,7 @@ export const activeSkills: (ActiveSkill)[] = [
   {
     name: 'Thunder Strike',
     description: 'Call down a massive thunderbolt at target location',
-    icon: GiLightningStorm,
+    icon: GiFocusedLightning,
     color: '#eab308',
     cooldown: 12,
     level: process.env.NODE_ENV === "development" ? 1 : 0,
@@ -339,7 +350,7 @@ export const activeSkills: (ActiveSkill)[] = [
   {
     name: 'Water Jet',
     description: 'Fire a high-pressure water beam that pierces enemies',
-    icon: RiContrastDrop2Fill,
+    icon: GiHighTide,
     color: '#06b6d4',
     cooldown: 3,
     level: process.env.NODE_ENV === "development" ? 1 : 0,
@@ -349,7 +360,7 @@ export const activeSkills: (ActiveSkill)[] = [
   {
     name: 'Whirlpool',
     description: 'Create a vortex that pulls and damages enemies',
-    icon: GiWaterSplash,
+    icon: GiVortex,
     color: '#06b6d4',
     cooldown: 8,
     duration: 4,
@@ -371,7 +382,7 @@ export const activeSkills: (ActiveSkill)[] = [
   {
     name: 'Force Push',
     description: 'Release a powerful shockwave that knocks back enemies',
-    icon: RiSwordFill,
+    icon: GiPunchBlast,
     color: '#10b981',
     cooldown: 6,
     level: process.env.NODE_ENV === "development" ? 1 : 0,
@@ -381,7 +392,7 @@ export const activeSkills: (ActiveSkill)[] = [
   {
     name: 'Gravity Well',
     description: 'Create a zone that crushes enemies with intense gravity',
-    icon: GiMagicPalm,
+    icon: GiVacuumCleaner,
     color: '#10b981',
     cooldown: 10,
     duration: 5,
@@ -393,7 +404,7 @@ export const activeSkills: (ActiveSkill)[] = [
   {
     name: 'Ice Lance',
     description: 'Fire a piercing lance of ice that freezes enemies',
-    icon: GiMagicSwirl,
+    icon: GiIceSpellCast,
     color: '#60a5fa',
     cooldown: 3,
     level: process.env.NODE_ENV === "development" ? 1 : 0,
@@ -403,7 +414,7 @@ export const activeSkills: (ActiveSkill)[] = [
   {
     name: 'Frost Nova',
     description: 'Release a burst of frost that slows nearby enemies',
-    icon: GiMagicShield,
+    icon: GiIciclesAura,
     color: '#60a5fa',
     cooldown: 8,
     level: process.env.NODE_ENV === "development" ? 1 : 0,
@@ -413,7 +424,7 @@ export const activeSkills: (ActiveSkill)[] = [
   {
     name: 'Blizzard',
     description: 'Summon a blizzard that continuously damages and slows enemies',
-    icon: GiMagicSwirl,
+    icon: GiSnowman,
     color: '#60a5fa',
     cooldown: 15,
     duration: 6,
