@@ -436,7 +436,17 @@ export const activeSkills: (ActiveSkill)[] = [
 
 export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
   const [activeSchool, setActiveSchool] = useState<MagicSchool>('arcane');
-  const { skillPoints, upgrades, upgradeSkill, skillLevels, } = useGameStore();
+  const { 
+    skillPoints, 
+    upgrades, 
+    upgradeSkill, 
+    skillLevels,
+    equippedSkills,
+    selectedSkillSlot,
+    selectedSkill,
+    setSelectedSkill,
+    equipSkill
+  } = useGameStore();
 
   const handleUpgrade = (skillName: string) => {
     const skills = [...activeSkills, ...passiveSkills];
@@ -448,6 +458,16 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
 
     if (skillPoints >= 1) {
       upgradeSkill(skillName, 1); // Using 1 skill point instead of money
+    }
+  };
+
+  const handleSkillClick = (skill: ActiveSkill) => {
+    if (selectedSkillSlot !== null) {
+      // If a slot is selected, equip the skill directly
+      equipSkill(skill, selectedSkillSlot);
+    } else {
+      // Otherwise, select this skill for later equipping
+      setSelectedSkill(skill);
     }
   };
 
@@ -491,6 +511,8 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
         const currentLevel = skillLevels[skill.name] || 0;
         const canAfford = skillPoints >= 1 && currentLevel < skill.maxLevel;
         const skillStats = 'effect' in skill ? '' : getSkillStats(skill as typeof activeSkills[0], currentLevel);
+        const isEquipped = equippedSkills.some(s => s?.name === skill.name);
+        const isSelected = selectedSkill?.name === skill.name;
 
         let effectText = '';
         if ('effect' in skill) {
@@ -516,7 +538,12 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
         return (
           <div
             key={skill.name}
-            className="skill-item"
+            className={`skill-item ${isSelected ? 'selected' : ''} ${isEquipped ? 'equipped' : ''}`}
+            onClick={() => !('effect' in skill) && handleSkillClick(skill as ActiveSkill)}
+            style={{ 
+              boxShadow: isSelected ? `0 0 10px ${skill.color}` : 'none',
+              cursor: !('effect' in skill) ? 'pointer' : 'default'
+            }}
           >
             <div className="skill-background-icon" aria-hidden="true">
               <skill.icon />
@@ -548,7 +575,10 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
             {currentLevel < skill.maxLevel ? (
               <button
                 className="skill-upgrade-btn"
-                onClick={() => handleUpgrade(skill.name)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleUpgrade(skill.name);
+                }}
                 disabled={!canAfford}
                 title={`Upgrade (1 SP)`}
               >
@@ -556,6 +586,11 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
               </button>
             ) : (
               <div className="skill-maxed">MAX</div>
+            )}
+            {isEquipped && (
+              <div className="equipped-indicator" style={{ color: skill.color }}>
+                (Equipped)
+              </div>
             )}
           </div>
         );
@@ -622,6 +657,7 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
         <div className="school-description" style={{ color: magicSchools[activeSchool].color, marginBottom: '1rem' }}>
           {magicSchools[activeSchool].description}
         </div>
+
         {renderSkillList([
           ...activeSkills.filter(skill => skill.school === activeSchool),
           ...passiveSkills.filter(skill => skill.school === activeSchool)

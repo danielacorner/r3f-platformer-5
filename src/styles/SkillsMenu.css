@@ -143,6 +143,32 @@
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 12px;
+  background-color: rgba(0, 0, 0, 0.7);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.skill-item:hover {
+  transform: translateY(-2px);
+}
+
+.skill-item.active {
+  cursor: pointer;
+}
+
+.skill-item.passive {
+  cursor: default;
+}
+
+.skill-item.equipped {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.skill-item.selected {
+  transform: scale(1.05);
 }
 
 .skill-background-icon {
@@ -263,6 +289,41 @@
 .can-afford:hover {
   border-color: rgba(34, 197, 94, 0.6);
   box-shadow: 0 0 10px rgba(34, 197, 94, 0.2);
+}
+
+.equipped-indicator {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-left: 8px;
+}
+
+/* Bottom Menu Skill Slots */
+.skill-slot {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  border: 2px solid #666;
+  border-radius: 8px;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.skill-slot:hover {
+  transform: translateY(-2px);
+}
+
+.skill-slot.selected {
+  transform: scale(1.1);
+}
+
+.skill-slot.slot-highlight {
+  border-width: 3px;
+  opacity: 0.8;
 }
 
 @media screen and (max-width: 432px) {

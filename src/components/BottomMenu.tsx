@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import { useGameStore } from "../store/gameStore";
 import { FaUser } from "react-icons/fa";
+import { FaTimes } from "react-icons/fa";
 import "../styles/BottomMenu.css";
 import { ActiveSkill, activeSkills, SkillsMenu } from "./SkillsMenu";
 import { castLightningStorm } from './skills/SkillEffects/castLightningStorm';
@@ -12,8 +13,7 @@ import { Vector3 } from "three";
 import { Tooltip } from "@mui/material";
 import { GiMagicSwirl } from "react-icons/gi";
 
-const SKILL_KEYS = ["1", "2", "3", "4", "5", "6"];
-
+const SKILL_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8"];
 
 interface CooldownOverlayProps {
   remainingTime: number;
@@ -48,86 +48,53 @@ function CooldownOverlay({ remainingTime, totalTime, color }: CooldownOverlayPro
 
 export function BottomMenu() {
   const {
+    equippedSkills,
+    selectedSkill,
+    selectedSkillSlot,
+    setSelectedSkillSlot,
+    setSelectedSkill,
+    unequipSkill,
+    playerRef,
+    skillLevels,
     money,
     experience,
     level,
-    skillPoints,
+    equipSkill
   } = useGameStore();
-
-  const [showSkillsMenu, setShowSkillsMenu] = useState(false);
-  const [skills, setSkills] = useState<(ActiveSkill & { currentCooldown: number })[]>(activeSkills.map(skill => ({
-    ...skill,
-    currentCooldown: 0,
-    // level: skill.level ?? (process.env.NODE_ENV === 'development' ? 1 : 0),
-  })));
-
-
-  // Update skills based on levels
-  useEffect(() => {
-    setSkills(prev => prev.map(skill => ({
-      ...skill,
-      level: useGameStore.getState().skillLevels[skill.name] || (process.env.NODE_ENV === 'development' ? 1 : 0),
-    })));
-  }, [useGameStore.getState().skillLevels]);
-
+  const [isSkillsMenuOpen, setIsSkillsMenuOpen] = useState(false);
+  const [skillCooldowns, setSkillCooldowns] = useState<{ [key: string]: number }>({});
 
   // Handle cooldowns
   useEffect(() => {
     const interval = setInterval(() => {
-      setSkills(prev => prev.map(skill => ({
-        ...skill,
-        currentCooldown: Math.max(0, (skill.currentCooldown ?? 0.1) - 0.1),
-      })));
+      setSkillCooldowns(prev => {
+        const newCooldowns = { ...prev };
+        Object.keys(newCooldowns).forEach(key => {
+          if (newCooldowns[key] > 0) {
+            newCooldowns[key] = Math.max(0, newCooldowns[key] - 0.1);
+          }
+        });
+        return newCooldowns;
+      });
     }, 100);
 
     return () => clearInterval(interval);
   }, []);
 
+  const handleCastSkill = (skill: ActiveSkill) => {
+    const level = skillLevels[skill.name] || 0;
+    if (level === 0) return;
 
-  // Handle keyboard shortcuts
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      const index = SKILL_KEYS.indexOf(e.key);
-      if (index !== -1) {
-        handleSkillClick(index);
-      }
-    };
+    const cooldown = skillCooldowns[skill.name] || 0;
+    if (cooldown > 0) return;
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [skills]);
-
-
-  const handleSkillClick = (index: number) => {
-    const skill = skills[index];
-
-    if (skill.level === 0) {
-      console.log('Skill not learned yet');
-      return;
-    }
-
-    if ((skill.currentCooldown ?? 0) > 0) {
-      console.log('Skill on cooldown');
-      return;
-    }
-
-    // Get player position
-    const playerRef = useGameStore.getState().playerRef;
-    if (!playerRef) {
-      console.log('No player ref found in game store!');
-      return;
-    }
-
+    if (!playerRef) return;
     const playerPosition = playerRef.translation();
-    if (!playerPosition) {
-      console.log('No player position found!');
-      return;
-    }
+    if (!playerPosition) return;
 
     const position = new Vector3(playerPosition.x, 1, playerPosition.z);
     let direction: Vector3;
 
-    // Try to get mouse position, use default direction if not available
     if (window.gameState?.mousePosition) {
       const mousePos = new Vector3(
         window.gameState.mousePosition.x,
@@ -136,36 +103,51 @@ export function BottomMenu() {
       );
       direction = mousePos.clone().sub(position).normalize();
     } else {
-      // Default direction when mouse position not available (facing forward)
       direction = new Vector3(0, 0, 1);
     }
 
-    // Cast the appropriate skill
-    console.log('Casting skill:', skill.name, 'at position:', position.toArray(), 'direction:', direction.toArray());
     switch (skill.name) {
       case 'Magic Boomerang':
-        castMagicBoomerang(position, direction, skill.level);
+        castMagicBoomerang(position, direction, level);
         break;
       case 'Magic Missiles':
-        castMagicMissiles(position, skill.level);
+        castMagicMissiles(position, level);
         break;
       case 'Arcane Nova':
-        castArcaneNova(position, skill.level);
+        castArcaneNova(position, level);
         break;
       case 'Lightning Storm':
-        castLightningStorm(position, skill.level);
+        castLightningStorm(position, level);
         break;
       case 'Arcane Multiplication':
-        castArcaneMultiplication(position, skill.level);
+        castArcaneMultiplication(position, level);
+        break;
+      case 'Tsunami Wave':
+        castTsunamiWave(position, direction, level);
         break;
     }
 
-    // Start cooldown
-    setSkills(prev => prev.map((s, i) =>
-      i === index ? { ...s, currentCooldown: s.cooldown } : s
-    ));
+    setSkillCooldowns(prev => ({
+      ...prev,
+      [skill.name]: skill.cooldown
+    }));
   };
 
+  const handleSlotClick = (index: number) => {
+    if (isSkillsMenuOpen) {
+      if (selectedSkill) {
+        equipSkill(selectedSkill, index);
+        setSelectedSkill(null);
+      } else {
+        setSelectedSkillSlot(index);
+      }
+    } else {
+      const skill = equippedSkills[index];
+      if (skill) {
+        handleCastSkill(skill);
+      }
+    }
+  };
 
   // Calculate XP progress
   const xpForNextLevel = Math.floor(100 * Math.pow(1.5, level - 1));
@@ -173,17 +155,7 @@ export function BottomMenu() {
 
   return (
     <>
-      <div
-        className="bottom-menu"
-        onPointerDown={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-        }}
-        onMouseDown={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-        }}
-      >
+      <div className="bottom-menu">
         <div className="status-section">
           <div className="player-info">
             <div
@@ -191,16 +163,11 @@ export function BottomMenu() {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                setShowSkillsMenu(true);
+                setIsSkillsMenuOpen(true);
               }}
               title="Click to open Skills Menu"
             >
               <FaUser />
-              {skillPoints > 0 && (
-                <div className="skill-points-badge">
-                  {skillPoints}
-                </div>
-              )}
             </div>
             <div className="level-info">
               <div className="level-number">Level {level}</div>
@@ -208,66 +175,72 @@ export function BottomMenu() {
                 <div
                   className="xp-progress"
                   style={{ width: `${xpProgress}%` }}
-                  title={`${experience.toLocaleString()}/${xpForNextLevel.toLocaleString()} XP`}
+                  title={`${experience?.toLocaleString() || 0}/${xpForNextLevel.toLocaleString()} XP`}
                 />
               </div>
               <div className="xp-text">
-                {experience.toLocaleString()}/{xpForNextLevel.toLocaleString()} XP
+                {experience?.toLocaleString() || 0}/{xpForNextLevel.toLocaleString()} XP
               </div>
             </div>
           </div>
           <div className="resources">
             <div className="money" title="Gold">
-              {money.toLocaleString()}
+              {money?.toLocaleString() || 0}
             </div>
           </div>
         </div>
 
-        <div className="skills-section">
-          {skills.map((skill, index) => (
-            <div
-              key={skill.name}
-              className={`relative group skill-button ${skill.level === 0 ? 'locked' : ''} ${skill.currentCooldown > 0 ? 'on-cooldown' : ''}`}
-              onPointerDown={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                handleSkillClick(index);
-              }}
-              style={{ borderColor: skill.color }}
-            >
-              <Tooltip title={<>
-                <div className="skill-name">{skill.name}</div>
-                <div className="skill-description">{skill.description}</div>
-              </>} placement="top" arrow>
-                <button
-                  className={`w-full h-full rounded-sm flex items-center justify-center text-4xl transition-all
-                  ${skill.currentCooldown > 0 ? 'opacity-50' : 'hover:scale-110'}`}
-                  style={{ backgroundColor: skill.color }}
-                >
-                  {<skill.icon />}
-                </button>
-              </Tooltip>
-              {
-                skill.currentCooldown > 0 && (
-                  <CooldownOverlay
-                    remainingTime={skill.currentCooldown}
-                    totalTime={skill.cooldown}
-                    color={skill.color}
-                  />
-                )
-              }
-              < div className="skill-key" > {SKILL_KEYS[index]}</div>
-            </div>
-          ))}
-        </div >
-      </div >
-      {showSkillsMenu && (
-        <SkillsMenu
-          isOpen={showSkillsMenu}
-          onClose={() => setShowSkillsMenu(false)}
-        />
-      )
-      }
+        <div className="skill-slots">
+          {Array.from({ length: 8 }, (_, i) => {
+            const skill = equippedSkills[i];
+            const isSelected = selectedSkillSlot === i;
+            const isHighlighted = selectedSkill !== null;
+            const cooldown = skill ? skillCooldowns[skill.name] || 0 : 0;
+
+            return (
+              <div
+                key={i}
+                className={`skill-slot ${isSelected ? 'selected' : ''} ${isHighlighted ? 'slot-highlight' : ''
+                  } ${cooldown > 0 ? 'on-cooldown' : ''}`}
+                onClick={() => handleSlotClick(i)}
+                style={{
+                  borderColor: isSelected ? (skill?.color || '#666') : '#666',
+                  boxShadow: isSelected ? `0 0 10px ${skill?.color || '#666'}` : 'none'
+                }}
+              >
+                {skill && (
+                  <>
+                    <div className="skill-icon" style={{ color: skill.color }}>
+                      <skill.icon size={32} />
+                    </div>
+                    {isSkillsMenuOpen && (
+                      <button
+                        className="unequip-button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          unequipSkill(skill, i);
+                        }}
+                        title="Unequip skill"
+                      >
+                        <FaTimes />
+                      </button>
+                    )}
+                    {cooldown > 0 && (
+                      <div className="cooldown-overlay" style={{
+                        height: `${(cooldown / skill.cooldown) * 100}%`
+                      }}>
+                        {Math.ceil(cooldown)}s
+                      </div>
+                    )}
+                  </>
+                )}
+                <div className="slot-number">{i + 1}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <SkillsMenu isOpen={isSkillsMenuOpen} onClose={() => setIsSkillsMenuOpen(false)} />
     </>
   );
 }

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { RapierRigidBody } from "@react-three/rapier";
+import { ActiveSkill, PassiveSkill } from '../components/SkillsMenu';
 
 export type ElementType =
   | "storm1"
@@ -95,6 +96,9 @@ interface GameState {
   showWaveIndicator: boolean;
   cameraZoom: number;
   cameraAngle: number;
+  equippedSkills: (ActiveSkill | null)[];
+  selectedSkillSlot: number | null;
+  selectedSkill: ActiveSkill | null;
   setPhase: (phase: "prep" | "combat" | "victory") => void;
   setCurrentLevel: (level: number) => void;
   setTimer: (timer: number) => void;
@@ -120,6 +124,10 @@ interface GameState {
   addScore: (amount: number) => void;
   updateCreep: (creepId: string, updates: Partial<CreepState>) => void;
   upgradeSkill: (skillName: string, cost: number) => void;
+  equipSkill: (skill: ActiveSkill, slot: number) => void;
+  unequipSkill: (slot: number) => void;
+  setSelectedSkillSlot: (slot: number | null) => void;
+  setSelectedSkill: (skill: ActiveSkill | null) => void;
 }
 
 const initialState: GameState = {
@@ -160,6 +168,9 @@ const initialState: GameState = {
   showWaveIndicator: false,
   cameraZoom: 1,
   cameraAngle: 0.5,
+  equippedSkills: Array(8).fill(null),
+  selectedSkillSlot: null,
+  selectedSkill: null,
   setPhase: () => {},
   setCurrentLevel: () => {},
   setTimer: () => {},
@@ -185,6 +196,10 @@ const initialState: GameState = {
   addScore: () => {},
   updateCreep: () => {},
   upgradeSkill: () => {},
+  equipSkill: () => {},
+  unequipSkill: () => {},
+  setSelectedSkillSlot: () => {},
+  setSelectedSkill: () => {},
 };
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -383,4 +398,28 @@ export const useGameStore = create<GameState>((set, get) => ({
     const newAngle = Math.max(0.2, Math.min(0.8, currentAngle + delta));
     set({ cameraAngle: newAngle });
   },
+  equipSkill: (skill, slot) =>
+    set((state) => {
+      const newEquippedSkills = [...state.equippedSkills];
+      // Check if skill is already equipped
+      const existingSlot = newEquippedSkills.findIndex(s => s?.name === skill.name);
+      if (existingSlot !== -1) {
+        newEquippedSkills[existingSlot] = null;
+      }
+      newEquippedSkills[slot] = skill;
+      // Clear selections after equipping
+      return { 
+        equippedSkills: newEquippedSkills,
+        selectedSkill: null,
+        selectedSkillSlot: null
+      };
+    }),
+  unequipSkill: (slot) =>
+    set((state) => {
+      const newEquippedSkills = [...state.equippedSkills];
+      newEquippedSkills[slot] = null;
+      return { equippedSkills: newEquippedSkills };
+    }),
+  setSelectedSkillSlot: (slot) => set({ selectedSkillSlot: slot }),
+  setSelectedSkill: (skill) => set({ selectedSkill: skill }),
 }));
