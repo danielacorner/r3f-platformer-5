@@ -445,7 +445,8 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
     selectedSkillSlot,
     selectedSkill,
     setSelectedSkill,
-    equipSkill
+    equipSkill,
+    setSelectedSkillSlot
   } = useGameStore();
 
   const handleUpgrade = (skillName: string) => {
@@ -465,6 +466,9 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
     if (selectedSkillSlot !== null) {
       // If a slot is selected, equip the skill directly
       equipSkill(skill, selectedSkillSlot);
+      setSelectedSkill(null);
+      setSelectedSkillSlot(null);
+      onClose();
     } else {
       // Otherwise, select this skill for later equipping
       setSelectedSkill(skill);

@@ -64,6 +64,16 @@ export function BottomMenu() {
   const [isSkillsMenuOpen, setIsSkillsMenuOpen] = useState(false);
   const [skillCooldowns, setSkillCooldowns] = useState<{ [key: string]: number }>({});
 
+  // Set Magic Missile as default skill in slot 1
+  useEffect(() => {
+    if (equippedSkills.length === 0 || !equippedSkills[0]) {
+      const magicMissile = activeSkills.find(skill => skill.name === 'Magic Missiles');
+      if (magicMissile) {
+        equipSkill(magicMissile, 0);
+      }
+    }
+  }, []);
+
   // Handle cooldowns
   useEffect(() => {
     const interval = setInterval(() => {
@@ -134,17 +144,19 @@ export function BottomMenu() {
   };
 
   const handleSlotClick = (index: number) => {
+    const skill = equippedSkills[index];
+    
     if (isSkillsMenuOpen) {
-      if (selectedSkill) {
-        equipSkill(selectedSkill, index);
-        setSelectedSkill(null);
-      } else {
-        setSelectedSkillSlot(index);
-      }
+      // In skills menu mode, clicking a slot sets it as the target for equipping
+      setSelectedSkillSlot(index);
     } else {
-      const skill = equippedSkills[index];
       if (skill) {
+        // If slot has a skill and menu is closed, cast the skill
         handleCastSkill(skill);
+      } else {
+        // If slot is empty and menu is closed, open menu and select this slot
+        setSelectedSkillSlot(index);
+        setIsSkillsMenuOpen(true);
       }
     }
   };
@@ -240,7 +252,10 @@ export function BottomMenu() {
           })}
         </div>
       </div>
-      <SkillsMenu isOpen={isSkillsMenuOpen} onClose={() => setIsSkillsMenuOpen(false)} />
+      <SkillsMenu isOpen={isSkillsMenuOpen} onClose={() => {
+        setIsSkillsMenuOpen(false);
+        setSelectedSkillSlot(null);
+      }} />
     </>
   );
 }
