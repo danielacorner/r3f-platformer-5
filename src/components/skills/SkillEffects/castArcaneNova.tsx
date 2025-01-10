@@ -9,7 +9,7 @@ export function castArcaneNova(position: Vector3, level: number) {
     type: 'arcaneNova',
     position: position.clone().setY(1), // Raise it off the ground
     startTime: Date.now(),
-    duration: 1.0,
+    duration: 0.9, // Balanced duration
     radius: 8 + level * 2, // Larger radius
     damage: 30 + level * 10,
     color: '#8B5CF6',

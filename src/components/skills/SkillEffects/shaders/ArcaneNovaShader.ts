@@ -45,7 +45,7 @@ export const ArcaneNovaShaderMaterial = shaderMaterial(
       return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
     }
 
-    // Electric noise
+    // Electric noise with more static-like appearance
     float electric(vec2 uv, float t) {
       vec2 i = vec2(uv * 8.0);
       float noise1 = hash(i + t);
@@ -53,12 +53,15 @@ export const ArcaneNovaShaderMaterial = shaderMaterial(
       return noise1 * noise2;
     }
 
-    // Frost pattern
-    float frost(vec2 uv, float scale) {
-      vec2 i = uv * scale;
-      float angle = atan(i.y, i.x);
-      float len = length(i);
-      return sin(len * 4.0 - angle * 3.0);
+    // Static electricity pattern
+    float staticPattern(vec2 uv, float t, float scale) {
+      // Create multiple layers of noise
+      float noise1 = electric(uv * scale, t);
+      float noise2 = electric(uv * scale * 2.0 + 1.234, t * 1.5);
+      float noise3 = electric(uv * scale * 4.0 + 2.456, t * 2.0);
+      
+      // Combine layers with different weights
+      return noise1 * 0.5 + noise2 * 0.3 + noise3 * 0.2;
     }
 
     void main() {
@@ -66,46 +69,78 @@ export const ArcaneNovaShaderMaterial = shaderMaterial(
       vec2 centeredUv = vUv * 2.0 - 1.0;
       float dist = length(centeredUv);
       
-      // Calculate ring position based on progress
-      float ringRadius = progress * 1.2; // Allow expansion beyond 1.0
-      float ringWidth = 0.1;
+      // Balanced explosive expansion
+      float explosiveProgress = log(1.0 + progress * 12.0) / log(13.0);
+      float ringRadius = explosiveProgress * 1.2;
       
-      // Create expanding ring
-      float ring = smoothstep(ringRadius - ringWidth, ringRadius, dist) * 
-                  smoothstep(ringRadius + ringWidth, ringRadius, dist);
+      // Dynamic ring width that starts narrow and expands moderately
+      float ringWidth = 0.06 + explosiveProgress * 0.06;
       
-      // Add electric arcs
-      float electricField = electric(centeredUv * 3.0, time * 4.0);
-      float arcs = step(0.7, electricField) * ring;
+      // Create expanding ring with moderately sharp leading edge
+      float ring = smoothstep(ringRadius - ringWidth, ringRadius - ringWidth * 0.4, dist) * 
+                  smoothstep(ringRadius + ringWidth * 0.4, ringRadius, dist);
       
-      // Add frost patterns
-      float frostPattern = frost(centeredUv * 10.0, 5.0);
-      float frostMask = smoothstep(ringRadius + ringWidth, ringRadius, dist);
-      float frost = (frostPattern * 0.5 + 0.5) * frostMask;
+      // Create static electricity effect that follows the ring
+      float staticScale = 8.0 + explosiveProgress * 4.0;
+      float staticTime = time * 8.0;
+      float staticNoise = staticPattern(centeredUv, staticTime, staticScale);
       
-      // Add energy pulses
-      float pulse = sin(dist * 20.0 - time * 8.0) * 0.5 + 0.5;
-      float energyPulse = pulse * ring;
+      // Create electric arcs that follow the ring
+      float arcWidth = ringWidth * 1.5;
+      float arcMask = smoothstep(ringRadius - arcWidth, ringRadius + arcWidth, dist);
+      float arcs = step(0.7, staticNoise) * (1.0 - arcMask) * 
+                  smoothstep(ringRadius + arcWidth, ringRadius - arcWidth, dist);
       
-      // Combine effects
+      // Add crackling effect around the ring
+      float crackleScale = 15.0 + explosiveProgress * 10.0;
+      float crackleTime = time * 10.0;
+      float crackle = staticPattern(centeredUv, crackleTime, crackleScale);
+      float crackleMask = smoothstep(ringRadius + ringWidth * 2.0, ringRadius - ringWidth * 2.0, dist);
+      float crackleEffect = step(0.8, crackle) * crackleMask * (1.0 - explosiveProgress * 0.5);
+      
+      // Add energy pulses that follow the static
+      float pulseSpeed = 25.0 - explosiveProgress * 15.0;
+      float pulseTime = time * 8.0 - dist * pulseSpeed;
+      float pulse = sin(pulseTime) * 0.5 + 0.5;
+      float energyPulse = pulse * ring * pow(1.0 - explosiveProgress * 0.6, 1.5);
+      
+      // Initial burst flash concentrated at center
+      float centerRadius = 0.2;
+      float initialBurst = smoothstep(0.0, 0.15, explosiveProgress) * (1.0 - explosiveProgress);
+      float centerFlash = smoothstep(centerRadius, 0.0, dist) * initialBurst * 2.0;
+      
+      // Color mixing
       vec3 ringColor = mix(color, color2, pulse);
-      vec3 arcColor = vec3(0.9, 0.95, 1.0);
+      vec3 arcColor = vec3(0.92, 0.96, 1.0);
+      vec3 energyColor = mix(color2, arcColor, energyPulse);
+      vec3 flashColor = mix(arcColor, color2, 0.3);
+      vec3 staticColor = mix(arcColor, color2, staticNoise);
       
+      // Combine effects with static electricity
       vec3 finalColor = ringColor * ring +
-                       arcColor * arcs +
-                       color2 * frost * 0.5 +
-                       color * energyPulse * 0.3;
+                       arcColor * (arcs * 0.8 + crackleEffect * 0.6) +
+                       staticColor * staticNoise * ring * 0.4 +
+                       energyColor * energyPulse * 0.4 +
+                       flashColor * centerFlash;
                        
-      // Calculate fade based on progress
-      float fade = 1.0 - smoothstep(0.8, 1.0, progress);
+      // Balanced fade timing
+      float fade = 1.0 - smoothstep(0.65, 1.0, progress);
       
       // Circular mask
-      float circularMask = 1.0 - smoothstep(0.95, 1.0, dist);
+      float maskRadius = 0.95;
+      float circularMask = 1.0 - smoothstep(maskRadius - 0.05, maskRadius, dist);
       
-      // Final alpha combines ring opacity, fade and circular mask
-      float finalAlpha = (ring + frost * 0.3 + arcs * 0.5) * fade * opacity * circularMask;
+      // Combine everything with static-focused intensity
+      float finalAlpha = (ring * (1.0 - explosiveProgress * 0.25) +
+                         arcs * 0.7 +
+                         crackleEffect * 0.5 +
+                         staticNoise * ring * 0.3 +
+                         centerFlash) 
+                         * fade * opacity * circularMask;
       
-      gl_FragColor = vec4(finalColor, finalAlpha);
+      // Add extra brightness to center and static
+      float extraBrightness = centerFlash * 0.5 + staticNoise * ring * 0.2;
+      gl_FragColor = vec4(finalColor * (1.0 + extraBrightness), finalAlpha);
     }
   `
 );
