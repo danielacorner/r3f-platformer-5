@@ -1,6 +1,6 @@
 .skills-menu {
   position: fixed;
-  top: 50%;
+  top: calc(50% - 32px);
   left: 50%;
   transform: translate(-50%, -50%);
   width: 90%;
@@ -106,21 +106,26 @@
   overflow-y: auto;
   padding-right: 0.5rem;
   margin-top: 1rem;
+
   /* Hide scrollbar for Chrome/Safari/Opera */
   &::-webkit-scrollbar {
     width: 8px;
   }
+
   &::-webkit-scrollbar-track {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 4px;
   }
+
   &::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.2);
     border-radius: 4px;
   }
+
   &::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3);
   }
+
   /* Hide scrollbar for Firefox */
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.1);
@@ -242,20 +247,24 @@
 }
 
 .skill-info p.skill-duration {
-  color: #22D3EE; /* Cyan 400 - for duration/time effects */
+  color: #22D3EE;
+  /* Cyan 400 - for duration/time effects */
 }
 
 .skill-info p.skill-cooldown {
-  color: #F87171; /* Red 400 - for cooldown/waiting */
+  color: #F87171;
+  /* Red 400 - for cooldown/waiting */
 }
 
 .skill-info p.skill-stats {
-  color: #FBBF24; /* Amber 400 - for power/effect stats */
+  color: #FBBF24;
+  /* Amber 400 - for power/effect stats */
   font-weight: 500;
 }
 
 .skill-info .stat-label {
-  color: #94A3B8; /* Slate 400 */
+  color: #94A3B8;
+  /* Slate 400 */
   font-weight: normal;
 }
 

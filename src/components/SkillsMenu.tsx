@@ -472,6 +472,8 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
     } else {
       // Otherwise, select this skill for later equipping
       setSelectedSkill(skill);
+      // Clear slot selection when selecting a skill
+      setSelectedSkillSlot(null);
     }
   };
 

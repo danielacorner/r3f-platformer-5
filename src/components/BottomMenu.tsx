@@ -147,8 +147,16 @@ export function BottomMenu() {
     const skill = equippedSkills[index];
     
     if (isSkillsMenuOpen) {
-      // In skills menu mode, clicking a slot sets it as the target for equipping
-      setSelectedSkillSlot(index);
+      if (selectedSkill) {
+        // If a skill is selected in the menu, equip it to this slot
+        equipSkill(selectedSkill, index);
+        setSelectedSkill(null);
+        setSelectedSkillSlot(null);
+        setIsSkillsMenuOpen(false);
+      } else {
+        // Otherwise just select this slot
+        setSelectedSkillSlot(index);
+      }
     } else {
       if (skill) {
         // If slot has a skill and menu is closed, cast the skill
