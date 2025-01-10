@@ -63,6 +63,12 @@ export function BottomMenu() {
   } = useGameStore();
   const [isSkillsMenuOpen, setIsSkillsMenuOpen] = useState(false);
   const [skillCooldowns, setSkillCooldowns] = useState<{ [key: string]: number }>({});
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+
+  // Detect touch device
+  useEffect(() => {
+    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  }, []);
 
   // Set Magic Missile as default skill in slot 1
   useEffect(() => {
@@ -73,6 +79,26 @@ export function BottomMenu() {
       }
     }
   }, []);
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    if (isTouchDevice || isSkillsMenuOpen) return;
+
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Convert key to number (1-8)
+      const num = parseInt(e.key);
+      if (num >= 1 && num <= 8) {
+        const index = num - 1;
+        const skill = equippedSkills[index];
+        if (skill) {
+          handleCastSkill(skill);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [equippedSkills, isSkillsMenuOpen, isTouchDevice]);
 
   // Handle cooldowns
   useEffect(() => {
@@ -253,6 +279,9 @@ export function BottomMenu() {
                       </div>
                     )}
                   </>
+                )}
+                {!isTouchDevice && (
+                  <div className="key-indicator">{i + 1}</div>
                 )}
                 <div className="slot-number">{i + 1}</div>
               </div>
