@@ -78,6 +78,26 @@ export function SkillEffects() {
     const now = Date.now();
     const { creeps, damageCreep } = useGameStore.getState();
 
+    // Update shader materials
+    const materials = state.scene.children
+      .filter(child => child.material && child.material.type === 'ShaderMaterial')
+      .map(child => child.material);
+
+    materials.forEach(material => {
+      if (material.uniforms) {
+        material.uniforms.time.value = time.current;
+        
+        // Update progress for ArcaneNova effects
+        if (material.type === 'ArcaneNovaShaderMaterial') {
+          const effect = activeEffects.find(e => e.type === 'arcaneNova');
+          if (effect) {
+            const progress = (now - effect.startTime) / (effect.duration * 1000);
+            material.uniforms.progress.value = progress;
+          }
+        }
+      }
+    });
+
     // Update effects
     activeEffects = activeEffects.filter(effect => {
       if (effect.type === 'magicMissile') {
@@ -181,16 +201,19 @@ export function SkillEffects() {
               <mesh
                 position={[effect.position.x, effect.position.y + 0.1, effect.position.z]}
                 rotation={[-Math.PI / 2, 0, 0]}
-                scale={[scale, scale, 1]}
               >
-                <ringGeometry args={[0.8, 1, 32]} />
+                <planeGeometry args={[20, 20]} />
                 <arcaneNovaShaderMaterial
-                  time={age}
-                  scale={scale}
-                  opacity={opacity}
+                  key={effect.id}
+                  time={time.current}
+                  progress={age / effect.duration}
+                  color={new THREE.Color(0.3, 0.8, 1.0)}
+                  color2={new THREE.Color(0.6, 0.9, 1.0)}
+                  scale={1.0}
+                  opacity={1.0}
                   transparent
                   depthWrite={false}
-                  depthTest={false}
+                  depthTest={true}
                   side={THREE.DoubleSide}
                 />
               </mesh>

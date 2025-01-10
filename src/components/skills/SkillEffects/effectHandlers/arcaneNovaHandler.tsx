@@ -8,25 +8,22 @@ export function updateArcaneNova(
   damageCreep: (id: string, damage: number) => void
 ): boolean {
   const age = (now - effect.startTime) / 1000;
-  const progress = Math.min(age / effect.duration, 1);
+  const progress = age / effect.duration;
 
-  if (progress >= 1) {
-    return false;
-  }
-
-  // Apply damage during expansion phase
-  if (progress < 0.5) {
-    const scale = Math.min(progress * 2, 1) * effect.radius;
+  // Only apply damage during the main expansion phase (before max radius)
+  if (progress < 0.8) {
+    const currentRadius = effect.radius * Math.min(progress / 0.8, 1);
     creeps.forEach(creep => {
       if (!creep.isDead) {
         const creepPos = new Vector3(...creep.position);
         const distance = effect.position.distanceTo(creepPos);
-        if (distance < scale) {
+        if (distance < currentRadius) {
           damageCreep(creep.id, effect.damage);
         }
       }
     });
   }
 
-  return true;
+  // Keep effect alive for 1.5x duration to allow for fade out
+  return age < effect.duration * 1.5;
 }
