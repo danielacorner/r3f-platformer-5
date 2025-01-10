@@ -31,52 +31,10 @@ type PassiveSkill = {
   cooldown?: number;
   duration?: number;
   effect?: (level: number) => any;
+  school: MagicSchool;
 };
 
-export const passiveSkills: PassiveSkill[] = [
-  {
-    name: 'Arcane Power',
-    description: 'Increases magic damage by 20% per level',
-    icon: GiFireBowl,
-    color: '#9333ea',
-    basePrice: 100,
-    priceMultiplier: 1.5,
-    maxLevel: 20,
-    effect: (level: number) => ({ damage: 1 + level * 0.2 }),
-  },
-  {
-    name: 'Swift Cast',
-    description: 'Reduces spell cooldown by 10% per level',
-    icon: GiSpeedometer,
-    color: '#06b6d4',
-    basePrice: 150,
-    priceMultiplier: 1.5,
-    maxLevel: 20,
-    effect: (level: number) => ({ cooldownReduction: level * 0.1 }),
-  },
-  {
-    name: 'Mystic Reach',
-    description: 'Increases spell range by 15% per level',
-    icon: GiMagicSwirl,
-    color: '#2563eb',
-    basePrice: 200,
-    priceMultiplier: 1.5,
-    maxLevel: 20,
-    effect: (level: number) => ({ range: 1 + level * 0.15 }),
-  },
-  {
-    name: 'Multi Orb',
-    description: 'Adds 15% chance per level to cast an additional orb',
-    icon: GiCrystalBall,
-    color: '#ea580c',
-    basePrice: 300,
-    priceMultiplier: 1.5,
-    maxLevel: 20,
-    effect: (level: number) => ({ multiCast: level * 0.15 }),
-  },
-];
-
-export interface ActiveSkill {
+type ActiveSkill = {
   name: string;
   icon: any;
   cooldown: number;
@@ -86,73 +44,167 @@ export interface ActiveSkill {
   description: string;
   duration?: number;
   maxLevel: number;
+  school: MagicSchool;
 }
-export const activeSkills: ActiveSkill[] = [
+
+export type MagicSchool = 'arcane' | 'storm' | 'water' | 'force' | 'frost';
+
+export const magicSchools: Record<MagicSchool, {
+  name: string;
+  color: string;
+  icon: any;
+  description: string;
+}> = {
+  arcane: {
+    name: 'Arcane',
+    color: '#9333ea',
+    icon: RiMagicFill,
+    description: 'Fundamental magic focusing on raw magical energy and multiplication of effects'
+  },
+  storm: {
+    name: 'Storm',
+    color: '#eab308',
+    icon: RiThunderstormsFill,
+    description: 'Harness the power of lightning and thunder'
+  },
+  water: {
+    name: 'Water',
+    color: '#06b6d4',
+    icon: RiContrastDrop2Fill,
+    description: 'Control the flow of water and tidal forces'
+  },
+  force: {
+    name: 'Force',
+    color: '#10b981',
+    icon: GiBoomerang,
+    description: 'Manipulate kinetic energy and physical forces'
+  },
+  frost: {
+    name: 'Frost',
+    color: '#60a5fa',
+    icon: GiMagicSwirl,
+    description: 'Command ice and cold energies'
+  }
+};
+
+export const passiveSkills: (PassiveSkill)[] = [
+  {
+    name: 'Arcane Power',
+    description: 'Increases magic damage by 20% per level',
+    icon: GiFireBowl,
+    color: '#9333ea',
+    basePrice: 100,
+    priceMultiplier: 1.5,
+    maxLevel: 20,
+    school: 'arcane',
+    effect: (level: number) => ({ damage: 1 + level * 0.2 }),
+  },
+  {
+    name: 'Swift Cast',
+    description: 'Reduces spell cooldown by 10% per level',
+    icon: GiSpeedometer,
+    color: '#eab308',
+    basePrice: 150,
+    priceMultiplier: 1.5,
+    maxLevel: 20,
+    school: 'storm',
+    effect: (level: number) => ({ cooldownReduction: level * 0.1 }),
+  },
+  {
+    name: 'Mystic Reach',
+    description: 'Increases spell range by 15% per level',
+    icon: GiMagicSwirl,
+    color: '#06b6d4',
+    basePrice: 200,
+    priceMultiplier: 1.5,
+    maxLevel: 20,
+    school: 'water',
+    effect: (level: number) => ({ range: 1 + level * 0.15 }),
+  },
+  {
+    name: 'Multi Orb',
+    description: 'Adds 15% chance per level to cast an additional orb',
+    icon: GiCrystalBall,
+    color: '#9333ea',
+    basePrice: 300,
+    priceMultiplier: 1.5,
+    maxLevel: 20,
+    school: 'arcane',
+    effect: (level: number) => ({ multiCast: level * 0.15 }),
+  },
+];
+
+export const activeSkills: (ActiveSkill)[] = [
   {
     name: 'Magic Missiles',
     description: 'Launch multiple homing missiles that deal damage to enemies',
     icon: RiMagicFill,
-    color: '#4F46E5',
+    color: '#9333ea',
     cooldown: 2,
     level: process.env.NODE_ENV === "development" ? 1 : 0,
     maxLevel: 20,
+    school: 'arcane',
   },
   {
     name: 'Magic Boomerang',
     description: 'Launch a magical boomerang that damages enemies in its path',
     icon: GiBoomerang,
-    color: '#10B981',
+    color: '#10b981',
     cooldown: 4,
     level: process.env.NODE_ENV === "development" ? 1 : 0,
     maxLevel: 20,
+    school: 'force',
   },
   {
     name: 'Arcane Nova',
     description: 'Release a burst of arcane energy, damaging nearby enemies',
     icon: GiMagicSwirl,
-    color: '#EC4899',
+    color: '#9333ea',
     cooldown: 6,
     level: process.env.NODE_ENV === "development" ? 1 : 0,
     maxLevel: 20,
+    school: 'arcane',
   },
   {
     name: 'Lightning Storm',
     description: 'Call down lightning strikes on random enemies',
     icon: GiLightningStorm,
-    color: '#EAB308',
+    color: '#eab308',
     duration: 8,
     cooldown: process.env.NODE_ENV === "development" ? 1 : 8,
     level: process.env.NODE_ENV === "development" ? 1 : 0,
     maxLevel: 20,
+    school: 'storm',
   },
   {
     name: 'Arcane Multiplication',
     description: 'Temporarily triple all your magical effects',
     icon: GiMagicPalm,
-    color: '#9333EA',
+    color: '#9333ea',
     cooldown: 10,
     duration: 5,
     level: process.env.NODE_ENV === "development" ? 1 : 0,
     maxLevel: 20,
+    school: 'arcane',
   },
   {
     name: 'Tsunami Wave',
     description: 'Summon a massive wave that damages and pushes back enemies',
     icon: GiWaterSplash,
-    color: '#06B6D4',
+    color: '#06b6d4',
     cooldown: 12,
     level: process.env.NODE_ENV === "development" ? 1 : 0,
     maxLevel: 20,
+    school: 'water',
   },
-
 ];
 
 export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
-  const [activeTab, setActiveTab] = useState<'passive' | 'active'>('active');
+  const [activeSchool, setActiveSchool] = useState<MagicSchool>('arcane');
   const { skillPoints, upgrades, upgradeSkill, skillLevels, } = useGameStore();
 
   const handleUpgrade = (skillName: string) => {
-    const skills = activeTab === 'passive' ? passiveSkills : activeSkills;
+    const skills = [...activeSkills, ...passiveSkills];
     const skill = skills.find(s => s.name === skillName);
     if (!skill) return;
 
@@ -175,6 +227,10 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
     e.stopPropagation();
   };
 
+  const handleScroll = (e: React.WheelEvent) => {
+    e.stopPropagation();
+  };
+
   const getSkillStats = (skill: typeof activeSkills[0], level: number) => {
     switch (skill.name) {
       case 'Magic Missiles':
@@ -194,7 +250,7 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
     }
   };
 
-  const renderSkillList = (skills: typeof passiveSkills) => (
+  const renderSkillList = (skills: (PassiveSkill | ActiveSkill)[]) => (
     <div className="skills-grid">
       {skills.map((skill) => {
         const currentLevel = skillLevels[skill.name] || 0;
@@ -273,7 +329,7 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
   );
 
   return createPortal(
-    <div className="skills-menu" onClick={handleMenuClick}>
+    <div className="skills-menu" onClick={handleMenuClick} onWheel={handleScroll}>
       <div className="skills-header">
         <h2>Magic Skills</h2>
         <div className="header-right">
@@ -295,43 +351,46 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs
-          value={activeTab}
-          onChange={(_, newValue) => setActiveTab(newValue)}
+          value={activeSchool}
+          onChange={(_, newValue) => setActiveSchool(newValue)}
+          variant="scrollable"
+          scrollButtons="auto"
           sx={{
             '& .MuiTab-root': {
+              flexGrow: 1,
               color: 'rgba(255, 255, 255, 0.7)',
               '&.Mui-selected': {
-                color: '#3b82f6',
+                color: magicSchools[activeSchool].color,
               }
             },
             '& .MuiTabs-indicator': {
-              backgroundColor: '#3b82f6',
+              backgroundColor: magicSchools[activeSchool].color,
             }
           }}
         >
-          <Tab
-            label={
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <RiSwordFill />
-                Active Skills
-              </div>
-            }
-            value="active"
-          />
-          <Tab
-            label={
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <GiInfinity />
-                Passive Skills
-              </div>
-            }
-            value="passive"
-          />
+          {Object.entries(magicSchools).map(([key, school]) => (
+            <Tab
+              key={key}
+              label={
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <school.icon style={{ color: school.color }} />
+                  {school.name}
+                </div>
+              }
+              value={key}
+            />
+          ))}
         </Tabs>
       </Box>
 
       <div className="skills-content">
-        {activeTab === 'passive' ? renderSkillList(passiveSkills) : renderSkillList(activeSkills)}
+        <div className="school-description" style={{ color: magicSchools[activeSchool].color, marginBottom: '1rem' }}>
+          {magicSchools[activeSchool].description}
+        </div>
+        {renderSkillList([
+          ...activeSkills.filter(skill => skill.school === activeSchool),
+          ...passiveSkills.filter(skill => skill.school === activeSchool)
+        ])}
       </div>
     </div>,
     document.body

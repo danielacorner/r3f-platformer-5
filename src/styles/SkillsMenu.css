@@ -12,7 +12,8 @@
   padding: 1.5rem;
   color: #e2e8f0;
   z-index: 10000;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .skills-header {
@@ -100,9 +101,34 @@
 }
 
 /* Skills Grid */
+.skills-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  margin-top: 1rem;
+  /* Hide scrollbar for Chrome/Safari/Opera */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+  /* Hide scrollbar for Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.1);
+}
+
 .skills-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1rem;
   padding: 0.5rem;
 }
