@@ -7,6 +7,7 @@ import { castArcaneMultiplication } from './castArcaneMultiplication';
 import { ActiveSkill } from '../../SkillsMenu';
 
 export function castSkill(skill: ActiveSkill, position: Vector3, direction: Vector3, level: number): void {
+  console.log("🚀 ~ file: castSkill.ts:10 ~ skill:", skill)
   switch (skill.name) {
     case 'Magic Boomerang':
       castMagicBoomerang(position, direction, level);

@@ -45,7 +45,7 @@ type PassiveSkill = {
   school: MagicSchool;
 };
 
-type ActiveSkill = {
+export type ActiveSkill = {
   name: string;
   icon: any;
   cooldown: number;
@@ -436,10 +436,10 @@ export const activeSkills: (ActiveSkill)[] = [
 
 export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
   const [activeSchool, setActiveSchool] = useState<MagicSchool>('arcane');
-  const { 
-    skillPoints, 
-    upgrades, 
-    upgradeSkill, 
+  const {
+    skillPoints,
+    upgrades,
+    upgradeSkill,
     skillLevels,
     equippedSkills,
     selectedSkillSlot,
@@ -546,7 +546,7 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
             key={skill.name}
             className={`skill-item ${isSelected ? 'selected' : ''} ${isEquipped ? 'equipped' : ''}`}
             onClick={() => !('effect' in skill) && handleSkillClick(skill as ActiveSkill)}
-            style={{ 
+            style={{
               boxShadow: isSelected ? `0 0 10px ${skill.color}` : 'none',
               cursor: !('effect' in skill) ? 'pointer' : 'default'
             }}

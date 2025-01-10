@@ -114,6 +114,7 @@ export function BottomMenu() {
   }, []);
 
   const handleCastSkill = (skill: ActiveSkill) => {
+    console.log("🚀 ~ file: BottomMenu.tsx:117 ~ skill:", skill)
     const level = skillLevels[skill.name] || 0;
     if (level === 0) return;
 
@@ -148,7 +149,7 @@ export function BottomMenu() {
 
   const handleSlotClick = (index: number) => {
     const skill = equippedSkills[index];
-    
+
     if (isSkillsMenuOpen) {
       if (selectedSkill) {
         // If a skill is selected in the menu, equip it to this slot
