@@ -4,11 +4,7 @@ import { FaUser } from "react-icons/fa";
 import { FaTimes } from "react-icons/fa";
 import "../styles/BottomMenu.css";
 import { ActiveSkill, activeSkills, SkillsMenu } from "./SkillsMenu";
-import { castLightningStorm } from './skills/SkillEffects/castLightningStorm';
-import { castMagicMissiles } from './skills/SkillEffects/castMagicMissiles';
-import { castMagicBoomerang } from './skills/SkillEffects/castMagicBoomerang';
-import { castArcaneNova } from './skills/SkillEffects/castArcaneNova';
-import { castArcaneMultiplication } from './skills/SkillEffects/castArcaneMultiplication';
+import { castSkill } from './skills/SkillEffects/castSkill';
 import { Vector3 } from "three";
 import { Tooltip } from "@mui/material";
 import { GiMagicSwirl } from "react-icons/gi";
@@ -62,7 +58,7 @@ export function BottomMenu() {
     equipSkill
   } = useGameStore();
   const [isSkillsMenuOpen, setIsSkillsMenuOpen] = useState(false);
-  const [skillCooldowns, setSkillCooldowns] = useState<{ [key: string]: number }>({});
+  const [skillCooldowns, setSkillCooldowns] = useState<{ [key: string]: number }>([]);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
 
   // Detect touch device
@@ -142,26 +138,7 @@ export function BottomMenu() {
       direction = new Vector3(0, 0, 1);
     }
 
-    switch (skill.name) {
-      case 'Magic Boomerang':
-        castMagicBoomerang(position, direction, level);
-        break;
-      case 'Magic Missiles':
-        castMagicMissiles(position, level);
-        break;
-      case 'Arcane Nova':
-        castArcaneNova(position, level);
-        break;
-      case 'Lightning Storm':
-        castLightningStorm(position, level);
-        break;
-      case 'Arcane Multiplication':
-        castArcaneMultiplication(position, level);
-        break;
-      case 'Tsunami Wave':
-        castTsunamiWave(position, direction, level);
-        break;
-    }
+    castSkill(skill, position, direction, level);
 
     setSkillCooldowns(prev => ({
       ...prev,
