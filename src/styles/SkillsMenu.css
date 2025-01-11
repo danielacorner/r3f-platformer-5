@@ -356,6 +356,14 @@
     font-size: 0.75rem;
     margin-top: 0.2rem;
   }
+
+  .skill-icon svg {
+    transform: scale(1.8);
+  }
+
+  .skill-slots .skill-icon {
+    overflow: hidden;
+  }
 }
 
 @media screen and (max-width: 359px) {
