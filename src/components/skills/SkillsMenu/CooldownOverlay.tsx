@@ -6,11 +6,11 @@ interface CooldownOverlayProps {
 
 export function CooldownOverlay({ remainingTime, totalTime, color }: CooldownOverlayProps) {
   const progress = remainingTime / totalTime;
-  const angle = progress * 360;
+  const angle = 360 - (progress * 360);
 
   const conicGradient = `conic-gradient(
-    rgba(0, 0, 0, 0.5) ${angle}deg,
-    rgba(0, 0, 0, 0.2) ${angle}deg
+    rgba(0, 0, 0, 0.2) ${angle}deg,
+    rgba(0, 0, 0, 0.5) ${angle}deg
   )`;
 
   return (
