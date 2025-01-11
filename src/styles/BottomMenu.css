@@ -694,6 +694,11 @@
   padding: 0.25rem;
 }
 
+.skill-slot {
+  position: relative;
+}
+
+
 .skill-slots .unequip-button {
   position: absolute;
   top: -4px;
@@ -819,6 +824,15 @@
 
   .money-display {
     padding: 4px;
+  }
+
+  .skill-slots {
+    gap: 0.05rem;
+    padding: 0;
+  }
+
+  .skill-icon {
+    padding: 0 !important;
   }
 }
 

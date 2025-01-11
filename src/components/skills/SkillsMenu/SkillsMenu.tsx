@@ -130,7 +130,7 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
             className={`skill-item ${isSelected ? 'selected' : ''} ${isEquipped ? 'equipped' : ''}`}
             onClick={() => !('effect' in skill) && handleSkillClick(skill as ActiveSkill)}
             style={{
-              boxShadow: isSelected ? `0 0 10px ${skill.color}` : 'none',
+              boxShadow: isSelected ? `0 0 4px ${skill.color} inset` : 'none',
               cursor: !('effect' in skill) ? 'pointer' : 'default'
             }}
           >
@@ -243,7 +243,7 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
       </Box>
 
       <div className="skills-content">
-        <div className="school-description" style={{ color: magicSchools[activeSchool].color, marginBottom: '1rem' }}>
+        <div className="school-description" style={{ color: magicSchools[activeSchool].color, marginBottom: '1rem', textShadow: '0px 0px 24px rgba(255, 255, 255, 0.99)' }}>
           {magicSchools[activeSchool].description}
         </div>
 

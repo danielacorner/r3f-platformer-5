@@ -173,7 +173,7 @@
 }
 
 .skill-item.selected {
-  transform: scale(1.05);
+  transform: scale(1.01);
 }
 
 .skill-background-icon {
@@ -304,6 +304,10 @@
   font-size: 12px;
   opacity: 0.7;
   margin-left: 8px;
+  position: absolute;
+  right: 0.8rem;
+  bottom: 2.4rem;
+  z-index: 1;
 }
 
 /* Bottom Menu Skill Slots */

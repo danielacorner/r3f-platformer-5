@@ -51,7 +51,7 @@ export const magicSchools: Record<MagicSchool, {
         name: 'Arcane',
         color: '#9333ea',
         icon: RiMagicFill,
-        description: 'Fundamental magic focusing on raw magical energy and multiplication of effects'
+        description: 'Fundamental magic focusing on raw magical energy and special effects'
     },
     storm: {
         name: 'Storm',
