@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { RapierRigidBody } from "@react-three/rapier";
-import { ActiveSkill, activeSkills, passiveSkills } from '../components/SkillsMenu';
+import { ActiveSkill, activeSkills, passiveSkills } from '../components/skills/skills';
 
 // Helper function to generate initial skill levels
 const generateInitialSkillLevels = () => {

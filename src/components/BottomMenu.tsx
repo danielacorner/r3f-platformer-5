@@ -3,13 +3,11 @@ import { useGameStore } from "../store/gameStore";
 import { FaUser } from "react-icons/fa";
 import { FaTimes } from "react-icons/fa";
 import "../styles/BottomMenu.css";
-import { ActiveSkill, activeSkills, SkillsMenu } from "./SkillsMenu";
+import { ActiveSkill, activeSkills, } from "./skills/skills";
+import { SkillsMenu } from "./skills/SkillsMenu/SkillsMenu";
 import { castSkill } from './skills/SkillEffects/castSkill';
 import { Vector3 } from "three";
-import { Tooltip } from "@mui/material";
-import { GiMagicSwirl } from "react-icons/gi";
 
-const SKILL_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8"];
 
 interface CooldownOverlayProps {
   remainingTime: number;
