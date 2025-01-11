@@ -694,6 +694,30 @@
   padding: 0.25rem;
 }
 
+.skill-slots .unequip-button {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  z-index: 1;
+  color: tomato;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  width: 1rem;
+  height: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.skill-slots .unequip-button:hover {
+  background: rgba(94, 94, 94, 0.7);
+  transform: scale(1.15);
+  transform-origin: center;
+}
+
 .skill-slot {
   width: 2.5rem;
   height: 2.5rem;

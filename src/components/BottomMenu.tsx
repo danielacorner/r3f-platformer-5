@@ -7,37 +7,12 @@ import { ActiveSkill, activeSkills, } from "./skills/skills";
 import { SkillsMenu } from "./skills/SkillsMenu/SkillsMenu";
 import { castSkill } from './skills/SkillEffects/castSkill';
 import { Vector3 } from "three";
-
+import { CooldownOverlay } from "./skills/SkillsMenu/CooldownOverlay";
 
 interface CooldownOverlayProps {
   remainingTime: number;
   totalTime: number;
   color: string;
-}
-
-function CooldownOverlay({ remainingTime, totalTime, color }: CooldownOverlayProps) {
-  const progress = remainingTime / totalTime;
-  const angle = progress * 360;
-
-  const conicGradient = `conic-gradient(
-    rgba(0, 0, 0, 0.5) ${angle}deg,
-    rgba(0, 0, 0, 0.2) ${angle}deg
-  )`;
-
-  return (
-    <div className="absolute inset-0 flex items-center justify-center">
-      <div
-        className="w-full h-full rounded-lg"
-        style={{
-          background: conicGradient,
-          transform: 'rotate(-90deg)'
-        }}
-      />
-      <div className="absolute text-white font-bold text-lg">
-        {Math.ceil(remainingTime)}
-      </div>
-    </div>
-  );
 }
 
 export function BottomMenu() {
@@ -112,7 +87,6 @@ export function BottomMenu() {
   }, []);
 
   const handleCastSkill = (skill: ActiveSkill) => {
-    console.log("🚀 ~ file: BottomMenu.tsx:117 ~ skill:", skill)
     const level = skillLevels[skill.name] || 0;
     if (level === 0) return;
 
@@ -240,7 +214,7 @@ export function BottomMenu() {
                         className="unequip-button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          unequipSkill(skill, i);
+                          unequipSkill(i);
                         }}
                         title="Unequip skill"
                       >
@@ -248,11 +222,11 @@ export function BottomMenu() {
                       </button>
                     )}
                     {cooldown > 0 && (
-                      <div className="cooldown-overlay" style={{
-                        height: `${(cooldown / skill.cooldown) * 100}%`
-                      }}>
-                        {Math.ceil(cooldown)}s
-                      </div>
+                      <CooldownOverlay 
+                        remainingTime={cooldown}
+                        totalTime={skill.cooldown}
+                        color={skill.color}
+                      />
                     )}
                   </>
                 )}
