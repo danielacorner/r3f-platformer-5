@@ -1,6 +1,21 @@
 import { create } from "zustand";
 import { RapierRigidBody } from "@react-three/rapier";
-import { ActiveSkill, PassiveSkill } from '../components/SkillsMenu';
+import { ActiveSkill, activeSkills, passiveSkills } from '../components/SkillsMenu';
+
+// Helper function to generate initial skill levels
+const generateInitialSkillLevels = () => {
+  const initialLevels: { [key: string]: number } = {};
+
+  // Initialize all skills to level 0
+  [...activeSkills, ...passiveSkills].forEach(skill => {
+    initialLevels[skill.name] = 0;
+  });
+
+  // Set Magic Missiles to level 1
+  initialLevels['Magic Missiles'] = 1;
+
+  return initialLevels;
+};
 
 export type ElementType =
   | "storm1"
@@ -139,13 +154,7 @@ const initialState: GameState = {
   levelComplete: false,
   selectedObjectType: null,
   selectedObjectLevel: null,
-  skillLevels: {
-    "Magic Missiles": 1,
-    "Magic Boomerang": 0,
-    "Shield Burst": 0,
-    "Lightning Storm": 0,
-    "Arcane Multiplication": 0,
-  },
+  skillLevels: generateInitialSkillLevels(),
   money: 1000,
   score: 0,
   lives: 20,
@@ -171,35 +180,35 @@ const initialState: GameState = {
   equippedSkills: Array(8).fill(null),
   selectedSkillSlot: null,
   selectedSkill: null,
-  setPhase: () => {},
-  setCurrentLevel: () => {},
-  setTimer: () => {},
-  setEnemiesAlive: () => {},
-  setIsSpawning: () => {},
-  setLevelComplete: () => {},
-  setWave: () => {},
-  addCreep: () => {},
-  incrementLevel: () => {},
-  addMoney: () => {},
-  setWaveStartTime: () => {},
-  removeCreep: () => {},
-  removeProjectile: () => {},
-  setPlayerRef: () => {},
-  setOrbSpeed: () => {},
-  setHighlightedPathSegment: () => {},
-  setShowWaveIndicator: () => {},
-  setCameraZoom: () => {},
-  setCameraAngle: () => {},
-  loseLife: () => {},
-  reset: () => {},
-  addExperience: () => {},
-  addScore: () => {},
-  updateCreep: () => {},
-  upgradeSkill: () => {},
-  equipSkill: () => {},
-  unequipSkill: () => {},
-  setSelectedSkillSlot: () => {},
-  setSelectedSkill: () => {},
+  setPhase: () => { },
+  setCurrentLevel: () => { },
+  setTimer: () => { },
+  setEnemiesAlive: () => { },
+  setIsSpawning: () => { },
+  setLevelComplete: () => { },
+  setWave: () => { },
+  addCreep: () => { },
+  incrementLevel: () => { },
+  addMoney: () => { },
+  setWaveStartTime: () => { },
+  removeCreep: () => { },
+  removeProjectile: () => { },
+  setPlayerRef: () => { },
+  setOrbSpeed: () => { },
+  setHighlightedPathSegment: () => { },
+  setShowWaveIndicator: () => { },
+  setCameraZoom: () => { },
+  setCameraAngle: () => { },
+  loseLife: () => { },
+  reset: () => { },
+  addExperience: () => { },
+  addScore: () => { },
+  updateCreep: () => { },
+  upgradeSkill: () => { },
+  equipSkill: () => { },
+  unequipSkill: () => { },
+  setSelectedSkillSlot: () => { },
+  setSelectedSkill: () => { },
 };
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -408,7 +417,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
       newEquippedSkills[slot] = skill;
       // Clear selections after equipping
-      return { 
+      return {
         equippedSkills: newEquippedSkills,
         selectedSkill: null,
         selectedSkillSlot: null
