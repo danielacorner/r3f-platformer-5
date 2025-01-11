@@ -141,19 +141,28 @@
 .skill-item {
   position: relative;
   display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  background: rgba(15, 23, 42, 0.8);
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  overflow: hidden;
-  border: 2px solid transparent;
-  border-radius: 8px;
-  padding: 12px;
-  background-color: rgba(0, 0, 0, 0.7);
-  cursor: pointer;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  background: rgba(17, 24, 39, 0.8);
   transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.skill-item.passive {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  opacity: 0.8;
+  cursor: default !important;
+}
+
+.skill-item.passive:hover {
+  transform: none;
+}
+
+.skill-item.passive .skill-background-icon {
+  opacity: 0.3;
 }
 
 .skill-item:hover {
@@ -162,10 +171,6 @@
 
 .skill-item.active {
   cursor: pointer;
-}
-
-.skill-item.passive {
-  cursor: default;
 }
 
 .skill-item.equipped {

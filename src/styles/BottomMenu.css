@@ -941,6 +941,10 @@
     font-size: 1rem;
   }
 
+  .player-icon svg {
+    transform: scale(2.2);
+  }
+
   .level-info {
     margin-left: 0.5rem;
   }

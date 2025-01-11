@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useGameStore } from "../store/gameStore";
-import { FaUser } from "react-icons/fa";
 import { FaTimes } from "react-icons/fa";
 import "../styles/BottomMenu.css";
 import { ActiveSkill, activeSkills, } from "./skills/skills";
@@ -8,12 +7,7 @@ import { SkillsMenu } from "./skills/SkillsMenu/SkillsMenu";
 import { castSkill } from './skills/SkillEffects/castSkill';
 import { Vector3 } from "three";
 import { CooldownOverlay } from "./skills/SkillsMenu/CooldownOverlay";
-
-interface CooldownOverlayProps {
-  remainingTime: number;
-  totalTime: number;
-  color: string;
-}
+import { GiSpellBook } from 'react-icons/gi';
 
 export function BottomMenu() {
   const {
@@ -163,7 +157,7 @@ export function BottomMenu() {
               }}
               title="Click to open Skills Menu"
             >
-              <FaUser />
+              <GiSpellBook />
             </div>
             <div className="level-info">
               <div className="level-number">Level {level}</div>
@@ -222,7 +216,7 @@ export function BottomMenu() {
                       </button>
                     )}
                     {cooldown > 0 && (
-                      <CooldownOverlay 
+                      <CooldownOverlay
                         remainingTime={cooldown}
                         totalTime={skill.cooldown}
                         color={skill.color}

@@ -17,7 +17,6 @@ interface SkillsMenuProps {
   onClose: () => void;
 }
 
-
 export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
   const [activeSchool, setActiveSchool] = useState<MagicSchool>('arcane');
   const {
@@ -127,7 +126,7 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
         return (
           <div
             key={skill.name}
-            className={`skill-item ${isSelected ? 'selected' : ''} ${isEquipped ? 'equipped' : ''}`}
+            className={`skill-item ${isSelected ? 'selected' : ''} ${isEquipped ? 'equipped' : ''} ${'effect' in skill ? 'passive' : ''}`}
             onClick={() => !('effect' in skill) && handleSkillClick(skill as ActiveSkill)}
             style={{
               boxShadow: isSelected ? `0 0 16px ${skill.color} inset` : 'none',
