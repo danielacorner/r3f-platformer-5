@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface CooldownOverlayProps {
   remainingTime: number;
   totalTime: number;
@@ -18,10 +16,9 @@ export function CooldownOverlay({ remainingTime, totalTime, color }: CooldownOve
   return (
     <div className="absolute inset-0 flex items-center justify-center z-10">
       <div
-        className="w-full h-full rounded-lg"
+        className="conic-gradient w-full h-full rounded-lg"
         style={{
           background: conicGradient,
-          transform: 'rotate(-90deg)'
         }}
       />
       <div className="absolute text-white font-bold text-lg">
