@@ -4,6 +4,7 @@ import { castMagicMissiles } from './castMagicMissiles';
 import { castMagicBoomerang } from './castMagicBoomerang';
 import { castArcaneNova } from './castArcaneNova';
 import { castArcaneMultiplication } from './castArcaneMultiplication';
+import { castInferno } from './castInferno';
 import { ActiveSkill } from '../SkillsMenu/SkillsMenu';
 
 export function castSkill(skill: ActiveSkill, position: Vector3, direction: Vector3, level: number): void {
@@ -23,6 +24,9 @@ export function castSkill(skill: ActiveSkill, position: Vector3, direction: Vect
       break;
     case 'Arcane Multiplication':
       castArcaneMultiplication(position, level);
+      break;
+    case 'Inferno':
+      castInferno(position, level);
       break;
     case 'Chain Lightning':
       // TODO: Implement Chain Lightning
@@ -51,6 +55,18 @@ export function castSkill(skill: ActiveSkill, position: Vector3, direction: Vect
     case 'Gravity Well':
       // TODO: Implement Gravity Well
       console.log('Gravity Well not implemented yet');
+      break;
+    case 'Ice Lance':
+      // TODO: Implement Ice Lance
+      console.log('Ice Lance not implemented yet');
+      break;
+    case 'Frost Nova':
+      // TODO: Implement Frost Nova
+      console.log('Frost Nova not implemented yet');
+      break;
+    case 'Blizzard':
+      // TODO: Implement Blizzard
+      console.log('Blizzard not implemented yet');
       break;
     default:
       console.warn(`Unknown skill: ${skill.name}`);
