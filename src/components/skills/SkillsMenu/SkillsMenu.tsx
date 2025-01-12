@@ -42,7 +42,7 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
     if (currentLevel >= skill.maxLevel) return;
 
     if (skillPoints >= 1) {
-      upgradeSkill(skillName, 1); // Using 1 skill point instead of money
+      upgradeSkill(skillName);
     }
   };
 
@@ -137,12 +137,10 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
             <p className="skill-effect">
               {Object.entries(skill.effect?.(currentLevel))
                 .map(([key, value]) => {
-                  // Format the key by converting camelCase to Title Case with spaces
                   const formattedKey = key
                     .replace(/([A-Z])/g, ' $1')
                     .replace(/^./, str => str.toUpperCase());
 
-                  // Format the value based on if it's a percentage or not
                   const formattedValue = key.toLowerCase().includes('chance') ||
                     key.toLowerCase().includes('reduction')
                     ? `${Math.round(Number(value) * 100)}%`
@@ -153,22 +151,12 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
                 .join(' | ')}
             </p>
           )}
-          {'duration' in skill && (
-            <p className="skill-duration">
-              <span className="stat-label">Duration:</span> {skill.duration}s
-            </p>
-          )}
-          {'cooldown' in skill && (
-            <p className="skill-cooldown">
-              <span className="stat-label">Cooldown:</span> {skill.cooldown}s
-            </p>
-          )}
           {!('effect' in skill) && getSkillStats(skill as typeof activeSkills[0], currentLevel) && (
             <p className="skill-stats">{getSkillStats(skill as typeof activeSkills[0], currentLevel)}</p>
           )}
         </div>
-        <div className={`skill-level ${currentLevel === 0 ? 'zero' : ''}`}>
-          Level {currentLevel}
+        <div className="skill-level">
+          {currentLevel > 0 && currentLevel}
         </div>
         {currentLevel < skill.maxLevel ? (
           <button
