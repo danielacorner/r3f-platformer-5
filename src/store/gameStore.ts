@@ -375,7 +375,8 @@ export const useGameStore = create<GameState>((set, get) => ({
           ...state.skillLevels,
           [skillName]: newLevel
         },
-        additionalSkillSlots
+        additionalSkillSlots,
+        skillPoints: state.skillPoints - 1
       };
     });
   },
