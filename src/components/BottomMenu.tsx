@@ -22,7 +22,9 @@ export function BottomMenu() {
     money,
     experience,
     level,
-    equipSkill
+    equipSkill,
+    baseSkillSlots,
+    additionalSkillSlots,
   } = useGameStore();
   const [isSkillsMenuOpen, setIsSkillsMenuOpen] = useState(false);
   const [skillCooldowns, setSkillCooldowns] = useState<{ [key: string]: number }>([]);
@@ -143,6 +145,9 @@ export function BottomMenu() {
   const xpForNextLevel = Math.floor(100 * Math.pow(1.5, level - 1));
   const xpProgress = (experience / xpForNextLevel) * 100;
 
+  const totalSkillSlots = baseSkillSlots + additionalSkillSlots;
+  const visibleSkills = equippedSkills.slice(0, totalSkillSlots);
+
   return (
     <>
       <div className="bottom-menu">
@@ -181,56 +186,48 @@ export function BottomMenu() {
         </div>
 
         <div className="skill-slots">
-          {Array.from({ length: 8 }, (_, i) => {
-            const skill = equippedSkills[i];
-            const isSelected = selectedSkillSlot === i;
-            const isHighlighted = selectedSkill !== null;
-            const cooldown = skill ? skillCooldowns[skill.name] || 0 : 0;
-
-            return (
-              <div
-                key={i}
-                className={`skill-slot ${isSelected ? 'selected' : ''} ${isHighlighted ? 'slot-highlight' : ''
-                  } ${cooldown > 0 ? 'on-cooldown' : ''}`}
-                onClick={() => handleSlotClick(i)}
-                style={{
-                  borderColor: isSelected ? (skill?.color || '#666') : '#666',
-                  boxShadow: isSelected ? `0 0 10px ${skill?.color || '#666'}` : 'none'
-                }}
-              >
-                {skill && (
-                  <>
-                    <div className="skill-icon" style={{ color: skill.color }}>
-                      <skill.icon size={32} />
-                    </div>
-                    {isSkillsMenuOpen && (
-                      <button
-                        className="unequip-button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          unequipSkill(i);
-                        }}
-                        title="Unequip skill"
-                      >
-                        <FaTimes />
-                      </button>
-                    )}
-                    {cooldown > 0 && (
-                      <CooldownOverlay
-                        remainingTime={cooldown}
-                        totalTime={skill.cooldown}
-                        color={skill.color}
-                      />
-                    )}
-                  </>
-                )}
-                {!isTouchDevice && (
-                  <div className="key-indicator">{i + 1}</div>
-                )}
-                <div className="slot-number">{i + 1}</div>
-              </div>
-            );
-          })}
+          {visibleSkills.map((skill, index) => (
+            <div
+              key={index}
+              className={`skill-slot ${selectedSkillSlot === index ? 'selected' : ''} ${selectedSkill !== null ? 'slot-highlight' : ''} ${skill && skillCooldowns[skill.name] > 0 ? 'on-cooldown' : ''}`}
+              onClick={() => handleSlotClick(index)}
+              style={{
+                borderColor: selectedSkillSlot === index ? (skill?.color || '#666') : '#666',
+                boxShadow: selectedSkillSlot === index ? `0 0 10px ${skill?.color || '#666'}` : 'none'
+              }}
+            >
+              {skill && (
+                <>
+                  <div className="skill-icon" style={{ color: skill.color }}>
+                    <skill.icon size={32} />
+                  </div>
+                  {isSkillsMenuOpen && (
+                    <button
+                      className="unequip-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        unequipSkill(index);
+                      }}
+                      title="Unequip skill"
+                    >
+                      <FaTimes />
+                    </button>
+                  )}
+                  {skillCooldowns[skill.name] > 0 && (
+                    <CooldownOverlay
+                      remainingTime={skillCooldowns[skill.name]}
+                      totalTime={skill.cooldown}
+                      color={skill.color}
+                    />
+                  )}
+                </>
+              )}
+              {!isTouchDevice && (
+                <div className="key-indicator">{index + 1}</div>
+              )}
+              <div className="slot-number">{index + 1}</div>
+            </div>
+          ))}
         </div>
       </div>
       <SkillsMenu isOpen={isSkillsMenuOpen} onClose={() => {

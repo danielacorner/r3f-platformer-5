@@ -114,6 +114,8 @@ interface GameState {
   equippedSkills: (ActiveSkill | null)[];
   selectedSkillSlot: number | null;
   selectedSkill: ActiveSkill | null;
+  baseSkillSlots: number;
+  additionalSkillSlots: number;
   setPhase: (phase: "prep" | "combat" | "victory") => void;
   setCurrentLevel: (level: number) => void;
   setTimer: (timer: number) => void;
@@ -138,7 +140,7 @@ interface GameState {
   addExperience: (amount: number) => void;
   addScore: (amount: number) => void;
   updateCreep: (creepId: string, updates: Partial<CreepState>) => void;
-  upgradeSkill: (skillName: string, cost: number) => void;
+  upgradeSkill: (skillName: string) => void;
   equipSkill: (skill: ActiveSkill, slot: number) => void;
   unequipSkill: (slot: number) => void;
   setSelectedSkillSlot: (slot: number | null) => void;
@@ -180,6 +182,8 @@ const initialState: GameState = {
   equippedSkills: Array(8).fill(null),
   selectedSkillSlot: null,
   selectedSkill: null,
+  baseSkillSlots: 4,
+  additionalSkillSlots: 0,
   setPhase: () => { },
   setCurrentLevel: () => { },
   setTimer: () => { },
@@ -344,17 +348,36 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
   },
 
-  upgradeSkill: (skillName: string, cost: number) => {
+  upgradeSkill: (skillName: string) => {
     const state = get();
-    if (state.skillPoints >= cost) {
-      set((state) => ({
-        skillPoints: state.skillPoints - cost,
+    const skill = passiveSkills.find(s => s.name === skillName);
+    if (!skill) return;
+
+    const currentLevel = state.skillLevels[skillName] || 0;
+    if (currentLevel >= skill.maxLevel) return;
+
+    const price = Math.floor(skill.basePrice * Math.pow(skill.priceMultiplier, currentLevel));
+    if (state.money < price) return;
+
+    set(state => {
+      const newLevel = (state.skillLevels[skillName] || 0) + 1;
+      const effect = skill.effect(newLevel);
+
+      // Handle skill slot upgrades
+      let additionalSkillSlots = state.additionalSkillSlots;
+      if ('skillSlots' in effect) {
+        additionalSkillSlots = effect.skillSlots;
+      }
+
+      return {
+        money: state.money - price,
         skillLevels: {
           ...state.skillLevels,
-          [skillName]: (state.skillLevels[skillName] || 0) + 1,
+          [skillName]: newLevel
         },
-      }));
-    }
+        additionalSkillSlots
+      };
+    });
   },
 
   incrementLevel: () =>

@@ -10,7 +10,7 @@ import {
     GiBoomerang, GiPunchBlast, GiVacuumCleaner,  // Force - Active
     GiIceSpellCast, GiIciclesAura, GiSnowman  // Frost - Active
 } from 'react-icons/gi';
-import { RiMagicFill } from 'react-icons/ri';
+import { RiMagicFill, RiMentalHealthFill } from 'react-icons/ri';
 
 export type PassiveSkill = {
     name: string;
@@ -113,6 +113,17 @@ export const passiveSkills: (PassiveSkill)[] = [
         maxLevel: 20,
         school: 'arcane',
         effect: (level: number) => ({ manaCost: 1 - level * 0.1 }),
+    },
+    {
+        name: 'Expanded Mind',
+        description: 'Increases the number of skills you can equip at once',
+        icon: RiMentalHealthFill,
+        color: '#9333ea',
+        basePrice: 500,
+        priceMultiplier: 1.5,
+        maxLevel: 4,
+        school: 'arcane',
+        effect: (level: number) => ({ skillSlots: level }),
     },
     // Storm Skills
     {
