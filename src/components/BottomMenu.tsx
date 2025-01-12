@@ -165,13 +165,14 @@ export function BottomMenu() {
               <GiSpellBook />
             </div>
             <div className="level-info">
-              <div className="level-number">Level {level}</div>
-              <div className="xp-bar">
-                <div
-                  className="xp-progress"
-                  style={{ width: `${xpProgress}%` }}
-                  title={`${experience?.toLocaleString() || 0}/${xpForNextLevel.toLocaleString()} XP`}
-                />
+              <div className="level-number">
+                Level {level}
+                <div className="xp-progress-bar">
+                  <div 
+                    className="xp-progress-fill" 
+                    style={{ width: `${xpProgress}%` }}
+                  />
+                </div>
               </div>
               <div className="xp-text">
                 {experience?.toLocaleString() || 0}/{xpForNextLevel.toLocaleString()} XP

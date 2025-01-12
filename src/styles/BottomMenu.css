@@ -100,10 +100,30 @@
 }
 
 .level-number {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: bold;
-  color: #f0f9ff;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  color: #fff;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  position: relative;
+  padding-bottom: 4px;
+}
+
+.xp-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: calc(100vw - 12rem);
+  height: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.xp-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4ade80, #22c55e);
+  transition: width 0.3s ease-out;
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.5);
 }
 
 .xp-bar {

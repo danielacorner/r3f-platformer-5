@@ -99,14 +99,15 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
     const isSelected = selectedSkill === skill;
     const isEquipped = equippedSkills.includes(skill as ActiveSkill);
     const currentLevel = skillLevels[skill.name] || 0;
-    const price = Math.floor(skill.basePrice * Math.pow(skill.priceMultiplier, currentLevel));
-    const canAfford = money >= price;
+    // const price = Math.floor(skill.basePrice * Math.pow(skill.priceMultiplier, currentLevel));
+    // const canAfford = money >= price;
+    const canAfford = skillPoints >= 1;
 
     // Get the next level requirement if it exists
     const nextLevelReq = 'levelRequirements' in skill && skill.levelRequirements && currentLevel < skill.maxLevel
       ? skill.levelRequirements[currentLevel]
       : null;
-    const meetsLevelReq = nextLevelReq === null || level >= nextLevelReq;
+    const meetsLevelReq = !nextLevelReq || nextLevelReq === null || level >= nextLevelReq;
 
     return (
       <div
