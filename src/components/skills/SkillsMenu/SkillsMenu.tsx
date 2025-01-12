@@ -155,24 +155,24 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
             <p className="skill-stats">{getSkillStats(skill as typeof activeSkills[0], currentLevel)}</p>
           )}
         </div>
-        <div className="skill-level">
-          {currentLevel > 0 && currentLevel}
+        <div className="skill-controls">
+          <div className="skill-level">
+            {currentLevel > 0 && currentLevel}
+          </div>
+          {currentLevel < skill.maxLevel && (
+            <button
+              className="skill-upgrade-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleUpgrade(skill.name);
+              }}
+              disabled={!canAfford || !meetsLevelReq}
+              title={canAfford ? (meetsLevelReq ? 'Upgrade' : `Requires Level ${nextLevelReq}`) : 'Not enough skill points'}
+            >
+              <FaPlus />
+            </button>
+          )}
         </div>
-        {currentLevel < skill.maxLevel ? (
-          <button
-            className="skill-upgrade-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleUpgrade(skill.name);
-            }}
-            disabled={!canAfford || !meetsLevelReq}
-            title={`Upgrade (1 SP)`}
-          >
-            <FaPlus />
-          </button>
-        ) : (
-          <div className="skill-maxed">MAX</div>
-        )}
         {isEquipped && (
           <div className="equipped-indicator" style={{ color: skill.color }}>
             (Equipped)
