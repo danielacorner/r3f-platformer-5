@@ -713,7 +713,7 @@
 .skill-slots {
   display: flex;
   gap: 0.5rem;
-  justify-content: center;
+  justify-content: space-evenly;
   padding: 0.25rem;
 }
 
@@ -747,8 +747,8 @@
 }
 
 .skill-slot {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 4rem;
+  height: 4rem;
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid #3b5998;
   border-radius: 6px;
@@ -959,14 +959,11 @@
   }
 
   .player-icon {
-    width: 2rem;
-    height: 2rem;
+    width: 2.4rem;
+    height: 2.4rem;
     font-size: 1rem;
   }
 
-  .player-icon svg {
-    transform: scale(2.2);
-  }
 
   .level-info {
     margin-left: 0.5rem;
