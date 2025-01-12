@@ -350,27 +350,27 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   upgradeSkill: (skillName: string) => {
     const state = get();
-    const skill = passiveSkills.find(s => s.name === skillName);
+    const skill = [...activeSkills, ...passiveSkills].find(s => s.name === skillName);
     if (!skill) return;
 
     const currentLevel = state.skillLevels[skillName] || 0;
     if (currentLevel >= skill.maxLevel) return;
 
-    const price = Math.floor(skill.basePrice * Math.pow(skill.priceMultiplier, currentLevel));
-    if (state.money < price) return;
+    // const price = Math.floor(skill.basePrice * Math.pow(skill.priceMultiplier, currentLevel));
+    // if (state.money < price) return;
 
     set(state => {
       const newLevel = (state.skillLevels[skillName] || 0) + 1;
-      const effect = skill.effect(newLevel);
+      const effect = skill.effect?.(newLevel);
 
       // Handle skill slot upgrades
       let additionalSkillSlots = state.additionalSkillSlots;
-      if ('skillSlots' in effect) {
+      if (effect && 'skillSlots' in effect) {
         additionalSkillSlots = effect.skillSlots;
       }
 
       return {
-        money: state.money - price,
+        // money: state.money - price,
         skillLevels: {
           ...state.skillLevels,
           [skillName]: newLevel

@@ -39,7 +39,8 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
     if (!skill) return;
 
     const currentLevel = skillLevels[skillName] || 0;
-    if (currentLevel >= skill.maxLevel) return;
+    const aboveMaxLevel = currentLevel >= skill.maxLevel;
+    if (aboveMaxLevel) return;
 
     if (skillPoints >= 1) {
       upgradeSkill(skillName);

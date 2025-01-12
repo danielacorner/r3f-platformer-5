@@ -322,10 +322,41 @@
   position: absolute;
   right: -3rem;
   bottom: 0;
+  top: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.5rem;
   align-items: center;
+}
+
+.skill-upgrade-btn {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2c1810, #3d2317);
+  border: 2px solid #5a3925;
+  border-radius: 0.25rem;
+  color: #fbbf24;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.9),
+    inset 0 0 2px rgba(255, 255, 255, 0.1),
+    0 2px 4px rgba(0, 0, 0, 0.5);
+  margin-bottom: 0.5rem;
+}
+
+.skill-upgrade-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #3d2317, #4e2c1d);
+  border-color: #6b442c;
+  color: #f59e0b;
+}
+
+.skill-upgrade-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .skill-level {
@@ -345,39 +376,7 @@
     0 2px 4px rgba(0, 0, 0, 0.5);
   border: 2px solid #5a3925;
   text-shadow: 0 2px 2px rgba(0, 0, 0, 0.5);
-}
-
-.skill-level.zero {
-  color: #94a3b8;
-}
-
-.skill-upgrade-btn {
-  width: 2.5rem;
-  height: 2.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #2c1810, #3d2317);
-  border: 2px solid #5a3925;
-  border-radius: 0.25rem;
-  color: #fbbf24;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow:
-    inset 0 1px 3px rgba(0, 0, 0, 0.9),
-    inset 0 0 2px rgba(255, 255, 255, 0.1),
-    0 2px 4px rgba(0, 0, 0, 0.5);
-}
-
-.skill-upgrade-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #3d2317, #4e2c1d);
-  border-color: #6b442c;
-  color: #f59e0b;
-}
-
-.skill-upgrade-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  margin-top: 0.5rem;
 }
 
 .skill-price {
