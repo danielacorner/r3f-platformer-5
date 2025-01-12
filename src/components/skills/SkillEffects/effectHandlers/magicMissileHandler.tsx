@@ -5,13 +5,14 @@ import { findNearestCreep } from '../utils';
 // Constants for performance optimization
 const MAX_TRAIL_LENGTH = 10;
 const COLLISION_CHECK_INTERVAL = 2;
-const MAX_SPEED = 20; // Increased speed
-const MIN_SPEED = 8; // Minimum speed to maintain momentum
-const SEEK_FORCE = 2;
+const MAX_SPEED = 16;
+const MIN_SPEED = 4;
+const SEEK_FORCE = 1;
 const MIN_HEIGHT = 1.2;
 const IDEAL_HEIGHT = 2.0;
 const HIT_RADIUS = 0.8;
-const SEEK_START_HEIGHT = 5.4; // Start seeking much earlier
+const SEEK_START_HEIGHT = 6;
+const SEEK_TRANSITION_HEIGHT = 6.0; // Height range over which seeking gradually increases
 
 let frameCounter = 0;
 
@@ -47,10 +48,13 @@ export function updateMagicMissile(
   // Update position
   effect.position.add(effect.velocity.clone().multiplyScalar(delta));
 
+  // Calculate seek influence (0 to 1) based on height
+  const heightDiffFromStart = Math.max(0, SEEK_START_HEIGHT - effect.position.y);
+  const seekInfluence = Math.min(1, heightDiffFromStart / SEEK_TRANSITION_HEIGHT);
+
   // Seeking behavior
   if (effect.phase === 'rising') {
     effect.velocity.y -= 15 * delta; // Apply gravity
-    console.log("🚀 ~ file: magicMissileHandler.tsx:53 ~  effect.position.y:", effect.position.y)
 
     // Start seeking earlier and if there's a target
     if ((effect.velocity.y < 0 && effect.position.y > SEEK_START_HEIGHT) ||
@@ -82,10 +86,10 @@ export function updateMagicMissile(
       // Stronger seeking at longer distances
       const distanceMultiplier = Math.min(4, 8 / Math.max(1, distanceToTarget));
 
-      // Apply seek force with height control
+      // Apply seek force with height control and gradual transition
       const seekForce = toTarget
         .normalize()
-        .multiplyScalar(SEEK_FORCE * distanceMultiplier * delta);
+        .multiplyScalar(SEEK_FORCE * distanceMultiplier * delta * seekInfluence);
 
       // Add upward force if too low
       if (effect.position.y < MIN_HEIGHT) {
@@ -96,9 +100,12 @@ export function updateMagicMissile(
       const heightDiff = IDEAL_HEIGHT - effect.position.y;
       seekForce.y += heightDiff * 8 * delta;
 
-      // More aggressive turning at close range
-      const turnMultiplier = Math.min(1, 2 / Math.max(1, distanceToTarget));
-      effect.velocity.lerp(toTarget.normalize().multiplyScalar(MAX_SPEED), 0.15 * turnMultiplier);
+      // More aggressive turning at close range, scaled by seek influence
+      const turnMultiplier = Math.min(1, 2 / Math.max(1, distanceToTarget)) * seekInfluence;
+      effect.velocity.lerp(
+        toTarget.normalize().multiplyScalar(MAX_SPEED),
+        0.15 * turnMultiplier
+      );
 
       effect.velocity.add(seekForce);
 
