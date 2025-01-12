@@ -1,10 +1,10 @@
 import { Vector3 } from "three";
 import { activeEffects } from "./SkillEffects";
-import { useGameStore } from "../../../store/gameStore";
 
 const MISSILE_COLOR = "#6bb7c8"; // Light blue
 const INITIAL_SPEED = 15;
-
+const MISSILE_DAMAGE = 20;
+const DAMAGE_PER_LEVEL = 5;
 // Track the current arcane multiplication state
 let arcaneMultiplier = 1;
 let arcaneMultiplierEndTime = 0;
@@ -27,9 +27,8 @@ export function castMagicMissiles(position: Vector3, level: number) {
     const currentMultiplier = now < arcaneMultiplierEndTime ? arcaneMultiplier : 1;
     const missileCount = getMissileCount(level) * currentMultiplier;
 
-    const baseDamage = 30;
-    const damagePerLevel = 5;
-    const damage = baseDamage + level * damagePerLevel;
+
+    const damage = MISSILE_DAMAGE + level * DAMAGE_PER_LEVEL;
     const missileRadius = 0.2;
 
     if (missileCount < 10) {

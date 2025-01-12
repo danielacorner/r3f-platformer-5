@@ -60,7 +60,7 @@ export const CREEP_BASE_STATS = {
 // Wave difficulty scaling factors
 const DIFFICULTY_SCALING = {
   health: 1.15,    // Health increases by 15% per level
-  count: 1.2,      // Creep count increases by 20% per level
+  count: 1.3,      // Increased from 1.2 to 1.3 for more creeps
   speed: 1.05,     // Speed increases by 5% per level
   reward: 1.1      // Rewards increase by 10% per level
 };
@@ -105,7 +105,8 @@ export const generateWaveSet = (level: number): WaveSet => {
     } else {
       // Normal wave
       const creepTypes = ['normal', 'fast', 'armored'] as const;
-      const getCreepGroupCount = (difficulty: number) => 7 + Math.floor(4 * Math.random() * (Math.random() > 0.5 ? 1 : -1)) + Math.floor(difficulty * 5)
+      const getCreepGroupCount = (difficulty: number) => 
+        12 + Math.floor(6 * Math.random() * (Math.random() > 0.5 ? 1 : -1)) + Math.floor(difficulty * 8);
       const groupCount = getCreepGroupCount(difficulty);
 
       for (let j = 0; j < groupCount; j++) {
@@ -114,8 +115,8 @@ export const generateWaveSet = (level: number): WaveSet => {
 
         wave.creeps.push({
           type,
-          count: process.env.NODE_ENV === 'development' ? 2 : Math.round(5 * Math.pow(DIFFICULTY_SCALING.count, difficulty)),
-          delay: 500,
+          count: process.env.NODE_ENV === 'development' ? 4 : Math.round(8 * Math.pow(DIFFICULTY_SCALING.count, difficulty)),
+          delay: 300, // Reduced from 500 to spawn faster
           ...stats
         });
       }
