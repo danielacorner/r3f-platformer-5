@@ -315,6 +315,31 @@
   z-index: 1;
 }
 
+.level-requirement {
+  position: absolute;
+  right: 0.5rem;
+  top: 0.5rem;
+  font-size: 0.75rem;
+  color: #df7a7ab6;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 0;
+  border-radius: 0.25rem;
+  z-index: 1;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  width: 8ch;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.level-requirement.met {
+  display: none;
+}
+
+.skill-upgrade-btn:disabled {
+  opacity: 0;
+  cursor: not-allowed;
+}
+
 /* Bottom Menu Skill Slots */
 .skill-slot {
   position: relative;

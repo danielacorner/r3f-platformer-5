@@ -12,31 +12,27 @@ import {
 } from 'react-icons/gi';
 import { RiMagicFill, RiMentalHealthFill } from 'react-icons/ri';
 
-export type PassiveSkill = {
+type Skill = {
     name: string;
     description: string;
     icon: any;
     color: string;
-    basePrice: number;
-    priceMultiplier: number;
+    basePrice?: number;
+    priceMultiplier?: number;
+    level?: number;
     maxLevel: number;
-    cooldown?: number;
-    duration?: number;
     effect?: (level: number) => any;
     school: MagicSchool;
+    levelRequirements?: number[];
 };
 
-export type ActiveSkill = {
-    name: string;
-    icon: any;
+export type PassiveSkill = Skill & {
+};
+
+export type ActiveSkill = Skill & {
     cooldown: number;
     currentCooldown?: number;
-    color: string;
-    level: number;
-    description: string;
     duration?: number;
-    maxLevel: number;
-    school: MagicSchool;
 }
 
 export type MagicSchool = 'arcane' | 'storm' | 'water' | 'force' | 'frost';
@@ -123,6 +119,7 @@ export const passiveSkills: (PassiveSkill)[] = [
         priceMultiplier: 1.5,
         maxLevel: 4,
         school: 'arcane',
+        levelRequirements: [1, 2, 3, 4],
         effect: (level: number) => ({ skillSlots: level }),
     },
     // Storm Skills

@@ -28,7 +28,9 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
     selectedSkill,
     setSelectedSkill,
     equipSkill,
-    setSelectedSkillSlot
+    setSelectedSkillSlot,
+    level,
+    money
   } = useGameStore();
 
   const handleUpgrade = (skillName: string) => {
@@ -93,96 +95,107 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
     }
   };
 
+  const renderSkillItem = (skill: ActiveSkill | PassiveSkill) => {
+    const isSelected = selectedSkill === skill;
+    const isEquipped = equippedSkills.includes(skill as ActiveSkill);
+    const currentLevel = skillLevels[skill.name] || 0;
+    const price = Math.floor(skill.basePrice * Math.pow(skill.priceMultiplier, currentLevel));
+    const canAfford = money >= price;
+
+    // Get the next level requirement if it exists
+    const nextLevelReq = 'levelRequirements' in skill && skill.levelRequirements && currentLevel < skill.maxLevel
+      ? skill.levelRequirements[currentLevel]
+      : null;
+    const meetsLevelReq = nextLevelReq === null || level >= nextLevelReq;
+
+    return (
+      <div
+        key={skill.name}
+        className={`skill-item ${isSelected ? 'selected' : ''} ${isEquipped ? 'equipped' : ''} ${'effect' in skill ? 'passive' : ''}`}
+        onClick={() => !('effect' in skill) && handleSkillClick(skill as ActiveSkill)}
+        style={{
+          boxShadow: isSelected ? `0 0 16px ${skill.color} inset` : 'none',
+          cursor: !('effect' in skill) ? 'pointer' : 'default'
+        }}
+      >
+        {'levelRequirements' in skill && nextLevelReq && (
+          <div className={`level-requirement ${meetsLevelReq ? 'met' : ''}`}>
+            {meetsLevelReq ? 'Level OK' : `Requires Level ${nextLevelReq}`}
+          </div>
+        )}
+        <div className="skill-background-icon" aria-hidden="true">
+          <skill.icon />
+        </div>
+        <div className="skill-icon" style={{ borderColor: skill.color }}>
+          <skill.icon />
+        </div>
+        <div className="skill-info">
+          <h3>{skill.name}</h3>
+          <p>{skill.description}</p>
+          {('effect' in skill) && (
+            <p className="skill-effect">
+              {Object.entries(skill.effect?.(currentLevel))
+                .map(([key, value]) => {
+                  // Format the key by converting camelCase to Title Case with spaces
+                  const formattedKey = key
+                    .replace(/([A-Z])/g, ' $1')
+                    .replace(/^./, str => str.toUpperCase());
+
+                  // Format the value based on if it's a percentage or not
+                  const formattedValue = key.toLowerCase().includes('chance') ||
+                    key.toLowerCase().includes('reduction')
+                    ? `${Math.round(Number(value) * 100)}%`
+                    : Math.round(Number(value) * 10) / 10;
+
+                  return `${formattedKey}: ${formattedValue}`;
+                })
+                .join(' | ')}
+            </p>
+          )}
+          {'duration' in skill && (
+            <p className="skill-duration">
+              <span className="stat-label">Duration:</span> {skill.duration}s
+            </p>
+          )}
+          {'cooldown' in skill && (
+            <p className="skill-cooldown">
+              <span className="stat-label">Cooldown:</span> {skill.cooldown}s
+            </p>
+          )}
+          {!('effect' in skill) && getSkillStats(skill as typeof activeSkills[0], currentLevel) && (
+            <p className="skill-stats">{getSkillStats(skill as typeof activeSkills[0], currentLevel)}</p>
+          )}
+        </div>
+        <div className="skill-level">
+          Level {currentLevel}/{skill.maxLevel}
+        </div>
+        {currentLevel < skill.maxLevel ? (
+          <button
+            className="skill-upgrade-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleUpgrade(skill.name);
+            }}
+            disabled={!canAfford || !meetsLevelReq}
+            title={`Upgrade (1 SP)`}
+          >
+            <FaPlus />
+          </button>
+        ) : (
+          <div className="skill-maxed">MAX</div>
+        )}
+        {isEquipped && (
+          <div className="equipped-indicator" style={{ color: skill.color }}>
+            (Equipped)
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderSkillList = (skills: (PassiveSkill | ActiveSkill)[]) => (
     <div className="skills-grid">
-      {skills.map((skill) => {
-        const currentLevel = skillLevels[skill.name] || 0;
-        const canAfford = skillPoints >= 1 && currentLevel < skill.maxLevel;
-        const skillStats = 'effect' in skill ? '' : getSkillStats(skill as typeof activeSkills[0], currentLevel);
-        const isEquipped = equippedSkills.some(s => s?.name === skill.name);
-        const isSelected = selectedSkill?.name === skill.name;
-
-        let effectText = '';
-        if ('effect' in skill) {
-          const effects = skill.effect?.(currentLevel);
-          effectText = Object.entries(effects)
-            .map(([key, value]) => {
-              // Format the key by converting camelCase to Title Case with spaces
-              const formattedKey = key
-                .replace(/([A-Z])/g, ' $1')
-                .replace(/^./, str => str.toUpperCase());
-
-              // Format the value based on if it's a percentage or not
-              const formattedValue = key.toLowerCase().includes('chance') ||
-                key.toLowerCase().includes('reduction')
-                ? `${Math.round(Number(value) * 100)}%`
-                : Math.round(Number(value) * 10) / 10;
-
-              return `${formattedKey}: ${formattedValue}`;
-            })
-            .join(' | ');
-        }
-
-        return (
-          <div
-            key={skill.name}
-            className={`skill-item ${isSelected ? 'selected' : ''} ${isEquipped ? 'equipped' : ''} ${'effect' in skill ? 'passive' : ''}`}
-            onClick={() => !('effect' in skill) && handleSkillClick(skill as ActiveSkill)}
-            style={{
-              boxShadow: isSelected ? `0 0 16px ${skill.color} inset` : 'none',
-              cursor: !('effect' in skill) ? 'pointer' : 'default'
-            }}
-          >
-            <div className="skill-background-icon" aria-hidden="true">
-              <skill.icon />
-            </div>
-            <div className="skill-icon" style={{ borderColor: skill.color }}>
-              <skill.icon />
-            </div>
-            <div className="skill-info">
-              <h3>{skill.name}</h3>
-              <p>{skill.description}</p>
-              {effectText && <p className="skill-effect">{effectText}</p>}
-              {'duration' in skill && (
-                <p className="skill-duration">
-                  <span className="stat-label">Duration:</span> {skill.duration}s
-                </p>
-              )}
-              {'cooldown' in skill && (
-                <p className="skill-cooldown">
-                  <span className="stat-label">Cooldown:</span> {skill.cooldown}s
-                </p>
-              )}
-              {!('effect' in skill) && skillStats && (
-                <p className="skill-stats">{skillStats}</p>
-              )}
-            </div>
-            <div className="skill-level">
-              Level {currentLevel}/{skill.maxLevel}
-            </div>
-            {currentLevel < skill.maxLevel ? (
-              <button
-                className="skill-upgrade-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleUpgrade(skill.name);
-                }}
-                disabled={!canAfford}
-                title={`Upgrade (1 SP)`}
-              >
-                <FaPlus />
-              </button>
-            ) : (
-              <div className="skill-maxed">MAX</div>
-            )}
-            {isEquipped && (
-              <div className="equipped-indicator" style={{ color: skill.color }}>
-                (Equipped)
-              </div>
-            )}
-          </div>
-        );
-      })}
+      {skills.map((skill) => renderSkillItem(skill))}
     </div>
   );
 
