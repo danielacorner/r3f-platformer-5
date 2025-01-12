@@ -194,8 +194,13 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
         <h2>Magic Skills</h2>
         <div className="header-right">
           <div className="skill-points">
-            <FaStar className="text-yellow-400" />
-            <span>{skillPoints} {window.innerWidth < 640 ? "" : "skill points"}</span>
+            {window.innerWidth >= 640 && (
+              <div className="skill-points-label">SKILL CHOICES REMAINING</div>
+            )}
+            <div className="skill-points-value">
+              <FaStar className="skill-points-icon" />
+              <span>{skillPoints}</span>
+            </div>
           </div>
           <button
             className="close-icon-button"

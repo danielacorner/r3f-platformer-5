@@ -124,7 +124,7 @@ export function BottomMenu() {
         equipSkill(selectedSkill, index);
         setSelectedSkill(null);
         setSelectedSkillSlot(null);
-        setIsSkillsMenuOpen(false);
+        // setIsSkillsMenuOpen(false);
       } else {
         // Otherwise just select this slot
         setSelectedSkillSlot(index);
@@ -168,8 +168,8 @@ export function BottomMenu() {
               <div className="level-number">
                 Level {level}
                 <div className="xp-progress-bar">
-                  <div 
-                    className="xp-progress-fill" 
+                  <div
+                    className="xp-progress-fill"
                     style={{ width: `${xpProgress}%` }}
                   />
                 </div>
