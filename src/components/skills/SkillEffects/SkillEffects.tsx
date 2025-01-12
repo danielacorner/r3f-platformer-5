@@ -25,16 +25,26 @@ export function SkillEffects() {
   const time = useRef(0);
 
   // Trail particle setup
-  const trailGeometry = useMemo(() => new THREE.SphereGeometry(0.15, 8, 8), []);
+  const trailGeometry = useMemo(() => new THREE.SphereGeometry(0.15, 6, 6), []); // Reduced geometry complexity
   const trailMaterial = useMemo(() => new THREE.MeshBasicMaterial({
     color: '#9F7AEA',
     transparent: true,
-    opacity: 0.8,
+    opacity: 0.6,
     depthWrite: false,
     blending: THREE.AdditiveBlending
   }), []);
 
+  const missileGeometry = useMemo(() => new THREE.SphereGeometry(0.2, 8, 8), []); // Reduced geometry complexity
+  const missileMaterial = useMemo(() => new THREE.MeshBasicMaterial({
+    color: '#6bb7c8',
+    emissive: '#6bb7c8',
+    emissiveIntensity: 2,
+    transparent: true,
+    opacity: 0.9,
+  }), []);
+
   const trailInstancesRef = useRef<InstancedMesh>();
+  const missileInstancesRef = useRef<InstancedMesh>();
   const trailsRef = useRef<Map<string, Vector3[]>>(new Map());
   const [totalTrailParticles, setTotalTrailParticles] = useState(100);
   const matrix = useMemo(() => new Matrix4(), []);
@@ -86,7 +96,7 @@ export function SkillEffects() {
     materials.forEach(material => {
       if (material.uniforms) {
         material.uniforms.time.value = time.current;
-        
+
         // Update progress for ArcaneNova effects
         if (material.type === 'ArcaneNovaShaderMaterial') {
           const effect = activeEffects.find(e => e.type === 'arcaneNova');
@@ -114,7 +124,7 @@ export function SkillEffects() {
       return false;
     });
 
-    // Update instanced mesh
+    // Update trail instances
     if (trailInstancesRef.current) {
       let instanceIndex = 0;
       for (const [_, trail] of trailsRef.current.entries()) {
@@ -131,6 +141,20 @@ export function SkillEffects() {
       trailInstancesRef.current.instanceMatrix.needsUpdate = true;
       setTotalTrailParticles(Math.max(100, instanceIndex));
     }
+
+    // Update missile instances
+    if (missileInstancesRef.current) {
+      const missileEffects = activeEffects.filter(effect => effect.type === 'magicMissile');
+      missileEffects.forEach((effect, index) => {
+        dummy.position.copy(effect.position);
+        const scale = effect.phase === 'seeking' ? 1.2 : 1.0;
+        dummy.scale.set(scale, scale, scale);
+        dummy.updateMatrix();
+        missileInstancesRef.current!.setMatrixAt(index, dummy.matrix);
+      });
+      missileInstancesRef.current.instanceMatrix.needsUpdate = true;
+      missileInstancesRef.current.count = missileEffects.length;
+    }
   });
 
   return (
@@ -139,171 +163,15 @@ export function SkillEffects() {
       <instancedMesh
         ref={trailInstancesRef}
         args={[trailGeometry, trailMaterial, Math.max(100, totalTrailParticles)]}
+        frustumCulled={true}
       />
 
-      {/* Render effects */}
-      {activeEffects.map(effect => {
-
-        if (effect.type === 'magicMissile') {
-          return (
-            <group key={`${effect.id}-${frameCount}`}>
-              <mesh position={effect.position.toArray()}>
-                <sphereGeometry args={[effect.radius, 32, 32]} />
-                <meshStandardMaterial
-                  color={effect.color}
-                  emissive={effect.color}
-                  emissiveIntensity={2}
-                />
-              </mesh>
-            </group>
-          );
-        } else if (effect.type === 'magicBoomerang') {
-          const wobble = Math.sin(effect.age * 5) * 0.05;
-          const rotation = [0, effect.age * 15, wobble];
-          return (
-            <group key={`${effect.id}-${frameCount}`}>
-              <group scale={3} position={effect.position.toArray()} rotation={rotation}>
-                <group rotation={[Math.PI / 2, 0, 0]}>
-                  <mesh>
-                    <boxGeometry args={[0.1, 0.4, 0.05]} />
-                    <meshStandardMaterial color="#8B4513" metalness={0.1} roughness={0.7} />
-                  </mesh>
-                  <mesh position={[0.4 / 2 - 0.1 / 2, 0.4 / 2 - 0.1 / 2, 0]}>
-                    <boxGeometry args={[0.4, 0.1, 0.05]} />
-                    <meshStandardMaterial color="#8B4513" metalness={0.1} roughness={0.7} />
-                  </mesh>
-                </group>
-                <pointLight color="#87CEFA" intensity={1} distance={2} />
-              </group>
-            </group>
-          );
-        } else if (effect.type === 'arcaneNova') {
-          const age = (Date.now() - effect.startTime) / 1000;
-          const progress = Math.min(age / effect.duration, 1);
-          const opacity = Math.max(0, 1 - (progress - 0.5) * 2);
-          const scale = Math.min(progress * 2, 1) * effect.radius;
-
-          // Apply damage during expansion phase
-          if (progress < 0.5) {
-            creeps.forEach(creep => {
-              if (!creep.isDead) {
-                const creepPos = new Vector3(...creep.position);
-                const distance = effect.position.distanceTo(creepPos);
-                if (distance < scale) {
-                  damageCreep(creep.id, effect.damage);
-                }
-              }
-            });
-          }
-
-          return (
-            <group key={`${effect.id}-${frameCount}`}>
-              <mesh
-                position={[effect.position.x, effect.position.y + 0.1, effect.position.z]}
-                rotation={[-Math.PI / 2, 0, 0]}
-              >
-                <planeGeometry args={[20, 20]} />
-                <arcaneNovaShaderMaterial
-                  key={effect.id}
-                  time={time.current}
-                  progress={age / effect.duration}
-                  color={new THREE.Color(0.3, 0.8, 1.0)}
-                  color2={new THREE.Color(0.6, 0.9, 1.0)}
-                  scale={1.0}
-                  opacity={1.0}
-                  transparent
-                  depthWrite={false}
-                  depthTest={true}
-                  side={THREE.DoubleSide}
-                />
-              </mesh>
-              <pointLight
-                position={[effect.position.x, effect.position.y + 1, effect.position.z]}
-                color="#8B5CF6"
-                intensity={5 * opacity}
-                distance={scale * 2}
-                decay={2}
-              />
-            </group>
-          );
-        } else if (effect.type === 'lightning') {
-          const startPos = new Vector3(effect.position.x, 15, effect.position.z);
-          const endPos = effect.position.clone();
-          const isAmbient = (effect as any).isAmbient;
-
-          // Calculate direction and length for cylinder
-          const direction = endPos.clone().sub(startPos);
-          const length = direction.length();
-
-          // Calculate rotation to point cylinder in the right direction
-          const quaternion = new THREE.Quaternion();
-          const up = new THREE.Vector3(0, 1, 0);
-          const axis = new THREE.Vector3();
-          axis.crossVectors(up, direction.normalize()).normalize();
-          const angle = Math.acos(up.dot(direction));
-          quaternion.setFromAxisAngle(axis, angle);
-
-          return (
-            <group key={`${effect.id}-${frameCount}`} renderOrder={1000}>
-              {/* Main bolt */}
-              <mesh
-                position={startPos.clone().add(endPos).multiplyScalar(0.5)}
-                quaternion={quaternion}
-              >
-                <cylinderGeometry args={[0.2, 0.2, length, 8]} />
-                <meshBasicMaterial
-                  color={isAmbient ? "#4080ff" : "#ffffff"}
-                  toneMapped={false}
-                  transparent={false}
-                  depthTest={false}
-                  depthWrite={false}
-                />
-              </mesh>
-
-              {/* Impact flash */}
-              <mesh position={endPos}>
-                <sphereGeometry args={[0.8, 16, 16]} />
-                <meshBasicMaterial
-                  color={isAmbient ? "#4080ff" : "#ffffff"}
-                  toneMapped={false}
-                  transparent={false}
-                  depthTest={false}
-                  depthWrite={false}
-                />
-              </mesh>
-
-              {/* Bright point lights */}
-              <pointLight
-                position={endPos}
-                color={isAmbient ? "#4080ff" : "#ffffff"}
-                intensity={10}
-                distance={5}
-              />
-              <pointLight
-                position={startPos}
-                color={isAmbient ? "#4080ff" : "#ffffff"}
-                intensity={10}
-                distance={5}
-              />
-            </group>
-          );
-        } else if (effect.type === 'lightningStorm') {
-          return (
-            <MemoizedStorm
-              key={effect.id}
-              position={effect.position}
-              radius={effect.radius}
-              level={1}
-              color={effect.color}
-              seed={(effect as any).seed}
-              damage={effect.damage}
-              duration={effect.duration}
-              strikeInterval={(effect as any).strikeInterval || 500}
-            />
-          );
-        }
-        return null;
-      })}
+      {/* Magic Missiles */}
+      <instancedMesh
+        ref={missileInstancesRef}
+        args={[missileGeometry, missileMaterial, 100]}
+        frustumCulled={true}
+      />
     </group>
   );
 }

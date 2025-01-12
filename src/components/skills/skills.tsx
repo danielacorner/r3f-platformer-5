@@ -8,7 +8,8 @@ import {
     GiLightningStorm, GiLightningHelix, GiFocusedLightning,  // Storm - Active
     GiWaterSplash, GiHighTide, GiVortex,  // Water - Active
     GiBoomerang, GiPunchBlast, GiVacuumCleaner,  // Force - Active
-    GiIceSpellCast, GiIciclesAura, GiSnowman  // Frost - Active
+    GiIceSpellCast, GiIciclesAura, GiSnowman,  // Frost - Active
+    GiTriorb
 } from 'react-icons/gi';
 import { RiMagicFill, RiMentalHealthFill } from 'react-icons/ri';
 
@@ -285,7 +286,7 @@ export const activeSkills: (ActiveSkill)[] = [
     {
         name: 'Arcane Multiplication',
         description: 'Temporarily triple all your magical effects',
-        icon: GiShieldBash,
+        icon: GiTriorb,
         color: '#9333ea',
         cooldown: 10,
         duration: 5,
