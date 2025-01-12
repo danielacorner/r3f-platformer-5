@@ -13,6 +13,7 @@ import { updateBoomerang } from './effectHandlers/boomerangHandler';
 import { updateLightningStorm } from './effectHandlers/lightningStormHandler';
 import { SkillEffect } from './types';
 import MemoizedStorm from '../LightningStorm';
+import { MissileHitEffects } from "./MissileHitEffects";
 
 extend({ ArcaneNovaShaderMaterial, LightningStormShaderMaterial });
 
@@ -172,6 +173,9 @@ export function SkillEffects() {
         args={[missileGeometry, missileMaterial, 100]}
         frustumCulled={true}
       />
+
+      {/* Missile hit effects */}
+      <MissileHitEffects />
     </group>
   );
 }

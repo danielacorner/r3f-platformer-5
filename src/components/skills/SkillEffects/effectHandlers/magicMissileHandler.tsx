@@ -131,6 +131,12 @@ export function updateMagicMissile(
         const damageMultiplier = 1 - (distanceToTarget / HIT_RADIUS) * 0.3;
         const finalDamage = Math.floor((effect.damage || 0) * damageMultiplier);
         damageCreep(creep.id, finalDamage);
+        
+        // Spawn hit effect at the impact point
+        if (typeof window !== 'undefined' && (window as any).spawnMissileHitEffect) {
+          (window as any).spawnMissileHitEffect(effect.position);
+        }
+        
         trailsRef.current.delete(effect.id);
         return false;
       }

@@ -2,7 +2,7 @@ import styled from '@emotion/styled';
 
 export const StyledSkillsMenu = styled.div`
   position: fixed;
-  top: 50%;
+  top: calc(50% - 2rem); 
   left: 50%;
   transform: translate(-50%, -50%);
   width: 90vw;
@@ -11,22 +11,32 @@ export const StyledSkillsMenu = styled.div`
   background: rgba(17, 24, 39, 0.95);
   border-radius: 1rem;
   padding: 2rem;
+  @media screen and (max-width: 640px) {
+    padding: 1rem;
+  }
   color: #e5e7eb;
   z-index: 1000;
-  overflow-y: auto;
+  overflow-y: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-
+  
+  .MuiTab-root{
+    width: 0px !important;
+    min-width: 0px !important;
+  }
   .skills-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 2rem;
-
     h2 {
       font-size: 1.5rem;
       color: #f3f4f6;
       margin: 0;
+    }
+    @media screen and (max-width: 640px) {
+      margin-bottom: 0.5rem;
+      padding:0 0.5rem;
     }
   }
 
@@ -92,6 +102,8 @@ export const StyledSkillsMenu = styled.div`
 
   .skills-content {
     margin-top: 1rem;
+    overflow: auto;
+    max-height: calc(100vh - 15rem);
   }
 
   .school-description {
@@ -119,7 +131,6 @@ export const StyledSkillItem = styled.div<{ isSelected?: boolean; color?: string
   border: 1px solid rgba(255, 255, 255, 0.1);
   margin-right: 3rem;
   cursor: pointer;
-
   ${props => props.isSelected && `
     box-shadow: 0 0 16px ${props.color} inset;
   `}
