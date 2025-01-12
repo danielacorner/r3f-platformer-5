@@ -189,7 +189,7 @@ export function BottomMenu() {
           {visibleSkills.map((skill, index) => (
             <div
               key={index}
-              className={`skill-slot ${selectedSkillSlot === index ? 'selected' : ''} ${selectedSkill !== null ? 'slot-highlight' : ''} ${skill && skillCooldowns[skill.name] > 0 ? 'on-cooldown' : ''}`}
+              className={`skill-slot ${selectedSkillSlot === index ? 'selected' : ''} ${selectedSkill !== null && !skill ? 'highlight-empty' : ''} ${skill && skillCooldowns[skill.name] > 0 ? 'on-cooldown' : ''}`}
               onClick={() => handleSlotClick(index)}
               style={{
                 borderColor: selectedSkillSlot === index ? (skill?.color || '#666') : '#666',
