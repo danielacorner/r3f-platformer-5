@@ -288,9 +288,6 @@
 .skills-menu {
   background: linear-gradient(135deg, #1e293b, #0f172a);
   border: 2px solid #3b5998;
-  box-shadow:
-    0 0 30px rgba(0, 0, 0, 0.5),
-    inset 0 0 50px rgba(59, 130, 246, 0.1);
   animation:
     slideIn 0.3s ease-out,
     glowPulse 2s infinite alternate;
@@ -1029,10 +1026,12 @@
     border-color: rgba(255, 255, 255, 0.5);
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
   }
+
   50% {
     border-color: rgba(255, 255, 255, 0.8);
     box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
   }
+
   100% {
     border-color: rgba(255, 255, 255, 0.5);
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);

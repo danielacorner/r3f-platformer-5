@@ -166,8 +166,8 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
             <p className="skill-stats">{getSkillStats(skill as typeof activeSkills[0], currentLevel)}</p>
           )}
         </div>
-        <div className="skill-level">
-          Level {currentLevel}/{skill.maxLevel}
+        <div className={`skill-level ${currentLevel === 0 ? 'zero' : ''}`}>
+          Level {currentLevel}
         </div>
         {currentLevel < skill.maxLevel ? (
           <button
@@ -244,8 +244,12 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
               key={key}
               label={
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <school.icon style={{ color: school.color }} />
-                  {school.name}
+                  <div style={{ color: school.color, }}>
+                    <school.icon style={{
+                      color: school.color,
+                      width: 36, height: 36,
+                    }} />
+                  </div>
                 </div>
               }
               value={key}
