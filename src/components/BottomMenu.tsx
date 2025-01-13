@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useGameStore } from "../store/gameStore";
 import { GiMissileSwarm } from 'react-icons/gi';
 import { ActiveSkill, activeSkills } from "./skills/skills";
@@ -9,8 +9,11 @@ import {
   SkillsContainer,
   SkillSlot,
   JoystickContainer,
-  PrimarySkillButton
+  PrimarySkillButton,
+  JoystickButton,
+  DirectionalArrow
 } from './BottomMenu.styles';
+import { SkillsMenu } from './skills/SkillsMenu/SkillsMenu';
 
 export function BottomMenu() {
   const {
@@ -26,10 +29,15 @@ export function BottomMenu() {
     equipSkill,
     baseSkillSlots,
     additionalSkillSlots,
+    setJoystickMovement,
   } = useGameStore();
   const [isSkillsMenuOpen, setIsSkillsMenuOpen] = useState(false);
   const [skillCooldowns, setSkillCooldowns] = useState<{ [key: string]: number }>([]);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [joystickPosition, setJoystickPosition] = useState({ x: 0, y: 0 });
+  const joystickRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
+  const startPosRef = useRef({ x: 0, y: 0 });
 
   // Detect touch device
   useEffect(() => {
@@ -101,7 +109,10 @@ export function BottomMenu() {
     }));
   };
 
-  const handleSkillClick = (index: number) => {
+  const handleSkillClick = (e: React.MouseEvent, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     const skill = equippedSkills[index];
     if (!skill) return;
 
@@ -112,18 +123,104 @@ export function BottomMenu() {
     }
   };
 
+  const handleJoystickStart = (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+    isDraggingRef.current = true;
+
+    const container = joystickRef.current;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+
+    startPosRef.current = { x: clientX - centerX, y: clientY - centerY };
+  };
+
+  const handleJoystickMove = (e: MouseEvent | TouchEvent) => {
+    if (!isDraggingRef.current) return;
+
+    const container = joystickRef.current;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const radius = rect.width / 2;
+
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    let deltaX = clientX - centerX;
+    let deltaY = clientY - centerY;
+
+    // Limit the joystick movement to the container radius
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    if (distance > radius - 30) { // 30px offset for the joystick button size
+      const angle = Math.atan2(deltaY, deltaX);
+      deltaX = (radius - 30) * Math.cos(angle);
+      deltaY = (radius - 30) * Math.sin(angle);
+    }
+
+    // Normalize the movement values to -1 to 1 range
+    const normalizedX = deltaX / (radius - 30);
+    const normalizedY = deltaY / (radius - 30);
+
+    setJoystickPosition({ x: deltaX, y: deltaY });
+    setJoystickMovement({ x: normalizedX, y: normalizedY });
+  };
+
+  const handleJoystickEnd = () => {
+    isDraggingRef.current = false;
+    setJoystickPosition({ x: 0, y: 0 });
+    setJoystickMovement({ x: 0, y: 0 });
+  };
+
+  useEffect(() => {
+    window.addEventListener('mousemove', handleJoystickMove);
+    window.addEventListener('mouseup', handleJoystickEnd);
+    window.addEventListener('touchmove', handleJoystickMove);
+    window.addEventListener('touchend', handleJoystickEnd);
+
+    return () => {
+      window.removeEventListener('mousemove', handleJoystickMove);
+      window.removeEventListener('mouseup', handleJoystickEnd);
+      window.removeEventListener('touchmove', handleJoystickMove);
+      window.removeEventListener('touchend', handleJoystickEnd);
+    };
+  }, []);
+
   return (
     <BottomMenuContainer>
-      <JoystickContainer />
+      <JoystickContainer
+        ref={joystickRef}
+        onMouseDown={handleJoystickStart}
+        onTouchStart={handleJoystickStart}
+      >
+        <DirectionalArrow direction="up" />
+        <DirectionalArrow direction="right" />
+        <DirectionalArrow direction="down" />
+        <DirectionalArrow direction="left" />
+        <JoystickButton
+          style={{
+            transform: `translate(calc(-50% + ${joystickPosition.x}px), calc(-50% + ${joystickPosition.y}px))`
+          }}
+        />
+      </JoystickContainer>
+
       <SkillsContainer>
         {equippedSkills.map((skill, index) => {
           if (!skill) return null;
-          
+
           return index === 0 ? (
             <PrimarySkillButton
               key={index}
               color={skill.color}
-              onClick={() => handleSkillClick(index)}
+              onClick={(e) => handleSkillClick(e, index)}
             >
               <div className="skill-icon">
                 <skill.icon size="100%" />
@@ -134,7 +231,7 @@ export function BottomMenu() {
               key={index}
               color={skill.color}
               isActive={skill.toggleable && skill.isActive}
-              onClick={() => handleSkillClick(index)}
+              onClick={(e) => handleSkillClick(e, index)}
             >
               <div className="skill-icon">
                 <skill.icon size="100%" />
@@ -146,6 +243,8 @@ export function BottomMenu() {
           );
         })}
       </SkillsContainer>
+
+      <SkillsMenu isOpen={isSkillsMenuOpen} onClose={() => setIsSkillsMenuOpen(false)} />
     </BottomMenuContainer>
   );
 }

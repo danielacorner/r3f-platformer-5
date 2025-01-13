@@ -113,6 +113,7 @@ interface GameState {
   selectedSkill: any | null;
   baseSkillSlots: number;
   additionalSkillSlots: number;
+  joystickMovement: { x: number; y: number };
   setPhase: (phase: "prep" | "combat" | "victory") => void;
   setCurrentLevel: (level: number) => void;
   setTimer: (timer: number) => void;
@@ -143,6 +144,7 @@ interface GameState {
   setSelectedSkillSlot: (slot: number | null) => void;
   setSelectedSkill: (skill: any | null) => void;
   toggleSkill: (skillName: string) => void;
+  setJoystickMovement: (movement: { x: number; y: number }) => void;
 }
 
 const initialState: GameState = {
@@ -187,6 +189,7 @@ const initialState: GameState = {
   selectedSkill: null,
   baseSkillSlots: 4,
   additionalSkillSlots: 0,
+  joystickMovement: { x: 0, y: 0 },
   setPhase: () => { },
   setCurrentLevel: () => { },
   setTimer: () => { },
@@ -217,6 +220,7 @@ const initialState: GameState = {
   setSelectedSkillSlot: () => { },
   setSelectedSkill: () => { },
   toggleSkill: () => { },
+  setJoystickMovement: () => { },
 };
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -478,5 +482,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       detail: { isActive: !skill.isActive }
     });
     window.dispatchEvent(event);
+  },
+  setJoystickMovement: (movement) => {
+    set({ joystickMovement: movement });
   },
 }));

@@ -11,6 +11,35 @@
   z-index: 1000;
 }
 
+.game-controls {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.start-wave-button,
+.skills-menu-button {
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.start-wave-button:hover,
+.skills-menu-button:hover {
+  background: rgba(0, 0, 0, 0.8);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
 .game-stats {
   background: rgba(15, 23, 42, 0.8);
   padding: 12px 20px;
@@ -141,6 +170,73 @@
   font-size: 1.3rem;
   filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
   margin-right: 0.5rem;
+}
+
+.skills-menu-button {
+  position: fixed;
+  right: 0;
+  top: calc(40px + 20vh);
+  transform: translateY(-50%);
+  background: rgba(88, 101, 242, 0.9);
+  border: none;
+  border-left: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  width: 80px;
+  height: 80px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  padding: 0;
+  z-index: 1000;
+  pointer-events: all;
+}
+
+.skills-menu-button svg {
+  width: 48px;
+  height: 48px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  pointer-events: none;
+}
+
+.skills-menu-button:hover {
+  background: rgba(88, 101, 242, 1);
+  border-left-color: rgba(255, 255, 255, 0.5);
+}
+
+.skill-points-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #ff4444;
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  animation: pulse 2s infinite;
+  z-index: 1001;
+  pointer-events: none;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .experience-bar {

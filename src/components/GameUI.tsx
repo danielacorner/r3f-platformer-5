@@ -1,11 +1,22 @@
 import { useGameStore } from "../store/gameStore";
 import { FaLevelUpAlt, FaPlay } from "react-icons/fa";
+import { GiSpellBook } from "react-icons/gi";
 import "../styles/GameUI.css";
 import { Heart, LucideWaves } from "lucide-react";
+import { useState } from "react";
+import { SkillsMenu } from "./skills/SkillsMenu/SkillsMenu";
 
 export function GameUI() {
-  const { phase, lives, currentLevel, currentWave, totalWaves, startWave } =
-    useGameStore();
+  const { 
+    phase, 
+    lives, 
+    currentLevel, 
+    currentWave, 
+    totalWaves, 
+    startWave,
+    skillPoints 
+  } = useGameStore();
+  const [isSkillsMenuOpen, setIsSkillsMenuOpen] = useState(false);
 
   return (
     <div className="game-ui">
@@ -40,6 +51,22 @@ export function GameUI() {
           </button>
         </div>
       )}
+
+      <button
+        className="skills-menu-button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsSkillsMenuOpen(true);
+        }}
+      >
+        <GiSpellBook />
+        {skillPoints > 0 && (
+          <div className="skill-points-badge">{skillPoints}</div>
+        )}
+      </button>
+
+      <SkillsMenu isOpen={isSkillsMenuOpen} onClose={() => setIsSkillsMenuOpen(false)} />
     </div>
   );
 }

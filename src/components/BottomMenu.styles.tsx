@@ -158,17 +158,73 @@ export const BottomMenuContainer = styled.div`
 `;
 
 export const JoystickContainer = styled.div`
-  width: 120px;
-  height: 120px;
-  background: rgba(0, 0, 0, 0.4);
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
-  pointer-events: auto;
+  width: 150px;
+  height: 150px;
   position: relative;
+  pointer-events: all; /* Ensure events are captured */
   margin-left: 20px;
-  backdrop-filter: blur(4px);
+  transform: translateY(-20px);
+  user-select: none; /* Prevent text selection */
+  touch-action: none; /* Prevent default touch actions */
 
+  /* Outer ring with directional markers */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 50%;
+    background: rgba(20, 12, 8, 0.45); /* More transparent background */
+    border: 2px solid rgba(255, 215, 150, 0.25);
+    box-shadow: 
+      inset 0 0 20px rgba(255, 180, 50, 0.15),
+      0 0 10px rgba(255, 180, 50, 0.1);
+    pointer-events: none; /* Allow events to pass through to main container */
+  }
+
+  /* Direction arrows container */
   &::after {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    border-radius: 50%;
+    background: 
+      radial-gradient(
+        circle at center,
+        rgba(80, 60, 40, 0.25) 0%,
+        rgba(40, 30, 20, 0.2) 100%
+      );
+    backdrop-filter: blur(4px);
+    pointer-events: none; /* Allow events to pass through to main container */
+  }
+`;
+
+export const JoystickButton = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  transition: transform 0.05s ease-out;
+  background: 
+    radial-gradient(
+      circle at center,
+      rgba(80, 60, 40, 0.95) 0%,
+      rgba(40, 30, 20, 0.85) 100%
+    );
+  border: 2px solid rgba(255, 215, 150, 0.3);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    inset 0 2px 4px rgba(255, 215, 150, 0.15);
+  z-index: 2;
+
+  &::before {
     content: '';
     position: absolute;
     top: 50%;
@@ -176,9 +232,52 @@ export const JoystickContainer = styled.div`
     transform: translate(-50%, -50%);
     width: 40px;
     height: 40px;
-    background: rgba(255, 255, 255, 0.1);
     border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    pointer-events: none;
+    background: 
+      radial-gradient(
+        circle at center,
+        rgba(100, 80, 50, 0.95) 0%,
+        rgba(60, 45, 30, 0.85) 100%
+      );
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+  }
+`;
+
+export const DirectionalArrow = styled.div<{ direction: 'up' | 'right' | 'down' | 'left' }>`
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 215, 150, 0.4);
+  font-size: 24px;
+  pointer-events: none; /* Allow events to pass through to main container */
+  
+  ${props => {
+    switch (props.direction) {
+      case 'up':
+        return 'top: 15px; left: 50%; transform: translateX(-50%);';
+      case 'right':
+        return 'right: 15px; top: 50%; transform: translateY(-50%);';
+      case 'down':
+        return 'bottom: 15px; left: 50%; transform: translateX(-50%);';
+      case 'left':
+        return 'left: 15px; top: 50%; transform: translateY(-50%);';
+    }
+  }}
+
+  &::before {
+    content: '▲';
+    transform: ${props => {
+      switch (props.direction) {
+        case 'right': return 'rotate(90deg)';
+        case 'down': return 'rotate(180deg)';
+        case 'left': return 'rotate(-90deg)';
+        default: return 'none';
+      }
+    }};
   }
 `;
 

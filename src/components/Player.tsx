@@ -45,6 +45,7 @@ export function Player({ moveTargetRef }: PlayerProps) {
   const floatOffset = useRef(0);
   const setPlayerRef = useGameStore(state => state.setPlayerRef);
   const magicOrbSkill = useGameStore(state => state.equippedSkills.find(s => s?.name === 'Magic Orb'));
+  const joystickMovement = useGameStore(state => state.joystickMovement);
 
   // Initialize physics and camera
   useEffect(() => {
@@ -199,6 +200,14 @@ export function Player({ moveTargetRef }: PlayerProps) {
     if (right) {
       velocity.x += cameraRight.x * MOVE_SPEED;
       velocity.z += cameraRight.z * MOVE_SPEED;
+      if (moveTargetRef.current) moveTargetRef.current.active = false;
+    }
+
+    // Handle joystick movement
+    if (joystickMovement.x !== 0 || joystickMovement.y !== 0) {
+      // Convert joystick input to camera-relative movement
+      velocity.x += (cameraRight.x * joystickMovement.x + cameraDirection.x * -joystickMovement.y) * MOVE_SPEED;
+      velocity.z += (cameraRight.z * joystickMovement.x + cameraDirection.z * -joystickMovement.y) * MOVE_SPEED;
       if (moveTargetRef.current) moveTargetRef.current.active = false;
     }
 
