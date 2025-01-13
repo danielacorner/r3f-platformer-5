@@ -266,6 +266,17 @@ export const passiveSkills: (PassiveSkill)[] = [
 
 export const activeSkills: (ActiveSkill)[] = [
     // Arcane Skills
+
+    {
+        name: 'Magic Missiles',
+        description: 'Launch multiple homing missiles that deal damage to enemies',
+        icon: GiMissileSwarm,
+        color: '#9333ea',
+        cooldown: 2,
+        level: process.env.NODE_ENV === "development" ? 1 : 0,
+        maxLevel: 20,
+        school: 'arcane',
+    },
     {
         name: 'Magic Orb',
         description: 'Summon a magical orb that circles around you, protecting you from enemies',
@@ -277,16 +288,6 @@ export const activeSkills: (ActiveSkill)[] = [
         school: 'arcane',
         toggleable: true,
         isActive: false,
-    },
-    {
-        name: 'Magic Missiles',
-        description: 'Launch multiple homing missiles that deal damage to enemies',
-        icon: GiMissileSwarm,
-        color: '#9333ea',
-        cooldown: 2,
-        level: process.env.NODE_ENV === "development" ? 1 : 0,
-        maxLevel: 20,
-        school: 'arcane',
     },
     {
         name: 'Arcane Nova',

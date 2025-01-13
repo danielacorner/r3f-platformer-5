@@ -24,17 +24,9 @@ const orbitAnimation = keyframes`
     transform: rotate(0deg) scale(1);
     opacity: 0.8;
   }
-  25% {
-    transform: rotate(90deg) scale(1.1);
-    opacity: 0.9;
-  }
   50% {
-    transform: rotate(180deg) scale(1);
+    transform: rotate(180deg) scale(1.1);
     opacity: 1;
-  }
-  75% {
-    transform: rotate(270deg) scale(1.1);
-    opacity: 0.9;
   }
   100% {
     transform: rotate(360deg) scale(1);
@@ -77,119 +69,6 @@ export const mediaQueries = {
   tablet: '@media screen and (min-width: 640px)',
   desktop: '@media screen and (min-width: 1024px)',
 };
-
-export const SkillSlot = styled('div', {
-  label: 'SkillSlot'
-}) <{ isSelected: boolean; isHighlightEmpty: boolean; isOnCooldown: boolean; borderColor: string; color?: string; isActive?: boolean }>`
-  position: relative;
-  width: 3rem;
-  height: 3rem;
-  border: 2px solid ${props => props.color || props.borderColor || '#60a5fa'};
-  border-radius: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: ${props => props.isActive ? `${props.color}33` : props.isSelected ? `rgba(0, 0, 0, 0.6)` : 'rgba(0, 0, 0, 0.5)'};
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: ${props => props.isActive ? `0 0 10px ${props.color}` : props.isSelected ? `0 0 10px ${props.borderColor}` : 'none'};
-
-  ${props => props.isActive && css`
-    animation: ${pulseAnimation} 2s ease-in-out infinite;
-    
-    &::before {
-      content: '';
-      position: absolute;
-      top: -5px;
-      left: -5px;
-      right: -5px;
-      bottom: -5px;
-      border: 2px solid ${props.color}40;
-      border-radius: 0.7rem;
-      animation: ${orbitAnimation} 3s linear infinite;
-      pointer-events: none;
-    }
-
-    &::after {
-      content: '';
-      position: absolute;
-      top: -3px;
-      left: -3px;
-      right: -3px;
-      bottom: -3px;
-      border: 2px solid ${props.color}80;
-      border-radius: 0.6rem;
-      animation: ${orbitAnimation} 3s linear infinite reverse;
-      pointer-events: none;
-    }
-
-    .skill-icon {
-      animation: ${activeIconAnimation} 2s ease-in-out infinite;
-      transform-origin: center;
-    }
-  `}
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: ${props => props.isActive 
-      ? `0 0 15px ${props.color}` 
-      : `0 0 5px ${props.color || props.borderColor || '#60a5fa'}`};
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-
-  .skill-icon {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    color: ${props => props.isActive ? props.color : props.isSelected ? props.borderColor : '#fff'};
-    filter: ${props => props.isActive ? 'brightness(1.2)' : 'none'};
-    transition: transform 0.2s ease;
-
-    svg {
-      width: 100%;
-      height: 100%;
-    }
-  }
-
-  ${props => props.isHighlightEmpty && `
-    border-color: #60a5fa;
-    box-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
-  `}
-
-  ${props => props.isOnCooldown && `
-    filter: grayscale(0.7);
-    cursor: not-allowed;
-  `}
-
-  &.hover {
-    border-color: ${props => props.borderColor};
-    transform: scale(1.05);
-  }
-
-  &.hover .unequip-button {
-    opacity: 1;
-  }
-
-  ${mediaQueries.tablet} {
-    width: 4.5rem;
-    height: 4.5rem;
-    border-radius: 0.75rem;
-    border-width: 3px;
-  }
-
-  ${mediaQueries.desktop} {
-    width: 6rem;
-    height: 6rem;
-    border-radius: 1rem;
-    border-width: 4px;
-  }
-`;
 
 export const UnequipButton = styled('button', {
   label: 'UnequipButton'
@@ -264,31 +143,164 @@ export const SkillHotkey = styled('div', {
   }
 `;
 
-export const BottomMenuContainer = styled('div', {
-  shouldComponentUpdate: false,
-  label: 'BottomMenu'
-})`
+export const BottomMenuContainer = styled.div`
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 20px 40px;
+  pointer-events: none;
+  height: 240px;
   z-index: 1000;
-  background: rgba(15, 23, 42, 0.95);
-  pointer-events: auto;
-  user-select: none;
-  backdrop-filter: blur(8px);
+`;
 
-  ${mediaQueries.tablet} {
-    padding: 0.5rem;
-    background: rgba(15, 23, 42, 0.98);
+export const JoystickContainer = styled.div`
+  width: 120px;
+  height: 120px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  pointer-events: auto;
+  position: relative;
+  margin-left: 20px;
+  backdrop-filter: blur(4px);
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+  }
+`;
+
+export const SkillsContainer = styled.div`
+  display: flex;
+  gap: 20px;
+  align-items: flex-end;
+  margin-right: 20px;
+  position: relative;
+  pointer-events: auto;
+  transform: translateY(-20px);
+`;
+
+export const PrimarySkillButton = styled.div<{ color?: string }>`
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  border: 3px solid ${props => props.color || '#60a5fa'};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  backdrop-filter: blur(4px);
+  margin-left: 16px;
+  box-shadow: 0 0 20px ${props => props.color || '#60a5fa'}40;
+  transform: scale(1.2);
+
+  &:hover {
+    box-shadow: 0 0 30px ${props => props.color || '#60a5fa'}60;
   }
 
-  ${mediaQueries.desktop} {
-    padding: 1rem;
-    max-width: 1400px;
-    margin: 0 auto;
+  .skill-icon {
+    width: 60%;
+    height: 60%;
+    color: ${props => props.color || '#60a5fa'};
+    filter: drop-shadow(0 0 5px ${props => props.color || '#60a5fa'});
+  }
+`;
+
+export const SkillSlot = styled.div<{ color?: string; isActive?: boolean }>`
+  position: relative;
+  width: 70px;
+  height: 70px;
+  border: 2px solid ${props => props.color || '#60a5fa'};
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${props => props.isActive ? `${props.color}33` : 'rgba(0, 0, 0, 0.6)'};
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 0 10px ${props => props.color || '#60a5fa'}40;
+
+  ${props => props.isActive && css`
+    animation: ${pulseAnimation} 2s ease-in-out infinite;
+    
+    .skill-icon {
+      animation: ${activeIconAnimation} 2s ease-in-out infinite;
+      transform-origin: center;
+    }
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: -5px;
+      left: -5px;
+      right: -5px;
+      bottom: -5px;
+      border: 2px solid ${props.color}40;
+      border-radius: 50%;
+      animation: ${orbitAnimation} 3s linear infinite;
+      pointer-events: none;
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: -3px;
+      left: -3px;
+      right: -3px;
+      bottom: -3px;
+      border: 2px solid ${props.color}80;
+      border-radius: 50%;
+      animation: ${orbitAnimation} 3s linear infinite reverse;
+      pointer-events: none;
+    }
+  `}
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: ${props => props.isActive 
+      ? `0 0 15px ${props.color}` 
+      : `0 0 5px ${props.color || '#60a5fa'}`};
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  .skill-icon {
+    width: 60%;
+    height: 60%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: ${props => props.isActive ? props.color : '#fff'};
+    filter: ${props => props.isActive ? 'brightness(1.2) drop-shadow(0 0 5px currentColor)' : 'none'};
+    transition: transform 0.2s ease;
+  }
+
+  .cooldown {
+    position: absolute;
+    bottom: -20px;
     left: 50%;
     transform: translateX(-50%);
+    color: #fff;
+    font-size: 14px;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
   }
 `;
 

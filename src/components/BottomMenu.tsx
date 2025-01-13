@@ -1,47 +1,31 @@
 import { useState, useEffect } from 'react';
 import { useGameStore } from "../store/gameStore";
-import { FaTimes } from "react-icons/fa";
+import { GiMissileSwarm } from 'react-icons/gi';
 import { ActiveSkill, activeSkills } from "./skills/skills";
-import { SkillsMenu } from "./skills/SkillsMenu/SkillsMenu";
 import { castSkill } from './skills/SkillEffects/castSkill';
 import { Vector3 } from "three";
-import { CooldownOverlay } from "./skills/SkillsMenu/CooldownOverlay";
-import { GiSpellBook } from 'react-icons/gi';
 import {
   BottomMenuContainer,
-  StatusSection,
-  PlayerInfo,
-  PlayerIcon,
-  LevelInfo,
-  LevelNumber,
-  XPProgressBar,
-  XPProgressFill,
-  XPText,
-  Resources,
-  Money,
-  SkillSlots,
+  SkillsContainer,
   SkillSlot,
-  SkillHotkey,
-  UnequipButton
+  JoystickContainer,
+  PrimarySkillButton
 } from './BottomMenu.styles';
 
 export function BottomMenu() {
   const {
     equippedSkills,
-    selectedSkill,
     selectedSkillSlot,
     setSelectedSkillSlot,
-    setSelectedSkill,
-    unequipSkill,
-    playerRef,
+    toggleSkill,
     skillLevels,
+    playerRef,
     money,
     experience,
     level,
     equipSkill,
     baseSkillSlots,
     additionalSkillSlots,
-    toggleSkill
   } = useGameStore();
   const [isSkillsMenuOpen, setIsSkillsMenuOpen] = useState(false);
   const [skillCooldowns, setSkillCooldowns] = useState<{ [key: string]: number }>([]);
@@ -61,25 +45,6 @@ export function BottomMenu() {
       }
     }
   }, []);
-
-  // Handle keyboard shortcuts
-  useEffect(() => {
-    if (isTouchDevice || isSkillsMenuOpen) return;
-
-    const handleKeyPress = (e: KeyboardEvent) => {
-      const num = parseInt(e.key);
-      if (num >= 1 && num <= 8) {
-        const index = num - 1;
-        const skill = equippedSkills[index];
-        if (skill) {
-          handleCastSkill(skill);
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [equippedSkills, isSkillsMenuOpen, isTouchDevice]);
 
   // Handle cooldowns
   useEffect(() => {
@@ -136,113 +101,51 @@ export function BottomMenu() {
     }));
   };
 
-  const handleSlotClick = (index: number) => {
+  const handleSkillClick = (index: number) => {
     const skill = equippedSkills[index];
+    if (!skill) return;
 
-    if (isSkillsMenuOpen) {
-      if (selectedSkill) {
-        equipSkill(selectedSkill, index);
-        setSelectedSkill(null);
-        setSelectedSkillSlot(null);
-      } else {
-        setSelectedSkillSlot(index);
-      }
+    if (skill.toggleable) {
+      toggleSkill(skill.name);
     } else {
-      if (skill) {
-        handleCastSkill(skill);
-      } else {
-        setSelectedSkillSlot(index);
-        setIsSkillsMenuOpen(true);
-      }
+      handleCastSkill(skill);
     }
   };
 
-  // Calculate XP progress
-  const xpForNextLevel = Math.floor(100 * Math.pow(1.5, level - 1));
-  const xpProgress = (experience / xpForNextLevel) * 100;
-
-  const totalSkillSlots = baseSkillSlots + additionalSkillSlots;
-  const visibleSkills = equippedSkills.slice(0, totalSkillSlots);
-
   return (
-    <>
-      <BottomMenuContainer onClick={(e) => e.stopPropagation()}>
-        <StatusSection>
-          <PlayerInfo>
-            <PlayerIcon
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsSkillsMenuOpen(true);
-              }}
-              title="Click to open Skills Menu"
+    <BottomMenuContainer>
+      <JoystickContainer />
+      <SkillsContainer>
+        {equippedSkills.map((skill, index) => {
+          if (!skill) return null;
+          
+          return index === 0 ? (
+            <PrimarySkillButton
+              key={index}
+              color={skill.color}
+              onClick={() => handleSkillClick(index)}
             >
-              <GiSpellBook />
-            </PlayerIcon>
-            <LevelInfo>
-              <LevelNumber>
-                Level {level}
-                <XPProgressBar>
-                  <XPProgressFill progress={xpProgress} />
-                </XPProgressBar>
-              </LevelNumber>
-              <XPText>
-                {experience?.toLocaleString() || 0}/{xpForNextLevel.toLocaleString()} XP
-              </XPText>
-            </LevelInfo>
-          </PlayerInfo>
-          <Resources>
-            <Money title="Gold">
-              {money?.toLocaleString() || 0}
-            </Money>
-          </Resources>
-        </StatusSection>
-
-        <SkillSlots>
-          {Array(baseSkillSlots + additionalSkillSlots).fill(null).map((_, index) => {
-            const skill = equippedSkills[index];
-            const cooldown = skillCooldowns[skill?.name || ''] || 0;
-            const isSelected = selectedSkillSlot === index;
-            const isHighlightEmpty = selectedSkill && !skill;
-
-            return (
-              <SkillSlot
-                key={index}
-                onClick={() => handleSlotClick(index)}
-                isSelected={isSelected}
-                isHighlightEmpty={isHighlightEmpty}
-                isOnCooldown={cooldown > 0}
-                borderColor={skill?.color || '#666'}
-                color={skill?.color}
-                isActive={skill?.toggleable && skill?.isActive}
-              >
-                {skill && (
-                  <>
-                    <div className="skill-icon">
-                      <skill.icon />
-                    </div>
-                    {cooldown > 0 && (
-                      <CooldownOverlay cooldown={cooldown} />
-                    )}
-                    <SkillHotkey>{index + 1}</SkillHotkey>
-                    {isSelected && (
-                      <UnequipButton onClick={(e) => {
-                        e.stopPropagation();
-                        unequipSkill(index);
-                      }}>
-                        <FaTimes />
-                      </UnequipButton>
-                    )}
-                  </>
-                )}
-              </SkillSlot>
-            );
-          })}
-        </SkillSlots>
-      </BottomMenuContainer>
-
-      {isSkillsMenuOpen && (
-        <SkillsMenu isOpen={isSkillsMenuOpen} onClose={() => setIsSkillsMenuOpen(false)} />
-      )}
-    </>
+              <div className="skill-icon">
+                <skill.icon size="100%" />
+              </div>
+            </PrimarySkillButton>
+          ) : (
+            <SkillSlot
+              key={index}
+              color={skill.color}
+              isActive={skill.toggleable && skill.isActive}
+              onClick={() => handleSkillClick(index)}
+            >
+              <div className="skill-icon">
+                <skill.icon size="100%" />
+              </div>
+              {skillCooldowns[skill.name] > 0 && (
+                <div className="cooldown">{skillCooldowns[skill.name].toFixed(1)}s</div>
+              )}
+            </SkillSlot>
+          );
+        })}
+      </SkillsContainer>
+    </BottomMenuContainer>
   );
 }
