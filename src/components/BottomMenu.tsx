@@ -1,13 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useGameStore } from "../store/gameStore";
 import { FaTimes } from "react-icons/fa";
-import "../styles/BottomMenu.css";
-import { ActiveSkill, activeSkills, } from "./skills/skills";
+import { ActiveSkill, activeSkills } from "./skills/skills";
 import { SkillsMenu } from "./skills/SkillsMenu/SkillsMenu";
 import { castSkill } from './skills/SkillEffects/castSkill';
 import { Vector3 } from "three";
 import { CooldownOverlay } from "./skills/SkillsMenu/CooldownOverlay";
 import { GiSpellBook } from 'react-icons/gi';
+import {
+  BottomMenuContainer,
+  StatusSection,
+  PlayerInfo,
+  PlayerIcon,
+  LevelInfo,
+  LevelNumber,
+  XPProgressBar,
+  XPProgressFill,
+  XPText,
+  Resources,
+  Money,
+  SkillSlots,
+  SkillSlot,
+  SkillIcon,
+  SkillHotkey,
+  UnequipButton
+} from './BottomMenu.styles';
 
 export function BottomMenu() {
   const {
@@ -50,7 +67,6 @@ export function BottomMenu() {
     if (isTouchDevice || isSkillsMenuOpen) return;
 
     const handleKeyPress = (e: KeyboardEvent) => {
-      // Convert key to number (1-8)
       const num = parseInt(e.key);
       if (num >= 1 && num <= 8) {
         const index = num - 1;
@@ -120,21 +136,16 @@ export function BottomMenu() {
 
     if (isSkillsMenuOpen) {
       if (selectedSkill) {
-        // If a skill is selected in the menu, equip it to this slot
         equipSkill(selectedSkill, index);
         setSelectedSkill(null);
         setSelectedSkillSlot(null);
-        // setIsSkillsMenuOpen(false);
       } else {
-        // Otherwise just select this slot
         setSelectedSkillSlot(index);
       }
     } else {
       if (skill) {
-        // If slot has a skill and menu is closed, cast the skill
         handleCastSkill(skill);
       } else {
-        // If slot is empty and menu is closed, open menu and select this slot
         setSelectedSkillSlot(index);
         setIsSkillsMenuOpen(true);
       }
@@ -150,11 +161,10 @@ export function BottomMenu() {
 
   return (
     <>
-      <div className="bottom-menu">
-        <div className="status-section">
-          <div className="player-info">
-            <div
-              className="player-icon"
+      <BottomMenuContainer>
+        <StatusSection>
+          <PlayerInfo>
+            <PlayerIcon
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -163,78 +173,66 @@ export function BottomMenu() {
               title="Click to open Skills Menu"
             >
               <GiSpellBook />
-            </div>
-            <div className="level-info">
-              <div className="level-number">
+            </PlayerIcon>
+            <LevelInfo>
+              <LevelNumber>
                 Level {level}
-                <div className="xp-progress-bar">
-                  <div
-                    className="xp-progress-fill"
-                    style={{ width: `${xpProgress}%` }}
-                  />
-                </div>
-              </div>
-              <div className="xp-text">
+                <XPProgressBar>
+                  <XPProgressFill progress={xpProgress} />
+                </XPProgressBar>
+              </LevelNumber>
+              <XPText>
                 {experience?.toLocaleString() || 0}/{xpForNextLevel.toLocaleString()} XP
-              </div>
-            </div>
-          </div>
-          <div className="resources">
-            <div className="money" title="Gold">
+              </XPText>
+            </LevelInfo>
+          </PlayerInfo>
+          <Resources>
+            <Money title="Gold">
               {money?.toLocaleString() || 0}
-            </div>
-          </div>
-        </div>
+            </Money>
+          </Resources>
+        </StatusSection>
 
-        <div className="skill-slots">
+        <SkillSlots>
           {visibleSkills.map((skill, index) => (
-            <div
+            <SkillSlot
               key={index}
-              className={`skill-slot ${selectedSkillSlot === index ? 'selected' : ''} ${selectedSkill !== null && !skill ? 'highlight-empty' : ''} ${skill && skillCooldowns[skill.name] > 0 ? 'on-cooldown' : ''}`}
+              isSelected={selectedSkillSlot === index}
+              isHighlightEmpty={selectedSkill !== null && !skill}
+              isOnCooldown={!!(skill && skillCooldowns[skill.name] > 0)}
+              borderColor={skill?.color || '#666'}
               onClick={() => handleSlotClick(index)}
-              style={{
-                borderColor: selectedSkillSlot === index ? (skill?.color || '#666') : '#666',
-                boxShadow: selectedSkillSlot === index ? `0 0 10px ${skill?.color || '#666'}` : 'none'
-              }}
             >
               {skill && (
                 <>
-                  <div className="skill-icon" style={{ color: skill.color }}>
-                    <skill.icon size={32} />
-                  </div>
+                  <SkillIcon src={skill.icon} alt={skill.name} />
+                  {!isTouchDevice && <SkillHotkey>{index + 1}</SkillHotkey>}
                   {isSkillsMenuOpen && (
-                    <button
-                      className="unequip-button"
+                    <UnequipButton
                       onClick={(e) => {
                         e.stopPropagation();
                         unequipSkill(index);
                       }}
-                      title="Unequip skill"
                     >
                       <FaTimes />
-                    </button>
+                    </UnequipButton>
                   )}
                   {skillCooldowns[skill.name] > 0 && (
                     <CooldownOverlay
-                      remainingTime={skillCooldowns[skill.name]}
-                      totalTime={skill.cooldown}
-                      color={skill.color}
+                      cooldown={skillCooldowns[skill.name]}
+                      maxCooldown={skill.cooldown}
                     />
                   )}
                 </>
               )}
-              {!isTouchDevice && (
-                <div className="key-indicator">{index + 1}</div>
-              )}
-              <div className="slot-number">{index + 1}</div>
-            </div>
+            </SkillSlot>
           ))}
-        </div>
-      </div>
-      <SkillsMenu isOpen={isSkillsMenuOpen} onClose={() => {
-        setIsSkillsMenuOpen(false);
-        setSelectedSkillSlot(null);
-      }} />
+        </SkillSlots>
+      </BottomMenuContainer>
+
+      {isSkillsMenuOpen && (
+        <SkillsMenu onClose={() => setIsSkillsMenuOpen(false)} />
+      )}
     </>
   );
 }

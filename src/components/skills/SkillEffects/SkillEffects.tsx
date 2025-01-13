@@ -174,6 +174,28 @@ export function SkillEffects() {
         frustumCulled={true}
       />
 
+      {/* Arcane Nova Effect */}
+      {activeEffects.filter(e => e.type === 'arcaneNova').map(effect => (
+        <mesh
+          key={effect.id}
+          position={effect.position}
+          rotation={[-Math.PI / 2, 0, 0]}
+        >
+          <planeGeometry args={[effect.radius * 2, effect.radius * 2]} />
+          <arcaneNovaShaderMaterial
+            time={time.current}
+            progress={(Date.now() - effect.startTime) / (effect.duration * 1000)}
+            color={new THREE.Color(0.3, 0.8, 1.0)}
+            color2={new THREE.Color(0.6, 0.9, 1.0)}
+            scale={1.0}
+            opacity={1.0}
+            transparent
+            depthWrite={false}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      ))}
+
       {/* Missile hit effects */}
       <MissileHitEffects />
     </group>
