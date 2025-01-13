@@ -1,5 +1,4 @@
 import React from "react";
-import { Vector3 } from "@react-three/rapier";
 import { useGameStore } from "../../../store/gameStore";
 import {
   SkillsContainer,
@@ -8,10 +7,10 @@ import {
 } from "./Skills.styles";
 import { SecondarySkillButton } from "./SecondarySkillButton";
 import { castSkill } from "../../skills/SkillEffects/castSkill";
+import { Vector3 } from "three";
 
 export const SkillsSection: React.FC = () => {
-  const { equippedSkills, primarySkill, maxSkillSlots, playerRef, level } =
-    useGameStore();
+  const { equippedSkills, maxSkillSlots, playerRef, level } = useGameStore();
 
   const handleCastSkill = (skill: any) => {
     if (!playerRef) return;
@@ -41,6 +40,7 @@ export const SkillsSection: React.FC = () => {
         <SecondarySkillsContainer>
           {Array.from({ length: maxSkillSlots }).map((_, index) => {
             const skill = equippedSkills[index + 1];
+
             return (
               <SecondarySkillButton
                 key={index}

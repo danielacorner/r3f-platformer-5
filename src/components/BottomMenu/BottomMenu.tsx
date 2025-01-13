@@ -8,6 +8,7 @@ import {
 } from "./BottomMenu.styles";
 import { SkillsContainer } from "../skills/SkillsContainer";
 import { activeSkills } from "../skills/skills";
+import { Portal } from "@mui/material";
 
 export function BottomMenu() {
   const {
@@ -211,7 +212,9 @@ export function BottomMenu() {
           }}
         />
       </JoystickContainer>
-      <SkillsContainer />
+      <Portal>
+        <SkillsContainer />
+      </Portal>
     </BottomMenuContainer>
   );
 }

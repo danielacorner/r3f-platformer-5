@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { useGameStore } from "../../../store/gameStore";
-import { Vector3 } from "three";
-import { castSkill } from "../SkillEffects/castSkill";
+import { activeSkills } from "../skills/skills";
 import {
   SkillsContainerWrapper,
   PrimarySkillContainer,
   SecondarySkillsContainer,
   SkillSlot,
 } from "./SkillsContainer.styles";
-import { Portal } from "@mui/material";
+import { castSkill } from "../SkillEffects/castSkill";
 import { PrimarySkillButton } from "../../BottomMenu/Skills/Skills.styles";
+import { Vector3 } from "three";
 
 export function SkillsContainer() {
   const {
@@ -20,123 +20,104 @@ export function SkillsContainer() {
     level,
     selectedSkill,
     equipSkill,
-    setSelectedSkill,
-    setSelectedSkillSlot,
   } = useGameStore();
 
-  const handleSlotClick = (slot: number) => {
-    if (selectedSkill) {
-      equipSkill(selectedSkill, slot);
-      setSelectedSkill(null);
-      setSelectedSkillSlot(null);
-    }
-  };
-
   return (
-    <Portal>
-      <SkillsContainerWrapper>
-        <PrimarySkillContainer>
-          <PrimarySkillButton
-            color={primarySkill?.color}
-            empty={!primarySkill}
-            isHighlighted={selectedSkill && !primarySkill}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (selectedSkill) {
-                equipSkill(selectedSkill, 0);
-                setSelectedSkill(null);
-                setSelectedSkillSlot(null);
-              } else if (primarySkill && playerRef) {
-                const playerPosition = playerRef.translation();
-                if (!playerPosition) return;
+    <SkillsContainerWrapper>
+      <PrimarySkillContainer>
+        <PrimarySkillButton
+          color={primarySkill?.color}
+          empty={!primarySkill}
+          isHighlighted={selectedSkill !== null}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (selectedSkill) {
+              equipSkill(selectedSkill, 0);
+            } else if (primarySkill) {
+              if (!playerRef) return;
+              const playerPosition = playerRef.translation();
+              if (!playerPosition) return;
 
-                const position = new Vector3(
-                  playerPosition.x,
-                  1,
-                  playerPosition.z
-                );
-                let direction: Vector3;
-
-                if (window.gameState?.mousePosition) {
-                  const mousePos = new Vector3(
-                    window.gameState.mousePosition.x,
-                    0,
-                    window.gameState.mousePosition.z
-                  );
-                  direction = mousePos.clone().sub(position).normalize();
-                } else {
-                  direction = new Vector3(0, 0, 1);
-                }
-
-                castSkill(
-                  primarySkill,
-                  position,
-                  direction,
-                  primarySkill.level || level
-                );
-              }
-            }}
-          >
-            {primarySkill && <primarySkill.icon size="100%" />}
-          </PrimarySkillButton>
-
-          <SecondarySkillsContainer>
-            {Array.from({ length: maxSkillSlots }).map((_, index) => {
-              const skill = equippedSkills[index + 1];
-              return (
-                <SkillSlot
-                  key={index}
-                  color={skill?.color}
-                  isActive={skill?.isActive}
-                  index={index}
-                  total={maxSkillSlots}
-                  empty={!skill}
-                  isHighlighted={selectedSkill && !skill}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (selectedSkill) {
-                      handleSlotClick(index + 1);
-                    } else if (skill && playerRef) {
-                      const playerPosition = playerRef.translation();
-                      if (!playerPosition) return;
-
-                      const position = new Vector3(
-                        playerPosition.x,
-                        1,
-                        playerPosition.z
-                      );
-                      let direction: Vector3;
-
-                      if (window.gameState?.mousePosition) {
-                        const mousePos = new Vector3(
-                          window.gameState.mousePosition.x,
-                          0,
-                          window.gameState.mousePosition.z
-                        );
-                        direction = mousePos.clone().sub(position).normalize();
-                      } else {
-                        direction = new Vector3(0, 0, 1);
-                      }
-
-                      castSkill(
-                        skill,
-                        position,
-                        direction,
-                        skill.level || level
-                      );
-                    }
-                  }}
-                >
-                  {skill && <skill.icon size="100%" />}
-                  {skill?.cooldown > 0 && (
-                    <div className="cooldown">{skill.cooldown.toFixed(1)}s</div>
-                  )}
-                </SkillSlot>
+              const position = new Vector3(
+                playerPosition.x,
+                1,
+                playerPosition.z
               );
-            })}
-          </SecondarySkillsContainer>
-        </PrimarySkillContainer>
-      </SkillsContainerWrapper>
-    </Portal>
+              let direction: Vector3;
+
+              if (window.gameState?.mousePosition) {
+                const mousePos = new Vector3(
+                  window.gameState.mousePosition.x,
+                  0,
+                  window.gameState.mousePosition.z
+                );
+                direction = mousePos.clone().sub(position).normalize();
+              } else {
+                direction = new Vector3(0, 0, 1);
+              }
+
+              castSkill(
+                primarySkill,
+                position,
+                direction,
+                primarySkill.level || level
+              );
+            }
+          }}
+        >
+          {primarySkill && <primarySkill.icon size="100%" />}
+        </PrimarySkillButton>
+
+        <SecondarySkillsContainer>
+          {Array.from({ length: maxSkillSlots }).map((_, index) => {
+            const slotIndex = index + 1;
+            const skill = equippedSkills[slotIndex];
+            return (
+              <SkillSlot
+                key={index}
+                color={skill?.color}
+                isActive={skill?.isActive}
+                index={index}
+                total={maxSkillSlots}
+                empty={!skill}
+                isHighlighted={selectedSkill !== null}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (selectedSkill) {
+                    equipSkill(selectedSkill, slotIndex);
+                  } else if (skill) {
+                    if (!playerRef) return;
+                    const playerPosition = playerRef.translation();
+                    if (!playerPosition) return;
+
+                    const position = new Vector3(
+                      playerPosition.x,
+                      1,
+                      playerPosition.z
+                    );
+                    let direction: Vector3;
+
+                    if (window.gameState?.mousePosition) {
+                      const mousePos = new Vector3(
+                        window.gameState.mousePosition.x,
+                        0,
+                        window.gameState.mousePosition.z
+                      );
+                      direction = mousePos.clone().sub(position).normalize();
+                    } else {
+                      direction = new Vector3(0, 0, 1);
+                    }
+
+                    castSkill(skill, position, direction, skill.level || level);
+                  }
+                }}
+              >
+                {skill && <skill.icon size="100%" />}
+              </SkillSlot>
+            );
+          })}
+        </SecondarySkillsContainer>
+      </PrimarySkillContainer>
+    </SkillsContainerWrapper>
   );
 }

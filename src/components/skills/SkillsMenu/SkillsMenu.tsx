@@ -10,10 +10,9 @@ import {
   activeSkills,
   MagicSchool,
   magicSchools,
-  PassiveSkill,
   passiveSkills,
 } from "../skills";
-import { StyledSkillsMenu, StyledSkillItem, MenuBackdrop } from "./styles";
+import { StyledSkillsMenu, StyledSkillItem, MenuBackdrop } from "./styles.tsx";
 
 interface SkillsMenuProps {
   isOpen: boolean;
@@ -35,7 +34,6 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
     equipSkill,
     setSelectedSkillSlot,
     level,
-    money,
   } = useGameStore();
 
   const handleUpgrade = (skillName: string) => {
@@ -65,15 +63,6 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
       // Clear slot selection when selecting a skill
       setSelectedSkillSlot(null);
     }
-  };
-
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onClose();
-  };
-
-  const handleMenuClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
   };
 
   const handleScroll = (e: React.WheelEvent) => {
