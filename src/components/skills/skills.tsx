@@ -10,7 +10,8 @@ import {
     GiBoomerang, GiPunchBlast, GiVacuumCleaner,  // Force - Active
     GiIceSpellCast, GiIciclesAura, GiSnowman,  // Frost - Active
     GiTriorb,
-    GiMoonOrbit
+    GiMoonOrbit,
+    GiBrain
 } from 'react-icons/gi';
 import { RiMagicFill, RiMentalHealthFill } from 'react-icons/ri';
 
@@ -439,3 +440,20 @@ export const activeSkills: (ActiveSkill)[] = [
         school: 'frost',
     },
 ];
+
+export const skillDefinitions = {
+  expandedMind: {
+    name: "Expanded Mind",
+    description: "Increase your maximum skill slots by 1",
+    icon: <GiBrain size={24} />,
+    color: "#9333ea",
+    maxLevel: 5,
+    cost: [1, 2, 3, 4, 5],
+    onUpgrade: (store: any) => {
+      store.increaseMaxSkillSlots();
+    },
+    requirements: {
+      level: 2
+    }
+  },
+};

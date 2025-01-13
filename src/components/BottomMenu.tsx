@@ -11,17 +11,21 @@ import {
   JoystickContainer,
   PrimarySkillButton,
   JoystickButton,
-  DirectionalArrow
+  DirectionalArrow,
+  PrimarySkillContainer,
+  SecondarySkillsContainer
 } from './BottomMenu.styles';
 import { SkillsMenu } from './skills/SkillsMenu/SkillsMenu';
 
 export function BottomMenu() {
   const {
     equippedSkills,
-    selectedSkillSlot,
-    setSelectedSkillSlot,
-    toggleSkill,
-    skillLevels,
+    primarySkill,
+    handleSkillClick,
+    handlePrimarySkillClick,
+    joystickMovement,
+    setJoystickMovement,
+    maxSkillSlots,
     playerRef,
     money,
     experience,
@@ -29,12 +33,12 @@ export function BottomMenu() {
     equipSkill,
     baseSkillSlots,
     additionalSkillSlots,
-    setJoystickMovement,
+    setJoystickPosition,
   } = useGameStore();
   const [isSkillsMenuOpen, setIsSkillsMenuOpen] = useState(false);
   const [skillCooldowns, setSkillCooldowns] = useState<{ [key: string]: number }>([]);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
-  const [joystickPosition, setJoystickPosition] = useState({ x: 0, y: 0 });
+  const [joystickPosition, setJoystickPositionState] = useState({ x: 0, y: 0 });
   const joystickRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
   const startPosRef = useRef({ x: 0, y: 0 });
@@ -72,11 +76,11 @@ export function BottomMenu() {
   }, []);
 
   const handleCastSkill = (skill: ActiveSkill) => {
-    const level = skillLevels[skill.name] || 0;
+    const level = 1; // skillLevels[skill.name] || 0;
     if (level === 0) return;
 
     if (skill.toggleable) {
-      toggleSkill(skill.name);
+      // toggleSkill(skill.name);
       return;
     }
 
@@ -109,21 +113,33 @@ export function BottomMenu() {
     }));
   };
 
-  const handleSkillClick = (e: React.MouseEvent, index: number) => {
-    e.preventDefault();
-    e.stopPropagation();
+  useEffect(() => {
+    const handleMove = (e: MouseEvent | TouchEvent) => {
+      if (!isDraggingRef.current) return;
+      handleJoystickMove(e);
+    };
 
-    const skill = equippedSkills[index];
-    if (!skill) return;
+    const handleEnd = () => {
+      handleJoystickEnd();
+    };
 
-    if (skill.toggleable) {
-      toggleSkill(skill.name);
-    } else {
-      handleCastSkill(skill);
-    }
-  };
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleEnd);
+    window.addEventListener('touchmove', handleMove);
+    window.addEventListener('touchend', handleEnd);
+    window.addEventListener('touchcancel', handleEnd);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleEnd);
+      window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('touchend', handleEnd);
+      window.removeEventListener('touchcancel', handleEnd);
+    };
+  }, []);
 
   const handleJoystickStart = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     isDraggingRef.current = true;
 
@@ -170,29 +186,15 @@ export function BottomMenu() {
     const normalizedX = deltaX / (radius - 30);
     const normalizedY = deltaY / (radius - 30);
 
-    setJoystickPosition({ x: deltaX, y: deltaY });
+    setJoystickPositionState({ x: deltaX, y: deltaY });
     setJoystickMovement({ x: normalizedX, y: normalizedY });
   };
 
   const handleJoystickEnd = () => {
     isDraggingRef.current = false;
-    setJoystickPosition({ x: 0, y: 0 });
+    setJoystickPositionState({ x: 0, y: 0 });
     setJoystickMovement({ x: 0, y: 0 });
   };
-
-  useEffect(() => {
-    window.addEventListener('mousemove', handleJoystickMove);
-    window.addEventListener('mouseup', handleJoystickEnd);
-    window.addEventListener('touchmove', handleJoystickMove);
-    window.addEventListener('touchend', handleJoystickEnd);
-
-    return () => {
-      window.removeEventListener('mousemove', handleJoystickMove);
-      window.removeEventListener('mouseup', handleJoystickEnd);
-      window.removeEventListener('touchmove', handleJoystickMove);
-      window.removeEventListener('touchend', handleJoystickEnd);
-    };
-  }, []);
 
   return (
     <BottomMenuContainer>
@@ -200,6 +202,8 @@ export function BottomMenu() {
         ref={joystickRef}
         onMouseDown={handleJoystickStart}
         onTouchStart={handleJoystickStart}
+        onContextMenu={(e) => e.preventDefault()}
+        className="joystick-area"
       >
         <DirectionalArrow direction="up" />
         <DirectionalArrow direction="right" />
@@ -213,38 +217,44 @@ export function BottomMenu() {
       </JoystickContainer>
 
       <SkillsContainer>
-        {equippedSkills.map((skill, index) => {
-          if (!skill) return null;
+        <PrimarySkillContainer>
+          <PrimarySkillButton
+            color={primarySkill?.color}
+            empty={!primarySkill}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (primarySkill) handlePrimarySkillClick();
+            }}
+          >
+            {primarySkill?.icon}
+          </PrimarySkillButton>
 
-          return index === 0 ? (
-            <PrimarySkillButton
-              key={index}
-              color={skill.color}
-              onClick={(e) => handleSkillClick(e, index)}
-            >
-              <div className="skill-icon">
-                <skill.icon size="100%" />
-              </div>
-            </PrimarySkillButton>
-          ) : (
-            <SkillSlot
-              key={index}
-              color={skill.color}
-              isActive={skill.toggleable && skill.isActive}
-              onClick={(e) => handleSkillClick(e, index)}
-            >
-              <div className="skill-icon">
-                <skill.icon size="100%" />
-              </div>
-              {skillCooldowns[skill.name] > 0 && (
-                <div className="cooldown">{skillCooldowns[skill.name].toFixed(1)}s</div>
-              )}
-            </SkillSlot>
-          );
-        })}
+          <SecondarySkillsContainer>
+            {Array.from({ length: maxSkillSlots }).map((_, index) => {
+              const skill = equippedSkills[index + 1];
+              return (
+                <SkillSlot
+                  key={index}
+                  color={skill?.color}
+                  isActive={skill?.isActive}
+                  index={index}
+                  total={maxSkillSlots}
+                  empty={!skill}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (skill) handleSkillClick(skill);
+                  }}
+                >
+                  {skill?.icon}
+                  {skill?.cooldown > 0 && (
+                    <div className="cooldown">{skill.cooldown.toFixed(1)}s</div>
+                  )}
+                </SkillSlot>
+              );
+            })}
+          </SecondarySkillsContainer>
+        </PrimarySkillContainer>
       </SkillsContainer>
-
-      <SkillsMenu isOpen={isSkillsMenuOpen} onClose={() => setIsSkillsMenuOpen(false)} />
     </BottomMenuContainer>
   );
 }

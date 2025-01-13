@@ -23,6 +23,12 @@ function TDCamera() {
   const lastPanPosition = useRef({ x: 0, y: 0 });
 
   const handlePointerDown = (e: PointerEvent) => {
+    // Ignore events from joystick and UI elements
+    if ((e.target as HTMLElement).closest('.joystick-area') || 
+        (e.target as HTMLElement).closest('.game-ui')) {
+      return;
+    }
+
     if (e.button === 2 || e.button === 1) {
       isPanning.current = true;
       lastPanPosition.current = { x: e.clientX, y: e.clientY };
@@ -36,6 +42,12 @@ function TDCamera() {
   };
 
   const handlePointerMove = (e: PointerEvent) => {
+    // Ignore events from joystick and UI elements
+    if ((e.target as HTMLElement).closest('.joystick-area') || 
+        (e.target as HTMLElement).closest('.game-ui')) {
+      return;
+    }
+
     if (!isPanning.current || !playerRef) return;
 
     const dx = (e.clientX - lastPanPosition.current.x) * 0.1;

@@ -343,10 +343,10 @@ export function Player({ moveTargetRef }: PlayerProps) {
         <CuboidCollider args={[0.3, 0.4, 0.3]} position={[0, FLOAT_HEIGHT, 0]} />
         <group ref={visualRef}>
           {/* Range Indicator */}
-          <line rotation-x={-Math.PI / 2} position={[0, 0.1, 0]}>
+          {magicOrbSkill?.isActive && <line rotation-x={-Math.PI / 2} position={[0, 0.1, 0]}>
             <primitive object={rangeIndicator} />
             <lineBasicMaterial color="#4c99f7" linewidth={1} />
-          </line>
+          </line>}
 
           {/* Blue Cloak with wind animation */}
           <group position={[0, 0.4, 0]}>

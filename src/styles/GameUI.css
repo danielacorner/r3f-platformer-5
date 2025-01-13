@@ -469,3 +469,35 @@
     font-size: 0.7rem;
   }
 }
+
+@media screen and (max-width: 768px) {
+  .skills-menu-button {
+    width: 60px;
+    height: 60px;
+  }
+
+  .skills-menu-button svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .skill-points-badge {
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    top: 4px;
+    right: 4px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .skills-menu-button {
+    width: 50px;
+    height: 50px;
+  }
+
+  .skills-menu-button svg {
+    width: 30px;
+    height: 30px;
+  }
+}

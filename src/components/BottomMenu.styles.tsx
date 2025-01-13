@@ -158,34 +158,24 @@ export const BottomMenuContainer = styled.div`
 `;
 
 export const JoystickContainer = styled.div`
-  width: 150px;
-  height: 150px;
   position: relative;
-  pointer-events: all; /* Ensure events are captured */
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: rgba(30, 30, 40, 0.6);
+  border: 2px solid rgba(255, 215, 150, 0.4);
   margin-left: 20px;
-  transform: translateY(-20px);
-  user-select: none; /* Prevent text selection */
-  touch-action: none; /* Prevent default touch actions */
+  margin-bottom: 20px;
+  touch-action: none;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  box-shadow: 
+    inset 0 0 20px rgba(255, 215, 150, 0.1),
+    0 0 15px rgba(255, 215, 150, 0.15);
 
-  /* Outer ring with directional markers */
   &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border-radius: 50%;
-    background: rgba(20, 12, 8, 0.45); /* More transparent background */
-    border: 2px solid rgba(255, 215, 150, 0.25);
-    box-shadow: 
-      inset 0 0 20px rgba(255, 180, 50, 0.15),
-      0 0 10px rgba(255, 180, 50, 0.1);
-    pointer-events: none; /* Allow events to pass through to main container */
-  }
-
-  /* Direction arrows container */
-  &::after {
     content: '';
     position: absolute;
     top: 10px;
@@ -193,14 +183,34 @@ export const JoystickContainer = styled.div`
     right: 10px;
     bottom: 10px;
     border-radius: 50%;
-    background: 
-      radial-gradient(
-        circle at center,
-        rgba(80, 60, 40, 0.25) 0%,
-        rgba(40, 30, 20, 0.2) 100%
-      );
-    backdrop-filter: blur(4px);
-    pointer-events: none; /* Allow events to pass through to main container */
+    background: radial-gradient(circle at center, rgba(255, 215, 150, 0.15) 0%, rgba(30, 30, 40, 0.2) 100%);
+    pointer-events: none;
+  }
+
+  * {
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  @media (max-width: 768px) {
+    width: 150px;
+    height: 150px;
+    margin-left: 10px;
+    margin-bottom: 10px;
+  }
+
+  @media (max-width: 480px) {
+    width: 120px;
+    height: 120px;
+    margin-left: 5px;
+    margin-bottom: 5px;
+  }
+
+  @media (max-width: 320px) {
+    width: 100px;
+    height: 100px;
   }
 `;
 
@@ -212,16 +222,11 @@ export const JoystickButton = styled.div`
   height: 60px;
   border-radius: 50%;
   transition: transform 0.05s ease-out;
-  background: 
-    radial-gradient(
-      circle at center,
-      rgba(80, 60, 40, 0.95) 0%,
-      rgba(40, 30, 20, 0.85) 100%
-    );
-  border: 2px solid rgba(255, 215, 150, 0.3);
+  background: radial-gradient(circle at center, rgba(255, 215, 150, 0.9) 0%, rgba(200, 160, 100, 0.8) 100%);
+  border: 2px solid rgba(255, 215, 150, 0.6);
   box-shadow: 
     0 2px 8px rgba(0, 0, 0, 0.4),
-    inset 0 2px 4px rgba(255, 215, 150, 0.15);
+    inset 0 2px 4px rgba(255, 255, 255, 0.3);
   z-index: 2;
 
   &::before {
@@ -230,17 +235,232 @@ export const JoystickButton = styled.div`
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+    width: 70%;
+    height: 70%;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, rgba(255, 235, 180, 0.9) 0%, rgba(255, 215, 150, 0.8) 100%);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+  }
+
+  @media (max-width: 768px) {
+    width: 50px;
+    height: 50px;
+  }
+
+  @media (max-width: 480px) {
     width: 40px;
     height: 40px;
-    border-radius: 50%;
-    pointer-events: none;
-    background: 
-      radial-gradient(
-        circle at center,
-        rgba(100, 80, 50, 0.95) 0%,
-        rgba(60, 45, 30, 0.85) 100%
-      );
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+  }
+
+  @media (max-width: 320px) {
+    width: 35px;
+    height: 35px;
+  }
+`;
+
+export const SkillsContainer = styled.div`
+  position: relative;
+  width: 240px;
+  height: 240px;
+  margin-right: 20px;
+  pointer-events: auto;
+
+  @media (max-width: 768px) {
+    width: 200px;
+    height: 200px;
+    margin-right: 15px;
+  }
+
+  @media (max-width: 480px) {
+    width: 180px;
+    height: 180px;
+    margin-right: 10px;
+  }
+
+  @media (max-width: 320px) {
+    width: 160px;
+    height: 160px;
+    margin-right: 8px;
+  }
+`;
+
+export const PrimarySkillContainer = styled.div`
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 120px;
+  height: 120px;
+
+  @media (max-width: 768px) {
+    width: 100px;
+    height: 100px;
+  }
+
+  @media (max-width: 480px) {
+    width: 90px;
+    height: 90px;
+  }
+
+  @media (max-width: 320px) {
+    width: 80px;
+    height: 80px;
+  }
+`;
+
+export const PrimarySkillButton = styled.div<{ color?: string; empty?: boolean }>`
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: ${props => props.empty ? 'rgba(20, 20, 30, 0.4)' : 'rgba(20, 20, 30, 0.8)'};
+  border: 3px solid ${props => props.empty ? 'rgba(255, 255, 255, 0.1)' : props.color || '#60a5fa'};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  box-shadow: ${props => props.empty ?
+    'inset 0 0 15px rgba(255, 255, 255, 0.05)' :
+    `0 0 20px ${props.color || '#60a5fa'}40,
+     inset 0 0 15px ${props.color || '#60a5fa'}20`
+  };
+  z-index: 2;
+
+  .skill-icon {
+    width: 60%;
+    height: 60%;
+    color: ${props => props.empty ? 'rgba(255, 255, 255, 0.2)' : props.color || '#60a5fa'};
+    filter: ${props => props.empty ? 'none' : `drop-shadow(0 0 5px ${props.color || '#60a5fa'})`};
+    opacity: ${props => props.empty ? 0.3 : 0.9};
+  }
+
+  &:hover {
+    background: ${props => props.empty ? 'rgba(30, 30, 40, 0.5)' : 'rgba(30, 30, 40, 0.9)'};
+    box-shadow: ${props => props.empty ?
+    'inset 0 0 20px rgba(255, 255, 255, 0.08)' :
+    `0 0 25px ${props.color || '#60a5fa'}60,
+       inset 0 0 20px ${props.color || '#60a5fa'}30`
+  };
+    .skill-icon {
+      opacity: ${props => props.empty ? 0.4 : 1};
+    }
+  }
+`;
+
+export const SecondarySkillsContainer = styled.div`
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  right: 0;
+  pointer-events: none;
+`;
+
+export const SkillSlot = styled.div<{ color?: string; isActive?: boolean; index: number; total: number; empty?: boolean }>`
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  right: 16px;
+  bottom: 124px;
+  border: 2px solid ${props => props.empty ? 'rgba(255, 255, 255, 0.1)' : props.color || '#60a5fa'};
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${props => props.empty ? 'rgba(20, 20, 30, 0.4)' :
+    props.isActive ? `${props.color}33` : 'rgba(20, 20, 30, 0.8)'};
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+  box-shadow: ${props => props.empty ?
+    'inset 0 0 10px rgba(255, 255, 255, 0.05)' :
+    `0 0 15px ${props.color || '#60a5fa'}40,
+     inset 0 0 10px ${props.color || '#60a5fa'}20`
+  };
+  pointer-events: auto;
+  transform-origin: center bottom;
+  transform: ${props => `
+    rotate(${24 + -140 * (props.index / props.total)}deg)
+    translateY(-${140 - 30}px)
+  `};
+
+  .skill-icon {
+    width: 60%;
+    height: 60%;
+    color: ${props => props.empty ? 'rgba(255, 255, 255, 0.2)' :
+    props.isActive ? props.color : '#fff'};
+    filter: ${props => props.empty ? 'none' :
+    props.isActive ? 'brightness(1.2) drop-shadow(0 0 5px currentColor)' : 'drop-shadow(0 0 3px currentColor)'};
+    opacity: ${props => props.empty ? 0.3 : 0.9};
+    transition: all 0.2s ease;
+    transform: ${props => `rotate(-${90 * (props.index / props.total)}deg)`};
+  }
+
+  &:hover {
+    background: ${props => props.empty ? 'rgba(30, 30, 40, 0.5)' : 'rgba(30, 30, 40, 0.9)'};
+    box-shadow: ${props => props.empty ?
+    'inset 0 0 15px rgba(255, 255, 255, 0.08)' :
+    `0 0 20px ${props.color || '#60a5fa'}60,
+       inset 0 0 15px ${props.color || '#60a5fa'}30`
+  };
+    .skill-icon {
+      opacity: ${props => props.empty ? 0.4 : 1};
+      transform: ${props => `rotate(-${90 * (props.index / props.total)}deg) scale(1.1)`};
+    }
+  }
+
+  @media (max-width: 768px) {
+    width: 50px;
+    height: 50px;
+    transform: ${props => `
+      rotate(${24 + -140 * (props.index / props.total)}deg)
+      translateY(-${120 - 30}px)
+    `};
+  }
+
+  @media (max-width: 480px) {
+    width: 45px;
+    height: 45px;
+    transform: ${props => `
+      rotate(${24 + -140 * (props.index / props.total)}deg)
+      translateY(-${100 - 30}px)
+    `};
+  }
+
+  @media (max-width: 320px) {
+    width: 40px;
+    height: 40px;
+    transform: ${props => `
+      rotate(${24 + -140 * (props.index / props.total)}deg)
+      translateY(-${90 - 30}px)
+    `};
+  }
+
+  .cooldown {
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+
+    @media (max-width: 768px) {
+      bottom: -16px;
+      font-size: 11px;
+    }
+
+    @media (max-width: 480px) {
+      bottom: -14px;
+      font-size: 10px;
+    }
+
+    @media (max-width: 320px) {
+      bottom: -12px;
+      font-size: 9px;
+    }
   }
 `;
 
@@ -271,135 +491,13 @@ export const DirectionalArrow = styled.div<{ direction: 'up' | 'right' | 'down' 
   &::before {
     content: '▲';
     transform: ${props => {
-      switch (props.direction) {
-        case 'right': return 'rotate(90deg)';
-        case 'down': return 'rotate(180deg)';
-        case 'left': return 'rotate(-90deg)';
-        default: return 'none';
-      }
-    }};
-  }
-`;
-
-export const SkillsContainer = styled.div`
-  display: flex;
-  gap: 20px;
-  align-items: flex-end;
-  margin-right: 20px;
-  position: relative;
-  pointer-events: auto;
-  transform: translateY(-20px);
-`;
-
-export const PrimarySkillButton = styled.div<{ color?: string }>`
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.6);
-  border: 3px solid ${props => props.color || '#60a5fa'};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  position: relative;
-  backdrop-filter: blur(4px);
-  margin-left: 16px;
-  box-shadow: 0 0 20px ${props => props.color || '#60a5fa'}40;
-  transform: scale(1.2);
-
-  &:hover {
-    box-shadow: 0 0 30px ${props => props.color || '#60a5fa'}60;
-  }
-
-  .skill-icon {
-    width: 60%;
-    height: 60%;
-    color: ${props => props.color || '#60a5fa'};
-    filter: drop-shadow(0 0 5px ${props => props.color || '#60a5fa'});
-  }
-`;
-
-export const SkillSlot = styled.div<{ color?: string; isActive?: boolean }>`
-  position: relative;
-  width: 70px;
-  height: 70px;
-  border: 2px solid ${props => props.color || '#60a5fa'};
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: ${props => props.isActive ? `${props.color}33` : 'rgba(0, 0, 0, 0.6)'};
-  cursor: pointer;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(4px);
-  box-shadow: 0 0 10px ${props => props.color || '#60a5fa'}40;
-
-  ${props => props.isActive && css`
-    animation: ${pulseAnimation} 2s ease-in-out infinite;
-    
-    .skill-icon {
-      animation: ${activeIconAnimation} 2s ease-in-out infinite;
-      transform-origin: center;
+    switch (props.direction) {
+      case 'right': return 'rotate(90deg)';
+      case 'down': return 'rotate(180deg)';
+      case 'left': return 'rotate(-90deg)';
+      default: return 'none';
     }
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: -5px;
-      left: -5px;
-      right: -5px;
-      bottom: -5px;
-      border: 2px solid ${props.color}40;
-      border-radius: 50%;
-      animation: ${orbitAnimation} 3s linear infinite;
-      pointer-events: none;
-    }
-
-    &::after {
-      content: '';
-      position: absolute;
-      top: -3px;
-      left: -3px;
-      right: -3px;
-      bottom: -3px;
-      border: 2px solid ${props.color}80;
-      border-radius: 50%;
-      animation: ${orbitAnimation} 3s linear infinite reverse;
-      pointer-events: none;
-    }
-  `}
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: ${props => props.isActive 
-      ? `0 0 15px ${props.color}` 
-      : `0 0 5px ${props.color || '#60a5fa'}`};
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-
-  .skill-icon {
-    width: 60%;
-    height: 60%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    color: ${props => props.isActive ? props.color : '#fff'};
-    filter: ${props => props.isActive ? 'brightness(1.2) drop-shadow(0 0 5px currentColor)' : 'none'};
-    transition: transform 0.2s ease;
-  }
-
-  .cooldown {
-    position: absolute;
-    bottom: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: #fff;
-    font-size: 14px;
-    text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+  }};
   }
 `;
 

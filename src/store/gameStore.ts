@@ -113,6 +113,7 @@ interface GameState {
   selectedSkill: any | null;
   baseSkillSlots: number;
   additionalSkillSlots: number;
+  maxSkillSlots: number;
   joystickMovement: { x: number; y: number };
   setPhase: (phase: "prep" | "combat" | "victory") => void;
   setCurrentLevel: (level: number) => void;
@@ -145,6 +146,7 @@ interface GameState {
   setSelectedSkill: (skill: any | null) => void;
   toggleSkill: (skillName: string) => void;
   setJoystickMovement: (movement: { x: number; y: number }) => void;
+  increaseMaxSkillSlots: () => void;
 }
 
 const initialState: GameState = {
@@ -189,6 +191,7 @@ const initialState: GameState = {
   selectedSkill: null,
   baseSkillSlots: 4,
   additionalSkillSlots: 0,
+  maxSkillSlots: 4,
   joystickMovement: { x: 0, y: 0 },
   setPhase: () => { },
   setCurrentLevel: () => { },
@@ -221,6 +224,7 @@ const initialState: GameState = {
   setSelectedSkill: () => { },
   toggleSkill: () => { },
   setJoystickMovement: () => { },
+  increaseMaxSkillSlots: () => { },
 };
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -485,5 +489,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
   setJoystickMovement: (movement) => {
     set({ joystickMovement: movement });
+  },
+  increaseMaxSkillSlots: () => {
+    set((state) => ({
+      maxSkillSlots: Math.min(state.maxSkillSlots + 1, 12),
+      skillPoints: state.skillPoints - 1
+    }));
   },
 }));
