@@ -21,7 +21,6 @@ import {
   Money,
   SkillSlots,
   SkillSlot,
-  SkillIcon,
   SkillHotkey,
   UnequipButton
 } from './BottomMenu.styles';
@@ -161,12 +160,11 @@ export function BottomMenu() {
 
   return (
     <>
-      <BottomMenuContainer>
+      <BottomMenuContainer onClick={(e) => e.stopPropagation()}>
         <StatusSection>
           <PlayerInfo>
             <PlayerIcon
               onClick={(e) => {
-                e.preventDefault();
                 e.stopPropagation();
                 setIsSkillsMenuOpen(true);
               }}
@@ -205,10 +203,13 @@ export function BottomMenu() {
             >
               {skill && (
                 <>
-                  <SkillIcon src={skill.icon} alt={skill.name} />
+                  <div className="skill-icon" style={{ color: skill.color, width: '80%', height: '80%' }}>
+                    <skill.icon size="100%" />
+                  </div>
                   {!isTouchDevice && <SkillHotkey>{index + 1}</SkillHotkey>}
                   {isSkillsMenuOpen && (
                     <UnequipButton
+                      className="unequip-button"
                       onClick={(e) => {
                         e.stopPropagation();
                         unequipSkill(index);
@@ -231,7 +232,7 @@ export function BottomMenu() {
       </BottomMenuContainer>
 
       {isSkillsMenuOpen && (
-        <SkillsMenu onClose={() => setIsSkillsMenuOpen(false)} />
+        <SkillsMenu isOpen={isSkillsMenuOpen} onClose={() => setIsSkillsMenuOpen(false)} />
       )}
     </>
   );

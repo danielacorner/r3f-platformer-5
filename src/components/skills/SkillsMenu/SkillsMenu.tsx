@@ -6,7 +6,7 @@ import { Tabs, Tab, Box } from "@mui/material";
 import { getMissileCount } from "../SkillEffects/castMagicMissiles";
 import { getBoomerangCount } from "../SkillEffects/castMagicBoomerang";
 import { ActiveSkill, activeSkills, MagicSchool, magicSchools, PassiveSkill, passiveSkills } from "../skills";
-import { StyledSkillsMenu, StyledSkillItem } from './styles';
+import { StyledSkillsMenu, StyledSkillItem, MenuBackdrop } from './styles';
 
 interface SkillsMenuProps {
   isOpen: boolean;
@@ -14,6 +14,8 @@ interface SkillsMenuProps {
 }
 
 export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
+  if (!isOpen) return null;
+
   const [activeSchool, setActiveSchool] = useState<MagicSchool>('arcane');
   const {
     skillPoints,
@@ -58,8 +60,6 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
     }
   };
 
-  if (!isOpen) return null;
-
   const handleBackdropClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onClose();
@@ -93,159 +93,165 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
   };
 
   return createPortal(
-    <StyledSkillsMenu onClick={handleMenuClick} onWheel={handleScroll}>
-      <div className="skills-header">
-        <h2>Magic Skills</h2>
-        <div className="header-right">
-          <div className="skill-points">
-            {window.innerWidth >= 640 && (
-              <div className="skill-points-label">SKILL CHOICES REMAINING</div>
-            )}
-            <div className="skill-points-value">
-              <FaStar className="skill-points-icon" />
-              <span>{skillPoints}</span>
+    <>
+      <MenuBackdrop onClick={(e) => {
+        e.stopPropagation();
+        onClose();
+      }} />
+      <StyledSkillsMenu onClick={(e) => e.stopPropagation()} onWheel={handleScroll}>
+        <div className="skills-header">
+          <h2>Magic Skills</h2>
+          <div className="header-right">
+            <div className="skill-points">
+              {window.innerWidth >= 640 && (
+                <div className="skill-points-label">SKILL CHOICES REMAINING</div>
+              )}
+              <div className="skill-points-value">
+                <FaStar className="skill-points-icon" />
+                <span>{skillPoints}</span>
+              </div>
             </div>
+            <button
+              className="close-icon-button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
+            >
+              <FaTimes />
+            </button>
           </div>
-          <button
-            className="close-icon-button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onClose();
+        </div>
+
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs
+            value={activeSchool}
+            onChange={(_, newValue) => setActiveSchool(newValue)}
+            variant="scrollable"
+            scrollButtons="auto"
+            sx={{
+              '& .MuiTab-root': {
+                flexGrow: 1,
+                color: 'rgba(255, 255, 255, 0.7)',
+                '&.Mui-selected': {
+                  color: magicSchools[activeSchool].color,
+                }
+              },
+              '& .MuiTabs-indicator': {
+                backgroundColor: magicSchools[activeSchool].color,
+              }
             }}
           >
-            <FaTimes />
-          </button>
-        </div>
-      </div>
-
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs
-          value={activeSchool}
-          onChange={(_, newValue) => setActiveSchool(newValue)}
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{
-            '& .MuiTab-root': {
-              flexGrow: 1,
-              color: 'rgba(255, 255, 255, 0.7)',
-              '&.Mui-selected': {
-                color: magicSchools[activeSchool].color,
-              }
-            },
-            '& .MuiTabs-indicator': {
-              backgroundColor: magicSchools[activeSchool].color,
-            }
-          }}
-        >
-          {Object.entries(magicSchools).map(([key, school]) => (
-            <Tab
-              key={key}
-              label={
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <div style={{ color: school.color }}>
-                    <school.icon style={{
-                      color: school.color,
-                      width: 36, height: 36,
-                    }} />
-                  </div>
-                </div>
-              }
-              value={key}
-            />
-          ))}
-        </Tabs>
-      </Box>
-
-      <div className="skills-content">
-        <div className="school-description" style={{ color: magicSchools[activeSchool].color }}>
-          {magicSchools[activeSchool].description}
-        </div>
-
-        <div className="skills-grid">
-          {[...activeSkills, ...passiveSkills]
-            .filter(skill => skill.school === activeSchool)
-            .map((skill) => {
-              const isSelected = selectedSkill === skill;
-              const isEquipped = equippedSkills.includes(skill as ActiveSkill);
-              const currentLevel = skillLevels[skill.name] || 0;
-              const canAfford = skillPoints >= 1;
-              const nextLevelReq = 'levelRequirements' in skill && skill.levelRequirements && currentLevel < skill.maxLevel
-                ? skill.levelRequirements[currentLevel]
-                : null;
-              const meetsLevelReq = !nextLevelReq || nextLevelReq === null || level >= nextLevelReq;
-
-              return (
-                <StyledSkillItem
-                  key={skill.name}
-                  onClick={() => !('effect' in skill) && handleSkillClick(skill as ActiveSkill)}
-                  isSelected={isSelected}
-                  color={skill.color}
-                >
-                  {'levelRequirements' in skill && nextLevelReq && (
-                    <div className={`level-requirement ${meetsLevelReq ? 'met' : ''}`}>
-                      {meetsLevelReq ? 'Level OK' : `Requires Level ${nextLevelReq}`}
-                    </div>
-                  )}
-                  <div className="skill-background-icon">
-                    <skill.icon />
-                  </div>
-                  <div className="skill-icon">
-                    <skill.icon />
-                  </div>
-                  <div className="skill-info">
-                    <h3>{skill.name}</h3>
-                    <p>{skill.description}</p>
-                    {('effect' in skill) && (
-                      <p className="skill-effect">
-                        {Object.entries(skill.effect?.(currentLevel))
-                          .map(([key, value]) => {
-                            const formattedKey = key
-                              .replace(/([A-Z])/g, ' $1')
-                              .replace(/^./, str => str.toUpperCase());
-
-                            const formattedValue = key.toLowerCase().includes('chance') ||
-                              key.toLowerCase().includes('reduction')
-                              ? `${Math.round(Number(value) * 100)}%`
-                              : Math.round(Number(value) * 10) / 10;
-
-                            return `${formattedKey}: ${formattedValue}`;
-                          })
-                          .join(' | ')}
-                      </p>
-                    )}
-                    {!('effect' in skill) && getSkillStats(skill as typeof activeSkills[0], currentLevel) && (
-                      <p className="skill-stats">{getSkillStats(skill as typeof activeSkills[0], currentLevel)}</p>
-                    )}
-                  </div>
-                  <div className="skill-controls">
-                    {currentLevel < skill.maxLevel && (
-                      <button
-                        className="skill-upgrade-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleUpgrade(skill.name);
-                        }}
-                        disabled={!canAfford || !meetsLevelReq}
-                        title={canAfford ? (meetsLevelReq ? 'Upgrade' : `Requires Level ${nextLevelReq}`) : 'Not enough skill points'}
-                      >
-                        <FaPlus />
-                      </button>
-                    )}
-                    <div className="skill-level">
-                      {currentLevel > 0 && currentLevel}
+            {Object.entries(magicSchools).map(([key, school]) => (
+              <Tab
+                key={key}
+                label={
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{ color: school.color }}>
+                      <school.icon style={{
+                        color: school.color,
+                        width: 36, height: 36,
+                      }} />
                     </div>
                   </div>
-                  {isEquipped && (
-                    <div className="equipped-indicator" style={{ color: skill.color }}>
-                      (Equipped)
+                }
+                value={key}
+              />
+            ))}
+          </Tabs>
+        </Box>
+
+        <div className="skills-content">
+          <div className="school-description" style={{ color: magicSchools[activeSchool].color }}>
+            {magicSchools[activeSchool].description}
+          </div>
+
+          <div className="skills-grid">
+            {[...activeSkills, ...passiveSkills]
+              .filter(skill => skill.school === activeSchool)
+              .map((skill) => {
+                const isSelected = selectedSkill === skill;
+                const isEquipped = equippedSkills.includes(skill as ActiveSkill);
+                const currentLevel = skillLevels[skill.name] || 0;
+                const canAfford = skillPoints >= 1;
+                const nextLevelReq = 'levelRequirements' in skill && skill.levelRequirements && currentLevel < skill.maxLevel
+                  ? skill.levelRequirements[currentLevel]
+                  : null;
+                const meetsLevelReq = !nextLevelReq || nextLevelReq === null || level >= nextLevelReq;
+
+                return (
+                  <StyledSkillItem
+                    key={skill.name}
+                    onClick={() => !('effect' in skill) && handleSkillClick(skill as ActiveSkill)}
+                    isSelected={isSelected}
+                    color={skill.color}
+                  >
+                    {'levelRequirements' in skill && nextLevelReq && (
+                      <div className={`level-requirement ${meetsLevelReq ? 'met' : ''}`}>
+                        {meetsLevelReq ? 'Level OK' : `Requires Level ${nextLevelReq}`}
+                      </div>
+                    )}
+                    <div className="skill-background-icon">
+                      <skill.icon />
                     </div>
-                  )}
-                </StyledSkillItem>
-              );
-            })}
+                    <div className="skill-icon">
+                      <skill.icon />
+                    </div>
+                    <div className="skill-info">
+                      <h3>{skill.name}</h3>
+                      <p>{skill.description}</p>
+                      {('effect' in skill) && (
+                        <p className="skill-effect">
+                          {Object.entries(skill.effect?.(currentLevel))
+                            .map(([key, value]) => {
+                              const formattedKey = key
+                                .replace(/([A-Z])/g, ' $1')
+                                .replace(/^./, str => str.toUpperCase());
+
+                              const formattedValue = key.toLowerCase().includes('chance') ||
+                                key.toLowerCase().includes('reduction')
+                                ? `${Math.round(Number(value) * 100)}%`
+                                : Math.round(Number(value) * 10) / 10;
+
+                              return `${formattedKey}: ${formattedValue}`;
+                            })
+                            .join(' | ')}
+                        </p>
+                      )}
+                      {!('effect' in skill) && getSkillStats(skill as typeof activeSkills[0], currentLevel) && (
+                        <p className="skill-stats">{getSkillStats(skill as typeof activeSkills[0], currentLevel)}</p>
+                      )}
+                    </div>
+                    <div className="skill-controls">
+                      {currentLevel < skill.maxLevel && (
+                        <button
+                          className="skill-upgrade-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleUpgrade(skill.name);
+                          }}
+                          disabled={!canAfford || !meetsLevelReq}
+                          title={canAfford ? (meetsLevelReq ? 'Upgrade' : `Requires Level ${nextLevelReq}`) : 'Not enough skill points'}
+                        >
+                          <FaPlus />
+                        </button>
+                      )}
+                      <div className="skill-level">
+                        {currentLevel > 0 && currentLevel}
+                      </div>
+                    </div>
+                    {isEquipped && (
+                      <div className="equipped-indicator" style={{ color: skill.color }}>
+                        (Equipped)
+                      </div>
+                    )}
+                  </StyledSkillItem>
+                );
+              })}
+          </div>
         </div>
-      </div>
-    </StyledSkillsMenu>,
+      </StyledSkillsMenu>
+    </>,
     document.body
   );
 }

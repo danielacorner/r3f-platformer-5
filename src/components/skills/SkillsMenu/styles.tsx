@@ -1,5 +1,16 @@
 import styled from '@emotion/styled';
 
+export const MenuBackdrop = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1099;
+  pointer-events: all;
+`;
+
 export const StyledSkillsMenu = styled.div`
   position: fixed;
   top: calc(50% - 2rem); 
@@ -15,7 +26,7 @@ export const StyledSkillsMenu = styled.div`
     padding: 1rem;
   }
   color: #e5e7eb;
-  z-index: 1000;
+  z-index: 1100;
   overflow-y: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
@@ -160,6 +171,10 @@ export const StyledSkillItem = styled.div<{ isSelected?: boolean; color?: string
     border: 2px solid ${props => props.color || '#60a5fa'};
     color: ${props => props.color || '#60a5fa'};
     font-size: 1.5rem;
+    svg{
+      width: 100%;
+      height: 100%;
+    }
   }
 
   .skill-info {

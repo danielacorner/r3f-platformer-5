@@ -10,6 +10,149 @@ const shimmerAnimation = keyframes`
   }
 `;
 
+// Media queries
+export const mediaQueries = {
+  tablet: '@media screen and (min-width: 640px)',
+  desktop: '@media screen and (min-width: 1024px)',
+};
+
+export const SkillSlot = styled('div', {
+  label: 'SkillSlot'
+}) <{ isSelected: boolean; isHighlightEmpty: boolean; isOnCooldown: boolean; borderColor: string }>`
+  width: 3rem;
+  height: 3rem;
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid ${props => props.isSelected ? props.borderColor : '#666'};
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: ${props => props.isSelected ? `0 0 10px ${props.borderColor}` : 'none'};
+
+  ${props => props.isHighlightEmpty && `
+    border-color: #60a5fa;
+    box-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
+  `}
+
+  ${props => props.isOnCooldown && `
+    filter: grayscale(0.7);
+    cursor: not-allowed;
+  `}
+
+  &.hover {
+    border-color: ${props => props.borderColor};
+    transform: scale(1.05);
+  }
+
+  &.hover .unequip-button {
+    opacity: 1;
+  }
+
+  ${mediaQueries.tablet} {
+    width: 4.5rem;
+    height: 4.5rem;
+    border-radius: 0.75rem;
+    border-width: 3px;
+  }
+
+  ${mediaQueries.desktop} {
+    width: 6rem;
+    height: 6rem;
+    border-radius: 1rem;
+    border-width: 4px;
+  }
+
+  .skill-icon {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: currentColor;
+padding:0;
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+  }
+`;
+
+export const UnequipButton = styled('button', {
+  label: 'UnequipButton'
+})`
+  position: absolute;
+  top: -0.5rem;
+  left: -0.5rem;
+  background: rgba(0, 0, 0, 0.8);
+  color: #ef4444;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  width: 1.2rem;
+  height: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 1;
+
+  &.hover {
+    background: #ef4444;
+    color: white;
+  }
+
+  ${mediaQueries.tablet} {
+    width: 1.6rem;
+    height: 1.6rem;
+    font-size: 0.9rem;
+    top: -0.7rem;
+    left: -0.7rem;
+  }
+
+  ${mediaQueries.desktop} {
+    width: 2rem;
+    height: 2rem;
+    font-size: 1.1rem;
+    top: -0.8rem;
+    left: -0.8rem;
+  }
+`;
+
+export const SkillHotkey = styled('div', {
+  label: 'SkillHotkey'
+})`
+  position: absolute;
+  top: -0.5rem;
+  right: -0.5rem;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.3rem;
+  font-size: 0.7rem;
+  pointer-events: none;
+  z-index: 1;
+
+  ${mediaQueries.tablet} {
+    top: -0.7rem;
+    right: -0.7rem;
+    font-size: 0.9rem;
+    padding: 0.2rem 0.4rem;
+  }
+
+  ${mediaQueries.desktop} {
+    top: -0.8rem;
+    right: -0.8rem;
+    font-size: 1.1rem;
+    padding: 0.3rem 0.5rem;
+  }
+`;
+
 export const BottomMenuContainer = styled('div', {
   shouldComponentUpdate: false,
   label: 'BottomMenu'
@@ -23,6 +166,19 @@ export const BottomMenuContainer = styled('div', {
   pointer-events: auto;
   user-select: none;
   backdrop-filter: blur(8px);
+
+  ${mediaQueries.tablet} {
+    padding: 0.5rem;
+    background: rgba(15, 23, 42, 0.98);
+  }
+
+  ${mediaQueries.desktop} {
+    padding: 1rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    left: 50%;
+    transform: translateX(-50%);
+  }
 `;
 
 export const StatusSection = styled('div', {
@@ -39,6 +195,18 @@ export const StatusSection = styled('div', {
   box-shadow:
     inset 0 0 10px rgba(0, 0, 0, 0.3),
     0 0 10px rgba(73, 156, 255, 0.2);
+
+  ${mediaQueries.tablet} {
+    height: 2.5rem;
+    padding: 0 1rem;
+    border-radius: 8px;
+  }
+
+  ${mediaQueries.desktop} {
+    height: 3rem;
+    padding: 0 1.5rem;
+    border-radius: 12px;
+  }
 `;
 
 export const PlayerInfo = styled('div', {
@@ -50,29 +218,21 @@ export const PlayerInfo = styled('div', {
   width: 100%;
 `;
 
-export const PlayerIcon = styled('div', {
+export const PlayerIcon = styled('button', {
   label: 'PlayerIcon'
 })`
   width: 2.5rem;
   height: 2.5rem;
   background: rgba(0, 0, 0, 0.6);
-  border: 2px solid #3b82f6;
+  border: 2px solid #60a5fa;
   border-radius: 0.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
-  color: #f0f9ff;
-  position: relative;
+  color: #60a5fa;
   cursor: pointer;
   transition: all 0.2s;
   z-index: 1001;
-
-  svg {
-    width: 100%;
-    height: 100%;
-    transform: scale(1.2);
-  }
 
   &:hover {
     border-color: #60a5fa;
@@ -93,10 +253,40 @@ export const PlayerIcon = styled('div', {
     opacity: 0;
     transition: opacity 0.2s ease;
     pointer-events: none;
+
+    ${mediaQueries.tablet} {
+      font-size: 0.8rem;
+      padding: 0.3rem 0.7rem;
+    }
+
+    ${mediaQueries.desktop} {
+      font-size: 0.9rem;
+      padding: 0.4rem 0.8rem;
+    }
   }
 
   &:hover::after {
     opacity: 1;
+  }
+
+  ${mediaQueries.tablet} {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 0.75rem;
+    border-width: 3px;
+  }
+
+  ${mediaQueries.desktop} {
+    width: 4.5rem;
+    height: 4.5rem;
+    border-radius: 1rem;
+    border-width: 4px;
+  }
+
+  svg {
+    width: 100%;
+    height: 100%;
+    transform: scale(1.2);
   }
 `;
 
@@ -138,6 +328,16 @@ export const LevelNumber = styled('div', {
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
   position: relative;
   padding-bottom: 4px;
+
+  ${mediaQueries.tablet} {
+    font-size: 1.5rem;
+    padding-bottom: 6px;
+  }
+
+  ${mediaQueries.desktop} {
+    font-size: 1.8rem;
+    padding-bottom: 8px;
+  }
 `;
 
 export const XPProgressBar = styled('div', {
@@ -168,6 +368,14 @@ export const XPText = styled('div', {
 })`
   font-size: 0.8rem;
   color: #94a3b8;
+
+  ${mediaQueries.tablet} {
+    font-size: 1rem;
+  }
+
+  ${mediaQueries.desktop} {
+    font-size: 1.2rem;
+  }
 `;
 
 export const Resources = styled('div', {
@@ -193,6 +401,17 @@ export const Money = styled('div', {
   align-items: center;
   gap: 0.3rem;
   font-size: 1.1rem;
+
+  ${mediaQueries.tablet} {
+    font-size: 1.3rem;
+    padding: 0.4rem 1rem;
+  }
+
+  ${mediaQueries.desktop} {
+    font-size: 1.5rem;
+    padding: 0.5rem 1.2rem;
+    border-radius: 1.5rem;
+  }
 `;
 
 export const SkillSlots = styled('div', {
@@ -204,99 +423,14 @@ export const SkillSlots = styled('div', {
   background: rgba(0, 0, 0, 0.3);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 
-`;
-
-export const SkillSlot = styled('div', {
-  label: 'SkillSlot'
-}) <{ isSelected: boolean; isHighlightEmpty: boolean; isOnCooldown: boolean; borderColor: string }>`
-  width: 3rem;
-  height: 3rem;
-  background: rgba(0, 0, 0, 0.6);
-  border: 2px solid ${props => props.isSelected ? props.borderColor : '#666'};
-  border-radius: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: ${props => props.isSelected ? `0 0 10px ${props.borderColor}` : 'none'};
-
-  ${props => props.isHighlightEmpty && `
-    border-color: #60a5fa;
-    box-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
-  `}
-
-  ${props => props.isOnCooldown && `
-    filter: grayscale(0.7);
-    cursor: not-allowed;
-  `}
-
-  &:hover {
-    border-color: ${props => props.borderColor};
-    transform: scale(1.05);
-  }
-  @media screen and (min-width: 640px)  {
-  width: 6rem;
-  height: 6rem;
-}
-`;
-
-export const SkillIcon = styled('img', {
-  label: 'SkillIcon'
-})`
-  width: 80%;
-  height: 80%;
-  object-fit: contain;
-  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
-`;
-
-export const SkillHotkey = styled('div', {
-  label: 'SkillHotkey'
-})`
-  position: absolute;
-  top: -0.5rem;
-  right: -0.5rem;
-  background: rgba(0, 0, 0, 0.8);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 0.25rem;
-  padding: 0.1rem 0.3rem;
-  font-size: 0.7rem;
-  pointer-events: none;
-`;
-
-export const UnequipButton = styled('button', {
-  label: 'UnequipButton'
-})`
-  position: absolute;
-  top: -0.5rem;
-  left: -0.5rem;
-  background: rgba(0, 0, 0, 0.8);
-  color: #ef4444;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  width: 1.2rem;
-  height: 1.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.7rem;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.2s;
-
-  ${SkillSlot}:hover & {
-    opacity: 1;
+  ${mediaQueries.tablet} {
+    gap: 1rem;
+    padding: 1rem;
+    justify-content: center;
   }
 
-  &:hover {
-    background: #ef4444;
-    color: white;
+  ${mediaQueries.desktop} {
+    gap: 1.5rem;
+    padding: 1.5rem;
   }
 `;
-
-// Media queries
-export const mediaQueries = {
-  mobile: '@media screen and (max-width: 640px)',
-};
