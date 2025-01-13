@@ -126,19 +126,25 @@ export const PrimarySkillButton = styled.div<{
   color?: string;
   empty?: boolean;
   isActive?: boolean;
+  isHighlighted?: boolean;
 }>`
   width: 100%;
   height: 100%;
   border-radius: 50%;
   background: ${(props) =>
     props.empty
-      ? "rgba(20, 20, 30, 0.4)"
+      ? props.isHighlighted
+        ? "rgba(40, 40, 60, 0.6)"
+        : "rgba(20, 20, 30, 0.4)"
       : props.isActive
       ? `${props.color}22`
       : "rgba(20, 20, 30, 0.8)"};
-  border: 3px solid
-    ${(props) =>
-      props.empty ? "rgba(255, 255, 255, 0.1)" : props.color || "#60a5fa"};
+  border: ${(props) =>
+    props.isHighlighted
+      ? "3px solid rgba(255, 255, 255, 0.8)"
+      : `3px solid ${
+          props.empty ? "rgba(255, 255, 255, 0.1)" : props.color || "#60a5fa"
+        }`};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -184,13 +190,17 @@ export const PrimarySkillButton = styled.div<{
   &:hover {
     background: ${(props) =>
       props.empty
-        ? "rgba(30, 30, 40, 0.5)"
+        ? props.isHighlighted
+          ? "rgba(50, 50, 70, 0.7)"
+          : "rgba(30, 30, 40, 0.5)"
         : props.isActive
         ? `${props.color}33`
         : "rgba(30, 30, 40, 0.9)"};
     box-shadow: ${(props) =>
       props.empty
-        ? "inset 0 0 20px rgba(255, 255, 255, 0.08)"
+        ? props.isHighlighted
+          ? "inset 0 0 20px rgba(255, 255, 255, 0.08)"
+          : "inset 0 0 20px rgba(255, 255, 255, 0.08)"
         : props.isActive
         ? `0 0 30px ${props.color}cc, 0 0 40px ${props.color}60, inset 0 0 25px ${props.color}60`
         : `0 0 25px ${props.color || "#60a5fa"}60, inset 0 0 20px ${
@@ -218,22 +228,28 @@ export const SkillSlot = styled.div<{
   index: number;
   total: number;
   empty?: boolean;
+  isHighlighted?: boolean;
 }>`
   position: absolute;
   width: 60px;
   height: 60px;
   right: 16px;
   bottom: 34px;
-  border: 2px solid
-    ${(props) =>
-      props.empty ? "rgba(255, 255, 255, 0.1)" : props.color || "#60a5fa"};
+  border: ${(props) =>
+    props.isHighlighted
+      ? "2px solid rgba(255, 255, 255, 0.8)"
+      : `2px solid ${
+          props.empty ? "rgba(255, 255, 255, 0.1)" : props.color || "#60a5fa"
+        }`};
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   background: ${(props) =>
     props.empty
-      ? "rgba(20, 20, 30, 0.4)"
+      ? props.isHighlighted
+        ? "rgba(40, 40, 60, 0.6)"
+        : "rgba(20, 20, 30, 0.4)"
       : props.isActive
       ? `${props.color}33`
       : "rgba(20, 20, 30, 0.8)"};
@@ -242,7 +258,9 @@ export const SkillSlot = styled.div<{
   backdrop-filter: blur(4px);
   box-shadow: ${(props) =>
     props.empty
-      ? "inset 0 0 10px rgba(255, 255, 255, 0.05)"
+      ? props.isHighlighted
+        ? "inset 0 0 10px rgba(255, 255, 255, 0.08)"
+        : "inset 0 0 10px rgba(255, 255, 255, 0.05)"
       : props.isActive
       ? `0 0 20px ${props.color}80, 0 0 30px ${props.color}40, inset 0 0 15px ${props.color}40`
       : `0 0 15px ${props.color || "#60a5fa"}40, inset 0 0 10px ${
@@ -250,10 +268,7 @@ export const SkillSlot = styled.div<{
         }20`};
   pointer-events: auto;
   transform-origin: center bottom;
-  transform: ${(props) => `
-    rotate(${8 + -140 * (props.index / props.total)}deg)
-    translateY(-${140 - 30}px)
-  `};
+  transform: ${(props) => `rotate(${8 + -140 * (props.index / props.total)}deg) translateY(-${140 - 30}px)`};
   animation: ${(props) =>
     props.isActive
       ? css`
@@ -287,13 +302,17 @@ export const SkillSlot = styled.div<{
   &:hover {
     background: ${(props) =>
       props.empty
-        ? "rgba(30, 30, 40, 0.5)"
+        ? props.isHighlighted
+          ? "rgba(50, 50, 70, 0.7)"
+          : "rgba(30, 30, 40, 0.5)"
         : props.isActive
         ? `${props.color}44`
         : "rgba(30, 30, 40, 0.9)"};
     box-shadow: ${(props) =>
       props.empty
-        ? "inset 0 0 15px rgba(255, 255, 255, 0.08)"
+        ? props.isHighlighted
+          ? "inset 0 0 15px rgba(255, 255, 255, 0.08)"
+          : "inset 0 0 15px rgba(255, 255, 255, 0.08)"
         : props.isActive
         ? `0 0 25px ${props.color}cc, 0 0 35px ${props.color}60, inset 0 0 20px ${props.color}60`
         : `0 0 20px ${props.color || "#60a5fa"}60, inset 0 0 15px ${
@@ -311,28 +330,19 @@ export const SkillSlot = styled.div<{
   @media (max-width: 768px) {
     width: 50px;
     height: 50px;
-    transform: ${(props) => `
-      rotate(${8 + -140 * (props.index / props.total)}deg)
-      translateY(-${120 - 30}px)
-    `};
+    transform: ${(props) => `rotate(${8 + -140 * (props.index / props.total)}deg) translateY(-${120 - 30}px)`};
   }
 
   @media (max-width: 480px) {
     width: 45px;
     height: 45px;
-    transform: ${(props) => `
-      rotate(${8 + -140 * (props.index / props.total)}deg)
-      translateY(-${100 - 30}px)
-    `};
+    transform: ${(props) => `rotate(${8 + -140 * (props.index / props.total)}deg) translateY(-${100 - 30}px)`};
   }
 
   @media (max-width: 320px) {
     width: 40px;
     height: 40px;
-    transform: ${(props) => `
-      rotate(${8 + -140 * (props.index / props.total)}deg)
-      translateY(-${90 - 30}px)
-    `};
+    transform: ${(props) => `rotate(${8 + -140 * (props.index / props.total)}deg) translateY(-${90 - 30}px)`};
   }
 
   .cooldown {

@@ -12,25 +12,24 @@ import {
 import { Portal } from "@mui/material";
 
 export function SkillsContainer() {
-  const { equippedSkills, primarySkill, maxSkillSlots, playerRef, level } =
-    useGameStore();
+  const {
+    equippedSkills,
+    primarySkill,
+    maxSkillSlots,
+    playerRef,
+    level,
+    selectedSkill,
+    equipSkill,
+    setSelectedSkill,
+    setSelectedSkillSlot,
+  } = useGameStore();
 
-  const [skillCooldowns, setSkillCooldowns] = useState<{
-    [key: string]: number;
-  }>({});
-
-  const handleCastSkill = (
-    skill: any,
-    position: Vector3,
-    direction: Vector3
-  ) => {
-    if (!skill) return;
-    castSkill(skill, position, direction, skill.level || level);
-
-    setSkillCooldowns((prev) => ({
-      ...prev,
-      [skill.name]: skill.cooldown,
-    }));
+  const handleSlotClick = (slot: number) => {
+    if (selectedSkill) {
+      equipSkill(selectedSkill, slot);
+      setSelectedSkill(null);
+      setSelectedSkillSlot(null);
+    }
   };
 
   return (
@@ -40,9 +39,14 @@ export function SkillsContainer() {
           <PrimarySkillButton
             color={primarySkill?.color}
             empty={!primarySkill}
+            isHighlighted={selectedSkill && !primarySkill}
             onClick={(e) => {
               e.stopPropagation();
-              if (primarySkill && playerRef) {
+              if (selectedSkill) {
+                equipSkill(selectedSkill, 0);
+                setSelectedSkill(null);
+                setSelectedSkillSlot(null);
+              } else if (primarySkill && playerRef) {
                 const playerPosition = playerRef.translation();
                 if (!playerPosition) return;
 
@@ -64,7 +68,7 @@ export function SkillsContainer() {
                   direction = new Vector3(0, 0, 1);
                 }
 
-                handleCastSkill(primarySkill, position, direction);
+                castSkill(primarySkill, position, direction, primarySkill.level || level);
               }
             }}
           >
@@ -82,9 +86,12 @@ export function SkillsContainer() {
                   index={index}
                   total={maxSkillSlots}
                   empty={!skill}
+                  isHighlighted={selectedSkill && !skill}
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (skill && playerRef) {
+                    if (selectedSkill) {
+                      handleSlotClick(index + 1);
+                    } else if (skill && playerRef) {
                       const playerPosition = playerRef.translation();
                       if (!playerPosition) return;
 
@@ -106,7 +113,7 @@ export function SkillsContainer() {
                         direction = new Vector3(0, 0, 1);
                       }
 
-                      handleCastSkill(skill, position, direction);
+                      castSkill(skill, position, direction, skill.level || level);
                     }
                   }}
                 >
