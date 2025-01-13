@@ -1,19 +1,17 @@
-import React from 'react';
-import { Vector3 } from '@react-three/rapier';
-import { useGameStore } from '../../../store/gameStore';
-import { SkillsContainer, PrimarySkillContainer, SecondarySkillsContainer } from './Skills.styles';
-import { SkillButton } from './SkillButton';
-import { SecondarySkillButton } from './SecondarySkillButton';
-import { castSkill } from '../../skills/SkillEffects/castSkill';
+import React from "react";
+import { Vector3 } from "@react-three/rapier";
+import { useGameStore } from "../../../store/gameStore";
+import {
+  SkillsContainer,
+  PrimarySkillContainer,
+  SecondarySkillsContainer,
+} from "./Skills.styles";
+import { SecondarySkillButton } from "./SecondarySkillButton";
+import { castSkill } from "../../skills/SkillEffects/castSkill";
 
 export const SkillsSection: React.FC = () => {
-  const {
-    equippedSkills,
-    primarySkill,
-    maxSkillSlots,
-    playerRef,
-    level,
-  } = useGameStore();
+  const { equippedSkills, primarySkill, maxSkillSlots, playerRef, level } =
+    useGameStore();
 
   const handleCastSkill = (skill: any) => {
     if (!playerRef) return;
@@ -40,13 +38,6 @@ export const SkillsSection: React.FC = () => {
   return (
     <SkillsContainer>
       <PrimarySkillContainer>
-        <SkillButton
-          skill={primarySkill}
-          onClick={() => primarySkill && handleCastSkill(primarySkill)}
-          color={primarySkill?.color}
-          empty={!primarySkill}
-        />
-
         <SecondarySkillsContainer>
           {Array.from({ length: maxSkillSlots }).map((_, index) => {
             const skill = equippedSkills[index + 1];

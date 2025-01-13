@@ -5,11 +5,11 @@ import { castSkill } from "../SkillEffects/castSkill";
 import {
   SkillsContainerWrapper,
   PrimarySkillContainer,
-  PrimarySkillButton,
   SecondarySkillsContainer,
   SkillSlot,
 } from "./SkillsContainer.styles";
 import { Portal } from "@mui/material";
+import { PrimarySkillButton } from "../../BottomMenu/Skills/Skills.styles";
 
 export function SkillsContainer() {
   const {
@@ -68,7 +68,12 @@ export function SkillsContainer() {
                   direction = new Vector3(0, 0, 1);
                 }
 
-                castSkill(primarySkill, position, direction, primarySkill.level || level);
+                castSkill(
+                  primarySkill,
+                  position,
+                  direction,
+                  primarySkill.level || level
+                );
               }
             }}
           >
@@ -113,7 +118,12 @@ export function SkillsContainer() {
                         direction = new Vector3(0, 0, 1);
                       }
 
-                      castSkill(skill, position, direction, skill.level || level);
+                      castSkill(
+                        skill,
+                        position,
+                        direction,
+                        skill.level || level
+                      );
                     }
                   }}
                 >

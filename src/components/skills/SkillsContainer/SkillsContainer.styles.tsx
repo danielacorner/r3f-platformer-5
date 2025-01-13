@@ -99,7 +99,11 @@ export const SkillsContainerWrapper = styled.div`
   }
 `;
 
-export const PrimarySkillContainer = styled.div`
+export const PrimarySkillContainer = styled.div<{
+  color?: string;
+  isActive?: boolean;
+  empty?: boolean;
+}>`
   position: absolute;
   right: 0;
   bottom: 0;
@@ -130,9 +134,6 @@ export const PrimarySkillContainer = styled.div`
       : props.isActive
       ? `${props.color}22`
       : "rgba(20, 20, 30, 0.8)"};
-  border: 3px solid
-    ${(props) =>
-      props.empty ? "rgba(255, 255, 255, 0.1)" : props.color || "#60a5fa"};
   display: flex;
   align-items: center;
   justify-content: center;
