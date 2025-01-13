@@ -209,17 +209,13 @@ export const SkillSlot = styled.div<{
   align-items: center;
   justify-content: center;
   background: ${(props) =>
-    props.empty
+    props.isHighlighted
+      ? "rgba(40, 40, 60, 0.6)"
+      : props.empty
       ? "rgba(20, 20, 30, 0.4)"
       : props.isActive
       ? `${props.color}33`
       : "rgba(20, 20, 30, 0.8)"};
-  border: ${(props) =>
-    props.isHighlighted
-      ? "3px solid rgba(255, 255, 255, 0.8)"
-      : `3px solid ${
-          props.empty ? "rgba(255, 255, 255, 0.1)" : props.color || "#60a5fa"
-        }`};
   cursor: ${(props) => (props.isOnCooldown ? "not-allowed" : "pointer")};
   transition: all 0.3s ease;
   backdrop-filter: blur(4px);

@@ -213,6 +213,7 @@ export const SkillSlot = styled.div<{
   index: number;
   total: number;
   empty?: boolean;
+  isHighlighted?: boolean;
 }>`
   position: absolute;
   width: 60px;
@@ -221,7 +222,11 @@ export const SkillSlot = styled.div<{
   bottom: 34px;
   border: 2px solid
     ${(props) =>
-      props.empty ? "rgba(255, 255, 255, 0.1)" : props.color || "#60a5fa"};
+      props.isHighlighted
+        ? "rgba(255, 255, 255, 0.8)"
+        : props.empty
+        ? "rgba(255, 255, 255, 0.1)"
+        : props.color || "#60a5fa"};
   border-radius: 50%;
   display: flex;
   align-items: center;
