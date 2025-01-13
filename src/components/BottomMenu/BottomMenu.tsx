@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { useGameStore } from "../store/gameStore";
+import { useGameStore } from "../../store/gameStore";
 import { GiMissileSwarm } from "react-icons/gi";
-import { ActiveSkill, activeSkills } from "./skills/skills";
-import { castSkill } from "./skills/SkillEffects/castSkill";
+import { ActiveSkill, activeSkills } from "../skills/skills";
+import { castSkill } from "../skills/SkillEffects/castSkill";
 import { Vector3 } from "three";
 import {
   BottomMenuContainer,
@@ -14,8 +14,8 @@ import {
   DirectionalArrow,
   PrimarySkillContainer,
   SecondarySkillsContainer,
-} from "./BottomMenu/BottomMenu.styles";
-import { SkillsMenu } from "./skills/SkillsMenu/SkillsMenu";
+} from "./BottomMenu.styles";
+import { SkillsMenu } from "../skills/SkillsMenu/SkillsMenu";
 
 export function BottomMenu() {
   const {

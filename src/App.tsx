@@ -11,7 +11,7 @@ import { EffectComposer, Bloom, SMAA } from "@react-three/postprocessing";
 import * as THREE from "three";
 import { Physics } from "@react-three/rapier";
 import { Level } from "./components/level/Level/Level";
-import { BottomMenu } from "./components/BottomMenu";
+import { BottomMenu } from "./components/BottomMenu/BottomMenu";
 import { GameUI } from "./components/GameUI";
 import { WaveIndicator } from "./components/WaveIndicator";
 import { useGameStore } from "./store/gameStore";
@@ -24,8 +24,10 @@ function TDCamera() {
 
   const handlePointerDown = (e: PointerEvent) => {
     // Ignore events from joystick and UI elements
-    if ((e.target as HTMLElement).closest('.joystick-area') || 
-        (e.target as HTMLElement).closest('.game-ui')) {
+    if (
+      (e.target as HTMLElement).closest(".joystick-area") ||
+      (e.target as HTMLElement).closest(".game-ui")
+    ) {
       return;
     }
 
@@ -43,8 +45,10 @@ function TDCamera() {
 
   const handlePointerMove = (e: PointerEvent) => {
     // Ignore events from joystick and UI elements
-    if ((e.target as HTMLElement).closest('.joystick-area') || 
-        (e.target as HTMLElement).closest('.game-ui')) {
+    if (
+      (e.target as HTMLElement).closest(".joystick-area") ||
+      (e.target as HTMLElement).closest(".game-ui")
+    ) {
       return;
     }
 
@@ -132,7 +136,7 @@ export default function App() {
             fov: 75,
             position: [0, 20, 20],
             near: 0.1,
-            far: 2000
+            far: 2000,
           }}
           dpr={[1, 2]}
           gl={{
