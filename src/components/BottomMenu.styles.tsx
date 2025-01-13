@@ -145,13 +145,12 @@ export const SkillHotkey = styled('div', {
 
 export const BottomMenuContainer = styled.div`
   position: fixed;
-  bottom: -8px;
-  right: -40px;
-  left: 0;
+  bottom: 12px;
+  right: 0px;
+  left: 16px;
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  padding: 20px 40px;
   pointer-events: none;
   height: 240px;
   z-index: 1000;
