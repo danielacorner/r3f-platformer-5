@@ -36,30 +36,36 @@ const orbitAnimation = keyframes`
 
 const pulseAnimation = keyframes`
   0% {
-    box-shadow: 0 0 10px ${(props) => props.color}, 0 0 20px ${(props) => props.color}40;
+    box-shadow: 0 0 10px ${(props) => props.color}, 0 0 20px ${(props) =>
+  props.color}40;
     border-color: ${(props) => props.color}cc;
   }
   50% {
-    box-shadow: 0 0 15px ${(props) => props.color}, 0 0 30px ${(props) => props.color}60;
+    box-shadow: 0 0 15px ${(props) => props.color}, 0 0 30px ${(props) =>
+  props.color}60;
     border-color: ${(props) => props.color};
   }
   100% {
-    box-shadow: 0 0 10px ${(props) => props.color}, 0 0 20px ${(props) => props.color}40;
+    box-shadow: 0 0 10px ${(props) => props.color}, 0 0 20px ${(props) =>
+  props.color}40;
     border-color: ${(props) => props.color}cc;
   }
 `;
 
 const activeGlowAnimation = keyframes`
   0% {
-    box-shadow: 0 0 15px ${(props) => props.color}80, 0 0 25px ${(props) => props.color}40, inset 0 0 15px ${(props) => props.color}40;
+    box-shadow: 0 0 15px ${(props) => props.color}80, 0 0 25px ${(props) =>
+  props.color}40, inset 0 0 15px ${(props) => props.color}40;
     border-color: ${(props) => props.color};
   }
   50% {
-    box-shadow: 0 0 25px ${(props) => props.color}cc, 0 0 35px ${(props) => props.color}60, inset 0 0 25px ${(props) => props.color}60;
+    box-shadow: 0 0 25px ${(props) => props.color}cc, 0 0 35px ${(props) =>
+  props.color}60, inset 0 0 25px ${(props) => props.color}60;
     border-color: ${(props) => props.color}ff;
   }
   100% {
-    box-shadow: 0 0 15px ${(props) => props.color}80, 0 0 25px ${(props) => props.color}40, inset 0 0 15px ${(props) => props.color}40;
+    box-shadow: 0 0 15px ${(props) => props.color}80, 0 0 25px ${(props) =>
+  props.color}40, inset 0 0 15px ${(props) => props.color}40;
     border-color: ${(props) => props.color};
   }
 `;
@@ -67,7 +73,8 @@ const activeGlowAnimation = keyframes`
 export const SkillsContainerWrapper = styled.div`
   position: fixed;
   right: 0;
-  z-index: 1100;
+  bottom: 12px;
+  z-index: 999999999999999;
   width: 240px;
   height: 240px;
   margin-right: 20px;
@@ -191,8 +198,7 @@ export const PrimarySkillButton = styled.div<{
           }30`};
     svg {
       opacity: ${(props) => (props.empty ? 0.4 : 1)};
-      transform: ${(props) =>
-        props.isActive ? "scale(1.15)" : "scale(1.1)"};
+      transform: ${(props) => (props.isActive ? "scale(1.15)" : "scale(1.1)")};
     }
   }
 `;
