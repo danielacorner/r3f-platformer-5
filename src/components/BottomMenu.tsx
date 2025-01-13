@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from "react";
 import { useGameStore } from "../store/gameStore";
-import { GiMissileSwarm } from 'react-icons/gi';
+import { GiMissileSwarm } from "react-icons/gi";
 import { ActiveSkill, activeSkills } from "./skills/skills";
-import { castSkill } from './skills/SkillEffects/castSkill';
+import { castSkill } from "./skills/SkillEffects/castSkill";
 import { Vector3 } from "three";
 import {
   BottomMenuContainer,
@@ -13,16 +13,15 @@ import {
   JoystickButton,
   DirectionalArrow,
   PrimarySkillContainer,
-  SecondarySkillsContainer
-} from './BottomMenu.styles';
-import { SkillsMenu } from './skills/SkillsMenu/SkillsMenu';
+  SecondarySkillsContainer,
+} from "./BottomMenu.styles";
+import { SkillsMenu } from "./skills/SkillsMenu/SkillsMenu";
 
 export function BottomMenu() {
   const {
     equippedSkills,
     primarySkill,
     handleSkillClick,
-    handlePrimarySkillClick,
     joystickMovement,
     setJoystickMovement,
     maxSkillSlots,
@@ -36,7 +35,9 @@ export function BottomMenu() {
     setJoystickPosition,
   } = useGameStore();
   const [isSkillsMenuOpen, setIsSkillsMenuOpen] = useState(false);
-  const [skillCooldowns, setSkillCooldowns] = useState<{ [key: string]: number }>([]);
+  const [skillCooldowns, setSkillCooldowns] = useState<{
+    [key: string]: number;
+  }>([]);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [joystickPosition, setJoystickPositionState] = useState({ x: 0, y: 0 });
   const joystickRef = useRef<HTMLDivElement>(null);
@@ -45,13 +46,15 @@ export function BottomMenu() {
 
   // Detect touch device
   useEffect(() => {
-    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    setIsTouchDevice("ontouchstart" in window || navigator.maxTouchPoints > 0);
   }, []);
 
   // Set Magic Missile as default skill in slot 1
   useEffect(() => {
     if (equippedSkills.length === 0 || !equippedSkills[0]) {
-      const magicMissile = activeSkills.find(skill => skill.name === 'Magic Missiles');
+      const magicMissile = activeSkills.find(
+        (skill) => skill.name === "Magic Missiles"
+      );
       if (magicMissile) {
         equipSkill(magicMissile, 0);
       }
@@ -61,9 +64,9 @@ export function BottomMenu() {
   // Handle cooldowns
   useEffect(() => {
     const interval = setInterval(() => {
-      setSkillCooldowns(prev => {
+      setSkillCooldowns((prev) => {
         const newCooldowns = { ...prev };
-        Object.keys(newCooldowns).forEach(key => {
+        Object.keys(newCooldowns).forEach((key) => {
           if (newCooldowns[key] > 0) {
             newCooldowns[key] = Math.max(0, newCooldowns[key] - 0.1);
           }
@@ -107,9 +110,9 @@ export function BottomMenu() {
 
     castSkill(skill, position, direction, level);
 
-    setSkillCooldowns(prev => ({
+    setSkillCooldowns((prev) => ({
       ...prev,
-      [skill.name]: skill.cooldown
+      [skill.name]: skill.cooldown,
     }));
   };
 
@@ -123,18 +126,18 @@ export function BottomMenu() {
       handleJoystickEnd();
     };
 
-    window.addEventListener('mousemove', handleMove);
-    window.addEventListener('mouseup', handleEnd);
-    window.addEventListener('touchmove', handleMove);
-    window.addEventListener('touchend', handleEnd);
-    window.addEventListener('touchcancel', handleEnd);
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleEnd);
+    window.addEventListener("touchmove", handleMove);
+    window.addEventListener("touchend", handleEnd);
+    window.addEventListener("touchcancel", handleEnd);
 
     return () => {
-      window.removeEventListener('mousemove', handleMove);
-      window.removeEventListener('mouseup', handleEnd);
-      window.removeEventListener('touchmove', handleMove);
-      window.removeEventListener('touchend', handleEnd);
-      window.removeEventListener('touchcancel', handleEnd);
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleEnd);
+      window.removeEventListener("touchmove", handleMove);
+      window.removeEventListener("touchend", handleEnd);
+      window.removeEventListener("touchcancel", handleEnd);
     };
   }, []);
 
@@ -150,8 +153,8 @@ export function BottomMenu() {
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
 
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
 
     startPosRef.current = { x: clientX - centerX, y: clientY - centerY };
   };
@@ -165,8 +168,8 @@ export function BottomMenu() {
     const rect = container.getBoundingClientRect();
     const radius = rect.width / 2;
 
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
 
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
@@ -176,7 +179,8 @@ export function BottomMenu() {
 
     // Limit the joystick movement to the container radius
     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-    if (distance > radius - 30) { // 30px offset for the joystick button size
+    if (distance > radius - 30) {
+      // 30px offset for the joystick button size
       const angle = Math.atan2(deltaY, deltaX);
       deltaX = (radius - 30) * Math.cos(angle);
       deltaY = (radius - 30) * Math.sin(angle);
@@ -211,7 +215,7 @@ export function BottomMenu() {
         <DirectionalArrow direction="left" />
         <JoystickButton
           style={{
-            transform: `translate(calc(-50% + ${joystickPosition.x}px), calc(-50% + ${joystickPosition.y}px))`
+            transform: `translate(calc(-50% + ${joystickPosition.x}px), calc(-50% + ${joystickPosition.y}px))`,
           }}
         />
       </JoystickContainer>
@@ -223,7 +227,35 @@ export function BottomMenu() {
             empty={!primarySkill}
             onClick={(e) => {
               e.stopPropagation();
-              if (primarySkill) handlePrimarySkillClick();
+              if (primarySkill) {
+                if (!playerRef) return;
+                const playerPosition = playerRef.translation();
+                if (!playerPosition) return;
+
+                const position = new Vector3(
+                  playerPosition.x,
+                  1,
+                  playerPosition.z
+                );
+                let direction: Vector3;
+
+                if (window.gameState?.mousePosition) {
+                  const mousePos = new Vector3(
+                    window.gameState.mousePosition.x,
+                    0,
+                    window.gameState.mousePosition.z
+                  );
+                  direction = mousePos.clone().sub(position).normalize();
+                } else {
+                  direction = new Vector3(0, 0, 1);
+                }
+                castSkill(
+                  primarySkill,
+                  position,
+                  direction,
+                  primarySkill.level
+                );
+              }
             }}
           >
             {primarySkill && <primarySkill.icon size="100%" />}
@@ -242,7 +274,36 @@ export function BottomMenu() {
                   empty={!skill}
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (skill) handleSkillClick(skill);
+                    if (skill) {
+                      if (!playerRef) return;
+                      const playerPosition = playerRef.translation();
+                      if (!playerPosition) return;
+
+                      const position = new Vector3(
+                        playerPosition.x,
+                        1,
+                        playerPosition.z
+                      );
+                      let direction: Vector3;
+
+                      if (window.gameState?.mousePosition) {
+                        const mousePos = new Vector3(
+                          window.gameState.mousePosition.x,
+                          0,
+                          window.gameState.mousePosition.z
+                        );
+                        direction = mousePos.clone().sub(position).normalize();
+                      } else {
+                        direction = new Vector3(0, 0, 1);
+                      }
+
+                      castSkill(skill, position, direction, level);
+
+                      setSkillCooldowns((prev) => ({
+                        ...prev,
+                        [skill.name]: skill.cooldown,
+                      }));
+                    }
                   }}
                 >
                   {skill && <skill.icon size="100%" />}

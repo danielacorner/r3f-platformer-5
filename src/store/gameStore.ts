@@ -184,9 +184,9 @@ const initialState: GameState = {
   showWaveIndicator: false,
   cameraZoom: 1,
   cameraAngle: 0.5,
-  primarySkill: { name: 'Magic Missiles', icon: GiMissileSwarm, color: '#9333ea', cooldown: 2, school: 'arcane' },
+  primarySkill: { name: 'Magic Missiles', icon: GiMissileSwarm, color: '#9333ea', cooldown: 2, school: 'arcane',level:1 },
   equippedSkills: {
-    1: { name: 'Magic Orb', icon: GiMoonOrbit, color: '#9333ea', cooldown: 0, school: 'arcane', toggleable: true, isActive: true },
+    1: { name: 'Magic Orb', icon: GiMoonOrbit, color: '#9333ea', cooldown: 0, school: 'arcane', toggleable: true, isActive: true,level:1 },
     2: null,
     3: null,
     4: null

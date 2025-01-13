@@ -5,8 +5,15 @@ import { useGameStore } from "../../../store/gameStore";
 import { Tabs, Tab, Box } from "@mui/material";
 import { getMissileCount } from "../SkillEffects/castMagicMissiles";
 import { getBoomerangCount } from "../SkillEffects/castMagicBoomerang";
-import { ActiveSkill, activeSkills, MagicSchool, magicSchools, PassiveSkill, passiveSkills } from "../skills";
-import { StyledSkillsMenu, StyledSkillItem, MenuBackdrop } from './styles';
+import {
+  ActiveSkill,
+  activeSkills,
+  MagicSchool,
+  magicSchools,
+  PassiveSkill,
+  passiveSkills,
+} from "../skills";
+import { StyledSkillsMenu, StyledSkillItem, MenuBackdrop } from "./styles";
 
 interface SkillsMenuProps {
   isOpen: boolean;
@@ -16,7 +23,7 @@ interface SkillsMenuProps {
 export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
   if (!isOpen) return null;
 
-  const [activeSchool, setActiveSchool] = useState<MagicSchool>('arcane');
+  const [activeSchool, setActiveSchool] = useState<MagicSchool>("arcane");
   const {
     skillPoints,
     upgradeSkill,
@@ -28,12 +35,12 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
     equipSkill,
     setSelectedSkillSlot,
     level,
-    money
+    money,
   } = useGameStore();
 
   const handleUpgrade = (skillName: string) => {
     const skills = [...activeSkills, ...passiveSkills];
-    const skill = skills.find(s => s.name === skillName);
+    const skill = skills.find((s) => s.name === skillName);
     if (!skill) return;
 
     const currentLevel = skillLevels[skillName] || 0;
@@ -73,38 +80,45 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
     e.stopPropagation();
   };
 
-  const getSkillStats = (skill: typeof activeSkills[0], level: number) => {
+  const getSkillStats = (skill: (typeof activeSkills)[0], level: number) => {
     switch (skill.name) {
-      case 'Magic Missiles':
+      case "Magic Missiles":
         return `Missiles: ${getMissileCount(level)}`;
-      case 'Magic Boomerang':
+      case "Magic Boomerang":
         return `Boomerangs: ${getBoomerangCount(level)}`;
-      case 'Arcane Nova':
+      case "Arcane Nova":
         return `Damage: ${Math.round((10 + level * 5) * 10) / 10}`;
-      case 'Lightning Storm':
+      case "Lightning Storm":
         return `Lightning Bolts: ${3 + Math.floor(level / 4)}`;
-      case 'Arcane Multiplication':
+      case "Arcane Multiplication":
         return `Spell Copies: ${1 + Math.floor(level / 4)}`;
-      case 'Tsunami Wave':
+      case "Tsunami Wave":
         return `Wave Size: ${Math.round((1 + level * 0.2) * 10) / 10}x`;
       default:
-        return '';
+        return "";
     }
   };
 
   return createPortal(
     <>
-      <MenuBackdrop onClick={(e) => {
-        e.stopPropagation();
-        onClose();
-      }} />
-      <StyledSkillsMenu onClick={(e) => e.stopPropagation()} onWheel={handleScroll}>
+      <MenuBackdrop
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+      />
+      <StyledSkillsMenu
+        onClick={(e) => e.stopPropagation()}
+        onWheel={handleScroll}
+      >
         <div className="skills-header">
           <h2>Magic Skills</h2>
           <div className="header-right">
             <div className="skill-points">
               {window.innerWidth >= 640 && (
-                <div className="skill-points-label">SKILL CHOICES REMAINING</div>
+                <div className="skill-points-label">
+                  SKILL CHOICES REMAINING
+                </div>
               )}
               <div className="skill-points-value">
                 <FaStar className="skill-points-icon" />
@@ -123,35 +137,44 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
           </div>
         </div>
 
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
           <Tabs
             value={activeSchool}
             onChange={(_, newValue) => setActiveSchool(newValue)}
             variant="scrollable"
             scrollButtons="auto"
             sx={{
-              '& .MuiTab-root': {
+              "& .MuiTab-root": {
                 flexGrow: 1,
-                color: 'rgba(255, 255, 255, 0.7)',
-                '&.Mui-selected': {
+                color: "rgba(255, 255, 255, 0.7)",
+                "&.Mui-selected": {
                   color: magicSchools[activeSchool].color,
-                }
+                },
               },
-              '& .MuiTabs-indicator': {
+              "& .MuiTabs-indicator": {
                 backgroundColor: magicSchools[activeSchool].color,
-              }
+              },
             }}
           >
             {Object.entries(magicSchools).map(([key, school]) => (
               <Tab
                 key={key}
                 label={
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}
+                  >
                     <div style={{ color: school.color }}>
-                      <school.icon style={{
-                        color: school.color,
-                        width: 36, height: 36,
-                      }} />
+                      <school.icon
+                        style={{
+                          color: school.color,
+                          width: 36,
+                          height: 36,
+                        }}
+                      />
                     </div>
                   </div>
                 }
@@ -162,33 +185,53 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
         </Box>
 
         <div className="skills-content">
-          <div className="school-description" style={{ color: magicSchools[activeSchool].color }}>
+          <div
+            className="school-description"
+            style={{ color: magicSchools[activeSchool].color }}
+          >
             {magicSchools[activeSchool].description}
           </div>
 
           <div className="skills-grid">
             {[...activeSkills, ...passiveSkills]
-              .filter(skill => skill.school === activeSchool)
+              .filter((skill) => skill.school === activeSchool)
               .map((skill) => {
                 const isSelected = selectedSkill === skill;
-                const isEquipped = equippedSkills.includes(skill as ActiveSkill);
+                const isEquipped = Object.values(equippedSkills)
+                  .map((s) => s.name)
+                  .includes(skill.name);
                 const currentLevel = skillLevels[skill.name] || 0;
                 const canAfford = skillPoints >= 1;
-                const nextLevelReq = 'levelRequirements' in skill && skill.levelRequirements && currentLevel < skill.maxLevel
-                  ? skill.levelRequirements[currentLevel]
-                  : null;
-                const meetsLevelReq = !nextLevelReq || nextLevelReq === null || level >= nextLevelReq;
+                const nextLevelReq =
+                  "levelRequirements" in skill &&
+                  skill.levelRequirements &&
+                  currentLevel < skill.maxLevel
+                    ? skill.levelRequirements[currentLevel]
+                    : null;
+                const meetsLevelReq =
+                  !nextLevelReq ||
+                  nextLevelReq === null ||
+                  level >= nextLevelReq;
 
                 return (
                   <StyledSkillItem
                     key={skill.name}
-                    onClick={() => !('effect' in skill) && handleSkillClick(skill as ActiveSkill)}
+                    onClick={() =>
+                      !("effect" in skill) &&
+                      handleSkillClick(skill as ActiveSkill)
+                    }
                     isSelected={isSelected}
                     color={skill.color}
                   >
-                    {'levelRequirements' in skill && nextLevelReq && (
-                      <div className={`level-requirement ${meetsLevelReq ? 'met' : ''}`}>
-                        {meetsLevelReq ? 'Level OK' : `Requires Level ${nextLevelReq}`}
+                    {"levelRequirements" in skill && nextLevelReq && (
+                      <div
+                        className={`level-requirement ${
+                          meetsLevelReq ? "met" : ""
+                        }`}
+                      >
+                        {meetsLevelReq
+                          ? "Level OK"
+                          : `Requires Level ${nextLevelReq}`}
                       </div>
                     )}
                     <div className="skill-background-icon">
@@ -200,27 +243,37 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
                     <div className="skill-info">
                       <h3>{skill.name}</h3>
                       <p>{skill.description}</p>
-                      {('effect' in skill) && (
+                      {"effect" in skill && (
                         <p className="skill-effect">
                           {Object.entries(skill.effect?.(currentLevel))
                             .map(([key, value]) => {
                               const formattedKey = key
-                                .replace(/([A-Z])/g, ' $1')
-                                .replace(/^./, str => str.toUpperCase());
+                                .replace(/([A-Z])/g, " $1")
+                                .replace(/^./, (str) => str.toUpperCase());
 
-                              const formattedValue = key.toLowerCase().includes('chance') ||
-                                key.toLowerCase().includes('reduction')
-                                ? `${Math.round(Number(value) * 100)}%`
-                                : Math.round(Number(value) * 10) / 10;
+                              const formattedValue =
+                                key.toLowerCase().includes("chance") ||
+                                key.toLowerCase().includes("reduction")
+                                  ? `${Math.round(Number(value) * 100)}%`
+                                  : Math.round(Number(value) * 10) / 10;
 
                               return `${formattedKey}: ${formattedValue}`;
                             })
-                            .join(' | ')}
+                            .join(" | ")}
                         </p>
                       )}
-                      {!('effect' in skill) && getSkillStats(skill as typeof activeSkills[0], currentLevel) && (
-                        <p className="skill-stats">{getSkillStats(skill as typeof activeSkills[0], currentLevel)}</p>
-                      )}
+                      {!("effect" in skill) &&
+                        getSkillStats(
+                          skill as (typeof activeSkills)[0],
+                          currentLevel
+                        ) && (
+                          <p className="skill-stats">
+                            {getSkillStats(
+                              skill as (typeof activeSkills)[0],
+                              currentLevel
+                            )}
+                          </p>
+                        )}
                     </div>
                     <div className="skill-controls">
                       {currentLevel < skill.maxLevel && (
@@ -231,7 +284,13 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
                             handleUpgrade(skill.name);
                           }}
                           disabled={!canAfford || !meetsLevelReq}
-                          title={canAfford ? (meetsLevelReq ? 'Upgrade' : `Requires Level ${nextLevelReq}`) : 'Not enough skill points'}
+                          title={
+                            canAfford
+                              ? meetsLevelReq
+                                ? "Upgrade"
+                                : `Requires Level ${nextLevelReq}`
+                              : "Not enough skill points"
+                          }
                         >
                           <FaPlus />
                         </button>
@@ -241,7 +300,10 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
                       </div>
                     </div>
                     {isEquipped && (
-                      <div className="equipped-indicator" style={{ color: skill.color }}>
+                      <div
+                        className="equipped-indicator"
+                        style={{ color: skill.color }}
+                      >
                         (Equipped)
                       </div>
                     )}
