@@ -44,7 +44,8 @@ export function Player({ moveTargetRef }: PlayerProps) {
   const [rigidBodyKey, setRigidBodyKey] = useState(0);
   const floatOffset = useRef(0);
   const setPlayerRef = useGameStore(state => state.setPlayerRef);
-  const magicOrbSkill = useGameStore(state => state.equippedSkills.find(s => s?.name === 'Magic Orb'));
+  const magicOrbSkill = useGameStore(state => Object.entries(state.equippedSkills).find(([_, s]) => s?.name === 'Magic Orb')?.[1]
+  );
   const joystickMovement = useGameStore(state => state.joystickMovement);
 
   // Initialize physics and camera

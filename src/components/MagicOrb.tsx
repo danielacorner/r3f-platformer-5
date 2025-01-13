@@ -81,7 +81,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   // Initial state - check if Magic Orb skill is equipped and active
   useEffect(() => {
     const equippedSkills = useGameStore.getState().equippedSkills;
-    const magicOrb = equippedSkills.find(s => s?.name === 'Magic Orb');
+    const magicOrb = Object.entries(equippedSkills).find(([_, s]) => s?.name === 'Magic Orb')?.[1]
     if (magicOrb?.isActive) {
       setOrbMultiplier(1);
     } else {
@@ -91,7 +91,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
   // Add a UUID generator for truly unique keys
   const generateUUID = () => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
       const r = Math.random() * 16 | 0;
       const v = c === 'x' ? r : (r & 0x3 | 0x8);
       return v.toString(16);
@@ -99,8 +99,8 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   };
 
   const addHitEffect = (position: Vector3) => {
-    setHitEffects(prev => [...prev, { 
-      position, 
+    setHitEffects(prev => [...prev, {
+      position,
       key: generateUUID() // Use UUID instead of timestamp + counter
     }]);
   };
@@ -216,35 +216,35 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
 
     const position = playerRef.current.translation();
     const playerPos = new Vector3(position.x, position.y, position.z);
-    const time = Date.now() * 0.002 * actualOrbSpeed*(1+speed*0.12);
+    const time = Date.now() * 0.002 * actualOrbSpeed * (1 + speed * 0.12);
 
     // Complex orbit pattern for non-attacking orbs
     orbsRef.current.forEach((orb, index) => {
       if (!orb || attackingOrbs[index]) return; // Skip if orb is attacking
-      
+
       const baseAngle = time + (Math.PI * 2 * index) / orbsRef.current.length;
-      
+
       // Create a complex pattern using multiple sine waves
       const frequency1 = 1;
       const frequency2 = 0.5;
       const phase = index * Math.PI / 3;
-      
+
       // Main orbit
-      const mainRadius = BASE_ORB_RADIUS * (1 + range/1.5);
-      
+      const mainRadius = BASE_ORB_RADIUS * (1 + range / 1.5);
+
       // Add secondary movements
       const radiusModulation = Math.sin(time * frequency2 + phase) * 0.3;
       const currentRadius = mainRadius * (1 + radiusModulation);
-      
+
       // Create a figure-8 like pattern
       const orbitX = Math.cos(baseAngle * frequency1) * currentRadius +
-                    Math.sin(time * frequency2 + phase) * mainRadius * 0.2;
+        Math.sin(time * frequency2 + phase) * mainRadius * 0.2;
       const orbitZ = Math.sin(baseAngle * frequency1) * currentRadius +
-                    Math.cos(time * frequency2 + phase) * mainRadius * 0.2;
+        Math.cos(time * frequency2 + phase) * mainRadius * 0.2;
 
       // Add subtle vertical movement
       const heightOffset = Math.sin(time * frequency2 + phase) * 0.2;
-      
+
       orb.position.set(
         playerPos.x + orbitX,
         playerPos.y + 1 + heightOffset,
@@ -321,7 +321,7 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
       {isMounted && Array(totalOrbs).fill(null).map((_, index) => {
         const opacity = getOrbOpacity(index);
         return (
-          <group 
+          <group
             key={index}
             ref={el => {
               if (el) {
@@ -329,9 +329,9 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
               }
             }}
           >
-            <OrbEffects 
-              isAttacking={isAttacking && attackingOrbs[index] !== undefined} 
-              opacity={opacity} 
+            <OrbEffects
+              isAttacking={isAttacking && attackingOrbs[index] !== undefined}
+              opacity={opacity}
             />
             <OrbTrail />
           </group>

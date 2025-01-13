@@ -226,7 +226,7 @@ export function BottomMenu() {
               if (primarySkill) handlePrimarySkillClick();
             }}
           >
-            {primarySkill?.icon}
+            {primarySkill && <primarySkill.icon size="100%" />}
           </PrimarySkillButton>
 
           <SecondarySkillsContainer>
@@ -245,7 +245,7 @@ export function BottomMenu() {
                     if (skill) handleSkillClick(skill);
                   }}
                 >
-                  {skill?.icon}
+                  {skill && <skill.icon size="100%" />}
                   {skill?.cooldown > 0 && (
                     <div className="cooldown">{skill.cooldown.toFixed(1)}s</div>
                   )}

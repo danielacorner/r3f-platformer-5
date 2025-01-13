@@ -108,7 +108,10 @@ interface GameState {
   showWaveIndicator: boolean;
   cameraZoom: number;
   cameraAngle: number;
-  equippedSkills: (any | null)[];
+  primarySkill: any;
+  equippedSkills: {
+    [key: number]: any | null;
+  };
   selectedSkillSlot: number | null;
   selectedSkill: any | null;
   baseSkillSlots: number;
@@ -181,12 +184,13 @@ const initialState: GameState = {
   showWaveIndicator: false,
   cameraZoom: 1,
   cameraAngle: 0.5,
-  equippedSkills: [
-    { name: 'Magic Missiles', icon: GiMissileSwarm, color: '#9333ea', cooldown: 2, school: 'arcane' },
-    { name: 'Magic Orb', icon: GiMoonOrbit, color: '#9333ea', cooldown: 0, school: 'arcane', toggleable: true, isActive: true },
-    null,
-    null
-  ],
+  primarySkill: { name: 'Magic Missiles', icon: GiMissileSwarm, color: '#9333ea', cooldown: 2, school: 'arcane' },
+  equippedSkills: {
+    1: { name: 'Magic Orb', icon: GiMoonOrbit, color: '#9333ea', cooldown: 0, school: 'arcane', toggleable: true, isActive: true },
+    2: null,
+    3: null,
+    4: null
+  },
   selectedSkillSlot: null,
   selectedSkill: null,
   baseSkillSlots: 4,
@@ -445,10 +449,10 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
   equipSkill: (skill, slot) =>
     set((state) => {
-      const newEquippedSkills = [...state.equippedSkills];
+      const newEquippedSkills = { ...state.equippedSkills };
       // Check if skill is already equipped
-      const existingSlot = newEquippedSkills.findIndex(s => s?.name === skill.name);
-      if (existingSlot !== -1) {
+      const existingSlot = Object.keys(newEquippedSkills).find(key => newEquippedSkills[key]?.name === skill.name);
+      if (existingSlot !== undefined) {
         newEquippedSkills[existingSlot] = null;
       }
       newEquippedSkills[slot] = skill;
@@ -461,7 +465,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     }),
   unequipSkill: (slot) =>
     set((state) => {
-      const newEquippedSkills = [...state.equippedSkills];
+      const newEquippedSkills = { ...state.equippedSkills };
       newEquippedSkills[slot] = null;
       return { equippedSkills: newEquippedSkills };
     }),
@@ -472,13 +476,14 @@ export const useGameStore = create<GameState>((set, get) => ({
     const skill = activeSkills.find(s => s.name === skillName);
     if (!skill || !skill.toggleable) return;
 
-    const equippedIndex = state.equippedSkills.findIndex(s => s?.name === skillName);
-    if (equippedIndex === -1) return;
+    const equippedIndex = Object.keys(state.equippedSkills).find(key => state.equippedSkills[key]?.name === skillName);
+    if (equippedIndex === undefined) return;
 
     set(state => ({
-      equippedSkills: state.equippedSkills.map((s, i) =>
-        i === equippedIndex ? { ...s, isActive: !s.isActive } : s
-      )
+      equippedSkills: {
+        ...state.equippedSkills,
+        [equippedIndex]: { ...state.equippedSkills[equippedIndex], isActive: !state.equippedSkills[equippedIndex].isActive }
+      }
     }));
 
     // Dispatch custom event for the orb component

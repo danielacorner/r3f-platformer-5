@@ -145,9 +145,9 @@ export const SkillHotkey = styled('div', {
 
 export const BottomMenuContainer = styled.div`
   position: fixed;
-  bottom: 0;
+  bottom: -8px;
+  right: -40px;
   left: 0;
-  right: 0;
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
@@ -162,86 +162,37 @@ export const JoystickContainer = styled.div`
   width: 180px;
   height: 180px;
   border-radius: 50%;
-  background: rgba(30, 30, 40, 0.6);
-  border: 2px solid rgba(255, 215, 150, 0.4);
-  margin-left: 20px;
-  margin-bottom: 20px;
+  background: rgba(20, 20, 30, 0.4);
+  backdrop-filter: blur(4px);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  pointer-events: auto;
   touch-action: none;
-  cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
-  box-shadow: 
-    inset 0 0 20px rgba(255, 215, 150, 0.1),
-    0 0 15px rgba(255, 215, 150, 0.15);
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    right: 10px;
-    bottom: 10px;
-    border-radius: 50%;
-    background: radial-gradient(circle at center, rgba(255, 215, 150, 0.15) 0%, rgba(30, 30, 40, 0.2) 100%);
-    pointer-events: none;
-  }
-
-  * {
-    touch-action: none;
-    user-select: none;
-    -webkit-user-select: none;
-    -webkit-touch-callout: none;
-  }
 
   @media (max-width: 768px) {
-    width: 150px;
-    height: 150px;
-    margin-left: 10px;
-    margin-bottom: 10px;
+    width: 160px;
+    height: 160px;
   }
 
   @media (max-width: 480px) {
-    width: 120px;
-    height: 120px;
-    margin-left: 5px;
-    margin-bottom: 5px;
-  }
-
-  @media (max-width: 320px) {
-    width: 100px;
-    height: 100px;
+    width: 140px;
+    height: 140px;
   }
 `;
 
 export const JoystickButton = styled.div`
   position: absolute;
-  top: 50%;
   left: 50%;
+  top: 50%;
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  transition: transform 0.05s ease-out;
-  background: radial-gradient(circle at center, rgba(255, 215, 150, 0.9) 0%, rgba(200, 160, 100, 0.8) 100%);
-  border: 2px solid rgba(255, 215, 150, 0.6);
-  box-shadow: 
-    0 2px 8px rgba(0, 0, 0, 0.4),
-    inset 0 2px 4px rgba(255, 255, 255, 0.3);
-  z-index: 2;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 70%;
-    height: 70%;
-    border-radius: 50%;
-    background: radial-gradient(circle at center, rgba(255, 235, 180, 0.9) 0%, rgba(255, 215, 150, 0.8) 100%);
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
-    pointer-events: none;
-  }
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  pointer-events: none;
+  transition: transform 0.1s ease;
 
   @media (max-width: 768px) {
     width: 50px;
@@ -251,11 +202,6 @@ export const JoystickButton = styled.div`
   @media (max-width: 480px) {
     width: 40px;
     height: 40px;
-  }
-
-  @media (max-width: 320px) {
-    width: 35px;
-    height: 35px;
   }
 `;
 
@@ -326,7 +272,7 @@ export const PrimarySkillButton = styled.div<{ color?: string; empty?: boolean }
   };
   z-index: 2;
 
-  .skill-icon {
+  svg {
     width: 60%;
     height: 60%;
     color: ${props => props.empty ? 'rgba(255, 255, 255, 0.2)' : props.color || '#60a5fa'};
@@ -341,7 +287,7 @@ export const PrimarySkillButton = styled.div<{ color?: string; empty?: boolean }
     `0 0 25px ${props.color || '#60a5fa'}60,
        inset 0 0 20px ${props.color || '#60a5fa'}30`
   };
-    .skill-icon {
+    svg {
       opacity: ${props => props.empty ? 0.4 : 1};
     }
   }
@@ -361,7 +307,7 @@ export const SkillSlot = styled.div<{ color?: string; isActive?: boolean; index:
   width: 60px;
   height: 60px;
   right: 16px;
-  bottom: 124px;
+  bottom: 34px;
   border: 2px solid ${props => props.empty ? 'rgba(255, 255, 255, 0.1)' : props.color || '#60a5fa'};
   border-radius: 50%;
   display: flex;
@@ -380,11 +326,11 @@ export const SkillSlot = styled.div<{ color?: string; isActive?: boolean; index:
   pointer-events: auto;
   transform-origin: center bottom;
   transform: ${props => `
-    rotate(${24 + -140 * (props.index / props.total)}deg)
+    rotate(${8 + -140 * (props.index / props.total)}deg)
     translateY(-${140 - 30}px)
   `};
 
-  .skill-icon {
+  svg {
     width: 60%;
     height: 60%;
     color: ${props => props.empty ? 'rgba(255, 255, 255, 0.2)' :
@@ -393,7 +339,7 @@ export const SkillSlot = styled.div<{ color?: string; isActive?: boolean; index:
     props.isActive ? 'brightness(1.2) drop-shadow(0 0 5px currentColor)' : 'drop-shadow(0 0 3px currentColor)'};
     opacity: ${props => props.empty ? 0.3 : 0.9};
     transition: all 0.2s ease;
-    transform: ${props => `rotate(-${90 * (props.index / props.total)}deg)`};
+    transform: ${props => `rotate(-${8 + -140 * (props.index / props.total)}deg)`};
   }
 
   &:hover {
@@ -403,9 +349,9 @@ export const SkillSlot = styled.div<{ color?: string; isActive?: boolean; index:
     `0 0 20px ${props.color || '#60a5fa'}60,
        inset 0 0 15px ${props.color || '#60a5fa'}30`
   };
-    .skill-icon {
+    svg {
       opacity: ${props => props.empty ? 0.4 : 1};
-      transform: ${props => `rotate(-${90 * (props.index / props.total)}deg) scale(1.1)`};
+      transform: ${props => `rotate(-${8 + -140 * (props.index / props.total)}deg) scale(1.1)`};
     }
   }
 
@@ -413,7 +359,7 @@ export const SkillSlot = styled.div<{ color?: string; isActive?: boolean; index:
     width: 50px;
     height: 50px;
     transform: ${props => `
-      rotate(${24 + -140 * (props.index / props.total)}deg)
+      rotate(${8 + -140 * (props.index / props.total)}deg)
       translateY(-${120 - 30}px)
     `};
   }
@@ -422,7 +368,7 @@ export const SkillSlot = styled.div<{ color?: string; isActive?: boolean; index:
     width: 45px;
     height: 45px;
     transform: ${props => `
-      rotate(${24 + -140 * (props.index / props.total)}deg)
+      rotate(${8 + -140 * (props.index / props.total)}deg)
       translateY(-${100 - 30}px)
     `};
   }
@@ -431,7 +377,7 @@ export const SkillSlot = styled.div<{ color?: string; isActive?: boolean; index:
     width: 40px;
     height: 40px;
     transform: ${props => `
-      rotate(${24 + -140 * (props.index / props.total)}deg)
+      rotate(${8 + -140 * (props.index / props.total)}deg)
       translateY(-${90 - 30}px)
     `};
   }
