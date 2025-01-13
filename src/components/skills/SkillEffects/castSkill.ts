@@ -5,7 +5,8 @@ import { castMagicBoomerang } from './castMagicBoomerang';
 import { castArcaneNova } from './castArcaneNova';
 import { castArcaneMultiplication } from './castArcaneMultiplication';
 import { castInferno } from './castInferno';
-import { ActiveSkill } from '../SkillsMenu/SkillsMenu';
+import { castMagicOrb } from './castMagicOrb';
+import { ActiveSkill } from '../skills';
 
 export function castSkill(skill: ActiveSkill, position: Vector3, direction: Vector3, level: number): void {
   console.log("🚀 ~ file: castSkill.ts:10 ~ skill:", skill)
