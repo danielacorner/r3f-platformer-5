@@ -75,7 +75,9 @@ const mediaQueries = {
 };
 
 export const SkillsContainer = styled.div`
-  position: relative;
+  position: fixed;
+  right: 0;
+  z-index: 1100;
   width: 240px;
   height: 240px;
   margin-right: 20px;
