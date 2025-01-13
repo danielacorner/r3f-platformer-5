@@ -7,6 +7,7 @@ import {
   DirectionalArrow,
 } from "./BottomMenu.styles";
 import { SkillsContainer } from "../skills/SkillsContainer";
+import { activeSkills } from "../skills/skills";
 
 export function BottomMenu() {
   const {

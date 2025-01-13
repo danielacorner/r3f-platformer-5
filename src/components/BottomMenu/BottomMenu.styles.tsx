@@ -350,28 +350,6 @@ export const SkillSlot = styled.div<{
       translateY(-${90 - 30}px)
     `};
   }
-
-  .cooldown {
-    position: absolute;
-    bottom: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.8);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 12px;
-    white-space: nowrap;
-
-    @media (max-width: 768px) {
-      bottom: -16px;
-      font-size: 11px;
-    }
-
-    @media (max-width: 480px) {
-      bottom: -14px;
-      font-size: 10px;
-    }
-  }
 `;
 
 export const DirectionalArrow = styled.div<{
