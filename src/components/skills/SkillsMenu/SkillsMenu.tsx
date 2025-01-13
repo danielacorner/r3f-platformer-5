@@ -15,13 +15,10 @@ import {
 import { StyledSkillsMenu, StyledSkillItem, MenuBackdrop } from "./styles.tsx";
 
 interface SkillsMenuProps {
-  isOpen: boolean;
   onClose: () => void;
 }
 
-export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
-  if (!isOpen) return null;
-
+export function SkillsMenu({ onClose }: SkillsMenuProps) {
   const [activeSchool, setActiveSchool] = useState<MagicSchool>("arcane");
   const {
     skillPoints,

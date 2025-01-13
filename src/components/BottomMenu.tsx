@@ -1,56 +1,35 @@
 import { useState, useEffect, useRef } from "react";
 import { useGameStore } from "../store/gameStore";
-import { GiMissileSwarm } from "react-icons/gi";
 import { ActiveSkill, activeSkills } from "./skills/skills";
 import { castSkill } from "./skills/SkillEffects/castSkill";
 import { Vector3 } from "three";
 import {
   BottomMenuContainer,
-  SkillsContainer,
-  SkillSlot,
   JoystickContainer,
   JoystickButton,
   DirectionalArrow,
-  PrimarySkillContainer,
-  SecondarySkillsContainer,
 } from "./BottomMenu/BottomMenu.styles";
-import { SkillsMenu } from "./skills/SkillsMenu/SkillsMenu";
 
 export function BottomMenu() {
   const {
     equippedSkills,
-    primarySkill,
-    handleSkillClick,
-    joystickMovement,
+
     setJoystickMovement,
-    maxSkillSlots,
     playerRef,
-    money,
-    experience,
-    level,
+
     equipSkill,
-    baseSkillSlots,
-    additionalSkillSlots,
-    setJoystickPosition,
   } = useGameStore();
-  const [isSkillsMenuOpen, setIsSkillsMenuOpen] = useState(false);
   const [skillCooldowns, setSkillCooldowns] = useState<{
     [key: string]: number;
-  }>([]);
-  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  }>({});
   const [joystickPosition, setJoystickPositionState] = useState({ x: 0, y: 0 });
   const joystickRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
   const startPosRef = useRef({ x: 0, y: 0 });
 
-  // Detect touch device
-  useEffect(() => {
-    setIsTouchDevice("ontouchstart" in window || navigator.maxTouchPoints > 0);
-  }, []);
-
   // Set Magic Missile as default skill in slot 1
   useEffect(() => {
-    if (equippedSkills.length === 0 || !equippedSkills[0]) {
+    if (Object.values(equippedSkills).length === 0 || !equippedSkills[0]) {
       const magicMissile = activeSkills.find(
         (skill) => skill.name === "Magic Missiles"
       );

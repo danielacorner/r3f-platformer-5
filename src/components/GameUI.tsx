@@ -7,14 +7,14 @@ import { useState } from "react";
 import { SkillsMenu } from "./skills/SkillsMenu/SkillsMenu";
 
 export function GameUI() {
-  const { 
-    phase, 
-    lives, 
-    currentLevel, 
-    currentWave, 
-    totalWaves, 
+  const {
+    phase,
+    lives,
+    currentLevel,
+    currentWave,
+    totalWaves,
     startWave,
-    skillPoints 
+    skillPoints,
   } = useGameStore();
   const [isSkillsMenuOpen, setIsSkillsMenuOpen] = useState(false);
 
@@ -22,17 +22,23 @@ export function GameUI() {
     <div className="game-ui">
       <div className="game-stats">
         <div className="stat-item">
-          <span className="stat-label"><FaLevelUpAlt /></span>
+          <span className="stat-label">
+            <FaLevelUpAlt />
+          </span>
           <span className="stat-value">{currentLevel}</span>
         </div>
         <div className="stat-item">
-          <span className="stat-label"><LucideWaves style={{ color: "cornflowerblue", width: 18, }} /></span>
+          <span className="stat-label">
+            <LucideWaves style={{ color: "cornflowerblue", width: 18 }} />
+          </span>
           <span className="stat-value">
             {currentWave} / {totalWaves}
           </span>
         </div>
         <div className="stat-item">
-          <span className="stat-label"><Heart style={{ color: "red", width: 18, }} /></span>
+          <span className="stat-label">
+            <Heart style={{ color: "red", width: 18 }} />
+          </span>
           <span className="stat-value">{lives}</span>
         </div>
       </div>
@@ -66,7 +72,9 @@ export function GameUI() {
         )}
       </button>
 
-      <SkillsMenu isOpen={isSkillsMenuOpen} onClose={() => setIsSkillsMenuOpen(false)} />
+      {isSkillsMenuOpen && (
+        <SkillsMenu onClose={() => setIsSkillsMenuOpen(false)} />
+      )}
     </div>
   );
 }
