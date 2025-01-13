@@ -3,6 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import { Vector3, Color, AdditiveBlending } from "three";
 import { Trail, MeshDistortMaterial, Sparkles } from "@react-three/drei";
 import { useGameStore } from "../../store/gameStore";
+import { animated } from '@react-spring/three';
 
 interface OrbEffectsProps {
   isAttacking: boolean;
@@ -56,9 +57,9 @@ export function OrbEffects({ isAttacking, opacity = 1 }: OrbEffectsProps) {
   });
 
   return (
-    <group>
+    <animated.group ref={orbRef} opacity={opacity}>
       {/* Main orb with distortion effect */}
-      <mesh ref={orbRef} scale={(isAttacking ? 0.8 : 1) * (1 + damage / 4)}>
+      <mesh scale={(isAttacking ? 0.8 : 1) * (1 + damage / 4)}>
         <sphereGeometry args={[0.15, 32, 32]} />
         <MeshDistortMaterial
           ref={distortRef}
@@ -155,7 +156,7 @@ export function OrbEffects({ isAttacking, opacity = 1 }: OrbEffectsProps) {
           />
         </mesh>
       </Trail>
-    </group>
+    </animated.group>
   );
 }
 const ATTACK_COLOR = new Color("#1dd0fd");

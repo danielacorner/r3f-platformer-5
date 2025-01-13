@@ -41,6 +41,7 @@ export function BottomMenu() {
     equipSkill,
     baseSkillSlots,
     additionalSkillSlots,
+    toggleSkill
   } = useGameStore();
   const [isSkillsMenuOpen, setIsSkillsMenuOpen] = useState(false);
   const [skillCooldowns, setSkillCooldowns] = useState<{ [key: string]: number }>([]);
@@ -100,6 +101,11 @@ export function BottomMenu() {
   const handleCastSkill = (skill: ActiveSkill) => {
     const level = skillLevels[skill.name] || 0;
     if (level === 0) return;
+
+    if (skill.toggleable) {
+      toggleSkill(skill.name);
+      return;
+    }
 
     const cooldown = skillCooldowns[skill.name] || 0;
     if (cooldown > 0) return;
@@ -192,42 +198,45 @@ export function BottomMenu() {
         </StatusSection>
 
         <SkillSlots>
-          {visibleSkills.map((skill, index) => (
-            <SkillSlot
-              key={index}
-              isSelected={selectedSkillSlot === index}
-              isHighlightEmpty={selectedSkill !== null && !skill}
-              isOnCooldown={!!(skill && skillCooldowns[skill.name] > 0)}
-              borderColor={skill?.color || '#666'}
-              onClick={() => handleSlotClick(index)}
-            >
-              {skill && (
-                <>
-                  <div className="skill-icon" style={{ color: skill.color, width: '80%', height: '80%' }}>
-                    <skill.icon size="100%" />
-                  </div>
-                  {!isTouchDevice && <SkillHotkey>{index + 1}</SkillHotkey>}
-                  {isSkillsMenuOpen && (
-                    <UnequipButton
-                      className="unequip-button"
-                      onClick={(e) => {
+          {Array(baseSkillSlots + additionalSkillSlots).fill(null).map((_, index) => {
+            const skill = equippedSkills[index];
+            const cooldown = skillCooldowns[skill?.name || ''] || 0;
+            const isSelected = selectedSkillSlot === index;
+            const isHighlightEmpty = selectedSkill && !skill;
+
+            return (
+              <SkillSlot
+                key={index}
+                onClick={() => handleSlotClick(index)}
+                isSelected={isSelected}
+                isHighlightEmpty={isHighlightEmpty}
+                isOnCooldown={cooldown > 0}
+                borderColor={skill?.color || '#666'}
+                color={skill?.color}
+                isActive={skill?.toggleable && skill?.isActive}
+              >
+                {skill && (
+                  <>
+                    <div className="skill-icon">
+                      <skill.icon />
+                    </div>
+                    {cooldown > 0 && (
+                      <CooldownOverlay cooldown={cooldown} />
+                    )}
+                    <SkillHotkey>{index + 1}</SkillHotkey>
+                    {isSelected && (
+                      <UnequipButton onClick={(e) => {
                         e.stopPropagation();
                         unequipSkill(index);
-                      }}
-                    >
-                      <FaTimes />
-                    </UnequipButton>
-                  )}
-                  {skillCooldowns[skill.name] > 0 && (
-                    <CooldownOverlay
-                      cooldown={skillCooldowns[skill.name]}
-                      maxCooldown={skill.cooldown}
-                    />
-                  )}
-                </>
-              )}
-            </SkillSlot>
-          ))}
+                      }}>
+                        <FaTimes />
+                      </UnequipButton>
+                    )}
+                  </>
+                )}
+              </SkillSlot>
+            );
+          })}
         </SkillSlots>
       </BottomMenuContainer>
 

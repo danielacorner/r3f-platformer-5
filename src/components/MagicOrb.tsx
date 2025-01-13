@@ -6,6 +6,7 @@ import { RigidBody } from '@react-three/rapier';
 import { OrbTrail } from './OrbTrail';
 import { OrbEffects } from './OrbEffects';
 import { HitSparks } from "./HitSparks";
+import { animated, useSpring } from '@react-spring/three';
 
 const BASE_ORB_RADIUS = 1.5; // Base orbit radius
 const BASE_ORB_SPEED = 2; // Base orbit speed
@@ -22,11 +23,12 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   // Refs for all orbs
   const orbsRef = useRef<Group[]>([]);
   const [isAttacking, setIsAttacking] = useState(false);
-  const [attackingOrbs, setAttackingOrbs] = useState<{ [key: number]: any }>({});
+  const [attackingOrbs, setAttackingOrbs] = useState<{ [key: number]: any }>([]);
   const [attackProgress, setAttackProgress] = useState(0);
   const [canAttack, setCanAttack] = useState(true);
   const [hitEffects, setHitEffects] = useState<{ position: Vector3; key: string }[]>([]);
   const [orbMultiplier, setOrbMultiplier] = useState(1);
+  const [isMounted, setIsMounted] = useState(true);
 
   // Refs for tracking positions and timing
   const lastAttackTime = useRef(0);
@@ -34,6 +36,18 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   const midPoints = useRef<{ [key: number]: Vector3 }>({});
   const frameCount = useRef(0);
   const trailPoints = useRef<Vector3[]>([]);
+
+  // Spring animation for fade effect
+  const { opacity } = useSpring({
+    opacity: isMounted ? 1 : 0,
+    config: { duration: 500 },
+    onRest: () => {
+      if (!isMounted) {
+        // Component will be unmounted after fade out
+        setOrbMultiplier(0);
+      }
+    }
+  });
 
   // Listen for arcaneMultiplication events
   useEffect(() => {
@@ -51,6 +65,28 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
     return () => {
       window.removeEventListener('arcaneMultiplication', handleArcaneMultiplication as EventListener);
     };
+  }, []);
+
+  // Listen for toggle events
+  useEffect(() => {
+    const handleToggle = (event: CustomEvent) => {
+      const { isActive } = event.detail;
+      setIsMounted(isActive);
+    };
+
+    window.addEventListener('toggleMagicOrb', handleToggle as EventListener);
+    return () => window.removeEventListener('toggleMagicOrb', handleToggle as EventListener);
+  }, []);
+
+  // Initial state - check if Magic Orb skill is equipped and active
+  useEffect(() => {
+    const equippedSkills = useGameStore.getState().equippedSkills;
+    const magicOrb = equippedSkills.find(s => s?.name === 'Magic Orb');
+    if (magicOrb?.isActive) {
+      setOrbMultiplier(1);
+    } else {
+      setOrbMultiplier(0);
+    }
   }, []);
 
   // Add a UUID generator for truly unique keys
@@ -281,8 +317,8 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
   });
 
   return (
-    <group>
-      {Array(totalOrbs).fill(null).map((_, index) => {
+    <animated.group opacity={opacity}>
+      {isMounted && Array(totalOrbs).fill(null).map((_, index) => {
         const opacity = getOrbOpacity(index);
         return (
           <group 
@@ -311,6 +347,6 @@ export function MagicOrb({ playerRef }: MagicOrbProps) {
           }}
         />
       ))}
-    </group>
+    </animated.group>
   );
 }

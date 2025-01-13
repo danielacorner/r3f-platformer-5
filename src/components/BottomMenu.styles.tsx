@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import { keyframes } from '@emotion/react';
+import { keyframes, css } from '@emotion/react';
 
 const shimmerAnimation = keyframes`
   0% {
@@ -7,6 +7,68 @@ const shimmerAnimation = keyframes`
   }
   100% {
     transform: translateX(100%);
+  }
+`;
+
+const spinAnimation = keyframes`
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+`;
+
+const orbitAnimation = keyframes`
+  0% {
+    transform: rotate(0deg) scale(1);
+    opacity: 0.8;
+  }
+  25% {
+    transform: rotate(90deg) scale(1.1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: rotate(180deg) scale(1);
+    opacity: 1;
+  }
+  75% {
+    transform: rotate(270deg) scale(1.1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+    opacity: 0.8;
+  }
+`;
+
+const pulseAnimation = keyframes`
+  0% {
+    box-shadow: 0 0 10px ${props => props.color}, 0 0 20px ${props => props.color}40;
+    border-color: ${props => props.color}cc;
+  }
+  50% {
+    box-shadow: 0 0 15px ${props => props.color}, 0 0 30px ${props => props.color}60;
+    border-color: ${props => props.color};
+  }
+  100% {
+    box-shadow: 0 0 10px ${props => props.color}, 0 0 20px ${props => props.color}40;
+    border-color: ${props => props.color}cc;
+  }
+`;
+
+const activeIconAnimation = keyframes`
+  0% {
+    transform: scale(1);
+    filter: brightness(1.2) drop-shadow(0 0 5px currentColor);
+  }
+  50% {
+    transform: scale(1.1);
+    filter: brightness(1.4) drop-shadow(0 0 8px currentColor);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1.2) drop-shadow(0 0 5px currentColor);
   }
 `;
 
@@ -18,19 +80,82 @@ export const mediaQueries = {
 
 export const SkillSlot = styled('div', {
   label: 'SkillSlot'
-}) <{ isSelected: boolean; isHighlightEmpty: boolean; isOnCooldown: boolean; borderColor: string }>`
+}) <{ isSelected: boolean; isHighlightEmpty: boolean; isOnCooldown: boolean; borderColor: string; color?: string; isActive?: boolean }>`
+  position: relative;
   width: 3rem;
   height: 3rem;
-  background: rgba(0, 0, 0, 0.6);
-  border: 2px solid ${props => props.isSelected ? props.borderColor : '#666'};
+  border: 2px solid ${props => props.color || props.borderColor || '#60a5fa'};
   border-radius: 0.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
+  background: ${props => props.isActive ? `${props.color}33` : props.isSelected ? `rgba(0, 0, 0, 0.6)` : 'rgba(0, 0, 0, 0.5)'};
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: ${props => props.isSelected ? `0 0 10px ${props.borderColor}` : 'none'};
+  transition: all 0.2s ease;
+  box-shadow: ${props => props.isActive ? `0 0 10px ${props.color}` : props.isSelected ? `0 0 10px ${props.borderColor}` : 'none'};
+
+  ${props => props.isActive && css`
+    animation: ${pulseAnimation} 2s ease-in-out infinite;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: -5px;
+      left: -5px;
+      right: -5px;
+      bottom: -5px;
+      border: 2px solid ${props.color}40;
+      border-radius: 0.7rem;
+      animation: ${orbitAnimation} 3s linear infinite;
+      pointer-events: none;
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: -3px;
+      left: -3px;
+      right: -3px;
+      bottom: -3px;
+      border: 2px solid ${props.color}80;
+      border-radius: 0.6rem;
+      animation: ${orbitAnimation} 3s linear infinite reverse;
+      pointer-events: none;
+    }
+
+    .skill-icon {
+      animation: ${activeIconAnimation} 2s ease-in-out infinite;
+      transform-origin: center;
+    }
+  `}
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: ${props => props.isActive 
+      ? `0 0 15px ${props.color}` 
+      : `0 0 5px ${props.color || props.borderColor || '#60a5fa'}`};
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  .skill-icon {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: ${props => props.isActive ? props.color : props.isSelected ? props.borderColor : '#fff'};
+    filter: ${props => props.isActive ? 'brightness(1.2)' : 'none'};
+    transition: transform 0.2s ease;
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+  }
 
   ${props => props.isHighlightEmpty && `
     border-color: #60a5fa;
@@ -63,20 +188,6 @@ export const SkillSlot = styled('div', {
     height: 6rem;
     border-radius: 1rem;
     border-width: 4px;
-  }
-
-  .skill-icon {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: currentColor;
-padding:0;
-    svg {
-      width: 100%;
-      height: 100%;
-    }
   }
 `;
 

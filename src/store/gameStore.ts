@@ -1,20 +1,17 @@
-import { create } from "zustand";
-import { RapierRigidBody } from "@react-three/rapier";
-import { ActiveSkill, activeSkills, passiveSkills } from '../components/skills/skills';
+import { create } from 'zustand';
+import { Vector3 } from 'three';
+import { GiMissileSwarm, GiMoonOrbit } from 'react-icons/gi';
+import { activeSkills, passiveSkills } from '../components/skills/skills';
 
 // Helper function to generate initial skill levels
 const generateInitialSkillLevels = () => {
-  const initialLevels: { [key: string]: number } = {};
+  const levels: { [key: string]: number } = {};
 
-  // Initialize all skills to level 0
-  [...activeSkills, ...passiveSkills].forEach(skill => {
-    initialLevels[skill.name] = 0;
-  });
+  // Set initial skill levels
+  levels['Magic Orb'] = 1;
+  levels['Magic Missiles'] = 1;
 
-  // Set Magic Missiles to level 1
-  initialLevels['Magic Missiles'] = 1;
-
-  return initialLevels;
+  return levels;
 };
 
 export type ElementType =
@@ -103,7 +100,7 @@ interface GameState {
   };
   wave: number;
   creeps: any[];
-  playerRef: RapierRigidBody | null;
+  playerRef: any | null;
   orbSpeed: number;
   highlightedPathSegment: PathSegment | null;
   currentWave: number;
@@ -111,9 +108,9 @@ interface GameState {
   showWaveIndicator: boolean;
   cameraZoom: number;
   cameraAngle: number;
-  equippedSkills: (ActiveSkill | null)[];
+  equippedSkills: (any | null)[];
   selectedSkillSlot: number | null;
-  selectedSkill: ActiveSkill | null;
+  selectedSkill: any | null;
   baseSkillSlots: number;
   additionalSkillSlots: number;
   setPhase: (phase: "prep" | "combat" | "victory") => void;
@@ -129,7 +126,7 @@ interface GameState {
   setWaveStartTime: (startTime: number) => void;
   removeCreep: (creepId: string) => void;
   removeProjectile: (projectileId: number) => void;
-  setPlayerRef: (ref: RapierRigidBody) => void;
+  setPlayerRef: (ref: any) => void;
   setOrbSpeed: (speed: number) => void;
   setHighlightedPathSegment: (segment: PathSegment | null) => void;
   setShowWaveIndicator: (show: boolean) => void;
@@ -141,10 +138,11 @@ interface GameState {
   addScore: (amount: number) => void;
   updateCreep: (creepId: string, updates: Partial<CreepState>) => void;
   upgradeSkill: (skillName: string) => void;
-  equipSkill: (skill: ActiveSkill, slot: number) => void;
+  equipSkill: (skill: any, slot: number) => void;
   unequipSkill: (slot: number) => void;
   setSelectedSkillSlot: (slot: number | null) => void;
-  setSelectedSkill: (skill: ActiveSkill | null) => void;
+  setSelectedSkill: (skill: any | null) => void;
+  toggleSkill: (skillName: string) => void;
 }
 
 const initialState: GameState = {
@@ -157,7 +155,7 @@ const initialState: GameState = {
   selectedObjectType: null,
   selectedObjectLevel: null,
   skillLevels: generateInitialSkillLevels(),
-  money: 1000,
+  money: 0,
   score: 0,
   lives: 20,
   experience: 0,
@@ -179,7 +177,12 @@ const initialState: GameState = {
   showWaveIndicator: false,
   cameraZoom: 1,
   cameraAngle: 0.5,
-  equippedSkills: Array(8).fill(null),
+  equippedSkills: [
+    { name: 'Magic Missiles', icon: GiMissileSwarm, color: '#9333ea', cooldown: 2, school: 'arcane' },
+    { name: 'Magic Orb', icon: GiMoonOrbit, color: '#9333ea', cooldown: 0, school: 'arcane', toggleable: true, isActive: true },
+    null,
+    null
+  ],
   selectedSkillSlot: null,
   selectedSkill: null,
   baseSkillSlots: 4,
@@ -213,6 +216,7 @@ const initialState: GameState = {
   unequipSkill: () => { },
   setSelectedSkillSlot: () => { },
   setSelectedSkill: () => { },
+  toggleSkill: () => { },
 };
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -455,4 +459,24 @@ export const useGameStore = create<GameState>((set, get) => ({
     }),
   setSelectedSkillSlot: (slot) => set({ selectedSkillSlot: slot }),
   setSelectedSkill: (skill) => set({ selectedSkill: skill }),
+  toggleSkill: (skillName: string) => {
+    const state = get();
+    const skill = activeSkills.find(s => s.name === skillName);
+    if (!skill || !skill.toggleable) return;
+
+    const equippedIndex = state.equippedSkills.findIndex(s => s?.name === skillName);
+    if (equippedIndex === -1) return;
+
+    set(state => ({
+      equippedSkills: state.equippedSkills.map((s, i) =>
+        i === equippedIndex ? { ...s, isActive: !s.isActive } : s
+      )
+    }));
+
+    // Dispatch custom event for the orb component
+    const event = new CustomEvent('toggleMagicOrb', {
+      detail: { isActive: !skill.isActive }
+    });
+    window.dispatchEvent(event);
+  },
 }));

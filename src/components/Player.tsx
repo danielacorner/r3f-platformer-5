@@ -44,6 +44,7 @@ export function Player({ moveTargetRef }: PlayerProps) {
   const [rigidBodyKey, setRigidBodyKey] = useState(0);
   const floatOffset = useRef(0);
   const setPlayerRef = useGameStore(state => state.setPlayerRef);
+  const magicOrbSkill = useGameStore(state => state.equippedSkills.find(s => s?.name === 'Magic Orb'));
 
   // Initialize physics and camera
   useEffect(() => {
@@ -547,7 +548,7 @@ export function Player({ moveTargetRef }: PlayerProps) {
           )}
         </group>
       </RigidBody>
-      <MagicOrb playerRef={playerRef} />
+      {magicOrbSkill?.isActive && <MagicOrb playerRef={playerRef} />}
     </>
   );
 }

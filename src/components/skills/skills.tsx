@@ -9,7 +9,8 @@ import {
     GiWaterSplash, GiHighTide, GiVortex,  // Water - Active
     GiBoomerang, GiPunchBlast, GiVacuumCleaner,  // Force - Active
     GiIceSpellCast, GiIciclesAura, GiSnowman,  // Frost - Active
-    GiTriorb
+    GiTriorb,
+    GiMoonOrbit
 } from 'react-icons/gi';
 import { RiMagicFill, RiMentalHealthFill } from 'react-icons/ri';
 
@@ -34,6 +35,8 @@ export type ActiveSkill = Skill & {
     cooldown: number;
     currentCooldown?: number;
     duration?: number;
+    toggleable?: boolean;
+    isActive?: boolean;
 }
 
 export type MagicSchool = 'arcane' | 'storm' | 'water' | 'force' | 'frost';
@@ -263,6 +266,18 @@ export const passiveSkills: (PassiveSkill)[] = [
 
 export const activeSkills: (ActiveSkill)[] = [
     // Arcane Skills
+    {
+        name: 'Magic Orb',
+        description: 'Summon a magical orb that circles around you, protecting you from enemies',
+        icon: GiMoonOrbit,
+        color: '#9333ea',
+        cooldown: 0,
+        level: process.env.NODE_ENV === "development" ? 1 : 0,
+        maxLevel: 20,
+        school: 'arcane',
+        toggleable: true,
+        isActive: false,
+    },
     {
         name: 'Magic Missiles',
         description: 'Launch multiple homing missiles that deal damage to enemies',
