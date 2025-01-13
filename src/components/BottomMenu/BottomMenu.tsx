@@ -1,21 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useGameStore } from "../../store/gameStore";
-import { GiMissileSwarm } from "react-icons/gi";
-import { ActiveSkill, activeSkills } from "../skills/skills";
-import { castSkill } from "../skills/SkillEffects/castSkill";
-import { Vector3 } from "three";
 import {
   BottomMenuContainer,
-  SkillsContainer,
-  SkillSlot,
   JoystickContainer,
-  PrimarySkillButton,
   JoystickButton,
   DirectionalArrow,
-  PrimarySkillContainer,
-  SecondarySkillsContainer,
 } from "./BottomMenu.styles";
-import { SkillsMenu } from "../skills/SkillsMenu/SkillsMenu";
+import { SkillsContainer } from "../skills/SkillsContainer";
 
 export function BottomMenu() {
   const {
@@ -116,31 +107,6 @@ export function BottomMenu() {
     }));
   };
 
-  useEffect(() => {
-    const handleMove = (e: MouseEvent | TouchEvent) => {
-      if (!isDraggingRef.current) return;
-      handleJoystickMove(e);
-    };
-
-    const handleEnd = () => {
-      handleJoystickEnd();
-    };
-
-    window.addEventListener("mousemove", handleMove);
-    window.addEventListener("mouseup", handleEnd);
-    window.addEventListener("touchmove", handleMove);
-    window.addEventListener("touchend", handleEnd);
-    window.addEventListener("touchcancel", handleEnd);
-
-    return () => {
-      window.removeEventListener("mousemove", handleMove);
-      window.removeEventListener("mouseup", handleEnd);
-      window.removeEventListener("touchmove", handleMove);
-      window.removeEventListener("touchend", handleEnd);
-      window.removeEventListener("touchcancel", handleEnd);
-    };
-  }, []);
-
   const handleJoystickStart = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -200,6 +166,31 @@ export function BottomMenu() {
     setJoystickMovement({ x: 0, y: 0 });
   };
 
+  useEffect(() => {
+    const handleMove = (e: MouseEvent | TouchEvent) => {
+      if (!isDraggingRef.current) return;
+      handleJoystickMove(e);
+    };
+
+    const handleEnd = () => {
+      handleJoystickEnd();
+    };
+
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleEnd);
+    window.addEventListener("touchmove", handleMove);
+    window.addEventListener("touchend", handleEnd);
+    window.addEventListener("touchcancel", handleEnd);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleEnd);
+      window.removeEventListener("touchmove", handleMove);
+      window.removeEventListener("touchend", handleEnd);
+      window.removeEventListener("touchcancel", handleEnd);
+    };
+  }, []);
+
   return (
     <BottomMenuContainer>
       <JoystickContainer
@@ -219,103 +210,7 @@ export function BottomMenu() {
           }}
         />
       </JoystickContainer>
-
-      <SkillsContainer>
-        <PrimarySkillContainer>
-          <PrimarySkillButton
-            color={primarySkill?.color}
-            empty={!primarySkill}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (primarySkill) {
-                if (!playerRef) return;
-                const playerPosition = playerRef.translation();
-                if (!playerPosition) return;
-
-                const position = new Vector3(
-                  playerPosition.x,
-                  1,
-                  playerPosition.z
-                );
-                let direction: Vector3;
-
-                if (window.gameState?.mousePosition) {
-                  const mousePos = new Vector3(
-                    window.gameState.mousePosition.x,
-                    0,
-                    window.gameState.mousePosition.z
-                  );
-                  direction = mousePos.clone().sub(position).normalize();
-                } else {
-                  direction = new Vector3(0, 0, 1);
-                }
-                castSkill(
-                  primarySkill,
-                  position,
-                  direction,
-                  primarySkill.level
-                );
-              }
-            }}
-          >
-            {primarySkill && <primarySkill.icon size="100%" />}
-          </PrimarySkillButton>
-
-          <SecondarySkillsContainer>
-            {Array.from({ length: maxSkillSlots }).map((_, index) => {
-              const skill = equippedSkills[index + 1];
-              return (
-                <SkillSlot
-                  key={index}
-                  color={skill?.color}
-                  isActive={skill?.isActive}
-                  index={index}
-                  total={maxSkillSlots}
-                  empty={!skill}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (skill) {
-                      if (!playerRef) return;
-                      const playerPosition = playerRef.translation();
-                      if (!playerPosition) return;
-
-                      const position = new Vector3(
-                        playerPosition.x,
-                        1,
-                        playerPosition.z
-                      );
-                      let direction: Vector3;
-
-                      if (window.gameState?.mousePosition) {
-                        const mousePos = new Vector3(
-                          window.gameState.mousePosition.x,
-                          0,
-                          window.gameState.mousePosition.z
-                        );
-                        direction = mousePos.clone().sub(position).normalize();
-                      } else {
-                        direction = new Vector3(0, 0, 1);
-                      }
-
-                      castSkill(skill, position, direction, level);
-
-                      setSkillCooldowns((prev) => ({
-                        ...prev,
-                        [skill.name]: skill.cooldown,
-                      }));
-                    }
-                  }}
-                >
-                  {skill && <skill.icon size="100%" />}
-                  {skill?.cooldown > 0 && (
-                    <div className="cooldown">{skill.cooldown.toFixed(1)}s</div>
-                  )}
-                </SkillSlot>
-              );
-            })}
-          </SecondarySkillsContainer>
-        </PrimarySkillContainer>
-      </SkillsContainer>
+      <SkillsContainer />
     </BottomMenuContainer>
   );
 }
