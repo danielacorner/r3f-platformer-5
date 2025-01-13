@@ -198,9 +198,9 @@ export function SkillsMenu({ isOpen, onClose }: SkillsMenuProps) {
               .map((skill) => {
                 const isSelected = selectedSkill === skill;
                 const isEquipped = Object.values(equippedSkills)
-                  .map((s) => s.name)
-                  .includes(skill.name);
-                const currentLevel = skillLevels[skill.name] || 0;
+                  .map((s) => s?.name)
+                  .includes(skill?.name);
+                const currentLevel = (skill && skillLevels[skill.name]) || 0;
                 const canAfford = skillPoints >= 1;
                 const nextLevelReq =
                   "levelRequirements" in skill &&
