@@ -89,7 +89,8 @@ export function SkillsContainer() {
         direction = new Vector3(0, 0, 1);
       }
 
-      castSkill(skill, position, direction, skill.level ?? 1);
+      const skillLevel = skillLevels[skill.name] || 0;
+      castSkill(skill, position, direction, skillLevel);
 
       setSkillCooldowns((prev) => ({
         ...prev,
