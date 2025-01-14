@@ -1,73 +1,5 @@
 import styled from "@emotion/styled";
-import { keyframes, css } from "@emotion/react";
-
-const shimmerAnimation = keyframes`
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
-`;
-
-const spinAnimation = keyframes`
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-`;
-
-const orbitAnimation = keyframes`
-  0% {
-    transform: rotate(0deg) scale(1);
-    opacity: 0.8;
-  }
-  50% {
-    transform: rotate(180deg) scale(1.1);
-    opacity: 1;
-  }
-  100% {
-    transform: rotate(360deg) scale(1);
-    opacity: 0.8;
-  }
-`;
-
-const pulseAnimation = keyframes`
-  0% {
-    box-shadow: 0 0 15px rgba(255, 255    box-shadow: 0 0 10px ${(props) =>
-      props.color}, 0 0 20px ${(props) => props.color}40;
-    border-color: ${(props) => props.color}cc;
-  }
-  50% {
-    box-shadow: 0 0 15px ${(props) => props.color}, 0 0 30px ${(props) =>
-  props.color}60;
-    border-color: ${(props) => props.color};
-  }
-  100% {
-    box-shadow: 0 0 10px ${(props) => props.color}    border-color: ${(props) =>
-  props.color}cc;
-  }
-`;
-
-const activeGlowAnimation = keyframes`
-  0% {
-    box-shadow: 0 0 15px ${(props) => props.color}80, 0 0 25px ${(props) =>
-  props.color}40, inset 0 0 15px ${(props) => props.color}40;
-    border-color: ${(props) => props.color};
-  }
-  50% {
-    box-shadow: 0 0 25px ${(props) => props.color}cc, 0 0 35px ${(props) =>
-  props.color}60, inset 0 0 25px ${(props) => props.color}60;
-    border-color: ${(props) => props.color}ff;
-  }
-  100% {
-    box-shadow: 0 0 15px ${(props) => props.color}80, 0 0 25px ${(props) =>
-  props.color}40, inset 0 0 15px ${(props) => props.color}40;
-    border-color: ${(props) => props.color};
-  }
-`;
+import { css } from "@emotion/react";
 
 const mediaQueries = {
   tablet: "@media (min-width: 768px)",
@@ -129,12 +61,6 @@ export const SkillSlot = styled.div<{
     rotate(${8 + -140 * (props.index / props.total)}deg)
     translateY(-${140 - 30}px)
   `};
-  animation: ${(props) =>
-    props.isActive
-      ? css`
-          ${activeGlowAnimation} 2s infinite
-        `
-      : "none"};
 
   svg {
     width: 60%;
