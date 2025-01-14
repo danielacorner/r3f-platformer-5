@@ -87,15 +87,6 @@ export const BottomMenuContainer = styled.div`
   z-index: 1100;
 `;
 
-export const SecondarySkillsContainer = styled.div`
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  right: 0;
-  pointer-events: none;
-`;
-
 export const SkillSlot = styled.div<{
   color?: string;
   isActive?: boolean;

@@ -1,6 +1,4 @@
-import { useState } from "react";
 import { useGameStore } from "../../../store/gameStore";
-import { activeSkills } from "../skills/skills";
 import {
   SkillsContainerWrapper,
   PrimarySkillContainer,

@@ -328,29 +328,3 @@ export const SkillsContainer = styled.div`
   pointer-events: none;
   padding-right: 1rem;
 `;
-
-export const PrimarySkillContainer = styled.div`
-  position: relative;
-  width: 80px;
-  height: 80px;
-  pointer-events: auto;
-
-  @media (max-width: 768px) {
-    width: 70px;
-    height: 70px;
-  }
-
-  @media (max-width: 480px) {
-    width: 60px;
-    height: 60px;
-  }
-`;
-
-export const SecondarySkillsContainer = styled.div`
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  right: 0;
-  pointer-events: none;
-`;
