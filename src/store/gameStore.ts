@@ -155,6 +155,7 @@ interface GameState {
   toggleSkill: (skillName: string) => void;
   setJoystickMovement: (movement: { x: number; y: number }) => void;
   increaseMaxSkillSlots: () => void;
+  damageCreep: (creepId: string, damage: number) => void;
 }
 
 const initialState: GameState = {

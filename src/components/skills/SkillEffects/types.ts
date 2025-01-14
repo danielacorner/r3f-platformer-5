@@ -23,4 +23,5 @@ export interface SkillEffect {
   nextStrikeTime?: number;
   strikeInterval?: number;
   remainingStrikes?: number;
+  seed?: number;
 }

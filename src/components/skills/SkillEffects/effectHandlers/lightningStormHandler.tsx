@@ -1,18 +1,16 @@
-import { Vector3 } from 'three';
-import { SkillEffect } from '../types';
-import { findNearestCreep } from '../utils';
-import { useGameStore } from '../../../../store/gameStore';
-import { activeEffects } from '../SkillEffects';
+import { Vector3 } from "three";
+import { SkillEffect } from "../types";
+import { useGameStore } from "../../../../store/gameStore";
 
 export function updateLightningStorm(
   effect: SkillEffect & {
-    nextStrikeTime: number,
-    strikeInterval: number,
-    followPlayer?: boolean,
+    nextStrikeTime: number;
+    strikeInterval: number;
+    followPlayer?: boolean;
     ambientBolts?: {
       time: number;
       offset: Vector3;
-    }[]
+    }[];
   },
   now: number,
   creeps: any[],
@@ -36,14 +34,16 @@ export function updateLightningStorm(
 
   // Initialize ambient bolts if they don't exist
   if (!effect.ambientBolts) {
-    effect.ambientBolts = Array(5).fill(0).map(() => ({
-      time: now,  // Start immediately
-      offset: new Vector3(
-        (Math.random() - 0.5) * effect.radius * 0.8,
-        0,
-        (Math.random() - 0.5) * effect.radius * 0.8
-      )
-    }));
+    effect.ambientBolts = Array(5)
+      .fill(0)
+      .map(() => ({
+        time: now, // Start immediately
+        offset: new Vector3(
+          (Math.random() - 0.5) * effect.radius * 0.8,
+          0,
+          (Math.random() - 0.5) * effect.radius * 0.8
+        ),
+      }));
   }
 
   // Update ambient bolts
@@ -51,12 +51,12 @@ export function updateLightningStorm(
     if (now >= bolt.time) {
       // Create new ambient bolt
       effect.ambientBolts![index] = {
-        time: now + Math.random() * 1000 + 500,  // Next bolt in 0.5-1.5 seconds
+        time: now + Math.random() * 1000 + 500, // Next bolt in 0.5-1.5 seconds
         offset: new Vector3(
           (Math.random() - 0.5) * effect.radius * 0.8,
           0,
           (Math.random() - 0.5) * effect.radius * 0.8
-        )
+        ),
       };
     }
   });
@@ -66,7 +66,7 @@ export function updateLightningStorm(
     // Get storm position (which might be following player or static)
     const stormPosition = effect.position;
 
-    const nearbyCreeps = creeps.filter(creep => {
+    const nearbyCreeps = creeps.filter((creep) => {
       if (!creep || creep.isDead) return false;
       const creepPos = new Vector3(
         creep.position[0],
@@ -84,7 +84,7 @@ export function updateLightningStorm(
         nearbyCreeps[Math.floor(Math.random() * nearbyCreeps.length)];
 
       // Deal damage
-      damageCreep(targetCreep.id, effect.damage);
+      damageCreep(targetCreep.id, effect.damage ?? 0);
 
       // Schedule next strike
       effect.nextStrikeTime = now + effect.strikeInterval;
