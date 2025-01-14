@@ -1,7 +1,7 @@
 import { Vector3 } from "three";
 import { activeEffects } from "./SkillEffects";
 import { useGameStore } from "../../../store/gameStore";
-import { applyPassiveEffects } from './passiveEffects';
+import { applyPassiveEffects } from "./passiveEffects";
 
 const STORM_RADIUS = 7;
 const BOLT_DAMAGE = 18;
@@ -11,10 +11,11 @@ export const getLightningStormStats = (level: number) => ({
   radius: STORM_RADIUS + level * 1.5,
   damage: applyPassiveEffects(BOLT_DAMAGE + level * 25, "lightning"),
   duration: STORM_DURATION,
-  strikeInterval: Math.max(200, 500 - level * 25) // Strike interval decreases with level, min 200ms
+  strikeInterval: Math.max(200, 500 - level * 25), // Strike interval decreases with level, min 200ms
 });
 
 export function castLightningStorm(position: Vector3, level: number) {
+  console.log("🚀 ~ file: castLightningStorm.tsx:18 ~ position:", position);
   const stats = getLightningStormStats(level);
   const playerRef = useGameStore.getState().playerRef;
 
@@ -28,23 +29,27 @@ export function castLightningStorm(position: Vector3, level: number) {
   // Create the main storm effect
   const stormEffect = {
     id: Math.random().toString(),
-    type: 'lightningStorm' as const,
+    type: "lightningStorm" as const,
     position: stormPosition,
     startTime: Date.now(),
     duration: stats.duration,
     radius: stats.radius,
     damage: stats.damage,
-    color: '#a786e0',
+    color: "#a786e0",
     nextStrikeTime: Date.now(),
     strikeInterval: stats.strikeInterval,
     level,
     followPlayer: false, // Storm stays where it was cast
-    seed: Math.random()
+    seed: Math.random(),
   };
+  console.log(
+    "🚀 ~ file: castLightningStorm.tsx:31 ~ stormEffect:",
+    stormEffect
+  );
 
   // Add main storm effect
   activeEffects.push(stormEffect);
 
   // Notify that effects have changed
-  window.dispatchEvent(new CustomEvent('effectsChanged'));
+  window.dispatchEvent(new CustomEvent("effectsChanged"));
 }

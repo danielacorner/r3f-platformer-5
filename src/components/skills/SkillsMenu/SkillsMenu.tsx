@@ -137,6 +137,8 @@ export function SkillsMenu({ onClose }: SkillsMenuProps) {
         onClick={(e) => {
           e.stopPropagation();
           onClose();
+          setSelectedSkill(null);
+          setSelectedSkillSlot(null);
         }}
       />
       <StyledSkillsMenu
@@ -165,6 +167,8 @@ export function SkillsMenu({ onClose }: SkillsMenuProps) {
               onClick={(e) => {
                 e.stopPropagation();
                 onClose();
+                setSelectedSkill(null);
+                setSelectedSkillSlot(null);
               }}
             >
               <FaTimes />
@@ -332,6 +336,7 @@ export function SkillsMenu({ onClose }: SkillsMenuProps) {
                           onClick={(e) => {
                             e.stopPropagation();
                             handleUpgrade(skill.name);
+                            handleSkillClick(skill as ActiveSkill);
                           }}
                           disabled={!canAfford || !meetsLevelReq}
                           title={
