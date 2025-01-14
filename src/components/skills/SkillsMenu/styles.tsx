@@ -132,6 +132,7 @@ export const StyledSkillsMenu = styled.div`
 export const StyledSkillItem = styled.div<{
   isSelected?: boolean;
   color?: string;
+  isImplemented?: boolean;
 }>`
   position: relative;
   display: flex;
@@ -143,15 +144,19 @@ export const StyledSkillItem = styled.div<{
   transition: all 0.2s ease;
   border: 1px solid rgba(255, 255, 255, 0.1);
   margin-right: 3rem;
-  cursor: pointer;
+  cursor: ${props => props.isImplemented ? 'pointer' : 'not-allowed'};
+  opacity: ${props => props.isImplemented ? '1' : '0.5'};
+  filter: ${props => props.isImplemented ? 'none' : 'grayscale(70%)'};
+  
   ${(props) =>
     props.isSelected &&
+    props.isImplemented &&
     `
     box-shadow: 0 0 16px ${props.color} inset;
   `}
 
   &:hover {
-    background: rgba(31, 41, 55, 0.8);
+    background: ${props => props.isImplemented ? 'rgba(31, 41, 55, 0.8)' : 'rgba(17, 24, 39, 0.8)'};
   }
 
   .skill-background-icon {

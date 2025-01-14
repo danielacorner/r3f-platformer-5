@@ -33,6 +33,17 @@ export function SkillsMenu({ onClose }: SkillsMenuProps) {
     level,
   } = useGameStore();
 
+  const implementedSkills = [
+    "Magic Orb",
+    "Magic Boomerang",
+    "Magic Missiles",
+    "Arcane Nova",
+    "Lightning Storm",
+    "Arcane Multiplication",
+    "Inferno",
+    "Multi Orb",
+  ];
+
   const handleUpgrade = (skillName: string) => {
     const skills = [...activeSkills, ...passiveSkills];
     const skill = skills.find((s) => s.name === skillName);
@@ -48,6 +59,10 @@ export function SkillsMenu({ onClose }: SkillsMenuProps) {
   };
 
   const handleSkillClick = (skill: ActiveSkill) => {
+    if (!implementedSkills.includes(skill.name)) {
+      return; // Don't allow clicking unimplemented skills
+    }
+
     if (selectedSkillSlot !== null) {
       // If a slot is selected, equip the skill directly
       equipSkill(skill, selectedSkillSlot);
@@ -208,6 +223,7 @@ export function SkillsMenu({ onClose }: SkillsMenuProps) {
                     }
                     isSelected={isSelected}
                     color={skill.color}
+                    isImplemented={implementedSkills.includes(skill.name)}
                   >
                     {"levelRequirements" in skill && nextLevelReq && (
                       <div
