@@ -202,9 +202,9 @@ export const SkillSlot = styled.div<{
   pointer-events: auto;
   transform-origin: center bottom;
   transform: ${(props) =>
-    `rotate(${8 + -140 * (props.index / props.total)}deg) translateY(-${
-      140 - 30
-    }px)`};
+    `rotate(${Math.round(
+      8 + -140 * (props.index / props.total)
+    )}deg) translateY(-${140 - 30}px)`};
   animation: ${(props) =>
     props.isActive && `${activeGlowAnimation} 2s infinite`};
 
@@ -232,7 +232,7 @@ export const SkillSlot = styled.div<{
     opacity: ${(props) => (props.empty ? 0.3 : props.isActive ? 1 : 0.9)};
     transition: all 0.3s ease;
     transform: ${(props) =>
-      `rotate(-${8 + -140 * (props.index / props.total)}deg) ${
+      `rotate(${Math.round(-8 + 140 * (props.index / props.total))}deg) ${
         props.isActive ? "scale(1.1)" : "scale(1)"
       }`};
   }
@@ -255,7 +255,7 @@ export const SkillSlot = styled.div<{
     svg {
       opacity: ${(props) => (props.isOnCooldown ? 0.5 : props.empty ? 0.4 : 1)};
       transform: ${(props) =>
-        `rotate(-${8 + -140 * (props.index / props.total)}deg) ${
+        `rotate(${Math.round(-8 + 140 * (props.index / props.total))}deg) ${
           props.isActive ? "scale(1.15)" : "scale(1.1)"
         }`};
     }
