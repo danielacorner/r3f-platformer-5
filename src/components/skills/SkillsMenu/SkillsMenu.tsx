@@ -30,6 +30,7 @@ export function SkillsMenu({ onClose }: SkillsMenuProps) {
     selectedSkill,
     setSelectedSkill,
     equipSkill,
+    primarySkill,
     setSelectedSkillSlot,
     level,
   } = useGameStore();
@@ -236,9 +237,11 @@ export function SkillsMenu({ onClose }: SkillsMenuProps) {
               .filter((skill) => skill.school === activeSchool)
               .map((skill) => {
                 const isSelected = selectedSkill === skill;
-                const isEquipped = Object.values(equippedSkills)
-                  .map((s) => s?.name)
-                  .includes(skill?.name);
+                const isEquipped =
+                  Object.values(equippedSkills)
+                    .map((s) => s?.name)
+                    .includes(skill?.name) ||
+                  primarySkill?.name === skill?.name;
                 const currentLevel = (skill && skillLevels[skill.name]) || 0;
                 const canAfford = skillPoints >= 1;
                 const nextLevelReq =
