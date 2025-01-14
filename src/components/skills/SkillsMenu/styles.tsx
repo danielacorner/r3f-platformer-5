@@ -206,6 +206,27 @@ export const StyledSkillItem = styled.div<{
     }
   }
 
+  .damage-indicator {
+    position: absolute;
+    bottom: -2.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.7rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 0.25rem;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fbbf24;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+
+    svg {
+      width: 0.8rem;
+      height: 0.8rem;
+    }
+  }
+
   .skill-info {
     flex: 1;
 

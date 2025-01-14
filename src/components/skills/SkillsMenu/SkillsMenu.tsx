@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
-import { FaStar, FaTimes, FaPlus } from "react-icons/fa";
+import { FaStar, FaTimes, FaPlus, FaBolt } from "react-icons/fa";
 import { useGameStore } from "../../../store/gameStore";
 import { Tabs, Tab, Box } from "@mui/material";
 import { getMissileCount } from "../SkillEffects/castMagicMissiles";
@@ -97,6 +97,21 @@ export function SkillsMenu({ onClose }: SkillsMenuProps) {
         return `Wave Size: ${Math.round((1 + level * 0.2) * 10) / 10}x`;
       default:
         return "";
+    }
+  };
+
+  const getSkillDamage = (skill: (typeof activeSkills)[0], level: number) => {
+    switch (skill.name) {
+      case "Magic Missiles":
+        return `${20 + level * 5} × ${getMissileCount(level)}`;
+      case "Magic Boomerang":
+        return `${15 + level * 5} × ${getBoomerangCount(level)}`;
+      case "Arcane Nova":
+        return (30 + level * 10).toString();
+      case "Lightning Storm":
+        return `${18 + level * 25} / strike`;
+      default:
+        return null;
     }
   };
 
@@ -242,6 +257,12 @@ export function SkillsMenu({ onClose }: SkillsMenuProps) {
                       data-skill-type={"effect" in skill ? "passive" : "active"}
                     >
                       <skill.icon />
+                      {!("effect" in skill) && getSkillDamage(skill as (typeof activeSkills)[0], currentLevel) && (
+                        <div className="damage-indicator">
+                          <FaBolt />
+                          {getSkillDamage(skill as (typeof activeSkills)[0], currentLevel)}
+                        </div>
+                      )}
                     </div>
                     <div className="skill-info">
                       <h3>{skill.name}</h3>
