@@ -42,30 +42,13 @@ export const CooldownOverlay = styled.div<{
   height: 100%;
   border-radius: 50%;
   background: conic-gradient(
-    from 0deg,
-    ${(props) => props.color || "#60a5fa"}40
-      ${(props) => props.progress * 360}deg,
-    rgba(0, 0, 0, 0.5) ${(props) => props.progress * 360}deg 360deg
+    from 0deg at 50% 50%,
+    transparent ${(props) => props.progress * 360}deg,
+    rgba(0, 0, 0, 0.7) ${(props) => props.progress * 360}deg 360deg
   );
   transition: background 0.1s linear;
   pointer-events: none;
   z-index: 3;
-
-  &::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 85%;
-    height: 85%;
-    border-radius: 50%;
-    background: radial-gradient(
-      circle,
-      rgba(0, 0, 0, 0.7) 0%,
-      rgba(0, 0, 0, 0.8) 100%
-    );
-  }
 `;
 
 export const CooldownText = styled.div`
@@ -79,6 +62,7 @@ export const CooldownText = styled.div`
   text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
   z-index: 4;
   pointer-events: none;
+  user-select: none;
 `;
 
 export const PrimarySkillButton = styled.div<{
@@ -123,7 +107,8 @@ export const PrimarySkillButton = styled.div<{
         }20`};
   z-index: 2;
   transition: all 0.3s ease;
-  animation: ${(props) => props.isActive && `${activeGlowAnimation} 2s infinite`};
+  animation: ${(props) =>
+    props.isActive && `${activeGlowAnimation} 2s infinite`};
 
   &.clicked {
     animation: ${clickAnimation} 0.3s ease;

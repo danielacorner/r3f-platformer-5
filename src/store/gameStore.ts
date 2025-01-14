@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { Vector3 } from 'three';
 import { GiMissileSwarm, GiMoonOrbit } from 'react-icons/gi';
 import { activeSkills, passiveSkills } from '../components/skills/skills';
 
