@@ -1,4 +1,4 @@
-import styled from '@emotion/styled';
+import styled from "@emotion/styled";
 
 export const MenuBackdrop = styled.div`
   position: fixed;
@@ -13,10 +13,10 @@ export const MenuBackdrop = styled.div`
 
 export const StyledSkillsMenu = styled.div`
   position: fixed;
-  top: calc(50% - 2rem); 
+  top: calc(50% - 2rem);
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 90vw;
+  width: 95vw;
   max-width: 1200px;
   max-height: 90vh;
   background: rgba(17, 24, 39, 0.95);
@@ -30,8 +30,8 @@ export const StyledSkillsMenu = styled.div`
   overflow-y: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  
-  .MuiTab-root{
+
+  .MuiTab-root {
     width: 0px !important;
     min-width: 0px !important;
   }
@@ -47,7 +47,7 @@ export const StyledSkillsMenu = styled.div`
     }
     @media screen and (max-width: 640px) {
       margin-bottom: 0.5rem;
-      padding:0 0.5rem;
+      padding: 0 0.5rem;
     }
   }
 
@@ -80,8 +80,7 @@ export const StyledSkillsMenu = styled.div`
     padding: 0.5rem 0.75rem;
     background: linear-gradient(135deg, #1f2937, #111827);
     border-radius: 0.25rem;
-    box-shadow:
-      inset 0 2px 4px rgba(0, 0, 0, 0.9),
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.9),
       inset 0 0 2px rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.1);
 
@@ -130,7 +129,10 @@ export const StyledSkillsMenu = styled.div`
   }
 `;
 
-export const StyledSkillItem = styled.div<{ isSelected?: boolean; color?: string }>`
+export const StyledSkillItem = styled.div<{
+  isSelected?: boolean;
+  color?: string;
+}>`
   position: relative;
   display: flex;
   align-items: flex-start;
@@ -142,7 +144,9 @@ export const StyledSkillItem = styled.div<{ isSelected?: boolean; color?: string
   border: 1px solid rgba(255, 255, 255, 0.1);
   margin-right: 3rem;
   cursor: pointer;
-  ${props => props.isSelected && `
+  ${(props) =>
+    props.isSelected &&
+    `
     box-shadow: 0 0 16px ${props.color} inset;
   `}
 
@@ -168,10 +172,10 @@ export const StyledSkillItem = styled.div<{ isSelected?: boolean; color?: string
     justify-content: center;
     background: rgba(0, 0, 0, 0.3);
     border-radius: 0.5rem;
-    border: 2px solid ${props => props.color || '#60a5fa'};
-    color: ${props => props.color || '#60a5fa'};
+    border: 2px solid ${(props) => props.color || "#60a5fa"};
+    color: ${(props) => props.color || "#60a5fa"};
     font-size: 1.5rem;
-    svg{
+    svg {
       width: 100%;
       height: 100%;
     }
@@ -193,7 +197,8 @@ export const StyledSkillItem = styled.div<{ isSelected?: boolean; color?: string
       line-height: 1.4;
     }
 
-    .skill-effect, .skill-stats {
+    .skill-effect,
+    .skill-stats {
       color: #60a5fa !important;
       margin-top: 0.5rem !important;
     }
@@ -221,10 +226,8 @@ export const StyledSkillItem = styled.div<{ isSelected?: boolean; color?: string
     color: rgba(255, 255, 255, 0.9);
     background: linear-gradient(135deg, #2c1810, #3d2317);
     border-radius: 0.25rem;
-    box-shadow:
-      inset 0 1px 3px rgba(0, 0, 0, 0.9),
-      inset 0 0 2px rgba(255, 255, 255, 0.1),
-      0 2px 4px rgba(0, 0, 0, 0.5);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.9),
+      inset 0 0 2px rgba(255, 255, 255, 0.1), 0 2px 4px rgba(0, 0, 0, 0.5);
     border: 2px solid #5a3925;
     text-shadow: 0 2px 2px rgba(0, 0, 0, 0.5);
     margin-top: 0.5rem;
@@ -242,10 +245,8 @@ export const StyledSkillItem = styled.div<{ isSelected?: boolean; color?: string
     color: #fbbf24;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow:
-      inset 0 1px 3px rgba(0, 0, 0, 0.9),
-      inset 0 0 2px rgba(255, 255, 255, 0.1),
-      0 2px 4px rgba(0, 0, 0, 0.5);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.9),
+      inset 0 0 2px rgba(255, 255, 255, 0.1), 0 2px 4px rgba(0, 0, 0, 0.5);
     margin-bottom: 0.5rem;
 
     &:hover:not(:disabled) {
@@ -267,7 +268,7 @@ export const StyledSkillItem = styled.div<{ isSelected?: boolean; color?: string
     margin-left: 8px;
     position: absolute;
     right: 0.4rem;
-    top: 0.0rem;
+    top: 0rem;
     z-index: 1;
   }
 

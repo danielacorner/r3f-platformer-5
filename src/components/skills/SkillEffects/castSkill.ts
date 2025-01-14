@@ -9,7 +9,6 @@ import { castMagicOrb } from './castMagicOrb';
 import { ActiveSkill } from '../skills';
 
 export function castSkill(skill: ActiveSkill, position: Vector3, direction: Vector3, level: number): void {
-  console.log("🚀 ~ file: castSkill.ts:10 ~ skill:", skill)
   switch (skill.name) {
     case 'Magic Orb':
       castMagicOrb(position, direction, level);

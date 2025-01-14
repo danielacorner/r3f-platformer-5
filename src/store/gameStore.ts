@@ -456,7 +456,6 @@ export const useGameStore = create<GameState>((set, get) => ({
         newEquippedSkills[existingSlot] = null;
       }
       newEquippedSkills[slot] = skill;
-
       // Check if the skill is currently the primary skill and clear it if necessary
       const newState: Partial<GameState> = {
         equippedSkills: newEquippedSkills,
@@ -464,7 +463,11 @@ export const useGameStore = create<GameState>((set, get) => ({
         selectedSkillSlot: null,
       };
 
-      if (state.primarySkill?.name === skill.name) {
+      if(slot===0){
+        newState.primarySkill = skill;
+      }
+
+      if (state.primarySkill &&skill.name&&state.primarySkill?.name === skill.name&&slot!==0) {
         newState.primarySkill = null;
       }
 

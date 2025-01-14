@@ -74,57 +74,6 @@ const mediaQueries = {
   desktop: "@media (min-width: 1024px)",
 };
 
-export const SkillsContainer = styled.div`
-  position: fixed;
-  right: 0;
-  z-index: 1100;
-  width: 240px;
-  height: 240px;
-  margin-right: 20px;
-  pointer-events: auto;
-
-  @media (max-width: 768px) {
-    width: 200px;
-    height: 200px;
-    margin-right: 15px;
-  }
-
-  @media (max-width: 480px) {
-    width: 180px;
-    height: 180px;
-    margin-right: 10px;
-  }
-
-  @media (max-width: 320px) {
-    width: 160px;
-    height: 160px;
-    margin-right: 8px;
-  }
-`;
-
-export const PrimarySkillContainer = styled.div`
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 120px;
-  height: 120px;
-
-  @media (max-width: 768px) {
-    width: 100px;
-    height: 100px;
-  }
-
-  @media (max-width: 480px) {
-    width: 90px;
-    height: 90px;
-  }
-
-  @media (max-width: 320px) {
-    width: 80px;
-    height: 80px;
-  }
-`;
-
 export const BottomMenuContainer = styled.div`
   position: fixed;
   bottom: 12px;
