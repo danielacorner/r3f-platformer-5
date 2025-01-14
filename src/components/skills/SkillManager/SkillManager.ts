@@ -30,6 +30,7 @@ export const useSkillManager = create<SkillManagerState>((set, get) => ({
     }),
 
   castSkill: (skill: ActiveSkill, playerRef: any, level: number) => {
+    console.log("🚀 ~ file: SkillManager.ts:33 ~ castSkill skill:", skill)
     const state = get();
     if (level === 0) return;
 

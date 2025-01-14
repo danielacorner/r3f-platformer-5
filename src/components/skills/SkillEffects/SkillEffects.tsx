@@ -21,6 +21,7 @@ import { updateChainLightning } from "./effectHandlers/chainLightningHandler";
 import { SkillEffect } from "./types";
 import MemoizedStorm from "../LightningStorm";
 import { MissileHitEffects } from "./MissileHitEffects";
+import LightningEffect from "./LightningEffect";
 
 extend({ ArcaneNovaShaderMaterial, LightningStormShaderMaterial });
 
@@ -211,6 +212,11 @@ export function SkillEffects() {
     }
   });
 
+  // Render lightning effects
+  const lightningEffects = activeEffects.filter(
+    (effect) => effect.type === "lightning"
+  );
+
   return (
     <group>
       {/* Trail particles */}
@@ -230,6 +236,18 @@ export function SkillEffects() {
         args={[missileGeometry, missileMaterial, 100]}
         frustumCulled={false}
       />
+
+      {/* Lightning effects */}
+      {lightningEffects.map((effect) => (
+        <LightningEffect
+          key={effect.id}
+          startPosition={effect.startPosition}
+          endPosition={effect.endPosition}
+          startTime={effect.startTime}
+          duration={effect.duration}
+          color={effect.color}
+        />
+      ))}
 
       {/* Arcane Nova Effect */}
       {activeEffects

@@ -60,7 +60,7 @@ export function SkillsContainer() {
 
   const handleCastSkill = useCallback(
     (skill: ActiveSkill) => {
-      const level = skillLevels[skill.name] || 0;
+      const level = skillLevels[skill.name] || 1;
       if (level === 0) return;
 
       if (skill.toggleable) {
@@ -89,7 +89,7 @@ export function SkillsContainer() {
         direction = new Vector3(0, 0, 1);
       }
 
-      const skillLevel = skillLevels[skill.name] || 0;
+      const skillLevel = skillLevels[skill.name] || 1;
       castSkill(skill, position, direction, skillLevel);
 
       setSkillCooldowns((prev) => ({

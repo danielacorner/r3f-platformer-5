@@ -158,6 +158,8 @@ interface GameState {
   damageCreep: (creepId: string, damage: number) => void;
 }
 
+const INITIAL_PRIMARY_SKILL = process.env.NODE_ENV === 'development' ?  'Chain Lightning':'Magic Missiles' ;
+
 const initialState: GameState = {
   phase: "prep" as "prep" | "combat" | "victory",
   currentLevel: 1,
@@ -190,8 +192,7 @@ const initialState: GameState = {
   showWaveIndicator: false,
   cameraZoom: 1,
   cameraAngle: 0.5,
-  primarySkill: activeSkills.find((skill) => skill.name === 'Magic Missiles'),
-  // primarySkill: { name: 'Magic Missiles', icon: GiMissileSwarm, color: '#9333ea', cooldown: 2, school: 'arcane',level:1 },
+  primarySkill: activeSkills.find((skill) => skill.name === INITIAL_PRIMARY_SKILL),
   equippedSkills: {
     1: activeSkills.find((skill) => skill.name === 'Magic Orb'),
     2: null,
