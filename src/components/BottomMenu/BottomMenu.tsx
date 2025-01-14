@@ -7,107 +7,15 @@ import {
   DirectionalArrow,
 } from "./BottomMenu.styles";
 import { SkillsContainer } from "../skills/SkillsContainer";
-import { activeSkills } from "../skills/skills";
 import { Portal } from "@mui/material";
 
 export function BottomMenu() {
-  const {
-    equippedSkills,
-    primarySkill,
-    handleSkillClick,
-    joystickMovement,
-    setJoystickMovement,
-    maxSkillSlots,
-    playerRef,
-    money,
-    experience,
-    level,
-    equipSkill,
-    baseSkillSlots,
-    additionalSkillSlots,
-    setJoystickPosition,
-  } = useGameStore();
-  const [isSkillsMenuOpen, setIsSkillsMenuOpen] = useState(false);
-  const [skillCooldowns, setSkillCooldowns] = useState<{
-    [key: string]: number;
-  }>([]);
-  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const { setJoystickMovement } = useGameStore();
+
   const [joystickPosition, setJoystickPositionState] = useState({ x: 0, y: 0 });
   const joystickRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
   const startPosRef = useRef({ x: 0, y: 0 });
-
-  // Detect touch device
-  useEffect(() => {
-    setIsTouchDevice("ontouchstart" in window || navigator.maxTouchPoints > 0);
-  }, []);
-
-  // Set Magic Missile as default skill in slot 1
-  useEffect(() => {
-    if (equippedSkills.length === 0 || !equippedSkills[0]) {
-      const magicMissile = activeSkills.find(
-        (skill) => skill.name === "Magic Missiles"
-      );
-      if (magicMissile) {
-        equipSkill(magicMissile, 0);
-      }
-    }
-  }, []);
-
-  // Handle cooldowns
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setSkillCooldowns((prev) => {
-        const newCooldowns = { ...prev };
-        Object.keys(newCooldowns).forEach((key) => {
-          if (newCooldowns[key] > 0) {
-            newCooldowns[key] = Math.max(0, newCooldowns[key] - 0.1);
-          }
-        });
-        return newCooldowns;
-      });
-    }, 100);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleCastSkill = (skill: ActiveSkill) => {
-    const level = 1; // skillLevels[skill.name] || 0;
-    if (level === 0) return;
-
-    if (skill.toggleable) {
-      // toggleSkill(skill.name);
-      return;
-    }
-
-    const cooldown = skillCooldowns[skill.name] || 0;
-    if (cooldown > 0) return;
-
-    if (!playerRef) return;
-    const playerPosition = playerRef.translation();
-    if (!playerPosition) return;
-
-    const position = new Vector3(playerPosition.x, 1, playerPosition.z);
-    let direction: Vector3;
-
-    if (window.gameState?.mousePosition) {
-      const mousePos = new Vector3(
-        window.gameState.mousePosition.x,
-        0,
-        window.gameState.mousePosition.z
-      );
-      direction = mousePos.clone().sub(position).normalize();
-    } else {
-      direction = new Vector3(0, 0, 1);
-    }
-
-    castSkill(skill, position, direction, level);
-
-    setSkillCooldowns((prev) => ({
-      ...prev,
-      [skill.name]: skill.cooldown,
-    }));
-  };
 
   const handleJoystickStart = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
