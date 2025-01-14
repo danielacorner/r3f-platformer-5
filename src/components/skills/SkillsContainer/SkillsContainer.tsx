@@ -17,7 +17,7 @@ export function SkillsContainer() {
     primarySkill,
     maxSkillSlots,
     playerRef,
-    level,
+    toggleSkill,
     selectedSkill,
     equipSkill,
     skillLevels,
@@ -64,7 +64,7 @@ export function SkillsContainer() {
       if (level === 0) return;
 
       if (skill.toggleable) {
-        // toggleSkill(skill.name);
+        toggleSkill(skill.name);
         return;
       }
 
@@ -89,14 +89,21 @@ export function SkillsContainer() {
         direction = new Vector3(0, 0, 1);
       }
 
-      castSkill(skill, position, direction, level);
+      castSkill(skill, position, direction, skill.level ?? 1);
 
       setSkillCooldowns((prev) => ({
         ...prev,
         [skill.name]: skill.cooldown,
       }));
     },
-    [playerRef, skillLevels, skillCooldowns, setSkillCooldowns, castSkill]
+    [
+      playerRef,
+      skillLevels,
+      skillCooldowns,
+      setSkillCooldowns,
+      castSkill,
+      toggleSkill,
+    ]
   );
 
   return (
@@ -136,6 +143,10 @@ export function SkillsContainer() {
                   if (selectedSkill) {
                     equipSkill(selectedSkill, slotIndex);
                   } else if (skill) {
+                    console.log(
+                      "🚀 ~ file: SkillsContainer.tsx:146 ~ skill:",
+                      skill
+                    );
                     handleCastSkill(skill);
                   }
                 }}
