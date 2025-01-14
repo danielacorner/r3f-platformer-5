@@ -1,57 +1,6 @@
 import styled from "@emotion/styled";
 import { keyframes, css } from "@emotion/react";
 
-const shimmerAnimation = keyframes`
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
-`;
-
-const spinAnimation = keyframes`
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-`;
-
-const orbitAnimation = keyframes`
-  0% {
-    transform: rotate(0deg) scale(1);
-    opacity: 0.8;
-  }
-  50% {
-    transform: rotate(180deg) scale(1.1);
-    opacity: 1;
-  }
-  100% {
-    transform: rotate(360deg) scale(1);
-    opacity: 0.8;
-  }
-`;
-
-const pulseAnimation = keyframes`
-  0% {
-    box-shadow: 0 0 10px ${(props) => props.color}, 0 0 20px ${(props) =>
-  props.color}40;
-    border-color: ${(props) => props.color}cc;
-  }
-  50% {
-    box-shadow: 0 0 15px ${(props) => props.color}, 0 0 30px ${(props) =>
-  props.color}60;
-    border-color: ${(props) => props.color};
-  }
-  100% {
-    box-shadow: 0 0 10px ${(props) => props.color}, 0 0 20px ${(props) =>
-  props.color}40;
-    border-color: ${(props) => props.color}cc;
-  }
-`;
-
 const activeGlowAnimation = keyframes`
   0% {
     box-shadow: 0 0 15px ${(props) => props.color}80, 0 0 25px ${(props) =>
@@ -149,12 +98,6 @@ export const PrimarySkillContainer = styled.div<{
         }20`};
   z-index: 2;
   transition: all 0.3s ease;
-  animation: ${(props) =>
-    props.isActive
-      ? css`
-          ${activeGlowAnimation} 2s infinite
-        `
-      : "none"};
 
   svg {
     width: 60%;
@@ -333,7 +276,6 @@ export const SkillSlot = styled.div<{
       rotate(${8 + -140 * (props.index / props.total)}deg)
       translateY(-${90 - 30}px)
     `};
-};
   }
 
   @media (max-width: 320px) {
@@ -347,7 +289,7 @@ export const SkillSlot = styled.div<{
 
   .cooldown {
     position: absolute;
-    inset:0;
+    inset: 0;
     background: rgba(0, 0, 0, 0.8);
     padding: 2px 6px;
     border-radius: 999px;

@@ -1,5 +1,5 @@
 import { BottomMenuContainer } from "./BottomMenu.styles";
-import { SkillsContainer } from "../skills/SkillsContainer";
+import { SkillsContainer } from "../skills/SkillsContainer/SkillsContainer";
 import { Portal } from "@mui/material";
 import { Joystick } from "./Joystick/Joystick";
 
@@ -8,7 +8,9 @@ export function BottomMenu() {
     <Portal>
       <BottomMenuContainer>
         <Joystick />
-        <SkillsContainer />
+        <Portal>
+          <SkillsContainer />
+        </Portal>
       </BottomMenuContainer>
     </Portal>
   );

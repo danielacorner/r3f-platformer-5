@@ -108,7 +108,7 @@ export function SkillsContainer() {
 
   return (
     <SkillsContainerWrapper>
-      <PrimarySkillContainer>
+      <PrimarySkillContainer color={primarySkill?.color}>
         <PrimarySkillButton
           color={primarySkill?.color}
           empty={!primarySkill}
