@@ -488,16 +488,26 @@ export const useGameStore = create<GameState>((set, get) => ({
     const equippedIndex = Object.keys(state.equippedSkills).find(key => state.equippedSkills[key]?.name === skillName);
     if (equippedIndex === undefined) return;
 
+    const isCurrentlyActive = state.equippedSkills[equippedIndex].isActive;
+
+    // If we're deactivating the skill, start the cooldown
+    if (isCurrentlyActive && skill.cooldown) {
+      const cooldownEvent = new CustomEvent('skillCooldown', {
+        detail: { skillName, cooldown: skill.cooldown }
+      });
+      window.dispatchEvent(cooldownEvent);
+    }
+
     set(state => ({
       equippedSkills: {
         ...state.equippedSkills,
-        [equippedIndex]: { ...state.equippedSkills[equippedIndex], isActive: !state.equippedSkills[equippedIndex].isActive }
+        [equippedIndex]: { ...state.equippedSkills[equippedIndex], isActive: !isCurrentlyActive }
       }
     }));
 
     // Dispatch custom event for the orb component
     const event = new CustomEvent('toggleMagicOrb', {
-      detail: { isActive: !skill.isActive }
+      detail: { isActive: !isCurrentlyActive }
     });
     window.dispatchEvent(event);
   },

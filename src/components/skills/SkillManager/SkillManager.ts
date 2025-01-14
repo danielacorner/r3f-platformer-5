@@ -33,10 +33,6 @@ export const useSkillManager = create<SkillManagerState>((set, get) => ({
     const state = get();
     if (level === 0) return;
 
-    if (skill.toggleable) {
-      return;
-    }
-
     const cooldown = state.cooldowns[skill.name] || 0;
     if (cooldown > 0) return;
 
@@ -59,6 +55,10 @@ export const useSkillManager = create<SkillManagerState>((set, get) => ({
     }
 
     castSkill(skill, position, direction, level);
-    state.setCooldown(skill.name, skill.cooldown);
+    
+    // Only start cooldown for non-toggleable skills or when deactivating toggleable skills
+    if (!skill.toggleable) {
+      state.setCooldown(skill.name, skill.cooldown);
+    }
   },
 }));
