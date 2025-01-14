@@ -126,6 +126,7 @@ export const StyledSkillsMenu = styled.div`
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 1rem;
     padding-right: 1rem;
+    padding-bottom: 6rem;
   }
 `;
 
@@ -144,10 +145,10 @@ export const StyledSkillItem = styled.div<{
   transition: all 0.2s ease;
   border: 1px solid rgba(255, 255, 255, 0.1);
   margin-right: 3rem;
-  cursor: ${props => props.isImplemented ? 'pointer' : 'not-allowed'};
-  opacity: ${props => props.isImplemented ? '1' : '0.5'};
-  filter: ${props => props.isImplemented ? 'none' : 'grayscale(70%)'};
-  
+  cursor: ${(props) => (props.isImplemented ? "pointer" : "not-allowed")};
+  opacity: ${(props) => (props.isImplemented ? "1" : "0.5")};
+  filter: ${(props) => (props.isImplemented ? "none" : "grayscale(70%)")};
+
   ${(props) =>
     props.isSelected &&
     props.isImplemented &&
@@ -156,7 +157,8 @@ export const StyledSkillItem = styled.div<{
   `}
 
   &:hover {
-    background: ${props => props.isImplemented ? 'rgba(31, 41, 55, 0.8)' : 'rgba(17, 24, 39, 0.8)'};
+    background: ${(props) =>
+      props.isImplemented ? "rgba(31, 41, 55, 0.8)" : "rgba(17, 24, 39, 0.8)"};
   }
 
   .skill-background-icon {
@@ -181,7 +183,7 @@ export const StyledSkillItem = styled.div<{
     border: 2px solid ${(props) => props.color || "#60a5fa"};
     color: ${(props) => props.color || "#60a5fa"};
     font-size: 1.5rem;
-    
+
     svg {
       width: 100%;
       height: 100%;

@@ -107,7 +107,11 @@ export function SkillsContainer() {
   );
 
   return (
-    <SkillsContainerWrapper>
+    <SkillsContainerWrapper
+      onClick={(e) => {
+        e.stopPropagation();
+      }}
+    >
       <PrimarySkillContainer color={primarySkill?.color}>
         <PrimarySkillButton
           color={primarySkill?.color}

@@ -6,7 +6,7 @@ export function MushroomInstances({ count = 25, radius = 22 }) {
     const stemsRef = useRef<InstancedMesh>(null);
     const spotsRef = useRef<InstancedMesh>(null);
     const tempObject = useMemo(() => new Object3D(), []);
-  
+
     // Realistic mushroom varieties with shape variations
     const mushroomTypes = useMemo(() => [
       { 
@@ -79,12 +79,17 @@ export function MushroomInstances({ count = 25, radius = 22 }) {
         rarity: 0.15 // 15% chance
       }
     ], []);
-  
+
     useEffect(() => {
       if (!capsRef.current || !stemsRef.current || !spotsRef.current) return;
-  
+
+      // Disable frustum culling to prevent disappearing when off-screen
+      capsRef.current.frustumCulled = false;
+      stemsRef.current.frustumCulled = false;
+      spotsRef.current.frustumCulled = false;
+
       let spotCount = 0;
-  
+
       for (let i = 0; i < count; i++) {
         const angle = (i / count) * Math.PI * 2 + Math.random() * 0.5;
         const r = radius * (0.5 + Math.random() * 0.5);
@@ -92,15 +97,15 @@ export function MushroomInstances({ count = 25, radius = 22 }) {
         const z = Math.cos(angle) * r + (Math.random() * 6 - 3);
         const scale = 0.2 + Math.random() * 0.15;
         const rotation = Math.random() * Math.PI * 2;
-  
+
         // Select mushroom type with rarity check
         let mushroomType;
         do {
           mushroomType = mushroomTypes[Math.floor(Math.random() * mushroomTypes.length)];
         } while (mushroomType.rarity && Math.random() > mushroomType.rarity);
-  
+
         const { shape } = mushroomType;
-  
+
         // Cap with curved shape and direction
         tempObject.position.set(x, scale * 0.7, z);
         const capHeight = scale * shape.curve * (0.8 + Math.random() * 0.4);
@@ -116,7 +121,7 @@ export function MushroomInstances({ count = 25, radius = 22 }) {
         );
         tempObject.updateMatrix();
         capsRef.current.setMatrixAt(i, tempObject.matrix);
-  
+
         // Adjust stem position based on cap direction
         const stemHeight = 0.7 + Math.random() * 0.3;
         const stemY = scale * stemHeight * 0.5;
@@ -129,7 +134,7 @@ export function MushroomInstances({ count = 25, radius = 22 }) {
         tempObject.rotation.set(0, rotation, 0);
         tempObject.updateMatrix();
         stemsRef.current.setMatrixAt(i, tempObject.matrix);
-  
+
         // Add spots for red mushrooms
         if (mushroomType.spots) {
           const numSpots = 6 + Math.floor(Math.random() * 4);
@@ -140,7 +145,7 @@ export function MushroomInstances({ count = 25, radius = 22 }) {
             const spotZ = z + Math.cos(spotAngle) * spotR;
             const spotScale = scale * 0.15;
             const spotY = scale * 0.7 + Math.sin(spotAngle) * (capHeight * 0.3); // Follow cap curve
-  
+
             tempObject.position.set(spotX, spotY, spotZ);
             tempObject.scale.set(spotScale, spotScale, spotScale);
             tempObject.rotation.copy(capsRef.current.rotation);
@@ -149,12 +154,12 @@ export function MushroomInstances({ count = 25, radius = 22 }) {
           }
         }
       }
-  
+
       capsRef.current.instanceMatrix.needsUpdate = true;
       stemsRef.current.instanceMatrix.needsUpdate = true;
       spotsRef.current.instanceMatrix.needsUpdate = true;
     }, [count, radius, mushroomTypes]);
-  
+
     return (
       <group>
         <instancedMesh 

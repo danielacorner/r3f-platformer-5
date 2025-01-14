@@ -50,6 +50,9 @@ export function FirefliesInstances({ count = 50, radius = 25 }) {
   useEffect(() => {
     if (!meshRef.current) return;
 
+    // Disable frustum culling to prevent disappearing when off-screen
+    meshRef.current.frustumCulled = false;
+
     // Initialize movement data for each firefly
     fireflyData.current = Array(count).fill(0).map(() => {
       const currentTarget = getRandomPoint();

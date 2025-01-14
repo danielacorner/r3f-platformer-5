@@ -2,6 +2,12 @@ import { create } from 'zustand';
 import { GiMissileSwarm, GiMoonOrbit } from 'react-icons/gi';
 import { activeSkills, passiveSkills } from '../components/skills/skills';
 
+// Get total skill slots based on Expanded Mind level
+const getMaxSkillSlots = (skillLevels: { [key: string]: number }) => {
+  const expandedMindLevel = skillLevels["Expanded Mind"] || 0;
+  return 3 + expandedMindLevel; // Base 3 slots + 1 per level
+};
+
 // Helper function to generate initial skill levels
 const generateInitialSkillLevels = () => {
   const levels: { [key: string]: number } = {};
@@ -192,9 +198,9 @@ const initialState: GameState = {
   },
   selectedSkillSlot: null,
   selectedSkill: null,
-  baseSkillSlots: 4,
+  baseSkillSlots: 3, // Start with 3 slots
   additionalSkillSlots: 0,
-  maxSkillSlots: 4,
+  maxSkillSlots: 3, // Start with 3 slots
   joystickMovement: { x: 0, y: 0 },
   setPhase: () => { },
   setCurrentLevel: () => { },
@@ -370,30 +376,27 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const currentLevel = state.skillLevels[skillName] || 0;
     if (currentLevel >= skill.maxLevel) return;
+    if (state.skillPoints <= 0) return;
 
-    // const price = Math.floor(skill.basePrice * Math.pow(skill.priceMultiplier, currentLevel));
-    // if (state.money < price) return;
+    // Calculate new skill slots if upgrading Expanded Mind
+    let newMaxSkillSlots = state.maxSkillSlots;
+    if (skillName === "Expanded Mind") {
+      newMaxSkillSlots = getMaxSkillSlots({ ...state.skillLevels, [skillName]: currentLevel + 1 });
+    }
 
-    set(state => {
-      const newLevel = (state.skillLevels[skillName] || 0) + 1;
-      const effect = skill.effect?.(newLevel);
+    set(state => ({
+      skillLevels: {
+        ...state.skillLevels,
+        [skillName]: (state.skillLevels[skillName] || 0) + 1
+      },
+      skillPoints: state.skillPoints - 1,
+      maxSkillSlots: newMaxSkillSlots
+    }));
 
-      // Handle skill slot upgrades
-      let additionalSkillSlots = state.additionalSkillSlots;
-      if (effect && 'skillSlots' in effect) {
-        additionalSkillSlots = effect.skillSlots;
-      }
-
-      return {
-        // money: state.money - price,
-        skillLevels: {
-          ...state.skillLevels,
-          [skillName]: newLevel
-        },
-        additionalSkillSlots,
-        skillPoints: state.skillPoints - 1
-      };
-    });
+    // Run any onUpgrade effects
+    if (skill.onUpgrade) {
+      skill.onUpgrade(get());
+    }
   },
 
   incrementLevel: () =>

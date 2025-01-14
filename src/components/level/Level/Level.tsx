@@ -38,6 +38,9 @@ function RockInstances({ count = 30, radius = 20 }) {
   useEffect(() => {
     if (!meshRef.current) return;
 
+    // Disable frustum culling to prevent disappearing when off-screen
+    meshRef.current.frustumCulled = false;
+
     for (let i = 0; i < count; i++) {
       const angle = (i / count) * Math.PI * 2;
       const x = Math.sin(angle) * radius + (Math.random() * 10);
@@ -105,6 +108,9 @@ function CrystalInstances({ count = 8, radius = 15 }) {
 
   useEffect(() => {
     if (!meshRef.current) return;
+
+    // Disable frustum culling to prevent disappearing when off-screen
+    meshRef.current.frustumCulled = false;
 
     for (let i = 0; i < count; i++) {
       const angle = (i / count) * Math.PI * 2;

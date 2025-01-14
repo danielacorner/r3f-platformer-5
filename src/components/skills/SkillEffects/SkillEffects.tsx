@@ -82,6 +82,13 @@ export function SkillEffects() {
     };
   }, []);
 
+  useEffect(() => {
+    if (missileInstancesRef.current) {
+      // Disable frustum culling to prevent disappearing when off-screen
+      missileInstancesRef.current.frustumCulled = false;
+    }
+  }, []);
+
   useFrame((state, delta) => {
     time.current += delta;
     setFrameCount(prev => (prev + 1) % 1000000);
@@ -171,7 +178,7 @@ export function SkillEffects() {
       <instancedMesh
         ref={missileInstancesRef}
         args={[missileGeometry, missileMaterial, 100]}
-        frustumCulled={true}
+        frustumCulled={false}
       />
 
       {/* Arcane Nova Effect */}

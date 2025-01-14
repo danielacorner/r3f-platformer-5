@@ -44,6 +44,10 @@ export function SkillsMenu({ onClose }: SkillsMenuProps) {
     "Inferno",
     "Multi Orb",
     "Arcane Power",
+    "Expanded Mind",
+    // "Storm Mastery",
+    // "Frost Mastery",
+    // "Force Amplification",
   ];
 
   const handleUpgrade = (skillName: string) => {
@@ -136,7 +140,10 @@ export function SkillsMenu({ onClose }: SkillsMenuProps) {
         }}
       />
       <StyledSkillsMenu
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
         onWheel={handleScroll}
       >
         <div className="skills-header">

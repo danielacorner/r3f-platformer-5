@@ -2,30 +2,33 @@ import { useRef, useEffect, useMemo } from 'react';
 import { InstancedMesh, Object3D, Matrix4 } from 'three';
 import { grassColor } from '../../../utils/constants';
 
-
 // Optimized components using instancing
 export function TreeInstances({ count = 15, radius = 25 }) {
     const trunkRef = useRef<InstancedMesh>(null);
     const foliageRef = useRef<InstancedMesh>(null);
     const tempObject = useMemo(() => new Object3D(), []);
     const matrix = useMemo(() => new Matrix4(), []);
-  
+
     useEffect(() => {
       if (!trunkRef.current || !foliageRef.current) return;
-  
+
+      // Disable frustum culling to prevent disappearing when off-screen
+      trunkRef.current.frustumCulled = false;
+      foliageRef.current.frustumCulled = false;
+
       // Set positions for all instances
       for (let i = 0; i < count; i++) {
         const angle = (i / count) * Math.PI * 2;
         const x = Math.sin(angle) * radius + (Math.random() * 5);
         const z = Math.cos(angle) * radius + (Math.random() * 5);
         const scale = 0.8 + Math.random() * 0.4;
-  
+
         // Position trunk slightly above ground and foliage above trunk
         tempObject.position.set(x, 1, z);  // Set trunk at y=1
         tempObject.scale.set(scale, scale, scale);
         tempObject.updateMatrix();
         trunkRef.current.setMatrixAt(i, tempObject.matrix);
-  
+
         // Position foliage above trunk
         tempObject.position.set(x, 2.5, z);  // Set foliage at y=2.5
         tempObject.updateMatrix();
@@ -34,7 +37,7 @@ export function TreeInstances({ count = 15, radius = 25 }) {
       trunkRef.current.instanceMatrix.needsUpdate = true;
       foliageRef.current.instanceMatrix.needsUpdate = true;
     }, [count, radius]);
-  
+
     return (
       <group>
         {/* Trunk */}
