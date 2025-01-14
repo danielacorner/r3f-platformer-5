@@ -1,25 +1,22 @@
 import styled from "@emotion/styled";
 import { keyframes } from "@emotion/react";
 
-const activeGlowAnimation = keyframes`
+export const activeGlowAnimation = keyframes`
   0% {
-    box-shadow: 0 0 15px ${(props) => props.color}80, 0 0 25px ${(props) =>
-  props.color}40, inset 0 0 15px ${(props) => props.color}40;
-    border-color: ${(props) => props.color};
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.5), 0 0 25px rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.6);
   }
   50% {
-    box-shadow: 0 0 25px ${(props) => props.color}cc, 0 0 35px ${(props) =>
-  props.color}60, inset 0 0 25px ${(props) => props.color}60;
-    border-color: ${(props) => props.color}ff;
+    box-shadow: 0 0 25px rgba(255, 255, 255, 0.8), 0 0 35px rgba(255, 255, 255, 0.4);
+    border-color: rgba(255, 255, 255, 1);
   }
   100% {
-    box-shadow: 0 0 15px ${(props) => props.color}80, 0 0 25px ${(props) =>
-  props.color}40, inset 0 0 15px ${(props) => props.color}40;
-    border-color: ${(props) => props.color};
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.5), 0 0 25px rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.6);
   }
 `;
 
-const clickAnimation = keyframes`
+export const clickAnimation = keyframes`
   0% {
     transform: scale(1);
     filter: brightness(1);
@@ -126,14 +123,7 @@ export const PrimarySkillButton = styled.div<{
         }20`};
   z-index: 2;
   transition: all 0.3s ease;
-  animation: ${(props) =>
-    props.isActive
-      ? css`
-          ${activeGlowAnimation} 2s infinite
-        `
-      : props.isOnCooldown
-      ? "none"
-      : "none"};
+  animation: ${(props) => props.isActive && `${activeGlowAnimation} 2s infinite`};
 
   &.clicked {
     animation: ${clickAnimation} 0.3s ease;
@@ -234,11 +224,7 @@ export const SkillSlot = styled.div<{
       140 - 30
     }px)`};
   animation: ${(props) =>
-    props.isActive
-      ? css`
-          ${activeGlowAnimation} 2s infinite
-        `
-      : "none"};
+    props.isActive && `${activeGlowAnimation} 2s infinite`};
 
   &.clicked {
     animation: ${clickAnimation} 0.3s ease;

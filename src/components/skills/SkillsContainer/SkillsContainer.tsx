@@ -143,10 +143,6 @@ export function SkillsContainer() {
                   if (selectedSkill) {
                     equipSkill(selectedSkill, slotIndex);
                   } else if (skill) {
-                    console.log(
-                      "🚀 ~ file: SkillsContainer.tsx:146 ~ skill:",
-                      skill
-                    );
                     handleCastSkill(skill);
                   }
                 }}

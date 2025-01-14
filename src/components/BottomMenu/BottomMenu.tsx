@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { useGameStore } from "../../store/gameStore";
 import {
   BottomMenuContainer,
   JoystickContainer,
-  JoystickButton,
   DirectionalArrow,
 } from "./BottomMenu.styles";
 import { SkillsContainer } from "../skills/SkillsContainer";
@@ -11,63 +10,38 @@ import { Portal } from "@mui/material";
 
 export function BottomMenu() {
   const { setJoystickMovement } = useGameStore();
-
   const [joystickPosition, setJoystickPositionState] = useState({ x: 0, y: 0 });
   const joystickRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
-  const startPosRef = useRef({ x: 0, y: 0 });
+  const lastPositionRef = useRef({ x: 0, y: 0 });
 
   const handleJoystickStart = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
     isDraggingRef.current = true;
-
-    const container = joystickRef.current;
-    if (!container) return;
-
-    const rect = container.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
-
-    startPosRef.current = { x: clientX - centerX, y: clientY - centerY };
+    const position = getEventPosition(e);
+    if (!position) return;
+    lastPositionRef.current = position;
   };
 
   const handleJoystickMove = (e: MouseEvent | TouchEvent) => {
-    if (!isDraggingRef.current) return;
+    if (!isDraggingRef.current || !joystickRef.current) return;
+    e.preventDefault();
+    e.stopPropagation();
 
-    const container = joystickRef.current;
-    if (!container) return;
+    const position = getEventPosition(e as any);
+    if (!position) return;
 
-    const rect = container.getBoundingClientRect();
-    const radius = rect.width / 2;
+    const deltaX = position.x - lastPositionRef.current.x;
+    const deltaY = position.y - lastPositionRef.current.y;
+    lastPositionRef.current = position;
 
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
-
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-
-    let deltaX = clientX - centerX;
-    let deltaY = clientY - centerY;
-
-    // Limit the joystick movement to the container radius
-    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-    if (distance > radius - 30) {
-      // 30px offset for the joystick button size
-      const angle = Math.atan2(deltaY, deltaX);
-      deltaX = (radius - 30) * Math.cos(angle);
-      deltaY = (radius - 30) * Math.sin(angle);
-    }
-
-    // Normalize the movement values to -1 to 1 range
-    const normalizedX = deltaX / (radius - 30);
-    const normalizedY = deltaY / (radius - 30);
-
-    setJoystickPositionState({ x: deltaX, y: deltaY });
-    setJoystickMovement({ x: normalizedX, y: normalizedY });
+    setJoystickPositionState((prev) => {
+      const newX = Math.max(-50, Math.min(50, prev.x + deltaX));
+      const newY = Math.max(-50, Math.min(50, prev.y + deltaY));
+      setJoystickMovement({ x: newX / 50, y: -newY / 50 });
+      return { x: newX, y: newY };
+    });
   };
 
   const handleJoystickEnd = () => {
@@ -76,53 +50,47 @@ export function BottomMenu() {
     setJoystickMovement({ x: 0, y: 0 });
   };
 
-  useEffect(() => {
-    const handleMove = (e: MouseEvent | TouchEvent) => {
-      if (!isDraggingRef.current) return;
-      handleJoystickMove(e);
+  const getEventPosition = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!joystickRef.current) return null;
+    const rect = joystickRef.current.getBoundingClientRect();
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    return {
+      x: clientX - rect.left - rect.width / 2,
+      y: clientY - rect.top - rect.height / 2,
     };
-
-    const handleEnd = () => {
-      handleJoystickEnd();
-    };
-
-    window.addEventListener("mousemove", handleMove);
-    window.addEventListener("mouseup", handleEnd);
-    window.addEventListener("touchmove", handleMove);
-    window.addEventListener("touchend", handleEnd);
-    window.addEventListener("touchcancel", handleEnd);
-
-    return () => {
-      window.removeEventListener("mousemove", handleMove);
-      window.removeEventListener("mouseup", handleEnd);
-      window.removeEventListener("touchmove", handleMove);
-      window.removeEventListener("touchend", handleEnd);
-      window.removeEventListener("touchcancel", handleEnd);
-    };
-  }, []);
+  };
 
   return (
-    <BottomMenuContainer>
-      <JoystickContainer
-        ref={joystickRef}
-        onMouseDown={handleJoystickStart}
-        onTouchStart={handleJoystickStart}
-        onContextMenu={(e) => e.preventDefault()}
-        className="joystick-area"
-      >
-        <DirectionalArrow direction="up" />
-        <DirectionalArrow direction="right" />
-        <DirectionalArrow direction="down" />
-        <DirectionalArrow direction="left" />
-        <JoystickButton
-          style={{
-            transform: `translate(calc(-50% + ${joystickPosition.x}px), calc(-50% + ${joystickPosition.y}px))`,
-          }}
-        />
-      </JoystickContainer>
-      <Portal>
+    <Portal>
+      <BottomMenuContainer>
+        <JoystickContainer
+          ref={joystickRef}
+          onMouseDown={handleJoystickStart}
+          onTouchStart={handleJoystickStart}
+          onMouseMove={handleJoystickMove as any}
+          onTouchMove={handleJoystickMove as any}
+          onMouseUp={handleJoystickEnd}
+          onTouchEnd={handleJoystickEnd}
+          onMouseLeave={handleJoystickEnd}
+        >
+          <DirectionalArrow direction="up" />
+          <DirectionalArrow direction="right" />
+          <DirectionalArrow direction="down" />
+          <DirectionalArrow direction="left" />
+          <div
+            style={{
+              position: 'absolute',
+              width: '40px',
+              height: '40px',
+              background: 'rgba(255, 255, 255, 0.2)',
+              borderRadius: '50%',
+              transform: `translate(calc(-50% + ${joystickPosition.x}px), calc(-50% + ${joystickPosition.y}px))`,
+            }}
+          />
+        </JoystickContainer>
         <SkillsContainer />
-      </Portal>
-    </BottomMenuContainer>
+      </BottomMenuContainer>
+    </Portal>
   );
 }

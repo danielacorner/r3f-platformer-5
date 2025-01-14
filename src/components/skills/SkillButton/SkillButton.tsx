@@ -1,56 +1,63 @@
-import { useEffect } from "react";
-import { useGameStore } from "../../../store/gameStore";
+import React from "react";
 import { useSkillManager } from "../SkillManager/SkillManager";
-import { ActiveSkill } from "../skills";
-import { PrimarySkillButton } from "../../BottomMenu/Skills/Skills.styles";
+import { PrimarySkillButton, CooldownOverlay, CooldownText } from "../../BottomMenu/Skills/Skills.styles";
+import { Skill } from "../../../types/skills";
 
 interface SkillButtonProps {
-  skill: ActiveSkill;
-  isActive?: boolean;
+  skill: Skill | null;
   isHighlighted?: boolean;
-  empty?: boolean;
+  onClick?: (skill: Skill) => void;
 }
 
-export function SkillButton({ skill, isActive, isHighlighted, empty }: SkillButtonProps) {
-  const { playerRef, skillLevels, toggleSkill } = useGameStore();
-  const { cooldowns, castSkill, updateCooldowns } = useSkillManager();
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      updateCooldowns();
-    }, 100);
-
-    return () => clearInterval(interval);
-  }, [updateCooldowns]);
+export const SkillButton: React.FC<SkillButtonProps> = ({
+  skill,
+  isHighlighted = false,
+  onClick,
+}) => {
+  const { cooldowns, handleCastSkill } = useSkillManager();
 
   const handleClick = () => {
-    if (empty) return;
+    if (!skill) return;
     
-    const level = skillLevels[skill.name] || 0;
-    if (skill.toggleable) {
-      toggleSkill(skill.name);
-      return;
-    }
+    const cooldown = cooldowns[skill.id];
+    if (cooldown && cooldown > 0) return;
 
-    castSkill(skill, playerRef, level);
+    if (onClick) {
+      onClick(skill);
+    } else {
+      handleCastSkill(skill);
+    }
   };
 
-  const cooldown = cooldowns[skill.name] || 0;
-  const isOnCooldown = cooldown > 0;
+  const getCooldownProgress = () => {
+    if (!skill || !cooldowns[skill.id]) return 0;
+    return cooldowns[skill.id] / skill.cooldown;
+  };
+
+  const formatCooldown = (seconds: number) => {
+    return seconds.toFixed(1);
+  };
 
   return (
     <PrimarySkillButton
-      color={skill.color}
-      empty={empty}
-      isActive={isActive}
-      isOnCooldown={isOnCooldown}
+      empty={!skill}
+      color={skill?.color}
       isHighlighted={isHighlighted}
+      isOnCooldown={skill && cooldowns[skill.id] > 0}
       onClick={handleClick}
     >
-      <skill.icon />
-      {isOnCooldown && (
-        <div className="cooldown-overlay" style={{ opacity: cooldown / skill.cooldown }} />
+      {skill?.icon}
+      {skill && cooldowns[skill.id] > 0 && (
+        <>
+          <CooldownOverlay
+            progress={getCooldownProgress()}
+            color={skill.color}
+          />
+          <CooldownText>
+            {formatCooldown(cooldowns[skill.id])}
+          </CooldownText>
+        </>
       )}
     </PrimarySkillButton>
   );
-}
+};
