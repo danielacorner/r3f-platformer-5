@@ -154,19 +154,27 @@ export const SkillSlot = styled.div<{
   total: number;
   empty?: boolean;
   isHighlighted?: boolean;
+  isOnCooldown?: boolean;
 }>`
   position: absolute;
   width: 60px;
   height: 60px;
   right: 16px;
   bottom: 34px;
+  ${(props) =>
+    props.isOnCooldown &&
+    css`
+      pointer-events: none;
+      cursor: default;
+      opacity: 0.5;
+    `}
   border: 2px solid
     ${(props) =>
-      props.isHighlighted
-        ? "rgba(255, 255, 255, 0.8)"
-        : props.empty
-        ? "rgba(255, 255, 255, 0.1)"
-        : props.color || "#60a5fa"};
+    props.isHighlighted
+      ? "rgba(255, 255, 255, 0.8)"
+      : props.empty
+      ? "rgba(255, 255, 255, 0.1)"
+      : props.color || "#60a5fa"};
   border-radius: 50%;
   display: flex;
   align-items: center;

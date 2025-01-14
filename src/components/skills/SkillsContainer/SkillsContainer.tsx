@@ -121,6 +121,7 @@ export function SkillsContainer() {
               handleCastSkill(primarySkill);
             }
           }}
+          isOnCooldown={skillCooldowns[primarySkill?.name || ""] > 0}
         >
           {primarySkill && <primarySkill.icon size="100%" />}
         </PrimarySkillButton>
@@ -146,6 +147,7 @@ export function SkillsContainer() {
                     handleCastSkill(skill);
                   }
                 }}
+                isOnCooldown={skillCooldowns[skill?.name || ""] > 0}
               >
                 {skill && <skill.icon size="100%" />}
               </SkillSlot>
