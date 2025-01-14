@@ -165,6 +165,7 @@ export const StyledSkillItem = styled.div<{
   }
 
   .skill-icon {
+    position: relative;
     width: 3rem;
     height: 3rem;
     display: flex;
@@ -175,9 +176,28 @@ export const StyledSkillItem = styled.div<{
     border: 2px solid ${(props) => props.color || "#60a5fa"};
     color: ${(props) => props.color || "#60a5fa"};
     font-size: 1.5rem;
+    
     svg {
       width: 100%;
       height: 100%;
+    }
+
+    &::after {
+      content: attr(data-skill-type);
+      position: absolute;
+      bottom: -1.2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.7rem;
+      padding: 0.1rem 0.5rem;
+      border-radius: 1rem;
+      background: ${(props) => props.color || "#60a5fa"};
+      color: #111827;
+      text-transform: uppercase;
+      font-weight: bold;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+      opacity: 0.9;
     }
   }
 

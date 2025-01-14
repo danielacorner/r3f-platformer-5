@@ -221,7 +221,10 @@ export function SkillsMenu({ onClose }: SkillsMenuProps) {
                     <div className="skill-background-icon">
                       <skill.icon />
                     </div>
-                    <div className="skill-icon">
+                    <div
+                      className="skill-icon"
+                      data-skill-type={"effect" in skill ? "passive" : "active"}
+                    >
                       <skill.icon />
                     </div>
                     <div className="skill-info">
