@@ -1,21 +1,18 @@
 import styled from "@emotion/styled";
 import { keyframes, css } from "@emotion/react";
 
-const activeGlowAnimation = keyframes`
+const getActiveGlowAnimation = (color) => keyframes`
   0% {
-    box-shadow: 0 0 15px ${(props) => props.color}80, 0 0 25px ${(props) =>
-  props.color}40, inset 0 0 15px ${(props) => props.color}40;
-    border-color: ${(props) => props.color};
+    box-shadow: 0 0 15px ${color}80, 0 0 25px ${color}40, inset 0 0 15px ${color}40;
+    border-color: ${color};
   }
   50% {
-    box-shadow: 0 0 25px ${(props) => props.color}cc, 0 0 35px ${(props) =>
-  props.color}60, inset 0 0 25px ${(props) => props.color}60;
-    border-color: ${(props) => props.color}ff;
+    box-shadow: 0 0 25px ${color}cc, 0 0 35px ${color}60, inset 0 0 25px ${color}60;
+    border-color: ${color}ff;
   }
   100% {
-    box-shadow: 0 0 15px ${(props) => props.color}80, 0 0 25px ${(props) =>
-  props.color}40, inset 0 0 15px ${(props) => props.color}40;
-    border-color: ${(props) => props.color};
+    box-shadow: 0 0 15px ${color}80, 0 0 25px ${color}40, inset 0 0 15px ${color}40;
+    border-color: ${color};
   }
 `;
 
@@ -200,7 +197,7 @@ export const SkillSlot = styled.div<{
   animation: ${(props) =>
     props.isActive
       ? css`
-          ${activeGlowAnimation} 2s infinite
+          ${getActiveGlowAnimation(props.color)} 2s infinite
         `
       : "none"};
 

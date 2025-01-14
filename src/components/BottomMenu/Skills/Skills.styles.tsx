@@ -36,17 +36,14 @@ export const CooldownOverlay = styled.div<{
   color?: string;
 }>`
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   border-radius: 50%;
   background: conic-gradient(
-    from 0deg at 50% 50%,
-    transparent ${(props) => props.progress * 360}deg,
-    rgba(0, 0, 0, 0.7) ${(props) => props.progress * 360}deg 360deg
+    from -90deg at 50% 50%,
+    rgba(0, 0, 0, 0.7) ${(props) => props.progress * 360}deg,
+    transparent ${(props) => props.progress * 360}deg 360deg
   );
-  transition: background 0.1s linear;
+  transition: all 0.1s linear;
   pointer-events: none;
   z-index: 3;
 `;
