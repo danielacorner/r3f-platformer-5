@@ -215,9 +215,7 @@ export function SkillsMenu({ onClose }: SkillsMenuProps) {
                           meetsLevelReq ? "met" : ""
                         }`}
                       >
-                        {meetsLevelReq
-                          ? "Level OK"
-                          : `Requires Level ${nextLevelReq}`}
+                        {meetsLevelReq ? "" : `Requires Level ${nextLevelReq}`}
                       </div>
                     )}
                     <div className="skill-background-icon">

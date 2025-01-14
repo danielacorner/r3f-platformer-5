@@ -236,8 +236,8 @@ export const StyledSkillItem = styled.div<{ isSelected?: boolean; color?: string
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #2c1810, #3d2317);
-    border: 2px solid #5a3925;
+    background: linear-gradient(135deg, #1a365d, #2d4a7c);
+    border: 2px solid #3b82f6;
     border-radius: 0.25rem;
     color: #fbbf24;
     cursor: pointer;
@@ -249,14 +249,16 @@ export const StyledSkillItem = styled.div<{ isSelected?: boolean; color?: string
     margin-bottom: 0.5rem;
 
     &:hover:not(:disabled) {
-      background: linear-gradient(135deg, #3d2317, #4e2c1d);
-      border-color: #6b442c;
+      background: linear-gradient(135deg, #2d4a7c, #3b5998);
+      border-color: #60a5fa;
       color: #f59e0b;
     }
 
     &:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+      background: linear-gradient(135deg, #1f2937, #374151);
+      border-color: #4b5563;
     }
   }
 

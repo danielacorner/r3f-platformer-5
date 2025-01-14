@@ -450,18 +450,25 @@ export const useGameStore = create<GameState>((set, get) => ({
   equipSkill: (skill, slot) =>
     set((state) => {
       const newEquippedSkills = { ...state.equippedSkills };
-      // Check if skill is already equipped
+      // Check if skill is already equipped in any slot
       const existingSlot = Object.keys(newEquippedSkills).find(key => newEquippedSkills[key]?.name === skill.name);
       if (existingSlot !== undefined) {
         newEquippedSkills[existingSlot] = null;
       }
       newEquippedSkills[slot] = skill;
-      // Clear selections after equipping
-      return {
+
+      // Check if the skill is currently the primary skill and clear it if necessary
+      const newState: Partial<GameState> = {
         equippedSkills: newEquippedSkills,
         selectedSkill: null,
-        selectedSkillSlot: null
+        selectedSkillSlot: null,
       };
+
+      if (state.primarySkill?.name === skill.name) {
+        newState.primarySkill = null;
+      }
+
+      return newState;
     }),
   unequipSkill: (slot) =>
     set((state) => {
