@@ -46,6 +46,7 @@ export function SkillsMenu({ onClose }: SkillsMenuProps) {
     "Multi Orb",
     "Arcane Power",
     "Expanded Mind",
+    "Chain Lightning",
     // "Storm Mastery",
     // "Frost Mastery",
     // "Force Amplification",

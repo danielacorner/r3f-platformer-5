@@ -6,6 +6,7 @@ import { castArcaneNova } from './castArcaneNova';
 import { castArcaneMultiplication } from './castArcaneMultiplication';
 import { castInferno } from './castInferno';
 import { castMagicOrb } from './castMagicOrb';
+import { castChainLightning } from './castChainLightning';
 import { ActiveSkill } from '../skills';
 
 export function castSkill(skill: ActiveSkill, position: Vector3, direction: Vector3, level: number): void {
@@ -32,8 +33,7 @@ export function castSkill(skill: ActiveSkill, position: Vector3, direction: Vect
       castInferno(position, level);
       break;
     case 'Chain Lightning':
-      // TODO: Implement Chain Lightning
-      console.log('Chain Lightning not implemented yet');
+      castChainLightning(position, direction, level);
       break;
     case 'Thunder Strike':
       // TODO: Implement Thunder Strike

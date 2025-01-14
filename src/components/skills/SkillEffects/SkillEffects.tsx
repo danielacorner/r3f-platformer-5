@@ -17,6 +17,7 @@ import { updateArcaneNova } from "./effectHandlers/arcaneNovaHandler";
 import { updateLightning } from "./effectHandlers/lightningHandler";
 import { updateBoomerang } from "./effectHandlers/boomerangHandler";
 import { updateLightningStorm } from "./effectHandlers/lightningStormHandler";
+import { updateChainLightning } from "./effectHandlers/chainLightningHandler";
 import { SkillEffect } from "./types";
 import MemoizedStorm from "../LightningStorm";
 import { MissileHitEffects } from "./MissileHitEffects";
@@ -169,6 +170,8 @@ export function SkillEffects() {
         return updateLightning(effect, now, creeps, damageCreep);
       } else if (effect.type === "lightningStorm") {
         return updateLightningStorm(effect as any, now, creeps, damageCreep);
+      } else if (effect.type === "chainLightning") {
+        return updateChainLightning(effect as any, now, creeps, damageCreep);
       }
       return false;
     });
