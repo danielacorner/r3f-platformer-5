@@ -1,5 +1,6 @@
 import { Vector3 } from "three";
 import { activeEffects } from "./SkillEffects";
+import { applyPassiveEffects } from './passiveEffects';
 
 const MISSILE_COLOR = "#6bb7c8"; // Light blue
 const INITIAL_SPEED = 15;
@@ -27,8 +28,8 @@ export function castMagicMissiles(position: Vector3, level: number) {
     const currentMultiplier = now < arcaneMultiplierEndTime ? arcaneMultiplier : 1;
     const missileCount = getMissileCount(level) * currentMultiplier;
 
-
-    const damage = MISSILE_DAMAGE + level * DAMAGE_PER_LEVEL;
+    const baseDamage = MISSILE_DAMAGE + level * DAMAGE_PER_LEVEL;
+    const damage = applyPassiveEffects(baseDamage, "magic");
     const missileRadius = 0.2;
 
     if (missileCount < 10) {

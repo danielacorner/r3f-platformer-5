@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { FaStar, FaTimes, FaPlus, FaBolt } from "react-icons/fa";
 import { useGameStore } from "../../../store/gameStore";
 import { Tabs, Tab, Box } from "@mui/material";
+import { applyPassiveEffects } from "../SkillEffects/passiveEffects";
 import { getMissileCount } from "../SkillEffects/castMagicMissiles";
 import { getBoomerangCount } from "../SkillEffects/castMagicBoomerang";
 import {
@@ -42,6 +43,7 @@ export function SkillsMenu({ onClose }: SkillsMenuProps) {
     "Arcane Multiplication",
     "Inferno",
     "Multi Orb",
+    "Arcane Power",
   ];
 
   const handleUpgrade = (skillName: string) => {
@@ -102,14 +104,24 @@ export function SkillsMenu({ onClose }: SkillsMenuProps) {
 
   const getSkillDamage = (skill: (typeof activeSkills)[0], level: number) => {
     switch (skill.name) {
-      case "Magic Missiles":
-        return `${20 + level * 5} × ${getMissileCount(level)}`;
-      case "Magic Boomerang":
-        return `${15 + level * 5} × ${getBoomerangCount(level)}`;
-      case "Arcane Nova":
-        return (30 + level * 10).toString();
-      case "Lightning Storm":
-        return `${18 + level * 25} / strike`;
+      case "Magic Missiles": {
+        const baseDamage = 20 + level * 5;
+        const damage = applyPassiveEffects(baseDamage, "magic");
+        return `${damage} × ${getMissileCount(level)}`;
+      }
+      case "Magic Boomerang": {
+        const baseDamage = 15 + level * 5;
+        const damage = applyPassiveEffects(baseDamage, "physical");
+        return `${damage} × ${getBoomerangCount(level)}`;
+      }
+      case "Arcane Nova": {
+        const baseDamage = 30 + level * 10;
+        return applyPassiveEffects(baseDamage, "magic").toString();
+      }
+      case "Lightning Storm": {
+        const baseDamage = 18 + level * 25;
+        return `${applyPassiveEffects(baseDamage, "lightning")} / strike`;
+      }
       default:
         return null;
     }
@@ -257,12 +269,19 @@ export function SkillsMenu({ onClose }: SkillsMenuProps) {
                       data-skill-type={"effect" in skill ? "passive" : "active"}
                     >
                       <skill.icon />
-                      {!("effect" in skill) && getSkillDamage(skill as (typeof activeSkills)[0], currentLevel) && (
-                        <div className="damage-indicator">
-                          <FaBolt />
-                          {getSkillDamage(skill as (typeof activeSkills)[0], currentLevel)}
-                        </div>
-                      )}
+                      {!("effect" in skill) &&
+                        getSkillDamage(
+                          skill as (typeof activeSkills)[0],
+                          currentLevel
+                        ) && (
+                          <div className="damage-indicator">
+                            <FaBolt />
+                            {getSkillDamage(
+                              skill as (typeof activeSkills)[0],
+                              currentLevel
+                            )}
+                          </div>
+                        )}
                     </div>
                     <div className="skill-info">
                       <h3>{skill.name}</h3>

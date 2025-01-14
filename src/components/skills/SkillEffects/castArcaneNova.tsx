@@ -1,5 +1,6 @@
 import { Vector3 } from "three";
 import { activeEffects } from "./SkillEffects";
+import { applyPassiveEffects } from './passiveEffects';
 
 export function castArcaneNova(position: Vector3, level: number) {
   console.log('Casting Arcane Nova at position:', position.toArray());
@@ -11,7 +12,7 @@ export function castArcaneNova(position: Vector3, level: number) {
     startTime: Date.now(),
     duration: 0.9, // Balanced duration
     radius: 8 + level * 2, // Larger radius
-    damage: 30 + level * 10,
+    damage: applyPassiveEffects(30 + level * 10, "magic"),
     color: '#8B5CF6',
     expansionSpeed: 10,
     level

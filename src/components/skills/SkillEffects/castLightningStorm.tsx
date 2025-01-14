@@ -1,6 +1,7 @@
 import { Vector3 } from "three";
 import { activeEffects } from "./SkillEffects";
 import { useGameStore } from "../../../store/gameStore";
+import { applyPassiveEffects } from './passiveEffects';
 
 const STORM_RADIUS = 7;
 const BOLT_DAMAGE = 18;
@@ -8,7 +9,7 @@ const STORM_DURATION = 8; // Changed to match SkillsMenu duration
 
 export const getLightningStormStats = (level: number) => ({
   radius: STORM_RADIUS + level * 1.5,
-  damage: BOLT_DAMAGE + level * 25,
+  damage: applyPassiveEffects(BOLT_DAMAGE + level * 25, "lightning"),
   duration: STORM_DURATION,
   strikeInterval: Math.max(200, 500 - level * 25) // Strike interval decreases with level, min 200ms
 });
