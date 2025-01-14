@@ -237,6 +237,7 @@ const initialState: GameState = {
   toggleSkill: () => { },
   setJoystickMovement: () => { },
   increaseMaxSkillSlots: () => { },
+  damageCreep: () => { }
 };
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -397,9 +398,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     }));
 
     // Run any onUpgrade effects
-    if (skill.onUpgrade) {
-      skill.onUpgrade(get());
-    }
+    // if (skill.onUpgrade) {
+    //   skill.onUpgrade(get());
+    // }
   },
 
   incrementLevel: () =>
